@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:dj_tilbud_app/core/theme/app_theme.dart';
-import 'package:dj_tilbud_app/features/auth/presentation/auth_provider.dart';
+import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/app_exception.dart';
+import 'package:dj_tilbud_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
@@ -19,6 +21,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   bool _isLoading = false;
   bool _emailSent = false;
   String? _errorMessage;
+
+  static const _c = lightColors;
 
   @override
   void dispose() {
@@ -40,37 +44,38 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       );
       if (!mounted) return;
       setState(() => _emailSent = true);
-    } on AuthException catch (_) {
+    } on AppException catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorMessage = 'Noget gik galt. Prøv igen senere.';
-      });
+      setState(() => _errorMessage = e.message);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _errorMessage = 'Noget gik galt. Prøv igen senere.';
-      });
+      setState(() => _errorMessage = 'Noget gik galt. Prøv igen senere.');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _c.bg.canvas,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+        backgroundColor: _c.bg.surface,
+        surfaceTintColor: _c.bg.surface,
+        leading: DSIconButton(
+          icon: LucideIcons.arrowLeft,
+          variant: DSIconButtonVariant.ghost,
+          onTap: () => context.pop(),
         ),
-        title: const Text('Glemt adgangskode'),
+        title: Text(
+          'Glemt adgangskode',
+          style: DSTextStyle.headingSm.copyWith(color: _c.text.primary),
+        ),
       ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s6),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: _emailSent ? _buildSuccessView() : _buildFormView(),
@@ -85,21 +90,22 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.check_circle_outline, color: AppColors.boogieBuster, size: 64),
-        const SizedBox(height: 16),
+        Icon(LucideIcons.checkCircle, color: _c.state.success, size: 64),
+        const SizedBox(height: DSSpacing.s4),
         Text(
           'Instruktioner til nulstilling af adgangskode er sendt til din email.',
-          style: Theme.of(context).textTheme.bodyLarge,
+          style: DSTextStyle.bodyLg.copyWith(color: _c.text.secondary),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 24),
-        TextButton(
-          onPressed: () => context.pop(),
-          child: const Text(
+        const SizedBox(height: DSSpacing.s6),
+        GestureDetector(
+          onTap: () => context.pop(),
+          child: Text(
             'Tilbage til login',
-            style: TextStyle(
-              color: AppColors.gray,
+            style: DSTextStyle.bodyMd.copyWith(
+              color: _c.text.secondary,
               decoration: TextDecoration.underline,
+              decorationColor: _c.text.secondary,
             ),
           ),
         ),
@@ -116,38 +122,35 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           Text(
             'Indtast din email, og vi sender dig instruktioner til at nulstille din adgangskode.',
-            style: Theme.of(context).textTheme.bodyLarge,
+            style: DSTextStyle.labelMd.copyWith(fontSize: 15, color: _c.text.secondary, height: 1.5),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: DSSpacing.s6),
 
           if (_errorMessage != null) ...[
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(DSSpacing.s3),
               decoration: BoxDecoration(
-                color: AppColors.peachRed.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.peachRed),
+                color: _c.state.danger.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(DSRadius.sm),
+                border: Border.all(color: _c.state.danger),
               ),
               child: Text(
                 _errorMessage!,
-                style: const TextStyle(color: AppColors.peachRed, fontSize: 14),
+                style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger),
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: DSSpacing.s4),
           ],
 
-          TextFormField(
+          DSInput(
+            label: 'Email',
+            hint: 'eksempel@eksempel.dk',
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            autocorrect: false,
             textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => _handleResetPassword(),
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              hintText: 'eksempel@eksempel.dk',
-            ),
+            onSubmitted: (_) => _handleResetPassword(),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Indtast din email';
@@ -155,20 +158,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: DSSpacing.s6),
 
-          SizedBox(
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _handleResetPassword,
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Send instruktioner til nulstilling'),
-            ),
+          DSButton(
+            label: 'Send instruktioner til nulstilling',
+            variant: DSButtonVariant.primary,
+            expand: true,
+            isLoading: _isLoading,
+            onTap: _isLoading ? null : _handleResetPassword,
           ),
         ],
       ),

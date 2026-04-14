@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "DJ Tilbud (local)",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--dart-define=ENV=local"],
+      "flutterMode": "debug"
+    },
+    {
+      "name": "DJ Tilbud (dev)",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--dart-define=ENV=dev"],
+      "flutterMode": "debug"
+    },
+    {
+      "name": "DJ Tilbud (dev - release)",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--dart-define=ENV=dev"],
+      "flutterMode": "release"
+    }
+  ]
+}

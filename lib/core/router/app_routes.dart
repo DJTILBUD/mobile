@@ -1,0 +1,30 @@
+abstract class AppRoutes {
+  static const login = 'login';
+  static const profileSetup = 'profile-setup';
+  static const forgotPassword = 'forgot-password';
+  static const djHome = 'dj-home';
+  static const instrumentalistHome = 'instrumentalist-home';
+  static const jobDetail = 'job-detail';
+  static const djQuoteForm = 'dj-quote-form';
+  static const instrumentalistOfferForm = 'instrumentalist-offer-form';
+  static const quoteDetail = 'quote-detail';
+  static const serviceOfferDetail = 'service-offer-detail';
+  static const featuredJobs = 'featured-jobs';
+  static const chat = 'chat';
+  static const profile = 'profile';
+  static const designSystem = 'design-system';
+  static const editProfile = 'edit-profile';
+  static const reviews = 'reviews';
+  static const media = 'media';
+  static const standardMessages = 'standard-messages';
+  static const payment = 'payment';
+  static const extJobDetail = 'ext-job-detail';
+  static const conversationDetail = 'conversation-detail';
+  static const djCalendar = 'dj-calendar';
+  static const instrumentalistCalendar = 'instrumentalist-calendar';
+  static const djJobFilters = 'dj-job-filters';
+  static const profilePreview = 'profile-preview';
+  static const adminMessages = 'admin-messages';
+  static const feedback = 'feedback';
+  static const faq = 'faq';
+}
