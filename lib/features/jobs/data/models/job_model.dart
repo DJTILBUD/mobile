@@ -30,6 +30,9 @@ class JobModel {
     this.assignedDjName,
     this.deadlineExtendedUntil,
     this.customerContactPlannedFor,
+    this.musicianStartTime,
+    this.roleType,
+    this.hasActiveOffer = false,
   });
 
   final int id;
@@ -60,6 +63,9 @@ class JobModel {
   final String? assignedDjName;
   final String? deadlineExtendedUntil;
   final String? customerContactPlannedFor;
+  final String? musicianStartTime;
+  final String? roleType;
+  final bool hasActiveOffer;
 
   factory JobModel.fromJson(Map<String, dynamic> json) {
     return JobModel(
@@ -89,7 +95,16 @@ class JobModel {
       quoteSendMode: json['quote_send_mode'] as String?,
       deadlineExtendedUntil: json['deadline_extended_until'] as String?,
       customerContactPlannedFor: json['customer_contact_planned_for'] as String?,
+      musicianStartTime: _formatTime(json['musician_start_time']),
+      roleType: json['role_type'] as String?,
+      hasActiveOffer: json['has_active_offer'] as bool? ?? false,
     );
+  }
+
+  static String? _formatTime(dynamic raw) {
+    if (raw == null) return null;
+    final s = raw.toString();
+    return s.length >= 5 ? s.substring(0, 5) : s;
   }
 
   Job toEntity() {
@@ -126,6 +141,9 @@ class JobModel {
       customerContactPlannedFor: customerContactPlannedFor != null
           ? DateTime.parse(customerContactPlannedFor!)
           : null,
+      musicianStartTime: musicianStartTime,
+      roleType: roleType,
+      hasActiveOffer: hasActiveOffer,
     );
   }
 }

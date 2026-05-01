@@ -6,8 +6,8 @@ import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/widgets/restart_widget.dart';
 
 /// Floating env switcher — only visible in debug builds.
-/// Shows current env as a pill (orange = local, blue = dev).
-/// Tap to toggle between local ↔ dev with sign-out + full restart.
+/// Shows current env as a pill (orange = local, blue = dev, red = prod).
+/// Tap to open panel with buttons for every other environment.
 class DevEnvBanner extends StatefulWidget {
   const DevEnvBanner({super.key});
 
@@ -19,14 +19,22 @@ class _DevEnvBannerState extends State<DevEnvBanner> {
   bool _panelOpen = false;
   bool _switching = false;
 
+  static const _envs = ['local', 'dev', 'prod'];
+
+  Color _colorFor(String env) => switch (env) {
+        'local' => const Color(0xFFFF8C00),
+        'dev' => const Color(0xFF2563EB),
+        'prod' => const Color(0xFFDC2626),
+        _ => const Color(0xFF6B7280),
+      };
+
   @override
   Widget build(BuildContext context) {
     if (!kDebugMode) return const SizedBox.shrink();
 
     final currentEnv = EnvConfig.env;
-    final isLocal = currentEnv == 'local';
-    final color = isLocal ? const Color(0xFFFF8C00) : const Color(0xFF2563EB);
-    final nextEnv = isLocal ? 'dev' : 'local';
+    final color = _colorFor(currentEnv);
+    final others = _envs.where((e) => e != currentEnv).toList();
 
     return Positioned(
       bottom: 12,
@@ -68,35 +76,47 @@ class _DevEnvBannerState extends State<DevEnvBanner> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    width: 160,
-                    child: _switching
-                        ? const Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        : TextButton(
-                            style: TextButton.styleFrom(
-                              backgroundColor: color,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              minimumSize: const Size(0, 0),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed: () => _switchEnv(context, nextEnv),
-                            child: Text(
-                              'Skift til ${nextEnv.toUpperCase()}',
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                          ),
-                  ),
+                  if (_switching)
+                    const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  else
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: others
+                          .map((env) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: SizedBox(
+                                  width: 160,
+                                  child: TextButton(
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: _colorFor(env),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      minimumSize: const Size(0, 0),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    onPressed: () =>
+                                        _switchEnv(context, env),
+                                    child: Text(
+                                      'Skift til ${env.toUpperCase()}',
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                    ),
                 ],
               ),
             ),

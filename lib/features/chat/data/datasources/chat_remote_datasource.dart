@@ -150,7 +150,7 @@ class ChatRemoteDatasource {
           'is_system_message': false,
         },
       },
-    ).catchError((_) {});
+    ).then((_) {}).catchError((_) {});
 
     return msg;
   }

@@ -8,11 +8,14 @@ class CalendarHeader extends StatelessWidget {
     required this.month,
     required this.onMonthChanged,
     required this.onTodayTapped,
+    this.onShare,
   });
 
   final DateTime month;
   final ValueChanged<DateTime> onMonthChanged;
   final VoidCallback onTodayTapped;
+  /// If provided, a share icon button is shown right of the "I dag" button.
+  final VoidCallback? onShare;
 
   static const _monthNames = [
     'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
@@ -21,7 +24,7 @@ class CalendarHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const c = lightColors;
+    final c = DSTheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(
           horizontal: DSSpacing.s4, vertical: DSSpacing.s2),
@@ -29,14 +32,13 @@ class CalendarHeader extends StatelessWidget {
         children: [
           DSIconButton(
             icon: LucideIcons.chevronLeft,
-            onTap: () => onMonthChanged(
-              DateTime(month.year, month.month - 1),
-            ),
+            onTap: () => onMonthChanged(DateTime(month.year, month.month - 1)),
           ),
-          Expanded(
+          Flexible(
             child: Text(
               '${_monthNames[month.month - 1]} ${month.year}',
               textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
               style: DSTextStyle.headingSm.copyWith(
                 fontWeight: FontWeight.w700,
                 color: c.text.primary,
@@ -45,9 +47,7 @@ class CalendarHeader extends StatelessWidget {
           ),
           DSIconButton(
             icon: LucideIcons.chevronRight,
-            onTap: () => onMonthChanged(
-              DateTime(month.year, month.month + 1),
-            ),
+            onTap: () => onMonthChanged(DateTime(month.year, month.month + 1)),
           ),
           const SizedBox(width: DSSpacing.s2),
           GestureDetector(
@@ -65,6 +65,38 @@ class CalendarHeader extends StatelessWidget {
               ),
             ),
           ),
+          if (onShare != null) ...[
+            const SizedBox(width: DSSpacing.s2),
+            Expanded(
+              child: GestureDetector(
+                onTap: onShare,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: DSSpacing.s3, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: c.bg.inputBg,
+                    borderRadius: BorderRadius.circular(DSRadius.sm),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(LucideIcons.share2,
+                          size: 14, color: c.text.primary),
+                      const SizedBox(width: DSSpacing.s1),
+                      Flexible(
+                        child: Text(
+                          'Eksporter',
+                          style: DSTextStyle.labelMd
+                              .copyWith(color: c.text.primary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

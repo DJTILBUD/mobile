@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/core/config/role_cache.dart';
@@ -22,8 +23,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   bool _isLoading = false;
   String? _errorMessage;
-
-  static const _c = lightColors;
 
   @override
   void dispose() {
@@ -73,6 +72,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       body: SafeArea(
@@ -110,7 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(DSSpacing.s3),
                         decoration: BoxDecoration(
-                          color: _c.state.danger.withValues(alpha: 0.1),
+                          color: _c.state.danger.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(DSRadius.sm),
                           border: Border.all(color: _c.state.danger),
                         ),
@@ -171,6 +171,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: _c.text.secondary,
                             decoration: TextDecoration.underline,
                             decorationColor: _c.text.secondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s2),
+                    Center(
+                      child: GestureDetector(
+                        onTap: () => launchUrl(
+                          Uri.parse('https://djtilbud.dk/privacy-policy/'),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        child: Text(
+                          'Privatlivspolitik',
+                          style: DSTextStyle.bodySm.copyWith(
+                            color: _c.text.muted,
+                            decoration: TextDecoration.underline,
+                            decorationColor: _c.text.muted,
                           ),
                         ),
                       ),

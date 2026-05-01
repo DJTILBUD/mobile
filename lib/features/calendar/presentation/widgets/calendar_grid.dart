@@ -29,7 +29,7 @@ class CalendarGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const c = lightColors;
+    final c = DSTheme.of(context);
     final today = DateTime.now();
     final firstDay = DateTime(month.year, month.month, 1);
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
@@ -127,14 +127,14 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const c = lightColors;
+    final c = DSTheme.of(context);
     final hasEvents = eventKinds != null && eventKinds!.isNotEmpty;
 
     Color? bgColor;
     if (isSelected) {
       bgColor = c.brand.primary;
     } else if (isUnavailable) {
-      bgColor = c.state.danger.withValues(alpha: 0.12);
+      bgColor = c.state.danger.withValues(alpha: 0.20);
     }
 
     return Container(
@@ -145,7 +145,7 @@ class _DayCell extends StatelessWidget {
             ? Border.all(color: c.brand.primaryActive, width: 1.5)
             : isUnavailable && !isSelected
                 ? Border.all(
-                    color: c.state.danger.withValues(alpha: 0.35), width: 1)
+                    color: c.state.danger.withValues(alpha: 0.55), width: 1)
                 : null,
       ),
       child: Column(

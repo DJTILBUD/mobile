@@ -7,11 +7,10 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/standard_message.
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-const _c = lightColors;
-
 const _eventTypes = [
-  'bryllup', 'fødselsdag', 'firmafest', 'konfirmation',
-  'studenterfest', 'julefrokost', 'sommerfest', 'andet',
+  'bryllup', 'fødselsdag', 'fødselsdagsfest', 'firmafest', 'konfirmation',
+  'studenterfest', 'julefrokost', 'sommerfest', 'privatfest',
+  'ungdomsfest', 'klub/bar', 'lounge', 'andet',
 ];
 
 class StandardMessagesScreen extends ConsumerWidget {
@@ -19,6 +18,7 @@ class StandardMessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
     final messagesAsync = ref.watch(standardMessagesProvider);
 
     return Scaffold(
@@ -87,6 +87,7 @@ class StandardMessagesScreen extends ConsumerWidget {
   }
 
   void _showUpsertDialog(BuildContext context, WidgetRef ref, {StandardMessage? existing}) {
+    final _c = DSTheme.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -161,6 +162,7 @@ class _MessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: DSSpacing.s2),
       child: DSSurface(
@@ -205,6 +207,7 @@ class _MessageForm extends StatefulWidget {
 }
 
 class _MessageFormState extends State<_MessageForm> {
+  DSColors get _c => DSTheme.of(context);
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _textCtrl;
   late String _eventType;
@@ -214,7 +217,7 @@ class _MessageFormState extends State<_MessageForm> {
   void initState() {
     super.initState();
     _textCtrl = TextEditingController(text: widget.existing?.messageText ?? '');
-    _eventType = widget.existing?.eventType ?? 'wedding';
+    _eventType = widget.existing?.eventType ?? 'bryllup';
   }
 
   @override
@@ -225,6 +228,7 @@ class _MessageFormState extends State<_MessageForm> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Padding(
       padding: EdgeInsets.only(
         left: DSSpacing.s6, right: DSSpacing.s6, top: DSSpacing.s6,

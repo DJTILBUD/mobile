@@ -41,8 +41,6 @@ class _ICalExportBottomSheet extends ConsumerStatefulWidget {
 
 class _ICalExportBottomSheetState
     extends ConsumerState<_ICalExportBottomSheet> {
-  static const _c = lightColors;
-
   bool _isExporting = false;
 
   Future<void> _handleDownload() async {
@@ -82,6 +80,7 @@ class _ICalExportBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final tokenAsync = ref.watch(icalTokenProvider(widget.isDj));
     final generateState = ref.watch(generateIcalTokenProvider);
     final isGenerating = generateState is AsyncLoading;
@@ -294,10 +293,9 @@ class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 16, color: _c.text.secondary),
@@ -325,10 +323,9 @@ class _AppBox extends StatelessWidget {
   final String title;
   final String body;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.all(DSSpacing.s3),
       decoration: BoxDecoration(

@@ -28,6 +28,10 @@ class Job {
     this.assignedDjName,
     this.deadlineExtendedUntil,
     this.customerContactPlannedFor,
+    this.musicianStartTime,
+    this.roleType,
+    this.hasActiveOffer = false,
+    this.hasDateConflict = false,
   });
 
   final int id;
@@ -59,6 +63,49 @@ class Job {
   final String? assignedDjName;
   final DateTime? deadlineExtendedUntil;
   final DateTime? customerContactPlannedFor;
+  /// HH:MM string for the musician's start time (separate from event start).
+  final String? musicianStartTime;
+  /// 'musician_only' | 'dj_and_musician' | 'dj_only' — only set for ext jobs.
+  final String? roleType;
+  /// True when another musician of the same instrument already has a non-lost offer on this job.
+  final bool hasActiveOffer;
+  /// True when the current musician already has a sent/won service offer on the same date.
+  final bool hasDateConflict;
+
+  Job withDateConflict() => Job(
+        id: id,
+        eventType: eventType,
+        date: date,
+        timeStart: timeStart,
+        timeEnd: timeEnd,
+        city: city,
+        region: region,
+        guestsAmount: guestsAmount,
+        status: status,
+        createdAt: createdAt,
+        budgetStart: budgetStart,
+        budgetEnd: budgetEnd,
+        genres: genres,
+        leadRequest: leadRequest,
+        additionalInformation: additionalInformation,
+        requestedSaxophonist: requestedSaxophonist,
+        requestedMusicianHours: requestedMusicianHours,
+        birthdayPersonAge: birthdayPersonAge,
+        leadName: leadName,
+        leadEmail: leadEmail,
+        leadPhoneNumber: leadPhoneNumber,
+        customerNote: customerNote,
+        isExtJob: isExtJob,
+        extJobId: extJobId,
+        quoteSendMode: quoteSendMode,
+        assignedDjName: assignedDjName,
+        deadlineExtendedUntil: deadlineExtendedUntil,
+        customerContactPlannedFor: customerContactPlannedFor,
+        musicianStartTime: musicianStartTime,
+        roleType: roleType,
+        hasActiveOffer: hasActiveOffer,
+        hasDateConflict: true,
+      );
 
   String get budgetDisplay {
     if (budgetStart == null || budgetEnd == null) return 'Ikke angivet';

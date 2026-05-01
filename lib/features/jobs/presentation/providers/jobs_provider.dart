@@ -146,8 +146,10 @@ final djQuotesProvider =
   ),
 );
 
-final djExtJobsProvider = FutureProvider<List<ExtJob>>((ref) {
-  return ref.watch(jobsRepositoryProvider).fetchDjExtJobs(_currentUserId);
+final djExtJobsProvider = FutureProvider<List<ExtJob>>((ref) async {
+  final list = await ref.watch(jobsRepositoryProvider).fetchDjExtJobs(_currentUserId);
+  list.sort((a, b) => a.date.compareTo(b.date));
+  return list;
 });
 
 /// DJ jobs after applying profile-level hard constraints and saved filter
@@ -162,6 +164,8 @@ final filteredDjJobsProvider = Provider<AsyncValue<List<Job>>>((ref) {
   final filtersAsync = ref.watch(djJobFiltersProvider);
   final profileAsync = ref.watch(djProfileProvider);
   final filtersEnabled = ref.watch(djFiltersEnabledProvider);
+  final quotes = ref.watch(djQuotesProvider).valueOrNull ?? [];
+  final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
 
   return jobs.whenData((jobList) {
     final profile = profileAsync.valueOrNull;
@@ -170,7 +174,7 @@ final filteredDjJobsProvider = Provider<AsyncValue<List<Job>>>((ref) {
     // If DJ is suppressed, show no jobs (matches web app: !djInfo.is_suppressed)
     if (profile?.isSuppressed == true) return [];
 
-    return jobList.where((job) {
+    final filtered = jobList.where((job) {
       // Hard constraint: event types excluded on the DJ profile (not a user toggle)
       if (profile != null && profile.excludedEventTypes.isNotEmpty) {
         final jobType = job.eventType.trim().toLowerCase();
@@ -192,6 +196,18 @@ final filteredDjJobsProvider = Provider<AsyncValue<List<Job>>>((ref) {
 
       return true;
     }).toList();
+
+    // Sort: non-colliding jobs first, then newest created_at within each group.
+    // Mirrors unbidJobsCompareFunction from the web app.
+    filtered.sort((a, b) {
+      final aCollides = _jobCollides(a, quotes, extJobs);
+      final bCollides = _jobCollides(b, quotes, extJobs);
+      if (aCollides && !bCollides) return 1;
+      if (!aCollides && bCollides) return -1;
+      return b.createdAt.compareTo(a.createdAt); // newest first
+    });
+
+    return filtered;
   });
 });
 
@@ -227,26 +243,63 @@ bool _isJobExcludedByFilters(Job job, DjJobFilters f) {
   return false;
 }
 
+bool _sameDate(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// Mirrors collidingQuote() from useCollidingQuote.ts.
+/// Returns true if the job date collides with an existing ext job or
+/// active quote (won = always blocks; 2+ pending = blocks).
+bool _jobCollides(Job job, List<DjQuote> quotes, List<ExtJob> extJobs) {
+  // Ext job assigned on the same date
+  if (extJobs.any((e) => _sameDate(e.date, job.date))) return true;
+
+  // Active quotes on the same date (exclude lost/overwritten and the same job)
+  final onSameDate = quotes.where((q) =>
+      _sameDate(q.job.date, job.date) &&
+      q.status != QuoteStatus.lost &&
+      q.status != QuoteStatus.overwritten &&
+      q.job.id != job.id).toList();
+
+  // A won job on the same date blocks all new bids
+  if (onSameDate.any((q) => q.status == QuoteStatus.won)) return true;
+
+  // 2 or more pending quotes on the same date blocks a third bid
+  final pending = onSameDate.where((q) => q.status == QuoteStatus.pending).length;
+  return pending >= 2;
+}
+
 final pendingDjQuotesProvider = Provider<AsyncValue<List<DjQuote>>>((ref) {
-  return ref.watch(djQuotesProvider).whenData(
-        (quotes) => quotes.where((q) => q.status == QuoteStatus.pending).toList(),
-      );
+  return ref.watch(djQuotesProvider).whenData((quotes) {
+    final list = quotes.where((q) => q.status == QuoteStatus.pending).toList();
+    list.sort((a, b) => a.job.date.compareTo(b.job.date));
+    return list;
+  });
 });
 
 final wonDjQuotesProvider = Provider<AsyncValue<List<DjQuote>>>((ref) {
-  return ref.watch(djQuotesProvider).whenData(
-        (quotes) => quotes.where((q) => q.status == QuoteStatus.won).toList(),
-      );
+  return ref.watch(djQuotesProvider).whenData((quotes) {
+    final list = quotes.where((q) => q.status == QuoteStatus.won).toList();
+    list.sort((a, b) {
+      // Actions (pending tasks) first, then by event date ascending
+      final aAction = a.hasAction ? 0 : 1;
+      final bAction = b.hasAction ? 0 : 1;
+      if (aAction != bAction) return aAction.compareTo(bAction);
+      return a.job.date.compareTo(b.job.date);
+    });
+    return list;
+  });
 });
 
 final expiredDjQuotesProvider = Provider<AsyncValue<List<DjQuote>>>((ref) {
-  return ref.watch(djQuotesProvider).whenData(
-        (quotes) => quotes
-            .where((q) =>
-                q.status == QuoteStatus.lost ||
-                q.status == QuoteStatus.overwritten)
-            .toList(),
-      );
+  return ref.watch(djQuotesProvider).whenData((quotes) {
+    final list = quotes
+        .where((q) =>
+            q.status == QuoteStatus.lost ||
+            q.status == QuoteStatus.overwritten)
+        .toList();
+    list.sort((a, b) => a.job.date.compareTo(b.job.date));
+    return list;
+  });
 });
 
 // ─── Instrumentalist: new jobs ────────────────────────────────────────────────
@@ -353,25 +406,34 @@ final serviceOffersProvider =
 );
 
 final sentServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((ref) {
-  return ref.watch(serviceOffersProvider).whenData(
-        (offers) =>
-            offers.where((o) => o.status == ServiceOfferStatus.sent).toList(),
-      );
+  return ref.watch(serviceOffersProvider).whenData((offers) {
+    final list = offers.where((o) => o.status == ServiceOfferStatus.sent).toList();
+    list.sort((a, b) => a.job.date.compareTo(b.job.date));
+    return list;
+  });
 });
 
 final wonServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((ref) {
-  return ref.watch(serviceOffersProvider).whenData(
-        (offers) =>
-            offers.where((o) => o.status == ServiceOfferStatus.won).toList(),
-      );
+  return ref.watch(serviceOffersProvider).whenData((offers) {
+    final list = offers.where((o) => o.status == ServiceOfferStatus.won).toList();
+    list.sort((a, b) {
+      // Actions (pending tasks) first, then by event date ascending
+      final aAction = a.hasAction ? 0 : 1;
+      final bAction = b.hasAction ? 0 : 1;
+      if (aAction != bAction) return aAction.compareTo(bAction);
+      return a.job.date.compareTo(b.job.date);
+    });
+    return list;
+  });
 });
 
 final expiredServiceOffersProvider =
     Provider<AsyncValue<List<ServiceOffer>>>((ref) {
-  return ref.watch(serviceOffersProvider).whenData(
-        (offers) =>
-            offers.where((o) => o.status == ServiceOfferStatus.lost).toList(),
-      );
+  return ref.watch(serviceOffersProvider).whenData((offers) {
+    final list = offers.where((o) => o.status == ServiceOfferStatus.lost).toList();
+    list.sort((a, b) => a.job.date.compareTo(b.job.date));
+    return list;
+  });
 });
 
 // ─── Job detail provider ──────────────────────────────────────────────────────
@@ -595,6 +657,89 @@ final markServiceOfferContactedProvider = StateNotifierProvider.autoDispose<
       ref.watch(jobsRepositoryProvider), ref),
 );
 
+// ─── Planned contact notifiers ────────────────────────────────────────────────
+
+class SetJobPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
+  SetJobPlannedContactNotifier(this._repository, this._ref)
+      : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<bool> setPlanned(int jobId, String date) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.setJobPlannedContact(jobId, date);
+      state = const AsyncData(null);
+      _ref.invalidate(jobDetailProvider(jobId));
+      _ref.read(djQuotesProvider.notifier).silentRefresh();
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+final setJobPlannedContactProvider =
+    StateNotifierProvider.autoDispose<SetJobPlannedContactNotifier, AsyncValue<void>>(
+  (ref) => SetJobPlannedContactNotifier(ref.watch(jobsRepositoryProvider), ref),
+);
+
+class SetExtJobPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
+  SetExtJobPlannedContactNotifier(this._repository, this._ref)
+      : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<bool> setPlanned(int extJobId, String date) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.setExtJobPlannedContact(extJobId, date);
+      state = const AsyncData(null);
+      _ref.invalidate(djExtJobsProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+final setExtJobPlannedContactProvider =
+    StateNotifierProvider.autoDispose<SetExtJobPlannedContactNotifier, AsyncValue<void>>(
+  (ref) =>
+      SetExtJobPlannedContactNotifier(ref.watch(jobsRepositoryProvider), ref),
+);
+
+class SetServiceOfferPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
+  SetServiceOfferPlannedContactNotifier(this._repository, this._ref)
+      : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<bool> setPlanned(int offerId, String date) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.setServiceOfferPlannedContact(offerId, date);
+      state = const AsyncData(null);
+      _ref.read(serviceOffersProvider.notifier).silentRefresh();
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+final setServiceOfferPlannedContactProvider =
+    StateNotifierProvider.autoDispose<SetServiceOfferPlannedContactNotifier, AsyncValue<void>>(
+  (ref) => SetServiceOfferPlannedContactNotifier(
+      ref.watch(jobsRepositoryProvider), ref),
+);
+
 // ─── Ready for billing notifiers ──────────────────────────────────────────────
 
 class MarkJobReadyForBillingNotifier extends StateNotifier<AsyncValue<void>> {
@@ -673,7 +818,7 @@ class ResolveEarlySetupNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final resolveEarlySetupProvider = StateNotifierProvider.autoDispose<
+final resolveEarlySetupProvider = StateNotifierProvider<
     ResolveEarlySetupNotifier, AsyncValue<void>>(
   (ref) => ResolveEarlySetupNotifier(ref.watch(jobsRepositoryProvider)),
 );
@@ -966,14 +1111,24 @@ final saveMusicianNotesProvider = StateNotifierProvider.autoDispose<
 
 // ─── Action counts ────────────────────────────────────────────────────────────
 
-/// Number of won DJ quotes + ext jobs that need an action.
-/// Used for the red badge on the "Du har vundet" tab and the Jobs nav item.
-final djWonActionCountProvider = Provider<int>((ref) {
+/// Won DJ quotes that need an action — for the "Du har vundet" tab badge
+/// and the Jobs bottom-nav badge. Mirrors web app "Overblik" badge.
+final djQuoteActionCountProvider = Provider<int>((ref) {
   final wonQuotes = ref.watch(wonDjQuotesProvider).valueOrNull ?? [];
-  final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
-  return wonQuotes.where((q) => q.hasAction).length +
-      extJobs.where((e) => e.hasAction).length;
+  return wonQuotes.where((q) => q.hasAction).length;
 });
+
+/// Ext jobs that need an action — for the Udvalgte bottom-nav badge.
+/// Mirrors web app "Udvalgte jobs" badge.
+final djExtJobActionCountProvider = Provider<int>((ref) {
+  final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
+  return extJobs.where((e) => e.hasAction).length;
+});
+
+/// Combined count — kept for backwards compat if needed elsewhere.
+final djWonActionCountProvider = Provider<int>((ref) =>
+    ref.watch(djQuoteActionCountProvider) +
+    ref.watch(djExtJobActionCountProvider));
 
 /// Number of won musician service offers that need an action.
 /// Used for the red badge on the "Jobs accepteret" tab and the Jobs nav item.

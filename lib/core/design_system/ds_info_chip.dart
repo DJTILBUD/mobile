@@ -30,10 +30,11 @@ class DSInfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DSTheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bg = highlight
-        ? c.brand.primary.withValues(alpha: 0.12)
-        : c.bg.inputBg;
+        ? c.brand.primary.withValues(alpha: isDark ? 0.25 : 0.12)
+        : isDark ? c.bg.elevated : c.bg.inputBg;
     final contentColor =
         highlight ? c.brand.primaryActive : c.text.secondary;
     final iconColor = highlight ? c.brand.primaryActive : c.text.muted;

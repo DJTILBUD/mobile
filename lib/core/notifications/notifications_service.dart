@@ -28,11 +28,12 @@ class NotificationsService {
       return;
     }
 
-    // Show notifications when app is in foreground (iOS)
+    // Suppress system banners while app is in foreground — the in-app
+    // banner handles foreground notifications instead.
     await _messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
+      alert: false,
+      badge: false,
+      sound: false,
     );
 
     // Save token and listen for refreshes.

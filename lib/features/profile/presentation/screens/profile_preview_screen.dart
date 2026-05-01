@@ -2,8 +2,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
@@ -12,8 +14,6 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/review.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-
-const _c = lightColors;
 
 class ProfilePreviewScreen extends ConsumerStatefulWidget {
   const ProfilePreviewScreen({super.key, required this.role});
@@ -30,6 +30,7 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final isDj = widget.role == MusicianRole.dj;
     final profileAsync =
         isDj ? ref.watch(djProfileProvider) : ref.watch(musicianProfileProvider);
@@ -40,9 +41,24 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
-        title: const Text('Forhåndsvisning'),
+        title: const SizedBox.shrink(),
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
+        actions: [
+          TextButton.icon(
+            onPressed: () =>
+                context.pushNamed(AppRoutes.editProfile, extra: widget.role),
+            icon: Icon(LucideIcons.pencil, size: 15, color: _c.brand.primaryActive),
+            label: Text(
+              'Rediger profil',
+              style: DSTextStyle.labelMd.copyWith(
+                color: _c.brand.primaryActive,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -81,10 +97,10 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
                     DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
                 padding: const EdgeInsets.all(DSSpacing.s3),
                 decoration: BoxDecoration(
-                  color: _c.state.info.withValues(alpha: 0.08),
+                  color: _c.state.info.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(DSRadius.sm),
                   border:
-                      Border.all(color: _c.state.info.withValues(alpha: 0.3)),
+                      Border.all(color: _c.state.info.withValues(alpha: 0.50)),
                 ),
                 child: Row(
                   children: [
@@ -305,6 +321,7 @@ class _ImageCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return SizedBox(
       height: 260,
       child: ListView.separated(
@@ -343,6 +360,7 @@ class _MediaTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final previewUrl = item.previewUrl;
 
     return GestureDetector(
@@ -395,6 +413,7 @@ class _PlaceholderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       width: 260,
       height: 260,
@@ -442,6 +461,7 @@ class _MediaViewerScreenState extends State<_MediaViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -475,6 +495,7 @@ class _ImagePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return InteractiveViewer(
       minScale: 0.5,
       maxScale: 4.0,
@@ -545,6 +566,7 @@ class _VideoPageState extends State<_VideoPage> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     if (_hasError) {
       return const Center(
         child: Icon(LucideIcons.videoOff,
@@ -575,6 +597,7 @@ class _ContentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
       child: Column(
@@ -612,12 +635,13 @@ class _CheckTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: _c.bg.surface,
         borderRadius: BorderRadius.circular(DSRadius.pill),
-        border: Border.all(color: const Color(0xFFCBCBCB)),
+        border: Border.all(color: _c.border.subtle),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -632,16 +656,16 @@ class _CheckTag extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1A1A),
+                color: _c.text.primary,
               ),
             ),
           ),
           const SizedBox(width: 6),
-          const Icon(LucideIcons.checkCircle,
-              size: 14, color: Color(0xFF5A731A)),
+          Icon(LucideIcons.checkCircle,
+              size: 14, color: _c.brand.primaryActive),
         ],
       ),
     );
@@ -657,6 +681,7 @@ class _ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final date = _formatDate(review.eventDate);
 
     return Container(
@@ -666,7 +691,7 @@ class _ReviewCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _c.bg.surface,
         borderRadius: BorderRadius.circular(DSRadius.md),
-        border: Border.all(color: const Color(0xFFF0F0F0)),
+        border: Border.all(color: _c.border.subtle),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,10 +699,10 @@ class _ReviewCard extends StatelessWidget {
           // Event type (title)
           Text(
             eventTypeLabel(review.eventType),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A1A),
+              color: _c.text.primary,
             ),
           ),
           const SizedBox(height: 4),

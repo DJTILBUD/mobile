@@ -21,7 +21,7 @@ class CalendarEventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const c = lightColors;
+    final c = DSTheme.of(context);
     final isExternal = event.type == CalendarEventType.external;
 
     // Bar color and tag are driven by kind first, then type for won events
@@ -34,12 +34,12 @@ class CalendarEventCard extends StatelessWidget {
       case CalendarEventKind.newJob:
         barColor = c.state.info;
         tagLabel = 'Nyt job';
-        tagBg = c.state.info.withValues(alpha: 0.12);
+        tagBg = c.state.info.withValues(alpha: 0.20);
         tagFg = c.state.info;
       case CalendarEventKind.sent:
         barColor = c.state.warning;
         tagLabel = 'Bud afgivet';
-        tagBg = c.state.warning.withValues(alpha: 0.12);
+        tagBg = c.state.warning.withValues(alpha: 0.22);
         tagFg = c.state.warning;
       case CalendarEventKind.won:
         barColor = isExternal ? c.brand.accent : c.brand.primary;
@@ -148,7 +148,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const c = lightColors;
+    final c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 13, color: c.text.secondary),

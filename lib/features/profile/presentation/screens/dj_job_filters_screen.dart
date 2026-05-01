@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
+import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_job_filters.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
-
-const _c = lightColors;
 
 const _allEventTypes = [
   'bryllup', 'firmafest', 'fødselsdagsfest', 'julefrokost',
@@ -42,12 +41,23 @@ class DjJobFiltersScreen extends ConsumerStatefulWidget {
 }
 
 class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
+  DSColors get _c => DSTheme.of(context);
   DjJobFilters? _filters;
   bool _initialized = false;
+  DjJobFilters? _initialFilters;
 
   void _initFrom(DjJobFilters? saved) {
     _filters = saved ?? DjJobFilters(djId: widget.djId, allowedWeekdays: null);
+    _initialFilters = _filters;
     _initialized = true;
+  }
+
+  bool get _isDirty => _initialized && _filters != _initialFilters;
+
+  Future<void> _onPopInvoked(bool didPop, _) async {
+    if (didPop) return;
+    final confirmed = await showUnsavedChangesDialog(context);
+    if (confirmed == true && mounted) Navigator.of(context).pop();
   }
 
   // ── Event types ──
@@ -58,11 +68,13 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
     setState(() => _filters = _filters!.copyWith(excludedEventTypes: current));
   }
 
-  void _selectAllEventTypes() =>
-      setState(() => _filters = _filters!.copyWith(excludedEventTypes: []));
+  void _selectAllEventTypes() {
+    setState(() => _filters = _filters!.copyWith(excludedEventTypes: []));
+  }
 
-  void _deselectAllEventTypes() =>
-      setState(() => _filters = _filters!.copyWith(excludedEventTypes: List.from(_allEventTypes)));
+  void _deselectAllEventTypes() {
+    setState(() => _filters = _filters!.copyWith(excludedEventTypes: List.from(_allEventTypes)));
+  }
 
   // ── Regions ──
 
@@ -72,11 +84,13 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
     setState(() => _filters = _filters!.copyWith(excludedRegions: current));
   }
 
-  void _selectAllRegions() =>
-      setState(() => _filters = _filters!.copyWith(excludedRegions: []));
+  void _selectAllRegions() {
+    setState(() => _filters = _filters!.copyWith(excludedRegions: []));
+  }
 
-  void _deselectAllRegions() =>
-      setState(() => _filters = _filters!.copyWith(excludedRegions: List.from(_allRegions)));
+  void _deselectAllRegions() {
+    setState(() => _filters = _filters!.copyWith(excludedRegions: List.from(_allRegions)));
+  }
 
   // ── Genres ──
 
@@ -86,11 +100,13 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
     setState(() => _filters = _filters!.copyWith(excludedGenres: current));
   }
 
-  void _selectAllGenres() =>
-      setState(() => _filters = _filters!.copyWith(excludedGenres: []));
+  void _selectAllGenres() {
+    setState(() => _filters = _filters!.copyWith(excludedGenres: []));
+  }
 
-  void _deselectAllGenres() =>
-      setState(() => _filters = _filters!.copyWith(excludedGenres: List.from(_djGenres)));
+  void _deselectAllGenres() {
+    setState(() => _filters = _filters!.copyWith(excludedGenres: List.from(_djGenres)));
+  }
 
   // ── Weekdays ──
 
@@ -104,9 +120,11 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
         ));
   }
 
-  void _applyWeekendPreset() => setState(() => _filters = _filters!.copyWith(
-        allowedWeekdays: () => [5, 6, 0], // Fri, Sat, Sun
-      ));
+  void _applyWeekendPreset() {
+    setState(() => _filters = _filters!.copyWith(
+          allowedWeekdays: () => [5, 6, 0], // Fri, Sat, Sun
+        ));
+  }
 
   // ── Budget slider ──
 
@@ -159,6 +177,7 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final filtersAsync = ref.watch(djJobFiltersProvider);
     final isSaving = ref.watch(saveDjJobFiltersProvider) is AsyncLoading;
 
@@ -175,7 +194,10 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
   }
 
   Widget _buildScaffold({Widget? child, bool isSaving = false}) {
-    return Scaffold(
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: _onPopInvoked,
+      child: Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
         title: const Text('Job-filtre'),
@@ -204,6 +226,7 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
                 ),
               ),
             ),
+      ), // PopScope
     );
   }
 
@@ -356,6 +379,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -382,6 +406,7 @@ class _ChipSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -419,6 +444,7 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(

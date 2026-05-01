@@ -46,27 +46,16 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
 
     if (_calendarMode) {
       if (isDj) {
-        final wonEvents =
-            ref.watch(calendarEventsProvider(MusicianRole.dj)).valueOrNull ?? [];
-
         return Scaffold(
-          backgroundColor: _c.bg.canvas,
+          backgroundColor: _c.bg.surface,
           appBar: AppBar(
+            toolbarHeight: 64,
             title: const Text('DJ Tilbud'),
             backgroundColor: _c.bg.surface,
             surfaceTintColor: _c.bg.surface,
             actions: [
-              if (wonEvents.isNotEmpty)
-                IconButton(
-                  icon: Icon(LucideIcons.share2, color: _c.text.primary),
-                  tooltip: 'Eksporter kalender',
-                  onPressed: () => showIcalExportBottomSheet(
-                    context,
-                    events: wonEvents,
-                    isDj: true,
-                  ),
-                ),
-              _ModeToggleButton(
+              const _FilterTogglePill(),
+              _ModeTogglePill(
                 isCalendarMode: true,
                 onToggle: () => setState(() => _calendarMode = false),
               ),
@@ -75,27 +64,15 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
           body: const _DjCalendarView(),
         );
       } else {
-        final wonEvents =
-            ref.watch(calendarEventsProvider(MusicianRole.instrumentalist)).valueOrNull ?? [];
-
         return Scaffold(
-          backgroundColor: _c.bg.canvas,
+          backgroundColor: _c.bg.surface,
           appBar: AppBar(
+            toolbarHeight: 64,
             title: const Text('Mine jobs'),
             backgroundColor: _c.bg.surface,
             surfaceTintColor: _c.bg.surface,
             actions: [
-              if (wonEvents.isNotEmpty)
-                IconButton(
-                  icon: Icon(LucideIcons.share2, color: _c.text.primary),
-                  tooltip: 'Eksporter kalender',
-                  onPressed: () => showIcalExportBottomSheet(
-                    context,
-                    events: wonEvents,
-                    isDj: false,
-                  ),
-                ),
-              _ModeToggleButton(
+              _ModeTogglePill(
                 isCalendarMode: true,
                 onToggle: () => setState(() => _calendarMode = false),
               ),
@@ -107,19 +84,20 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
     }
 
     final wonActionCount = isDj
-        ? ref.watch(djWonActionCountProvider)
+        ? ref.watch(djQuoteActionCountProvider)
         : ref.watch(musicianWonActionCountProvider);
 
     return DefaultTabController(
       length: 4,
       child: Scaffold(
         appBar: AppBar(
+          toolbarHeight: 64,
           title: const Text('DJ Tilbud'),
           backgroundColor: _c.bg.surface,
           surfaceTintColor: _c.bg.surface,
           actions: [
-            if (isDj) _FilterToggleButton(),
-            _ModeToggleButton(
+            if (isDj) const _FilterTogglePill(),
+            _ModeTogglePill(
               isCalendarMode: false,
               onToggle: () => setState(() => _calendarMode = true),
             ),
@@ -135,17 +113,13 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
                 activeColor: _c.brand.accent,
               ),
               DSTabItem(
-                label: widget.role == MusicianRole.dj
-                    ? 'Bud afgivet'
-                    : 'Tilbud afgivet',
+                label: isDj ? 'Bud afgivet' : 'Tilbud afgivet',
                 icon: LucideIcons.send,
                 activeIcon: LucideIcons.send,
                 activeColor: _c.state.warning,
               ),
               DSTabItem(
-                label: widget.role == MusicianRole.dj
-                    ? 'Du har vundet'
-                    : 'Jobs accepteret',
+                label: isDj ? 'Du har vundet' : 'Jobs accepteret',
                 icon: LucideIcons.calendarCheck,
                 activeIcon: LucideIcons.calendarCheck,
                 activeColor: _c.state.success,
@@ -171,7 +145,7 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
               : [
                   _InstrumentalistNewJobsTab(),
                   _InstrumentalistOffersTab(filter: ServiceOfferStatus.sent),
-                  _InstrumentalistOffersTab(filter: ServiceOfferStatus.won),
+                  const _InstrumentalistWonOffersTab(),
                   _InstrumentalistOffersTab(filter: ServiceOfferStatus.lost),
                 ],
         ),
@@ -180,41 +154,105 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
   }
 }
 
-// ── Shared AppBar buttons ──
+// ── AppBar action pills ──
 
-class _ModeToggleButton extends StatelessWidget {
-  const _ModeToggleButton(
-      {required this.isCalendarMode, required this.onToggle});
+/// Icon-only two-segment switch: list | calendar
+class _ModeTogglePill extends StatelessWidget {
+  const _ModeTogglePill({required this.isCalendarMode, required this.onToggle});
 
   final bool isCalendarMode;
   final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(
-        isCalendarMode ? LucideIcons.layoutList : LucideIcons.calendarDays,
-        color: _c.text.primary,
+    return Padding(
+      padding: const EdgeInsets.only(right: 12, top: 12, bottom: 12),
+      child: GestureDetector(
+        onTap: onToggle,
+        child: Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: _c.bg.inputBg,
+            borderRadius: BorderRadius.circular(DSRadius.pill),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _IconSegment(icon: LucideIcons.layoutList,   selected: !isCalendarMode),
+              _IconSegment(icon: LucideIcons.calendarDays, selected: isCalendarMode),
+            ],
+          ),
+        ),
       ),
-      tooltip: isCalendarMode ? 'Standard visning' : 'Kalender',
-      onPressed: onToggle,
     );
   }
 }
 
-/// Jobfiltre toggle button shown in AppBar for DJs in standard mode.
-class _FilterToggleButton extends ConsumerWidget {
+class _IconSegment extends StatelessWidget {
+  const _IconSegment({required this.icon, required this.selected});
+
+  final IconData icon;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: DSMotion.normal,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: selected ? _c.bg.surface : Colors.transparent,
+        borderRadius: BorderRadius.circular(DSRadius.pill),
+        boxShadow: selected ? DSShadow.sm : null,
+      ),
+      child: Center(child: Icon(icon, size: 20, color: selected ? _c.text.primary : _c.text.muted)),
+    );
+  }
+}
+
+/// Filter on/off pill — text label + check/x icon
+class _FilterTogglePill extends ConsumerWidget {
+  const _FilterTogglePill();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = ref.watch(djFiltersEnabledProvider);
-    return IconButton(
-      icon: Icon(
-        enabled ? LucideIcons.sliders : LucideIcons.filterX,
-        color: enabled ? _c.brand.primaryActive : _c.text.muted,
+    final color = _c.state.success;
+    return Padding(
+      padding: const EdgeInsets.only(right: 4, top: 14, bottom: 14),
+      child: GestureDetector(
+        onTap: () => ref.read(djFiltersEnabledProvider.notifier).state = !enabled,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s3, vertical: 6),
+          decoration: BoxDecoration(
+            color: enabled ? color.withValues(alpha: 0.12) : _c.bg.inputBg,
+            borderRadius: BorderRadius.circular(DSRadius.pill),
+            border: Border.all(
+              color: enabled ? color : _c.border.subtle,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 150),
+                style: DSTextStyle.labelSm.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: enabled ? color : _c.text.secondary,
+                ),
+                child: Text(enabled ? 'Filtre til' : 'Filtre fra'),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                enabled ? LucideIcons.check : LucideIcons.x,
+                size: 12,
+                color: enabled ? color : _c.text.secondary,
+              ),
+            ],
+          ),
+        ),
       ),
-      tooltip: enabled ? 'Jobfiltre: Til' : 'Jobfiltre: Fra',
-      onPressed: () =>
-          ref.read(djFiltersEnabledProvider.notifier).state = !enabled,
     );
   }
 }
@@ -275,16 +313,11 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
         .toList();
   }
 
-  void _onDayTapped(
-    DateTime day,
-    Map<String, int> unavailableMap,
-  ) {
+  void _onDayTapped(DateTime day, Map<String, int> unavailableMap) {
     if (_isEditingUnavailable) {
-      // In edit mode: tap toggles unavailability
       final dateStr = DateFormat('yyyy-MM-dd').format(day);
       ref.read(djUnavailableDatesProvider.notifier).toggle(dateStr);
     } else {
-      // Normal mode: tap selects day
       setState(() {
         _selectedDay = (_selectedDay != null &&
                 _selectedDay!.year == day.year &&
@@ -339,8 +372,6 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
     final unavailableAsync = ref.watch(djUnavailableDatesProvider);
     final wonQuotesAsync = ref.watch(wonDjQuotesProvider);
     final extJobsAsync = ref.watch(djExtJobsProvider);
-    final filtersEnabled = ref.watch(djFiltersEnabledProvider);
-
     final newJobs = newJobsAsync.valueOrNull ?? [];
     final pending = pendingAsync.valueOrNull ?? [];
     final won = wonAsync.valueOrNull ?? [];
@@ -387,43 +418,25 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
                     _selectedDay = null;
                   });
                 },
+                onShare: won.isNotEmpty
+                    ? () => showIcalExportBottomSheet(
+                          context,
+                          events: won,
+                          isDj: true,
+                        )
+                    : null,
               ),
               const SizedBox(height: DSSpacing.s2),
               // ── Filter row ──
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: DSSpacing.s4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
                 child: Row(
                   children: [
-                    _JobFilterChip(
-                      enabled: filtersEnabled,
-                      onToggle: () => ref
-                          .read(djFiltersEnabledProvider.notifier)
-                          .state = !filtersEnabled,
-                    ),
+                    Expanded(child: _KindChip(label: 'Nye jobs', active: _showNew, activeColor: _c.state.info, onTap: () => setState(() => _showNew = !_showNew))),
                     const SizedBox(width: DSSpacing.s2),
-                    _KindChip(
-                      label: 'Nye jobs',
-                      active: _showNew,
-                      activeColor: _c.state.info,
-                      onTap: () => setState(() => _showNew = !_showNew),
-                    ),
+                    Expanded(child: _KindChip(label: 'Bud afgivet', active: _showSent, activeColor: _c.state.warning, onTap: () => setState(() => _showSent = !_showSent))),
                     const SizedBox(width: DSSpacing.s2),
-                    _KindChip(
-                      label: 'Bud afgivet',
-                      active: _showSent,
-                      activeColor: _c.state.warning,
-                      onTap: () =>
-                          setState(() => _showSent = !_showSent),
-                    ),
-                    const SizedBox(width: DSSpacing.s2),
-                    _KindChip(
-                      label: 'Vundet',
-                      active: _showWon,
-                      activeColor: _c.state.success,
-                      onTap: () => setState(() => _showWon = !_showWon),
-                    ),
+                    Expanded(child: _KindChip(label: 'Vundet', active: _showWon, activeColor: _c.state.success, onTap: () => setState(() => _showWon = !_showWon))),
                   ],
                 ),
               ),
@@ -661,34 +674,25 @@ class _InstrumentalistCalendarViewState
                     _selectedDay = null;
                   });
                 },
+                onShare: wonEvents.isNotEmpty
+                    ? () => showIcalExportBottomSheet(
+                          context,
+                          events: wonEvents,
+                          isDj: false,
+                        )
+                    : null,
               ),
               const SizedBox(height: DSSpacing.s2),
               // ── Filter chips ──
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              Padding(
                 padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
                 child: Row(
                   children: [
-                    _KindChip(
-                      label: 'Nye jobs',
-                      active: _showNew,
-                      activeColor: _c.state.info,
-                      onTap: () => setState(() => _showNew = !_showNew),
-                    ),
+                    Expanded(child: _KindChip(label: 'Nye jobs', active: _showNew, activeColor: _c.state.info, onTap: () => setState(() => _showNew = !_showNew))),
                     const SizedBox(width: DSSpacing.s2),
-                    _KindChip(
-                      label: 'Bud afgivet',
-                      active: _showSent,
-                      activeColor: _c.state.warning,
-                      onTap: () => setState(() => _showSent = !_showSent),
-                    ),
+                    Expanded(child: _KindChip(label: 'Bud afgivet', active: _showSent, activeColor: _c.state.warning, onTap: () => setState(() => _showSent = !_showSent))),
                     const SizedBox(width: DSSpacing.s2),
-                    _KindChip(
-                      label: 'Vundet',
-                      active: _showWon,
-                      activeColor: _c.state.success,
-                      onTap: () => setState(() => _showWon = !_showWon),
-                    ),
+                    Expanded(child: _KindChip(label: 'Vundet', active: _showWon, activeColor: _c.state.success, onTap: () => setState(() => _showWon = !_showWon))),
                   ],
                 ),
               ),
@@ -837,52 +841,6 @@ CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
 
 // ── Calendar filter chips ──
 
-class _JobFilterChip extends StatelessWidget {
-  const _JobFilterChip({required this.enabled, required this.onToggle});
-
-  final bool enabled;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onToggle,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding:
-            const EdgeInsets.symmetric(horizontal: DSSpacing.s2, vertical: 6),
-        decoration: BoxDecoration(
-          color: enabled
-              ? _c.brand.primary.withValues(alpha: 0.12)
-              : _c.bg.inputBg,
-          borderRadius: BorderRadius.circular(DSRadius.pill),
-          border: Border.all(
-            color: enabled ? _c.brand.primaryActive : _c.border.subtle,
-            width: enabled ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              enabled ? LucideIcons.sliders : LucideIcons.filterX,
-              size: 13,
-              color: enabled ? _c.brand.primaryActive : _c.text.muted,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              'Jobfiltre',
-              style: DSTextStyle.labelSm.copyWith(
-                fontWeight: FontWeight.w600,
-                color: enabled ? _c.brand.primaryActive : _c.text.muted,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _KindChip extends StatelessWidget {
   const _KindChip({
@@ -915,12 +873,24 @@ class _KindChip extends StatelessWidget {
             width: active ? 1.5 : 1,
           ),
         ),
-        child: Text(
-          label,
-          style: DSTextStyle.labelSm.copyWith(
-            fontWeight: FontWeight.w600,
-            color: active ? activeColor : _c.text.secondary,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: DSTextStyle.labelSm.copyWith(
+                fontWeight: FontWeight.w600,
+                color: active ? activeColor : _c.text.secondary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              active ? LucideIcons.check : LucideIcons.x,
+              size: 11,
+              color: active ? activeColor : _c.text.secondary,
+            ),
+          ],
         ),
       ),
     );
@@ -947,12 +917,12 @@ class _UnavailableDatesPanel extends StatelessWidget {
         decoration: BoxDecoration(
           color: isEditing
               ? _c.state.danger.withValues(alpha: 0.06)
-              : _c.state.warning.withValues(alpha: 0.06),
+              : _c.bg.inputBg,
           borderRadius: BorderRadius.circular(DSRadius.md),
           border: Border.all(
             color: isEditing
                 ? _c.state.danger.withValues(alpha: 0.3)
-                : _c.state.warning.withValues(alpha: 0.3),
+                : _c.border.subtle,
           ),
         ),
         child: Row(
@@ -960,7 +930,7 @@ class _UnavailableDatesPanel extends StatelessWidget {
             Icon(
               isEditing ? LucideIcons.calendarDays : LucideIcons.ban,
               size: 16,
-              color: isEditing ? _c.state.danger : _c.state.warning,
+              color: isEditing ? _c.state.danger : _c.text.muted,
             ),
             const SizedBox(width: DSSpacing.s2),
             Expanded(
@@ -982,7 +952,7 @@ class _UnavailableDatesPanel extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isEditing
                       ? _c.state.danger
-                      : _c.state.warning.withValues(alpha: 0.15),
+                      : _c.border.subtle,
                   borderRadius: BorderRadius.circular(DSRadius.pill),
                 ),
                 child: Text(
@@ -991,7 +961,7 @@ class _UnavailableDatesPanel extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     color: isEditing
                         ? Colors.white
-                        : _c.state.warning,
+                        : _c.text.secondary,
                   ),
                 ),
               ),
@@ -1035,22 +1005,14 @@ class _DjNewJobsTab extends ConsumerWidget {
             ),
           );
         }
-        // Sort: biddable jobs first (by date asc), colliding jobs last (by date asc)
-        final sorted = [...jobs]..sort((a, b) {
-            final aColliding = _isDateColliding(a, quotes, extJobs);
-            final bColliding = _isDateColliding(b, quotes, extJobs);
-            if (aColliding != bColliding) return aColliding ? 1 : -1;
-            return a.date.compareTo(b.date);
-          });
-
         return RefreshIndicator(
           color: _c.brand.primary,
           onRefresh: () => ref.read(newDjJobsProvider.notifier).refresh(),
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            itemCount: sorted.length,
+            itemCount: jobs.length,
             itemBuilder: (context, index) {
-              final job = sorted[index];
+              final job = jobs[index];
               final colliding = _isDateColliding(job, quotes, extJobs);
               return AnimatedCard(
                 index: index,
@@ -1074,7 +1036,7 @@ class _DjNewJobsTab extends ConsumerWidget {
 
 /// Mirrors `collidingQuote` from the web app.
 bool _isDateColliding(Job job, List<DjQuote> quotes, List<ExtJob> extJobs) {
-  final sameDay = (DateTime a, DateTime b) =>
+  bool sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   if (extJobs.any((e) => sameDay(e.date, job.date))) return true;
@@ -1111,7 +1073,9 @@ class _DjQuotesTab extends ConsumerWidget {
         onRetry: () => ref.read(djQuotesProvider.notifier).refresh(),
       ),
       data: (quotes) {
-        if (quotes.isEmpty) {
+        final sorted = quotes;
+
+        if (sorted.isEmpty) {
           return RefreshIndicator(
             color: _c.brand.primary,
             onRefresh: () => ref.read(djQuotesProvider.notifier).refresh(),
@@ -1128,14 +1092,14 @@ class _DjQuotesTab extends ConsumerWidget {
           onRefresh: () => ref.read(djQuotesProvider.notifier).refresh(),
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            itemCount: quotes.length,
+            itemCount: sorted.length,
             itemBuilder: (context, index) => AnimatedCard(
               index: index,
               child: QuoteCard(
-                quote: quotes[index],
+                quote: sorted[index],
                 onTap: () => context.pushNamed(
                   AppRoutes.quoteDetail,
-                  extra: quotes[index],
+                  extra: sorted[index],
                 ),
               ),
             ),
@@ -1247,6 +1211,7 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
               index: index,
               child: JobCard(
                 job: jobs[index],
+                isMusicianView: true,
                 musicianPrice: calculateMusicianOfferPrice(
                   jobs[index].requestedMusicianHours,
                   jobs[index].createdAt,
@@ -1263,6 +1228,177 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
     );
   }
 }
+
+// ── Instrumentalist Won Offers Tab (with played-jobs toggle) ──
+
+class _InstrumentalistWonOffersTab extends ConsumerStatefulWidget {
+  const _InstrumentalistWonOffersTab();
+
+  @override
+  ConsumerState<_InstrumentalistWonOffersTab> createState() =>
+      _InstrumentalistWonOffersTabState();
+}
+
+class _InstrumentalistWonOffersTabState
+    extends ConsumerState<_InstrumentalistWonOffersTab> {
+  bool _showPlayed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final offersAsync = ref.watch(wonServiceOffersProvider);
+
+    return offersAsync.when(
+      loading: () => const SkeletonListView(),
+      error: (error, _) => _ErrorView(
+        message: error.toString(),
+        onRetry: () => ref.read(serviceOffersProvider.notifier).refresh(),
+      ),
+      data: (offers) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+
+        final upcoming = offers
+            .where((o) => !DateTime(
+                    o.job.date.year, o.job.date.month, o.job.date.day)
+                .isBefore(today))
+            .toList()
+          ..sort((a, b) => a.job.date.compareTo(b.job.date));
+
+        final played = offers
+            .where((o) => DateTime(
+                    o.job.date.year, o.job.date.month, o.job.date.day)
+                .isBefore(today))
+            .toList()
+          ..sort((a, b) => b.job.date.compareTo(a.job.date));
+
+        return RefreshIndicator(
+          color: _c.brand.primary,
+          onRefresh: () => ref.read(serviceOffersProvider.notifier).refresh(),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            children: [
+              // Toggle button — only shown when there are played jobs
+              if (played.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: DSSpacing.s4, vertical: DSSpacing.s2),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _showPlayed = !_showPlayed),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: DSSpacing.s3, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _showPlayed
+                            ? _c.state.success.withValues(alpha: 0.10)
+                            : _c.bg.inputBg,
+                        borderRadius: BorderRadius.circular(DSRadius.pill),
+                        border: Border.all(
+                          color: _showPlayed
+                              ? _c.state.success
+                              : _c.border.subtle,
+                          width: _showPlayed ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _showPlayed
+                                ? LucideIcons.eyeOff
+                                : LucideIcons.history,
+                            size: 14,
+                            color: _showPlayed
+                                ? _c.state.success
+                                : _c.text.secondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _showPlayed
+                                ? 'Skjul spillede jobs'
+                                : 'Vis spillede jobs (${played.length})',
+                            style: DSTextStyle.labelSm.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: _showPlayed
+                                  ? _c.state.success
+                                  : _c.text.secondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Upcoming offers
+              if (upcoming.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 60),
+                  child: EmptyJobsView(
+                    message: offers.isEmpty
+                        ? 'Ingen accepterede jobs endnu.'
+                        : 'Ingen kommende accepterede jobs.',
+                    icon: LucideIcons.calendarCheck,
+                  ),
+                )
+              else
+                ...upcoming.asMap().entries.map(
+                      (e) => AnimatedCard(
+                        index: e.key,
+                        child: ServiceOfferCard(
+                          offer: e.value,
+                          onTap: () => context.pushNamed(
+                            AppRoutes.serviceOfferDetail,
+                            extra: e.value,
+                          ),
+                        ),
+                      ),
+                    ),
+
+              // Played offers (only when toggled)
+              if (_showPlayed && played.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
+                  child: Row(
+                    children: [
+                      Expanded(child: Divider(color: _c.border.subtle)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: DSSpacing.s3),
+                        child: Text(
+                          'Spillede jobs',
+                          style: DSTextStyle.labelSm
+                              .copyWith(color: _c.text.muted),
+                        ),
+                      ),
+                      Expanded(child: Divider(color: _c.border.subtle)),
+                    ],
+                  ),
+                ),
+                ...played.asMap().entries.map(
+                      (e) => AnimatedCard(
+                        index: upcoming.length + e.key + 1,
+                        child: ServiceOfferCard(
+                          offer: e.value,
+                          onTap: () => context.pushNamed(
+                            AppRoutes.serviceOfferDetail,
+                            extra: e.value,
+                          ),
+                        ),
+                      ),
+                    ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Instrumentalist Offers Tab (sent / lost) ──
 
 class _InstrumentalistOffersTab extends ConsumerWidget {
   const _InstrumentalistOffersTab({required this.filter});
@@ -1285,7 +1421,9 @@ class _InstrumentalistOffersTab extends ConsumerWidget {
             ref.read(serviceOffersProvider.notifier).refresh(),
       ),
       data: (offers) {
-        if (offers.isEmpty) {
+        final sorted = offers;
+
+        if (sorted.isEmpty) {
           return RefreshIndicator(
             color: _c.brand.primary,
             onRefresh: () =>
@@ -1305,14 +1443,14 @@ class _InstrumentalistOffersTab extends ConsumerWidget {
               ref.read(serviceOffersProvider.notifier).refresh(),
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            itemCount: offers.length,
+            itemCount: sorted.length,
             itemBuilder: (context, index) => AnimatedCard(
               index: index,
               child: ServiceOfferCard(
-                offer: offers[index],
+                offer: sorted[index],
                 onTap: () => context.pushNamed(
                   AppRoutes.serviceOfferDetail,
-                  extra: offers[index],
+                  extra: sorted[index],
                 ),
               ),
             ),

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/notifications/in_app_notification_provider.dart';
+import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/chat_message.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/conversation.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/chat_provider.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class ConversationDetailScreen extends ConsumerStatefulWidget {
@@ -19,24 +23,34 @@ class ConversationDetailScreen extends ConsumerStatefulWidget {
 
 class _ConversationDetailScreenState
     extends ConsumerState<ConversationDetailScreen> {
-  static const _c = lightColors;
-
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
   bool _isSending = false;
   String? _errorMsg;
 
+  // Captured in initState so it can be safely called from dispose()
+  late final StateController<int?> _activeConvNotifier;
+
   String get _currentUserId => supabase.auth.currentUser!.id;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _markAsRead());
+    _activeConvNotifier = ref.read(activeConversationIdProvider.notifier);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Mark this conversation as active so foreground FCM banners are suppressed
+      _activeConvNotifier.state = widget.conversation.id;
+      _markAsRead();
+    });
   }
 
   @override
   void dispose() {
+    // Defer the state write — Riverpod disallows provider mutations during
+    // widget tree finalization (dispose is called while the tree is unmounting).
+    Future.microtask(() => _activeConvNotifier.state = null);
     _textController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();
@@ -91,6 +105,7 @@ class _ConversationDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final messagesAsync =
         ref.watch(conversationMessagesProvider(widget.conversation.id));
 
@@ -114,25 +129,17 @@ class _ConversationDetailScreenState
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
         titleSpacing: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.conversation.partnerName,
-              style: DSTextStyle.headingSm.copyWith(
-                fontWeight: FontWeight.w700,
-                color: _c.text.primary,
-              ),
-            ),
-            Text(
-              widget.conversation.jobInfo,
-              style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
-            ),
-          ],
+        title: Text(
+          widget.conversation.partnerName,
+          style: DSTextStyle.headingSm.copyWith(
+            fontWeight: FontWeight.w700,
+            color: _c.text.primary,
+          ),
         ),
       ),
       body: Column(
         children: [
+          _JobBanner(conversation: widget.conversation),
           Expanded(
             child: messagesAsync.when(
               loading: () =>
@@ -168,7 +175,7 @@ class _ConversationDetailScreenState
           if (_errorMsg != null)
             Container(
               width: double.infinity,
-              color: _c.state.danger.withValues(alpha: 0.1),
+              color: _c.state.danger.withValues(alpha: 0.16),
               padding:
                   const EdgeInsets.symmetric(horizontal: DSSpacing.s4, vertical: DSSpacing.s2),
               child: Text(
@@ -184,6 +191,82 @@ class _ConversationDetailScreenState
             onSend: _sendMessage,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Job navigation banner ────────────────────────────────────────────────────
+
+class _JobBanner extends ConsumerWidget {
+  const _JobBanner({required this.conversation});
+
+  final Conversation conversation;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
+    final conv = conversation;
+    VoidCallback? onTap;
+
+    if (conv.senderType == 'dj') {
+      if (conv.extJobId != null) {
+        final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
+        final matches = extJobs.where((e) => e.id == conv.extJobId).toList();
+        if (matches.isNotEmpty) {
+          final extJob = matches.first;
+          onTap = () => context.pushNamed(AppRoutes.extJobDetail, extra: extJob);
+        }
+      } else if (conv.jobId != null) {
+        final quotes = ref.watch(djQuotesProvider).valueOrNull ?? [];
+        final matches = quotes.where((q) => q.jobId == conv.jobId).toList();
+        if (matches.isNotEmpty) {
+          final quote = matches.first;
+          onTap = () => context.pushNamed(AppRoutes.quoteDetail, extra: quote);
+        }
+      }
+    } else if (conv.senderType == 'musician') {
+      final offers = ref.watch(serviceOffersProvider).valueOrNull ?? [];
+      final matches = offers.where(
+        (o) => (conv.jobId != null && o.jobId == conv.jobId) ||
+            (conv.extJobId != null && o.extJobId == conv.extJobId),
+      ).toList();
+      if (matches.isNotEmpty) {
+        final offer = matches.first;
+        onTap = () => context.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
+      }
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: _c.bg.canvas,
+          border: Border(bottom: BorderSide(color: _c.border.subtle)),
+        ),
+        padding: const EdgeInsets.symmetric(
+            horizontal: DSSpacing.s4, vertical: DSSpacing.s3 + 2),
+        child: Row(
+          children: [
+            Icon(LucideIcons.briefcase, size: 14, color: _c.text.secondary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                conv.jobInfo,
+                style: DSTextStyle.labelMd.copyWith(
+                  color: _c.text.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (onTap != null) ...[
+              const SizedBox(width: 4),
+              Icon(LucideIcons.chevronRight, size: 15, color: _c.text.secondary),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -206,6 +289,7 @@ class _MessageList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     // Group messages by calendar date
     final groups = <({DateTime date, List<ChatMessage> messages})>[];
     DateTime? currentDate;
@@ -261,10 +345,9 @@ class _DateDivider extends StatelessWidget {
 
   final DateTime date;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
@@ -318,11 +401,11 @@ class _MessageBubble extends StatelessWidget {
   final String partnerName;
   final bool showTimestamp;
 
-  static const _c = lightColors;
   static const _avatarSize = 28.0;
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     if (message.isSystemMessage) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: DSSpacing.s1, horizontal: DSSpacing.s4),
@@ -385,9 +468,9 @@ class _MessageBubble extends StatelessWidget {
                         ? null
                         : Border.all(color: _c.border.subtle, width: 1),
                   ),
-                  child: Text(
-                    message.message,
-                    style: DSTextStyle.bodyMd.copyWith(
+                  child: _FormattedText(
+                    text: message.message,
+                    baseStyle: DSTextStyle.bodyMd.copyWith(
                       color: isOwn ? _c.brand.onPrimary : _c.text.primary,
                       height: 1.4,
                     ),
@@ -425,8 +508,9 @@ class _MessageBubble extends StatelessWidget {
   }
 
   String _formatTime(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
+    final local = dt.toLocal();
+    final h = local.hour.toString().padLeft(2, '0');
+    final m = local.minute.toString().padLeft(2, '0');
     return '$h:$m';
   }
 }
@@ -437,11 +521,11 @@ class _ChatAvatar extends StatelessWidget {
 
   final String name;
 
-  static const _c = lightColors;
   static const _size = 28.0;
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final initial =
         name.isNotEmpty ? name[0].toUpperCase() : '?';
     return Container(
@@ -464,6 +548,80 @@ class _ChatAvatar extends StatelessWidget {
   }
 }
 
+// ─── Formatted text (bold + bullets + paragraphs) ────────────────────────────
+
+class _FormattedText extends StatelessWidget {
+  const _FormattedText({required this.text, required this.baseStyle});
+
+  final String text;
+  final TextStyle baseStyle;
+
+  static final _boldRegex = RegExp(r'\*\*(.*?)\*\*');
+
+  List<InlineSpan> _parseInline(String raw) {
+    final spans = <InlineSpan>[];
+    int cursor = 0;
+    for (final match in _boldRegex.allMatches(raw)) {
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: raw.substring(cursor, match.start)));
+      }
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ));
+      cursor = match.end;
+    }
+    if (cursor < raw.length) spans.add(TextSpan(text: raw.substring(cursor)));
+    if (spans.isEmpty) spans.add(TextSpan(text: raw));
+    return spans;
+  }
+
+  Widget _buildLine(String line) {
+    final isBullet = line.startsWith('- ');
+    final content = isBullet ? line.substring(2) : line;
+    final inlineSpans = _parseInline(content);
+
+    if (isBullet) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('• ', style: baseStyle),
+          Flexible(
+            child: RichText(
+              text: TextSpan(style: baseStyle, children: inlineSpans),
+            ),
+          ),
+        ],
+      );
+    }
+    return RichText(
+      text: TextSpan(style: baseStyle, children: inlineSpans),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
+    final paragraphs = text.split(RegExp(r'\n\n+'));
+    final blocks = <Widget>[];
+
+    for (int p = 0; p < paragraphs.length; p++) {
+      if (p > 0) blocks.add(const SizedBox(height: 8));
+      final lines = paragraphs[p].split('\n');
+      for (int l = 0; l < lines.length; l++) {
+        if (l > 0) blocks.add(const SizedBox(height: 3));
+        blocks.add(_buildLine(lines[l]));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: blocks,
+    );
+  }
+}
+
 // ─── Message input ────────────────────────────────────────────────────────────
 
 class _MessageInput extends StatelessWidget {
@@ -479,10 +637,9 @@ class _MessageInput extends StatelessWidget {
   final bool isSending;
   final VoidCallback onSend;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       decoration: BoxDecoration(
         color: _c.bg.surface,

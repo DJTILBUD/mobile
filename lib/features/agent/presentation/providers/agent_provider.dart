@@ -176,6 +176,13 @@ final agentSessionProvider = StateNotifierProvider.autoDispose<
   (ref) => AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
 );
 
+// Non-autoDispose — persists between sheet openings so the analysis is not
+// regenerated every time the musician navigates away and comes back.
+final profileCoachSessionProvider =
+    StateNotifierProvider<AgentSessionNotifier, AgentState>(
+  (ref) => AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
+);
+
 // ── Context builders (pure functions, no providers needed) ────────────────────
 
 Map<String, dynamic> jobToContext(Job job) => {

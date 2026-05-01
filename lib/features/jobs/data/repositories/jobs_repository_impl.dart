@@ -173,9 +173,31 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
+  Future<void> setJobPlannedContact(int jobId, String date) async {
+    try {
+      await _datasource.setJobPlannedContact(jobId, date);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
   Future<void> markExtJobCustomerContacted(int extJobId) async {
     try {
       await _datasource.markExtJobCustomerContacted(extJobId);
+    } on AppException {
+      rethrow;
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> setExtJobPlannedContact(int extJobId, String date) async {
+    try {
+      await _datasource.setExtJobPlannedContact(extJobId, date);
+    } on AppException {
+      rethrow;
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -185,6 +207,15 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<void> markServiceOfferCustomerContacted(int offerId) async {
     try {
       await _datasource.markServiceOfferCustomerContacted(offerId);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> setServiceOfferPlannedContact(int offerId, String date) async {
+    try {
+      await _datasource.setServiceOfferPlannedContact(offerId, date);
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -212,6 +243,8 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<void> markExtJobReadyForBilling(int extJobId) async {
     try {
       await _datasource.markExtJobReadyForBilling(extJobId);
+    } on AppException {
+      rethrow;
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -239,6 +272,8 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<void> confirmExtJobDjReady(int extJobId) async {
     try {
       await _datasource.confirmExtJobDjReady(extJobId);
+    } on AppException {
+      rethrow;
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }

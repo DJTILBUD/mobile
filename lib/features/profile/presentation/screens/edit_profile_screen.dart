@@ -7,9 +7,8 @@ import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-
-const _c = lightColors;
 
 const _allRegions = [
   'Hovedstaden', 'Bornholm', 'Fyn', 'Nordjylland', 'Nordsjælland',
@@ -42,6 +41,7 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
+  DSColors get _c => DSTheme.of(context);
   final _formKey = GlobalKey<FormState>();
   bool _saving = false;
 
@@ -67,6 +67,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String _instrument = '';
 
   bool _initialized = false;
+  String _initialFingerprint = '';
+
+  String _fingerprint() => [
+        _fullNameCtrl.text, _djNameCtrl.text, _phoneCtrl.text, _aboutCtrl.text,
+        _priceExtraHourCtrl.text, _soundcloudCtrl.text,
+        _hourlyRateCtrl.text, _minBookingCtrl.text, _experienceCtrl.text,
+        ..._selectedRegions, ..._selectedGenres, ..._venues,
+        _canPlayWithSax.toString(), _allowPublicProfile.toString(),
+        _djSaxCollaboration ?? '',
+      ].join('|');
+
+  bool get _isDirty => _initialized && _fingerprint() != _initialFingerprint;
+
+  Future<void> _onPopInvoked(bool didPop, _) async {
+    if (didPop) return;
+    final confirmed = await showUnsavedChangesDialog(context);
+    if (confirmed == true && mounted) Navigator.of(context).pop();
+  }
 
   @override
   void dispose() {
@@ -97,6 +115,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _canPlayWithSax = p.canPlayWithSax;
     _allowPublicProfile = p.allowPublicDjProfile;
     _venues = List.of(p.venuesAndEvents ?? []);
+    _initialFingerprint = _fingerprint();
+    for (final c in [_fullNameCtrl, _djNameCtrl, _phoneCtrl, _aboutCtrl, _priceExtraHourCtrl, _soundcloudCtrl]) {
+      c.addListener(() => setState(() {}));
+    }
   }
 
   void _initMusician(MusicianProfile p) {
@@ -113,6 +135,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _selectedGenres = List.of(p.genres ?? []);
     _djSaxCollaboration = p.djSaxCollaboration;
     _venues = List.of(p.venuesAndEvents ?? []);
+    _initialFingerprint = _fingerprint();
+    for (final c in [_fullNameCtrl, _phoneCtrl, _aboutCtrl, _hourlyRateCtrl, _minBookingCtrl, _experienceCtrl]) {
+      c.addListener(() => setState(() {}));
+    }
   }
 
   Future<void> _save() async {
@@ -170,10 +196,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final isDj = widget.role == MusicianRole.dj;
     final profileAsync = isDj ? ref.watch(djProfileProvider) : ref.watch(musicianProfileProvider);
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: _onPopInvoked,
+      child: Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
         title: Text('Profil oplysninger', style: DSTextStyle.headingSm.copyWith(color: _c.text.primary)),
@@ -240,7 +270,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(LucideIcons.sparkle,
+                          Icon(LucideIcons.sparkles,
                               size: 13, color: _c.brand.primaryActive),
                           const SizedBox(width: DSSpacing.s1),
                           Text(
@@ -304,13 +334,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   DSSwitch(
                     label: 'Kan spille med saxofonist',
                     value: _canPlayWithSax,
-                    onChanged: (v) => setState(() => _canPlayWithSax = v),
-                  ),
-                  const SizedBox(height: DSSpacing.s2),
-                  DSSwitch(
-                    label: 'Offentlig DJ profil',
-                    value: _allowPublicProfile,
-                    onChanged: (v) => setState(() => _allowPublicProfile = v),
+                    onChanged: (v) {
+                      setState(() => _canPlayWithSax = v);
+                    },
                   ),
                 ],
 
@@ -333,6 +359,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           );
         },
       ),
+      ), // PopScope
     );
   }
 
@@ -390,18 +417,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             return DSChip(
               label: opt,
               selected: isSelected,
-              onTap: () => setState(() {
-                if (singleSelect) {
-                  selected.clear();
-                  if (!isSelected) selected.add(opt);
-                } else {
-                  if (isSelected) {
-                    selected.remove(opt);
+              onTap: () {
+                setState(() {
+                  if (singleSelect) {
+                    selected.clear();
+                    if (!isSelected) selected.add(opt);
                   } else {
-                    selected.add(opt);
+                    if (isSelected) {
+                      selected.remove(opt);
+                    } else {
+                      selected.add(opt);
+                    }
                   }
-                }
-              }),
+                });
+              },
             );
           }).toList(),
         ),
@@ -421,7 +450,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           children: _venues
               .map((v) => DSChip(
                     label: v,
-                    onDelete: () => setState(() => _venues.remove(v)),
+                    onDelete: () {
+                      setState(() => _venues.remove(v));
+                    },
                   ))
               .toList(),
         ),
@@ -464,7 +495,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       items: _djSaxOptions
           .map((o) => DSDropdownItem(value: o.$1, label: o.$2))
           .toList(),
-      onChanged: (v) => setState(() => _djSaxCollaboration = v),
+      onChanged: (v) {
+        setState(() => _djSaxCollaboration = v);
+      },
     );
   }
 }

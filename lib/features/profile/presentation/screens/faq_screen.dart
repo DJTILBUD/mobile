@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-
-const _c = lightColors;
 
 class _FaqItem {
   const _FaqItem(this.question, this.answer);
@@ -16,7 +15,9 @@ class _FaqCategory {
   final List<_FaqItem> items;
 }
 
-const _faqData = [
+// ─── DJ FAQ ───────────────────────────────────────────────────────────────────
+
+const _djFaqData = [
   _FaqCategory('Ude hos kunden', [
     _FaqItem(
       'Skal jeg have udstyr med?',
@@ -95,11 +96,104 @@ const _faqData = [
   ]),
 ];
 
+// ─── Instrumentalist FAQ ──────────────────────────────────────────────────────
+
+const _instrumentalistFaqData = [
+  _FaqCategory('Ude hos kunden', [
+    _FaqItem(
+      'Skal jeg have udstyr med?',
+      'Du skal blot medbringe dit instrument. Lydudstyret (højttalere, mixer m.m.) håndteres af DJ\'en. Sørg for at koordinere med DJ\'en inden arrangementet, så I er enige om lydopsætning og lydcheck.',
+    ),
+    _FaqItem(
+      'Hvornår skal jeg møde op?',
+      'Du skal møde op i god tid til at varme op og lave et kort lydcheck med DJ\'en. Når du har vundet jobbet og kontakter kunden, bør du også aftale mødetidspunkt med den tilknyttede DJ, så I er koordinerede på dagen.',
+    ),
+    _FaqItem(
+      'Kan jeg spille flere timer på aftenen?',
+      'Ja, hvis kunden ønsker ekstra spilletid, skal du straks give DJTILBUD besked. Kunden betaler ikke på selve aftenen — vi fakturerer meromkostningen bagefter og udbetaler din andel til dig.',
+    ),
+    _FaqItem(
+      'Hvad hvis jeg spiller alene uden DJ?',
+      'Nogle jobs er mærket "Kun saxofonist" — her spiller du solo uden en DJ. I disse tilfælde bør du afklare med kunden, om der er et lydanlæg til stede, eller om du selv skal sørge for forstærkning.',
+    ),
+    _FaqItem(
+      'Hvilke vilkår gælder for kunden?',
+      'Kunden accepterer DJTILBUD\'s handelsbetingelser, når de indsender deres arrangement.',
+    ),
+  ]),
+  _FaqCategory('Betaling', [
+    _FaqItem(
+      'Hvornår bliver jeg betalt?',
+      'Du modtager betaling som B-honorar i begyndelsen af måneden efter jobbet er blevet afholdt. Lønperioden løber fra d. 21. til d. 20. i hver måned.\n\nEksempel 1: Hvis du spiller et job d. 20. januar, modtager du pengene d. 1. februar.\n\nEksempel 2: Hvis du derimod spiller d. 21. januar, er vi overgået til næste lønperiode, og din betaling bliver først udbetalt ved næste lønperiode, d. 1. marts.',
+    ),
+    _FaqItem(
+      'Hvad tjener jeg per job?',
+      'Din betaling er fastsat af systemet ud fra det antal spilletimer, kunden har ønsket. Du kan se dit honorar direkte på jobkortet, inden du afgiver et tilbud. Beløbet stiger lidt, hvis du byder inden for de første dage efter jobbet er oprettet.',
+    ),
+    _FaqItem(
+      'Må jeg modtage betaling kontant?',
+      'Nej, du må ikke modtage betaling kontant eller ved direkte overførsel fra kunden. Al fakturering og betaling sker gennem DJTILBUD. Hvis kunden tilbyder kontant betaling, skal du takke nej og henvise dem til at betale via DJTILBUD.',
+    ),
+    _FaqItem(
+      'Er der et gebyr for at være på DJTILBUD?',
+      'Nej, vores model er "no cure, no pay" — du betaler ingenting, medmindre du vinder et job og spiller det.',
+    ),
+    _FaqItem(
+      'Får jeg kørselspenge?',
+      'Nej. Transport er inkluderet i dit honorar, så tag afstand til jobbet i betragtning, når du vælger hvilke jobs du vil byde på.',
+    ),
+    _FaqItem(
+      'Hvad gør jeg, hvis kunden aflyser?',
+      'Giv os straks besked på arthur@djtilbud.dk med en skriftlig aflysning fra kunden. Aflyses jobbet under 7 dage før, sikrer vi dig 50% af dit honorar.',
+    ),
+  ]),
+  _FaqCategory('Budprocessen på DJTILBUD', [
+    _FaqItem(
+      'Kan jeg lade være med at byde på et job?',
+      'Ja, du bestemmer selv, hvilke jobs du vil byde på. Vi opfordrer dig til at byde aktivt — og kontakter dig, hvis du over længere tid ikke har afgivet nogen bud.',
+    ),
+    _FaqItem(
+      'Hvad er min pris på et job?',
+      'Prisen er fastsat af systemet og beregnes automatisk ud fra det antal spilletimer, kunden har ønsket. Du sætter ikke prisen selv — den vises direkte på jobkortet, inden du byder.',
+    ),
+    _FaqItem(
+      'Hvordan fungerer budprocessen?',
+      'Når der oprettes et job med saxofonist i din region, modtager du en push-notifikation. Du kan derefter sende et tilbud ved at skrive en personlig besked til kunden.\n\nVigtig forskel fra DJs: kun én saxofonist kan byde på hvert job. Så snart én saxofonist har afgivet et tilbud, er jobbet markeret som "Optaget" for alle andre — det gælder om at reagere hurtigt.',
+    ),
+    _FaqItem(
+      'Hvad skal jeg skrive i mit tilbud?',
+      'Skriv en personlig og engageret besked, der fortæller kunden om din erfaring og hvorfor du er det rigtige valg til deres arrangement. Undlad at oplyse dit fulde navn, direkte kontaktoplysninger eller anden information, der gør det muligt for kunden at kontakte dig uden om platformen.',
+    ),
+    _FaqItem(
+      'Hvornår ved jeg, om jeg har vundet jobbet?',
+      'Du får besked via email og push-notifikation, når du har vundet et job. Herefter skal du kontakte kunden hurtigst muligt.',
+    ),
+  ]),
+  _FaqCategory('Når du har vundet et job', [
+    _FaqItem(
+      'Skal jeg kontakte kunden, når jeg har vundet?',
+      'Ja, du skal kontakte kunden, så snart du har vundet jobbet. Vi anbefaler, at du ringer — og sender en SMS, hvis de ikke tager telefonen.',
+    ),
+    _FaqItem(
+      'Hvordan skal jeg kontakte kunden?',
+      'Ring til kunden. Svar de ikke, send en SMS og opfordr til et opkald. Ingen svar efter 3-4 forsøg inden for en uge? Skriv til arthur@djtilbud.dk.',
+    ),
+  ]),
+];
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 class FaqScreen extends StatelessWidget {
-  const FaqScreen({super.key});
+  const FaqScreen({super.key, required this.role});
+
+  final MusicianRole role;
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
+    final faqData =
+        role == MusicianRole.dj ? _djFaqData : _instrumentalistFaqData;
+
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
@@ -123,18 +217,21 @@ class FaqScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Icon(LucideIcons.bookOpen, size: 40, color: _c.brand.primaryActive),
+                Icon(LucideIcons.bookOpen,
+                    size: 40, color: _c.brand.primaryActive),
                 const SizedBox(height: DSSpacing.s3),
                 Text(
                   'Ofte stillede spørgsmål',
-                  style: DSTextStyle.headingMd.copyWith(fontWeight: FontWeight.w700, color: _c.text.primary),
+                  style: DSTextStyle.headingMd.copyWith(
+                      fontWeight: FontWeight.w700, color: _c.text.primary),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: DSSpacing.s2),
                 Text(
                   'Herunder finder du svar på de mest stillede spørgsmål. '
                   'Kan du ikke finde svar, skriv til arthur@djtilbud.dk',
-                  style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary, height: 1.5),
+                  style: DSTextStyle.labelMd
+                      .copyWith(color: _c.text.secondary, height: 1.5),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -143,10 +240,13 @@ class FaqScreen extends StatelessWidget {
           const SizedBox(height: DSSpacing.s6),
 
           // FAQ categories
-          for (final category in _faqData) ...[
+          for (final category in faqData) ...[
             Text(
               category.category,
-              style: DSTextStyle.headingSm.copyWith(fontSize: 15, fontWeight: FontWeight.w700, color: _c.text.primary),
+              style: DSTextStyle.headingSm.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: _c.text.primary),
             ),
             const SizedBox(height: DSSpacing.s2),
             ...category.items.map((item) => _FaqTile(item: item)),
@@ -167,13 +267,15 @@ class FaqScreen extends StatelessWidget {
               children: [
                 Text(
                   'Har du stadig spørgsmål?',
-                  style: DSTextStyle.headingSm.copyWith(fontWeight: FontWeight.w700, color: _c.text.primary),
+                  style: DSTextStyle.headingSm.copyWith(
+                      fontWeight: FontWeight.w700, color: _c.text.primary),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: DSSpacing.s2),
                 Text(
                   'Vi sidder klar til at hjælpe.',
-                  style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                  style:
+                      DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: DSSpacing.s4),
@@ -206,6 +308,7 @@ class _FaqTileState extends State<_FaqTile> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
       child: Container(
@@ -226,7 +329,9 @@ class _FaqTileState extends State<_FaqTile> {
                   Expanded(
                     child: Text(
                       widget.item.question,
-                      style: DSTextStyle.labelLg.copyWith(fontWeight: FontWeight.w600, color: _c.text.primary),
+                      style: DSTextStyle.labelLg.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: _c.text.primary),
                     ),
                   ),
                   const SizedBox(width: DSSpacing.s2),
@@ -235,7 +340,8 @@ class _FaqTileState extends State<_FaqTile> {
                     height: 22,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: _c.brand.primaryActive, width: 1.5),
+                      border: Border.all(
+                          color: _c.brand.primaryActive, width: 1.5),
                     ),
                     child: Icon(
                       _expanded ? LucideIcons.minus : LucideIcons.plus,
@@ -249,7 +355,8 @@ class _FaqTileState extends State<_FaqTile> {
                 const SizedBox(height: DSSpacing.s3),
                 Text(
                   widget.item.answer,
-                  style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary, height: 1.6),
+                  style: DSTextStyle.labelMd
+                      .copyWith(color: _c.text.secondary, height: 1.6),
                 ),
               ],
             ],

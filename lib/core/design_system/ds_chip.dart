@@ -53,9 +53,10 @@ class DSChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DSTheme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bg = tinted
-        ? c.brand.primary.withValues(alpha: 0.15)
+        ? c.brand.primary.withValues(alpha: isDark ? 0.25 : 0.15)
         : !enabled
             ? c.bg.inputBg
             : selected

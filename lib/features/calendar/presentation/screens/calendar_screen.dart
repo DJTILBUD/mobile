@@ -10,8 +10,6 @@ import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_he
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-const _c = lightColors;
-
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key, required this.role});
 
@@ -70,13 +68,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               e.date.day == _selectedDay!.day)
           .toList();
     }
+    final today = DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
     return all
-        .where((e) => e.date.year == _month.year && e.date.month == _month.month)
-        .toList();
+        .where((e) => !e.date.isBefore(startOfToday))
+        .toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
   }
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final eventsAsync = ref.watch(calendarEventsProvider(widget.role));
     final isDj = widget.role == MusicianRole.dj;
 
@@ -141,6 +143,7 @@ class _CalendarBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -169,7 +172,7 @@ class _CalendarBody extends StatelessWidget {
                     Text(
                       selectedDay != null
                           ? _formatSelectedDay(selectedDay!)
-                          : _formatMonth(month),
+                          : 'Kommende gigs',
                       style: DSTextStyle.labelLg.copyWith(
                         fontWeight: FontWeight.w600,
                         color: _c.text.primary,
@@ -235,6 +238,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -259,6 +263,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,

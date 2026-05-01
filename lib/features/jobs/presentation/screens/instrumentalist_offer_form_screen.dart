@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +9,7 @@ import 'package:dj_tilbud_app/features/agent/presentation/widgets/agent_ai_butto
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 
 class InstrumentalistOfferFormScreen extends ConsumerStatefulWidget {
@@ -25,34 +25,30 @@ class InstrumentalistOfferFormScreen extends ConsumerStatefulWidget {
 class _InstrumentalistOfferFormScreenState
     extends ConsumerState<InstrumentalistOfferFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _priceController = TextEditingController();
   final _salesPitchController = TextEditingController();
   int _pitchLength = 0;
 
-  static const _c = lightColors;
+  bool get _isDirty => _salesPitchController.text.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
-    // Pre-fill with the time-based musician payout price
-    final autoPrice = calculateMusicianOfferPrice(
-      widget.job.requestedMusicianHours,
-      widget.job.createdAt,
-    );
-    _priceController.text = autoPrice.toString();
     _salesPitchController.addListener(() {
       setState(() => _pitchLength = _salesPitchController.text.length);
     });
   }
 
+  Future<void> _onPopInvoked(bool didPop, _) async {
+    if (didPop) return;
+    final confirmed = await showUnsavedChangesDialog(context);
+    if (confirmed == true && mounted) Navigator.of(context).pop();
+  }
+
   @override
   void dispose() {
-    _priceController.dispose();
     _salesPitchController.dispose();
     super.dispose();
   }
-
-  int get _price => int.tryParse(_priceController.text) ?? 0;
 
   String _locationDisplay(String city, String region) {
     final parts = [city, region].where((s) => s.isNotEmpty).toList();
@@ -64,11 +60,12 @@ class _InstrumentalistOfferFormScreenState
 
     final job = widget.job;
     final customerPrice = calculateCustomerMusicianPrice(job.requestedMusicianHours);
+    final musicianPayout = calculateMusicianOfferPrice(job.requestedMusicianHours, job.createdAt);
     final success = await ref.read(createServiceOfferProvider.notifier).submit(
           jobId: job.isExtJob ? null : job.id,
           extJobId: job.isExtJob ? job.extJobId : null,
-          priceDkk: customerPrice,       // what the customer pays
-          musicianPayoutDkk: _price,     // what the musician earns
+          priceDkk: customerPrice,
+          musicianPayoutDkk: musicianPayout,
           salesPitch: _salesPitchController.text.trim(),
           instrument: 'saxophone',
         );
@@ -85,14 +82,21 @@ class _InstrumentalistOfferFormScreenState
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final job = widget.job;
     final dateStr = DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);
     final createState = ref.watch(createServiceOfferProvider);
     final isLoading = createState is AsyncLoading;
     final conflictAsync = ref.watch(dateConflictProvider(job.date));
     final hasConflict = conflictAsync.valueOrNull == true;
+    final hasActiveOffer = job.hasActiveOffer;
+    final musicianPayout = calculateMusicianOfferPrice(job.requestedMusicianHours, job.createdAt);
+    String fmt(int n) => NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: _onPopInvoked,
+      child: Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
         title: Row(
@@ -105,7 +109,7 @@ class _InstrumentalistOfferFormScreenState
               ),
             ),
             const SizedBox(width: 8),
-            JobIdBadge(id: job.id),
+            JobIdBadge(id: job.isExtJob ? (job.extJobId ?? job.id) : job.id, isExtJob: job.isExtJob),
             const SizedBox(width: 8),
           ],
         ),
@@ -117,14 +121,51 @@ class _InstrumentalistOfferFormScreenState
         child: ListView(
           padding: const EdgeInsets.all(DSSpacing.s4),
           children: [
+            // Taken by another musician
+            if (hasActiveOffer) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(DSSpacing.s4),
+                decoration: BoxDecoration(
+                  color: _c.state.warning.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(DSRadius.md),
+                  border: Border.all(color: _c.state.warning.withValues(alpha: 0.55)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(LucideIcons.alertTriangle, size: 16, color: _c.state.warning),
+                        const SizedBox(width: DSSpacing.s2),
+                        Text(
+                          'Jobbet er desværre optaget',
+                          style: DSTextStyle.headingSm.copyWith(
+                            color: _c.text.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: DSSpacing.s2),
+                    Text(
+                      'En anden saxofonist har allerede afgivet et aktivt tilbud på dette job. Skulle tilbuddet blive trukket tilbage, vil jobbet automatisk blive tilgængeligt igen.',
+                      style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: DSSpacing.s4),
+            ],
+
             // Date conflict warning
-            if (hasConflict) ...[
+            if (!hasActiveOffer && hasConflict) ...[
               Container(
                 padding: const EdgeInsets.all(DSSpacing.s3),
                 decoration: BoxDecoration(
-                  color: _c.state.danger.withValues(alpha: 0.1),
+                  color: _c.state.danger.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(DSRadius.sm),
-                  border: Border.all(color: _c.state.danger.withValues(alpha: 0.4)),
+                  border: Border.all(color: _c.state.danger.withValues(alpha: 0.55)),
                 ),
                 child: Row(
                   children: [
@@ -158,7 +199,7 @@ class _InstrumentalistOfferFormScreenState
                         ),
                       ),
                       const SizedBox(width: 8),
-                      JobIdBadge(id: job.id),
+                      JobIdBadge(id: job.isExtJob ? (job.extJobId ?? job.id) : job.id, isExtJob: job.isExtJob),
                     ],
                   ),
                   const SizedBox(height: DSSpacing.s2),
@@ -181,68 +222,77 @@ class _InstrumentalistOfferFormScreenState
             ),
             const SizedBox(height: DSSpacing.s6),
 
-            DSInput(
-              label: 'Din pris',
-              hint: 'F.eks. 2500',
-              controller: _priceController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              suffixText: 'kr.',
-              validator: (v) {
-                final price = int.tryParse(v ?? '') ?? 0;
-                if (price <= 0) return 'Indtast en gyldig pris';
-                return null;
-              },
-            ),
-            const SizedBox(height: DSSpacing.s4),
+            if (!hasActiveOffer) ...[
+              // Locked price display
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pris for dette job',
+                    style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${fmt(musicianPayout)} kr.',
+                    style: DSTextStyle.headingLg.copyWith(
+                      color: _c.text.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: DSSpacing.s4),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Salgstale',
-                  style: DSTextStyle.labelLg.copyWith(color: _c.text.primary),
-                ),
-                AgentAiButton(
-                  job: widget.job,
-                  isDj: false,
-                  onDraftAccepted: (draft) {
-                    setState(() {
-                      _salesPitchController.text = draft;
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: DSSpacing.s2),
-            DSInput(
-              hint: 'Fortæl kunden om din erfaring, hvorfor du er den rette til jobbet...',
-              controller: _salesPitchController,
-              maxLines: 5,
-              maxLength: 450,
-              showCounter: true,
-              helperText: '$_pitchLength / 450',
-              textInputAction: TextInputAction.newline,
-              validator: (v) {
-                if (v == null || v.trim().length < 100) {
-                  return 'Salgstalen skal være mindst 100 tegn';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: DSSpacing.s6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Besked til kunden',
+                    style: DSTextStyle.labelLg.copyWith(color: _c.text.primary),
+                  ),
+                  AgentAiButton(
+                    job: widget.job,
+                    isDj: false,
+                    onDraftAccepted: (draft) {
+                      setState(() {
+                        _salesPitchController.text = draft;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: DSSpacing.s2),
+              DSInput(
+                hint: 'Fortæl kunden om din erfaring, hvorfor du er den rette til jobbet...',
+                controller: _salesPitchController,
+                maxLines: 5,
+                maxLength: 450,
+                showCounter: true,
+                helperText: '$_pitchLength / 450',
+                textInputAction: TextInputAction.newline,
+                validator: (v) {
+                  if (v == null || v.trim().length < 100) {
+                    return 'Beskeden skal være mindst 100 tegn';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: DSSpacing.s6),
+            ],
 
-            DSButton(
-              label: 'Send tilbud',
-              variant: DSButtonVariant.primary,
-              expand: true,
-              isLoading: isLoading,
-              onTap: (isLoading || hasConflict) ? null : _handleSubmit,
-            ),
+            if (!hasActiveOffer && !hasConflict)
+              DSButton(
+                label: 'Send tilbud',
+                variant: DSButtonVariant.primary,
+                expand: true,
+                isLoading: isLoading,
+                onTap: isLoading ? null : _handleSubmit,
+              ),
             const SizedBox(height: DSSpacing.s8),
           ],
         ),
       ),
+      ), // PopScope
     );
   }
 }
@@ -253,10 +303,9 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String text;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 15, color: _c.text.secondary),

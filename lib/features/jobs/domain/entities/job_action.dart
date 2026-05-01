@@ -17,6 +17,9 @@ enum JobActionType {
 
   /// Red — event is within 5 days, must confirm ready.
   confirmReady,
+
+  /// Red — musician_only ext job: customer contacted but invoice not yet sent.
+  readyForBilling,
 }
 
 // ─── DJ internal quotes ───────────────────────────────────────────────────────
@@ -47,7 +50,9 @@ extension DjQuoteAction on DjQuote {
     return null;
   }
 
-  bool get hasAction => pendingAction != null;
+  bool get hasAction =>
+      pendingAction != null &&
+      pendingAction != JobActionType.contactCustomerPlanned;
 }
 
 // ─── DJ external jobs ─────────────────────────────────────────────────────────
@@ -75,7 +80,9 @@ extension ExtJobAction on ExtJob {
     return null;
   }
 
-  bool get hasAction => pendingAction != null;
+  bool get hasAction =>
+      pendingAction != null &&
+      pendingAction != JobActionType.contactCustomerPlanned;
 }
 
 // ─── Musician service offers ──────────────────────────────────────────────────
@@ -98,6 +105,14 @@ extension ServiceOfferAction on ServiceOffer {
       return JobActionType.contactCustomer;
     }
 
+    // Step 1.5: musician_only ext job — customer contacted but not yet billed
+    if (customerContacted &&
+        isExtJob &&
+        job.roleType == 'musician_only' &&
+        job.status == JobStatus.customerContacted) {
+      return JobActionType.readyForBilling;
+    }
+
     if (musicianReadyConfirmedAt == null) {
       if (job.date.difference(DateTime.now()).inDays <= 5) {
         return JobActionType.confirmReady;
@@ -107,5 +122,7 @@ extension ServiceOfferAction on ServiceOffer {
     return null;
   }
 
-  bool get hasAction => pendingAction != null;
+  bool get hasAction =>
+      pendingAction != null &&
+      pendingAction != JobActionType.contactCustomerPlanned;
 }

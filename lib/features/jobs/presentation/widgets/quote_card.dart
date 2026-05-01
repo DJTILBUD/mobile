@@ -8,10 +8,11 @@ import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 
 class QuoteCard extends StatelessWidget {
-  const QuoteCard({super.key, required this.quote, this.onTap});
+  const QuoteCard({super.key, required this.quote, this.onTap, this.isPlayed = false});
 
   final DjQuote quote;
   final VoidCallback? onTap;
+  final bool isPlayed;
 
   /// Matches web app getCountdownTargetDate:
   /// If admin extended deadline, use that.
@@ -36,9 +37,9 @@ class QuoteCard extends StatelessWidget {
       QuoteStatus.lost || QuoteStatus.overwritten => c.text.muted,
     };
 
-    // Date block matches accent bar — lime for won
-    final dateBlockBg = accentColor;
-    final dateBlockFg = c.brand.onPrimary;
+    // Date block: muted grey for played jobs, accent colour otherwise
+    final dateBlockBg = isPlayed ? c.bg.inputBg : accentColor;
+    final dateBlockFg = isPlayed ? c.text.muted : c.brand.onPrimary;
 
     return GestureDetector(
       onTap: onTap,
@@ -151,6 +152,7 @@ class _DateBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final day = date.day.toString();
     final month = DateFormat('MMM', 'da_DK')
         .format(date)
@@ -214,6 +216,7 @@ class _MetaList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -241,6 +244,7 @@ class _MetaItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 13, color: c.text.muted),
@@ -270,6 +274,7 @@ class _BidRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final payout = (quote.priceDkk * 0.75).toInt();
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -341,6 +346,7 @@ class _CountdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final color = _isExpired
         ? c.state.danger
         : _isUrgent
@@ -359,7 +365,7 @@ class _CountdownRow extends StatelessWidget {
         Text(
           _label(),
           style: DSTextStyle.labelSm.copyWith(
-            color: color,
+            color: _isExpired ? color : _c.text.primary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -378,6 +384,7 @@ class _StatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final (label, color) = switch (quote.status) {
       QuoteStatus.won => ('Vundet', c.state.success),
       QuoteStatus.lost => ('Tabt', c.text.muted),
@@ -399,6 +406,7 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final (label, color, icon) = switch (action) {
       JobActionType.contactCustomer => (
           'Kontakt kunden nu',
@@ -419,6 +427,11 @@ class _ActionChip extends StatelessWidget {
           'Bekræft klar!',
           c.state.danger,
           LucideIcons.checkCircle,
+        ),
+      JobActionType.readyForBilling => (
+          'Send faktura',
+          c.state.danger,
+          LucideIcons.fileText,
         ),
     };
 

@@ -1,12 +1,29 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dj_tilbud_app/core/config/env_config.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 
 class ProfileRemoteDatasource {
   ProfileRemoteDatasource(this._client);
 
   final SupabaseClient _client;
+
+  String get _webAppBaseUrl {
+    String url = EnvConfig.webAppUrl;
+    if (EnvConfig.isLocal && Platform.isAndroid) {
+      url = url.replaceFirst('localhost', '10.0.2.2');
+    }
+    return url;
+  }
+
+  String get _accessToken {
+    final token = _client.auth.currentSession?.accessToken;
+    if (token == null) throw Exception('Not authenticated');
+    return token;
+  }
 
   // ── DJ Profile ──
 
@@ -128,17 +145,41 @@ class ProfileRemoteDatasource {
     required UserFileType type,
   }) async {
     final file = File(filePath);
-    final ext = filePath.split('.').last;
-    final storagePath = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    final fileName = filePath.split('/').last;
+    final contentType = _mimeType(filePath);
 
-    await _client.storage.from('user-files').upload(storagePath, file);
-    final url = _client.storage.from('user-files').getPublicUrl(storagePath);
+    // 1. Get a pre-signed S3 upload URL from the web app API
+    final signedUrlUri = Uri.parse(
+      '$_webAppBaseUrl/api/files/signed-url'
+      '?fileName=${Uri.encodeComponent(fileName)}'
+      '&contentType=${Uri.encodeComponent(contentType)}'
+      '&type=${Uri.encodeComponent(type.toDbString())}'
+      '&userId=${Uri.encodeComponent(userId)}',
+    );
+    final signedUrlRes = await http.get(signedUrlUri);
+    if (signedUrlRes.statusCode < 200 || signedUrlRes.statusCode >= 300) {
+      throw Exception('Could not get signed URL (${signedUrlRes.statusCode})');
+    }
+    final signedUrl = (jsonDecode(signedUrlRes.body) as Map<String, dynamic>)['url'] as String;
+    // The public URL is the signed URL without query params
+    final fileUrl = signedUrl.split('?').first;
 
+    // 2. Upload directly to S3
+    final uploadRes = await http.put(
+      Uri.parse(signedUrl),
+      headers: {'Content-Type': contentType},
+      body: await file.readAsBytes(),
+    );
+    if (uploadRes.statusCode < 200 || uploadRes.statusCode >= 300) {
+      throw Exception('S3 upload failed (${uploadRes.statusCode})');
+    }
+
+    // 3. Store metadata in UserFiles table
     return _client
         .from('UserFiles')
         .insert({
           'user_id': userId,
-          'url': url,
+          'url': fileUrl,
           'type': type.toDbString(),
         })
         .select()
@@ -146,7 +187,17 @@ class ProfileRemoteDatasource {
   }
 
   Future<void> deleteFile(int fileId) async {
-    await _client.from('UserFiles').delete().eq('id', fileId);
+    final res = await http.delete(
+      Uri.parse('$_webAppBaseUrl/api/files'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': _accessToken,
+      },
+      body: jsonEncode({'id': fileId}),
+    );
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('Delete failed (${res.statusCode}): ${res.body}');
+    }
   }
 
   // ── Standard Messages ──
@@ -246,5 +297,20 @@ class ProfileRemoteDatasource {
     final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
         '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+  }
+
+  static String _mimeType(String filePath) {
+    final ext = filePath.split('.').last.toLowerCase();
+    return switch (ext) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      'gif' => 'image/gif',
+      'webp' => 'image/webp',
+      'heic' => 'image/heic',
+      'mp4' => 'video/mp4',
+      'mov' => 'video/quicktime',
+      'avi' => 'video/x-msvideo',
+      _ => 'application/octet-stream',
+    };
   }
 }

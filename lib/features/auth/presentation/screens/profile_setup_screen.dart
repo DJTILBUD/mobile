@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dj_tilbud_app/core/config/role_cache.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
+import 'package:dj_tilbud_app/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
@@ -44,8 +46,7 @@ class ProfileSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
-  static const _c = lightColors;
-
+  DSColors get _c => DSTheme.of(context);
   MusicianRole? _selectedRole;
   bool _showForm = false;
   bool _saving = false;
@@ -63,11 +64,40 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   // DJ-only
   final _djNameCtrl = TextEditingController();
   final _priceExtraHourCtrl = TextEditingController();
+  bool _allowPublicDjProfile = true;
 
   // Musician-only
   String? _instrument;
   final _hourlyRateCtrl = TextEditingController();
   final _minBookingCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // A returning user whose role cache was cleared (e.g. cleared app data on iOS
+    // while session is still in Keychain) lands here. Detect any existing profile
+    // and navigate straight home so they don't see the setup form again.
+    _redirectIfProfileExists();
+  }
+
+  Future<void> _redirectIfProfileExists() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+    final ds = AuthRemoteDatasource(supabase);
+    final results = await Future.wait([
+      ds.hasProfileInTable('DjInfos', user.id),
+      ds.hasProfileInTable('Musicians', user.id),
+    ]);
+    if (!mounted) return;
+    if (results[0]) {
+      await RoleCache.save(MusicianRole.dj);
+      if (mounted) context.goNamed(AppRoutes.djHome);
+    } else if (results[1]) {
+      await RoleCache.save(MusicianRole.instrumentalist);
+      if (mounted) context.goNamed(AppRoutes.instrumentalistHome);
+    }
+    // No profile found → show the setup form (normal new-user flow)
+  }
 
   @override
   void dispose() {
@@ -85,6 +115,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedRegions.isEmpty) {
       setState(() => _errorMessage = 'Vælg mindst én region');
+      return;
+    }
+    if (_selectedRole == MusicianRole.instrumentalist && _instrument == null) {
+      setState(() => _errorMessage = 'Vælg venligst et instrument');
       return;
     }
 
@@ -108,8 +142,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           regions: _selectedRegions,
           genres: _selectedGenres,
           canPlayWithSax: false,
-          allowPublicDjProfile: true,
+          allowPublicDjProfile: _allowPublicDjProfile,
         ));
+        await RoleCache.save(MusicianRole.dj);
         if (mounted) context.goNamed(AppRoutes.djHome);
       } else {
         await repo.createMusicianProfile(
@@ -121,15 +156,17 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             hourlyRate: int.tryParse(_hourlyRateCtrl.text) ?? 0,
             minimumBookingRate: int.tryParse(_minBookingCtrl.text) ?? 0,
             regions: _selectedRegions,
+            aboutText: _aboutCtrl.text.trim().isEmpty ? null : _aboutCtrl.text.trim(),
             genres: _selectedGenres.isEmpty ? null : _selectedGenres,
           ),
           email: user.email ?? '',
         );
+        await RoleCache.save(MusicianRole.instrumentalist);
         if (mounted) context.goNamed(AppRoutes.instrumentalistHome);
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = 'Kunne ikke oprette profil. Prøv igen.');
+        setState(() => _errorMessage = 'Kunne ikke oprette profil: ${e.toString()}');
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -143,6 +180,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
@@ -215,7 +253,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             ),
             const SizedBox(height: DSSpacing.s4),
             _RoleCard(
-              icon: LucideIcons.mic,
+              icon: LucideIcons.music2,
               title: 'Musiker / Instrumentalist',
               subtitle: 'Jeg spiller et instrument (saxofon, violin...)',
               selected: _selectedRole == MusicianRole.instrumentalist,
@@ -267,7 +305,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             Container(
               padding: const EdgeInsets.all(DSSpacing.s3),
               decoration: BoxDecoration(
-                color: _c.state.danger.withValues(alpha: 0.1),
+                color: _c.state.danger.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(DSRadius.sm),
                 border: Border.all(color: _c.state.danger),
               ),
@@ -330,6 +368,28 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
             isDj ? _djGenres : _musicianGenres,
             _selectedGenres,
           ),
+
+          if (isDj) ...[
+            const SizedBox(height: DSSpacing.s6),
+            Text(
+              'Vis min DJ-profil på hjemmesiden',
+              style: DSTextStyle.labelLg.copyWith(
+                fontWeight: FontWeight.w600,
+                color: _c.text.primary,
+              ),
+            ),
+            const SizedBox(height: DSSpacing.s1),
+            Text(
+              'Gør din DJ-profil synlig på djtilbud.dk, så kunder kan booke dig direkte.',
+              style: DSTextStyle.bodySm.copyWith(color: _c.text.secondary, height: 1.4),
+            ),
+            const SizedBox(height: DSSpacing.s3),
+            DSSwitch(
+              label: 'Ja, gør min profil offentlig synlig',
+              value: _allowPublicDjProfile,
+              onChanged: (v) => setState(() => _allowPublicDjProfile = v),
+            ),
+          ],
 
           const SizedBox(height: DSSpacing.s8),
           DSButton(
@@ -439,10 +499,9 @@ class _RoleCard extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(

@@ -16,6 +16,7 @@ class JobCard extends StatelessWidget {
     this.isColliding = false,
     this.djTier,
     this.musicianPrice,
+    this.isMusicianView = false,
   });
 
   final Job job;
@@ -23,12 +24,24 @@ class JobCard extends StatelessWidget {
   final bool isColliding;
   final String? djTier;
   final int? musicianPrice;
+  final bool isMusicianView;
+
+  static String _roleLabel(Job job) {
+    if (!job.isExtJob) return 'DJ + Saxofonist';
+    return switch (job.roleType) {
+      'musician_only' => 'Kun saxofonist',
+      'dj_and_musician' => 'DJ + Saxofonist',
+      _ => 'DJ + Saxofonist',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = DSTheme.of(context);
     final isAnotherRound = job.status == JobStatus.anotherRound;
     final isHighSeason = job.quoteSendMode == 'first_quote_only';
+    final isTaken = isMusicianView && job.hasActiveOffer;
+    final isDateConflict = isMusicianView && job.hasDateConflict;
     final showBudgetIncrease = hasBTierBudgetIncreaseAfter24h(
       budget: job.budgetEnd ?? job.budgetStart,
       djTier: djTier,
@@ -37,18 +50,23 @@ class JobCard extends StatelessWidget {
     );
 
     // Left-edge accent colour — the only colour on the card
-    final accentColor = isColliding
+    final accentColor = isColliding || isDateConflict
         ? c.state.danger
-        : isAnotherRound
+        : isTaken
             ? c.state.warning
-            : c.brand.accent;
+            : isAnotherRound
+                ? c.state.warning
+                : c.brand.accent;
 
-    final hasChips = job.requestedSaxophonist || isHighSeason;
+    // For musician view: role badge always shows; for DJ view: sax/high-season chips
+    final hasChips = isMusicianView
+        ? true // role type badge always shown
+        : (job.requestedSaxophonist || isHighSeason || isColliding || isAnotherRound);
 
     return GestureDetector(
       onTap: isColliding ? null : onTap,
       child: Opacity(
-        opacity: isColliding ? 0.55 : 1.0,
+        opacity: isColliding || isDateConflict ? 0.55 : isTaken ? 0.80 : 1.0,
         child: Container(
           margin: const EdgeInsets.symmetric(
               horizontal: DSSpacing.s4, vertical: DSSpacing.s2),
@@ -95,9 +113,9 @@ class JobCard extends StatelessWidget {
                                           .copyWith(color: c.text.primary),
                                     ),
                                     const SizedBox(height: 3),
-                                    JobIdBadge(id: job.id),
+                                    JobIdBadge(id: job.isExtJob ? (job.extJobId ?? job.id) : job.id, isExtJob: job.isExtJob),
                                     const SizedBox(height: 4),
-                                    _MetaLine(job: job, colors: c),
+                                    _MetaLine(job: job, colors: c, isMusicianView: isMusicianView),
                                   ],
                                 ),
                               ),
@@ -115,6 +133,7 @@ class JobCard extends StatelessWidget {
                             job: job,
                             musicianPrice: musicianPrice,
                             showBudgetIncrease: showBudgetIncrease,
+                            djTier: djTier,
                             colors: c,
                           ),
                         ),
@@ -136,32 +155,26 @@ class JobCard extends StatelessWidget {
                                   DSStatusBadge(
                                       label: 'Ny runde',
                                       color: c.state.warning),
-                                if (job.requestedSaxophonist)
+                                if (isMusicianView)
+                                  DSStatusBadge(
+                                      label: _roleLabel(job),
+                                      color: c.state.info),
+                                if (isTaken)
+                                  DSStatusBadge(
+                                      label: 'Optaget – kan ikke byde',
+                                      color: c.state.warning),
+                                if (isDateConflict)
+                                  DSStatusBadge(
+                                      label: 'Dato optaget',
+                                      color: c.state.danger),
+                                if (!isMusicianView && job.requestedSaxophonist)
                                   DSStatusBadge(
                                       label: 'Sax søges',
                                       color: c.state.info),
-                                if (isHighSeason)
+                                if (!isMusicianView && isHighSeason)
                                   DSStatusBadge(
                                       label: 'Højsæson',
                                       color: c.state.info),
-                              ],
-                            ),
-                          )
-                        else if (isColliding || isAnotherRound)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(
-                                DSSpacing.s4, DSSpacing.s3, DSSpacing.s4, 0),
-                            child: Wrap(
-                              spacing: 6,
-                              children: [
-                                if (isColliding)
-                                  DSStatusBadge(
-                                      label: 'Dato-konflikt',
-                                      color: c.state.danger),
-                                if (isAnotherRound)
-                                  DSStatusBadge(
-                                      label: 'Ny runde',
-                                      color: c.state.warning),
                               ],
                             ),
                           ),
@@ -246,9 +259,10 @@ class _DateBlock extends StatelessWidget {
 // ─── Meta Details ────────────────────────────────────────────────────────────
 
 class _MetaLine extends StatelessWidget {
-  const _MetaLine({required this.job, required this.colors});
+  const _MetaLine({required this.job, required this.colors, this.isMusicianView = false});
   final Job job;
   final DSColors colors;
+  final bool isMusicianView;
 
   @override
   Widget build(BuildContext context) {
@@ -258,7 +272,7 @@ class _MetaLine extends StatelessWidget {
       children: [
         _MetaItem(
           icon: LucideIcons.mapPin,
-          label: job.city,
+          label: job.isExtJob ? (job.city.isNotEmpty ? job.city : 'Lokation ikke angivet') : job.city,
           colors: c,
         ),
         const SizedBox(height: 3),
@@ -272,6 +286,22 @@ class _MetaLine extends StatelessWidget {
           _MetaItem(
             icon: LucideIcons.users,
             label: '${job.guestsAmount} gæster',
+            colors: c,
+          ),
+        ],
+        if (isMusicianView && job.musicianStartTime != null) ...[
+          const SizedBox(height: 3),
+          _MetaItem(
+            icon: LucideIcons.music,
+            label: 'Spillestart: ${job.musicianStartTime}',
+            colors: c,
+          ),
+        ],
+        if (isMusicianView && job.requestedMusicianHours != null && job.requestedMusicianHours! > 0) ...[
+          const SizedBox(height: 3),
+          _MetaItem(
+            icon: LucideIcons.hourglass,
+            label: '${job.requestedMusicianHours!.toStringAsFixed(job.requestedMusicianHours! % 1 == 0 ? 0 : 1)} timers spil',
             colors: c,
           ),
         ],
@@ -317,21 +347,42 @@ class _PriceRow extends StatelessWidget {
     required this.musicianPrice,
     required this.showBudgetIncrease,
     required this.colors,
+    this.djTier,
   });
 
   final Job job;
   final int? musicianPrice;
   final bool showBudgetIncrease;
   final DSColors colors;
+  final String? djTier;
 
   String get _price {
     if (musicianPrice != null) return '${_fmt(musicianPrice!)} kr.';
-    if (job.budgetStart == null) return 'Budget ikke angivet';
-    final start = _fmt(job.budgetStart!.toInt());
-    if (job.budgetEnd == null || job.budgetEnd == job.budgetStart) {
-      return '$start kr.';
+
+    final adjEnd = adjustBudgetForDjView(
+      budget: job.budgetEnd ?? job.budgetStart,
+      requestedSaxophonist: job.requestedSaxophonist,
+      requestedMusicianHours: job.requestedMusicianHours,
+      djTier: djTier,
+      maxBudget: job.budgetEnd,
+      jobCreatedAt: job.createdAt,
+    );
+    if (adjEnd == null) return 'Budget ikke angivet';
+
+    if (job.budgetStart != null && job.budgetStart != job.budgetEnd) {
+      final adjStart = adjustBudgetForDjView(
+        budget: job.budgetStart,
+        requestedSaxophonist: job.requestedSaxophonist,
+        requestedMusicianHours: job.requestedMusicianHours,
+        djTier: djTier,
+        maxBudget: job.budgetEnd,
+        jobCreatedAt: job.createdAt,
+      );
+      if (adjStart != null) {
+        return '${_fmt(adjStart.toInt())} – ${_fmt(adjEnd.toInt())} kr.';
+      }
     }
-    return '$start – ${_fmt(job.budgetEnd!.toInt())} kr.';
+    return '${_fmt(adjEnd.toInt())} kr.';
   }
 
   static String _fmt(int n) =>
@@ -385,7 +436,7 @@ class _ActionRow extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.sparkle,
+            Icon(LucideIcons.sparkles,
                 size: 14, color: c.brand.primaryActive),
             const SizedBox(width: 5),
             Text(

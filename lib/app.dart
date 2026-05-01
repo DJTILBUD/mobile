@@ -66,6 +66,45 @@ class _AuthNotifier extends ChangeNotifier {
 
 final _authNotifier = _AuthNotifier();
 
+String _defaultHomePath() {
+  final role = RoleCache.role;
+  if (role == MusicianRole.dj) return '/dj/home';
+  if (role == MusicianRole.instrumentalist) return '/instrumentalist/home';
+  return '/login';
+}
+
+class _MissingRouteDataScreen extends StatelessWidget {
+  const _MissingRouteDataScreen({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Mangler data')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Siden "$label" kunne ikke åbnes, fordi nødvendige data mangler.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => context.go(_defaultHomePath()),
+                child: const Text('Gå til forsiden'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/login',
@@ -82,9 +121,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         final role = RoleCache.role;
         if (role == MusicianRole.dj) return '/dj/home';
         if (role == MusicianRole.instrumentalist) return '/instrumentalist/home';
-        // No cached role — sign out and re-authenticate
-        supabase.auth.signOut();
-        return null;
+        // No cached role — could be a new user mid-setup, or a returning user
+        // whose cache was cleared. Send to profile-setup; the screen handles both.
+        return '/profile-setup';
       }
 
       return null;
@@ -188,7 +227,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/job-detail',
         name: AppRoutes.jobDetail,
         builder: (context, state) {
-          final job = state.extra as Job;
+          final job = state.extra;
+          if (job is! Job) {
+            return const _MissingRouteDataScreen(label: 'job-detaljer');
+          }
           return JobDetailScreen(job: job);
         },
       ),
@@ -196,7 +238,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/dj/quote-form',
         name: AppRoutes.djQuoteForm,
         builder: (context, state) {
-          final job = state.extra as Job;
+          final job = state.extra;
+          if (job is! Job) {
+            return const _MissingRouteDataScreen(label: 'tilbudsformular');
+          }
           return DjQuoteFormScreen(job: job);
         },
       ),
@@ -204,7 +249,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/instrumentalist/offer-form',
         name: AppRoutes.instrumentalistOfferForm,
         builder: (context, state) {
-          final job = state.extra as Job;
+          final job = state.extra;
+          if (job is! Job) {
+            return const _MissingRouteDataScreen(label: 'jobtilbudsformular');
+          }
           return InstrumentalistOfferFormScreen(job: job);
         },
       ),
@@ -212,7 +260,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/quote-detail',
         name: AppRoutes.quoteDetail,
         builder: (context, state) {
-          final quote = state.extra as DjQuote;
+          final quote = state.extra;
+          if (quote is! DjQuote) {
+            return const _MissingRouteDataScreen(label: 'tilbudsdetaljer');
+          }
           return QuoteDetailScreen(quote: quote);
         },
       ),
@@ -220,7 +271,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/service-offer-detail',
         name: AppRoutes.serviceOfferDetail,
         builder: (context, state) {
-          final offer = state.extra as ServiceOffer;
+          final offer = state.extra;
+          if (offer is! ServiceOffer) {
+            return const _MissingRouteDataScreen(label: 'service offer detaljer');
+          }
           return ServiceOfferDetailScreen(offer: offer);
         },
       ),
@@ -229,7 +283,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/ext-job-detail',
         name: AppRoutes.extJobDetail,
         builder: (context, state) {
-          final extJob = state.extra as ExtJob;
+          final extJob = state.extra;
+          if (extJob is! ExtJob) {
+            return const _MissingRouteDataScreen(label: 'eksternt job');
+          }
           return ExtJobDetailScreen(extJob: extJob);
         },
       ),
@@ -237,7 +294,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/conversation-detail',
         name: AppRoutes.conversationDetail,
         builder: (context, state) {
-          final conversation = state.extra as Conversation;
+          final conversation = state.extra;
+          if (conversation is! Conversation) {
+            return const _MissingRouteDataScreen(label: 'samtale');
+          }
           return ConversationDetailScreen(conversation: conversation);
         },
       ),
@@ -247,7 +307,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/edit-profile',
         name: AppRoutes.editProfile,
         builder: (context, state) {
-          final role = state.extra as MusicianRole;
+          final role = state.extra;
+          if (role is! MusicianRole) {
+            return const _MissingRouteDataScreen(label: 'rediger profil');
+          }
           return EditProfileScreen(role: role);
         },
       ),
@@ -255,7 +318,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/reviews',
         name: AppRoutes.reviews,
         builder: (context, state) {
-          final role = state.extra as MusicianRole;
+          final role = state.extra;
+          if (role is! MusicianRole) {
+            return const _MissingRouteDataScreen(label: 'anmeldelser');
+          }
           return ReviewsScreen(role: role);
         },
       ),
@@ -273,7 +339,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/payment',
         name: AppRoutes.payment,
         builder: (context, state) {
-          final role = state.extra as MusicianRole;
+          final role = state.extra;
+          if (role is! MusicianRole) {
+            return const _MissingRouteDataScreen(label: 'betaling');
+          }
           return PaymentScreen(role: role);
         },
       ),
@@ -281,7 +350,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/dj/job-filters',
         name: AppRoutes.djJobFilters,
         builder: (context, state) {
-          final djId = state.extra as String;
+          final djId = state.extra;
+          if (djId is! String) {
+            return const _MissingRouteDataScreen(label: 'jobfiltre');
+          }
           return DjJobFiltersScreen(djId: djId);
         },
       ),
@@ -309,7 +381,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/admin-messages',
         name: AppRoutes.adminMessages,
         builder: (context, state) {
-          final role = state.extra as MusicianRole;
+          final role = state.extra;
+          if (role is! MusicianRole) {
+            return const _MissingRouteDataScreen(label: 'adminbeskeder');
+          }
           return AdminMessagesScreen(role: role);
         },
       ),
@@ -321,7 +396,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/faq',
         name: AppRoutes.faq,
-        builder: (context, state) => const FaqScreen(),
+        builder: (context, state) => FaqScreen(role: state.extra as MusicianRole),
       ),
     ],
   );
@@ -345,8 +420,16 @@ class _AppState extends ConsumerState<App> {
       final router = ref.read(routerProvider);
       NotificationsService.setupNavigationHandlers(router);
       NotificationsService.handleInitialMessage(router);
-      // Show in-app banner when the app is in the foreground
+      // Show in-app banner when the app is in the foreground.
+      // Suppress chat_message notifications for the conversation already on screen.
       FirebaseMessaging.onMessage.listen((message) {
+        final type = message.data['type'] as String?;
+        if (type == 'chat_message') {
+          final convId = int.tryParse(
+              message.data['conversation_id']?.toString() ?? '');
+          final activeConvId = ref.read(activeConversationIdProvider);
+          if (convId != null && convId == activeConvId) return;
+        }
         ref.read(inAppNotificationProvider.notifier).state = message;
       });
     }

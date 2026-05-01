@@ -8,10 +8,9 @@ class EmptyJobsView extends StatelessWidget {
   final String message;
   final IconData? icon;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(DSSpacing.s8),

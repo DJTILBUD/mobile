@@ -51,15 +51,17 @@ int calculateMusicianOfferPrice(double? requestedHours, DateTime createdAt) {
 }
 
 DateTime _firstIncreaseTime(DateTime sentAt) {
-  final hour = sentAt.hour;
+  final local = sentAt.toLocal();
+  final hour = local.hour;
   if (hour < 8) {
-    return DateTime(sentAt.year, sentAt.month, sentAt.day, 15);
+    final target = local.add(const Duration(days: 3));
+    return DateTime(target.year, target.month, target.day, 15);
   } else if (hour < 20) {
-    final next = sentAt.add(const Duration(days: 1));
-    return DateTime(next.year, next.month, next.day, 8);
+    final target = local.add(const Duration(days: 3));
+    return DateTime(target.year, target.month, target.day, 8);
   } else {
-    final next = sentAt.add(const Duration(days: 1));
-    return DateTime(next.year, next.month, next.day, 15);
+    final target = local.add(const Duration(days: 3));
+    return DateTime(target.year, target.month, target.day, 15);
   }
 }
 

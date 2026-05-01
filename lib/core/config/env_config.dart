@@ -19,7 +19,7 @@ class EnvConfig {
   }
 
   static Future<String> _resolveEnv() async {
-    if (!kDebugMode) return 'dev';
+    if (!kDebugMode) return 'prod';
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_prefKey) ??
         const String.fromEnvironment('ENV', defaultValue: 'local');
@@ -34,6 +34,7 @@ class EnvConfig {
   static String get env => dotenv.get('ENV', fallback: 'local');
   static String get supabaseUrl => dotenv.get('SUPABASE_URL');
   static String get supabaseAnonKey => dotenv.get('SUPABASE_ANON_KEY');
+  static String get webAppUrl => dotenv.get('WEB_APP_URL');
 
   static bool get isLocal => env == 'local';
   static bool get isDev => env == 'dev';

@@ -5,9 +5,8 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/payment_info.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-
-const _c = lightColors;
 
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key, required this.role});
@@ -22,6 +21,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _saving = false;
   bool _initialized = false;
+  String _initialFingerprint = '';
 
   PaymentType _paymentType = PaymentType.invoice;
   final _cprCtrl = TextEditingController();
@@ -40,16 +40,38 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     super.dispose();
   }
 
+  String _fingerprint() => [
+        _paymentType.name,
+        _cprCtrl.text,
+        _regNumCtrl.text,
+        _accountCtrl.text,
+        _streetCtrl.text,
+        _cityCtrl.text,
+      ].join('|');
+
+  bool get _isDirty => _initialized && _fingerprint() != _initialFingerprint;
+
+  Future<void> _onPopInvoked(bool didPop, _) async {
+    if (didPop) return;
+    final confirmed = await showUnsavedChangesDialog(context);
+    if (confirmed == true && mounted) Navigator.of(context).pop();
+  }
+
   void _initFromData(PaymentInfo? info) {
     if (_initialized) return;
     _initialized = true;
-    if (info == null) return;
-    _paymentType = info.payment;
-    _cprCtrl.text = info.cpr ?? '';
-    _regNumCtrl.text = info.registrationNumber?.toString() ?? '';
-    _accountCtrl.text = info.accountNumber ?? '';
-    _streetCtrl.text = info.street ?? '';
-    _cityCtrl.text = info.cityPostalCode ?? '';
+    if (info != null) {
+      _paymentType = info.payment;
+      _cprCtrl.text = info.cpr ?? '';
+      _regNumCtrl.text = info.registrationNumber?.toString() ?? '';
+      _accountCtrl.text = info.accountNumber ?? '';
+      _streetCtrl.text = info.street ?? '';
+      _cityCtrl.text = info.cityPostalCode ?? '';
+    }
+    _initialFingerprint = _fingerprint();
+    for (final c in [_cprCtrl, _regNumCtrl, _accountCtrl, _streetCtrl, _cityCtrl]) {
+      c.addListener(() => setState(() {}));
+    }
   }
 
   Future<void> _save() async {
@@ -85,10 +107,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final isDj = widget.role == MusicianRole.dj;
     final paymentAsync = isDj ? ref.watch(djPaymentInfoProvider) : ref.watch(musicianPaymentInfoProvider);
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: _onPopInvoked,
+      child: Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
         title: Text('Betalingsoplysninger', style: DSTextStyle.headingSm.copyWith(color: _c.text.primary)),
@@ -110,7 +136,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                 const SizedBox(height: DSSpacing.s2),
                 _PaymentTypeSelector(
                   value: _paymentType,
-                  onChanged: (v) => setState(() => _paymentType = v),
+                  onChanged: (v) {
+                    setState(() => _paymentType = v);
+                  },
                 ),
                 const SizedBox(height: DSSpacing.s6),
 
@@ -118,9 +146,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   Container(
                     padding: const EdgeInsets.all(DSSpacing.s4),
                     decoration: BoxDecoration(
-                      color: _c.state.info.withValues(alpha: 0.08),
+                      color: _c.state.info.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(DSRadius.md),
-                      border: Border.all(color: _c.state.info.withValues(alpha: 0.2)),
+                      border: Border.all(color: _c.state.info.withValues(alpha: 0.45)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,9 +172,9 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     padding: const EdgeInsets.all(DSSpacing.s3),
                     margin: const EdgeInsets.only(bottom: DSSpacing.s4),
                     decoration: BoxDecoration(
-                      color: _c.state.warning.withValues(alpha: 0.08),
+                      color: _c.state.warning.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(DSRadius.sm),
-                      border: Border.all(color: _c.state.warning.withValues(alpha: 0.2)),
+                      border: Border.all(color: _c.state.warning.withValues(alpha: 0.50)),
                     ),
                     child: Row(
                       children: [
@@ -208,6 +236,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           );
         },
       ),
+      ), // PopScope
     );
   }
 }
@@ -220,6 +249,7 @@ class _PaymentTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       children: [
         Expanded(child: _TypeCard(
@@ -250,6 +280,7 @@ class _TypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(

@@ -10,6 +10,7 @@ class SkeletonCard extends StatefulWidget {
 
 class _SkeletonCardState extends State<SkeletonCard>
     with SingleTickerProviderStateMixin {
+  DSColors get _c => DSTheme.of(context);
   late final AnimationController _controller;
 
   @override
@@ -29,6 +30,7 @@ class _SkeletonCardState extends State<SkeletonCard>
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -57,9 +59,9 @@ class _SkeletonCardState extends State<SkeletonCard>
         margin: const EdgeInsets.symmetric(horizontal: DSSpacing.s4, vertical: 6),
         padding: const EdgeInsets.all(DSSpacing.s4),
         decoration: BoxDecoration(
-          color: lightColors.bg.surface,
+          color: _c.bg.surface,
           borderRadius: BorderRadius.circular(DSRadius.md),
-          border: Border.all(color: lightColors.border.subtle),
+          border: Border.all(color: _c.border.subtle),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,7 +109,7 @@ class _SkeletonCardState extends State<SkeletonCard>
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: lightColors.bg.canvas,
+        color: _c.bg.canvas,
         borderRadius: circular ? null : BorderRadius.circular(radius),
         shape: circular ? BoxShape.circle : BoxShape.rectangle,
       ),
@@ -122,6 +124,7 @@ class SkeletonListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: DSSpacing.s3),
       physics: const NeverScrollableScrollPhysics(),

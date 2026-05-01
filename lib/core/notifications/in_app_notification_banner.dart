@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dj_tilbud_app/app.dart' show routerProvider;
 import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 import 'package:dj_tilbud_app/core/notifications/in_app_notification_provider.dart';
 import 'package:dj_tilbud_app/core/notifications/notifications_service.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 /// Animated top banner shown when a foreground FCM notification arrives.
@@ -82,8 +82,8 @@ class _InAppNotificationBannerState
     if (!mounted) return;
     setState(() => _current = null);
     ref.read(inAppNotificationProvider.notifier).state = null;
-    if (message != null && mounted) {
-      final router = GoRouter.of(context);
+    if (message != null) {
+      final router = ref.read(routerProvider);
       await NotificationsService.navigateTo(message.data, router);
     }
   }
@@ -106,13 +106,15 @@ class _InAppNotificationBannerState
       top: 0,
       left: 0,
       right: 0,
-      child: SafeArea(
-        bottom: false,
-        child: SlideTransition(
-          position: _slide,
-          child: FadeTransition(
-            opacity: _fade,
-            child: Padding(
+      child: Material(
+        type: MaterialType.transparency,
+        child: SafeArea(
+          bottom: false,
+          child: SlideTransition(
+            position: _slide,
+            child: FadeTransition(
+              opacity: _fade,
+              child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: DSSpacing.s4,
                 vertical: DSSpacing.s2,
@@ -199,6 +201,7 @@ class _InAppNotificationBannerState
           ),
         ),
       ),
+    ),
     );
   }
 

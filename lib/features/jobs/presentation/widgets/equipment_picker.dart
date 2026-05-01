@@ -3,8 +3,6 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/utils/equipment_description.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-const _c = lightColors;
-
 /// Visual card-grid equipment picker — matches the web app's QuoteForm UI.
 ///
 /// Calls [onChanged] whenever the selection or speaker counts change.
@@ -35,6 +33,7 @@ class EquipmentPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -158,6 +157,7 @@ class _EquipmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -199,6 +199,7 @@ class _CounterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -240,6 +241,7 @@ class _CounterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final enabled = onTap != null;
     return GestureDetector(
       onTap: onTap,

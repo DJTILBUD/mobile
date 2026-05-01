@@ -16,9 +16,13 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/standard_message.
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/equipment_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 
 enum _JobAction { busy, notInterested }
+
+String _fmt(num n) =>
+    NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
 
 class DjQuoteFormScreen extends ConsumerStatefulWidget {
   const DjQuoteFormScreen({super.key, required this.job});
@@ -46,7 +50,12 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   bool _offersEarlySetup = false;
   bool _earlySetupHasPrice = false;
 
-  static const _c = lightColors;
+  bool get _isDirty =>
+      _priceController.text.isNotEmpty ||
+      _salesPitchController.text.isNotEmpty ||
+      _selectedEquipment.isNotEmpty ||
+      _noEquipmentSelected ||
+      _offersEarlySetup;
 
   @override
   void initState() {
@@ -54,6 +63,14 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     _salesPitchController.addListener(() {
       setState(() => _pitchLength = _salesPitchController.text.length);
     });
+    _priceController.addListener(() => setState(() {}));
+    _earlySetupPriceController.addListener(() => setState(() {}));
+  }
+
+  Future<void> _onPopInvoked(bool didPop, _) async {
+    if (didPop) return;
+    final confirmed = await showUnsavedChangesDialog(context);
+    if (confirmed == true && mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -69,7 +86,8 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       int.tryParse(_earlySetupPriceController.text) ?? 0;
   int get _totalPrice =>
       _price + (_offersEarlySetup && _earlySetupHasPrice ? _earlySetupPriceValue : 0);
-  int get _payout => (_totalPrice * 0.75).toInt();
+  double get _fee => getFeeForJob(widget.job.createdAt);
+  int get _payout => (_totalPrice * (1 - _fee)).toInt();
 
   double? _adjustedBudgetEnd(String? djTier) {
     final job = widget.job;
@@ -200,6 +218,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final job = widget.job;
     final dateStr = DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);
     final createState = ref.watch(createDjQuoteProvider);
@@ -211,7 +230,10 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     final withinFourHours = isWithinFirstFourHours(job.createdAt);
     final isBlocked = priceOverBudget && withinFourHours;
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_isDirty,
+      onPopInvokedWithResult: _onPopInvoked,
+      child: Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
         title: Row(
@@ -310,7 +332,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
                     const SizedBox(width: DSSpacing.s2),
                     Expanded(
                       child: Text(
-                        'Du bliver betalt: $_payout kr.  (25% servicegebyr)',
+                        'Du bliver betalt: ${_fmt(_payout)} kr.  (${(_fee * 100).toInt()}% servicegebyr)',
                         style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
                       ),
                     ),
@@ -338,22 +360,26 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
               topSpeakerCount: _topSpeakerCount,
               bottomSpeakerCount: _bottomSpeakerCount,
               noEquipmentSelected: _noEquipmentSelected,
-              onChanged: (selected, top, bund) => setState(() {
-                _selectedEquipment = selected;
-                _topSpeakerCount = top;
-                _bottomSpeakerCount = bund;
-                if (selected.isNotEmpty) {
-                  _noEquipmentSelected = false;
-                  _equipmentError = false;
-                }
-              }),
-              onNoEquipmentChanged: (value) => setState(() {
-                _noEquipmentSelected = value;
-                if (value) {
-                  _selectedEquipment = [];
-                  _equipmentError = false;
-                }
-              }),
+              onChanged: (selected, top, bund) {
+                setState(() {
+                  _selectedEquipment = selected;
+                  _topSpeakerCount = top;
+                  _bottomSpeakerCount = bund;
+                  if (selected.isNotEmpty) {
+                    _noEquipmentSelected = false;
+                    _equipmentError = false;
+                  }
+                });
+              },
+              onNoEquipmentChanged: (value) {
+                setState(() {
+                  _noEquipmentSelected = value;
+                  if (value) {
+                    _selectedEquipment = [];
+                    _equipmentError = false;
+                  }
+                });
+              },
             ),
             if (_equipmentError) ...[
               const SizedBox(height: DSSpacing.s1),
@@ -416,11 +442,15 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
               offersEarlySetup: _offersEarlySetup,
               earlySetupHasPrice: _earlySetupHasPrice,
               earlySetupPriceController: _earlySetupPriceController,
-              onOffersChanged: (v) => setState(() {
-                _offersEarlySetup = v;
-                if (!v) _earlySetupHasPrice = false;
-              }),
-              onHasPriceChanged: (v) => setState(() => _earlySetupHasPrice = v),
+              onOffersChanged: (v) {
+                setState(() {
+                  _offersEarlySetup = v;
+                  if (!v) _earlySetupHasPrice = false;
+                });
+              },
+              onHasPriceChanged: (v) {
+                setState(() => _earlySetupHasPrice = v);
+              },
             ),
             const SizedBox(height: DSSpacing.s6),
 
@@ -436,6 +466,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
           ],
         ),
       ),
+      ), // PopScope
     );
   }
 }
@@ -455,10 +486,9 @@ class _EarlySetupSection extends StatelessWidget {
   final ValueChanged<bool> onOffersChanged;
   final ValueChanged<bool> onHasPriceChanged;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.all(DSSpacing.s4),
       decoration: BoxDecoration(
@@ -538,10 +568,9 @@ class _JobSummary extends StatelessWidget {
   final Job job;
   final String dateStr;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return DSSurface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,10 +636,9 @@ class _BudgetWarningBanner extends StatelessWidget {
   final bool isBlocked;
   final DateTime jobCreatedAt;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final overPercent = ((price / adjustedBudget - 1) * 100).round();
     final color = isBlocked ? _c.state.danger : _c.state.warning;
     final icon = isBlocked ? LucideIcons.ban : LucideIcons.alertTriangle;
@@ -623,9 +651,9 @@ class _BudgetWarningBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(DSSpacing.s3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: color.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(DSRadius.md),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,7 +665,7 @@ class _BudgetWarningBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Dit bud er $overPercent% over kundens maksimale budget på ${adjustedBudget.toInt()} kr.',
+                  'Dit bud er $overPercent% over kundens maksimale budget på ${_fmt(adjustedBudget.toInt())} kr.',
                   style: DSTextStyle.labelMd.copyWith(color: _c.text.primary),
                 ),
                 if (isBlocked) ...[
@@ -662,10 +690,9 @@ class _SummaryRow extends StatelessWidget {
   final IconData icon;
   final String text;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 15, color: _c.text.secondary),
@@ -688,10 +715,9 @@ class _StandardMessagePickerButton extends ConsumerWidget {
 
   final ValueChanged<String> onSelected;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
     final messagesAsync = ref.watch(standardMessagesProvider);
     final messages = messagesAsync.valueOrNull ?? [];
     if (messages.isEmpty) return const SizedBox.shrink();
@@ -737,10 +763,9 @@ class _StandardMessagePickerSheet extends StatelessWidget {
   final List<StandardMessage> messages;
   final ValueChanged<String> onSelected;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       decoration: BoxDecoration(
         color: _c.bg.surface,
@@ -845,8 +870,6 @@ class _NotInterestedSheet extends StatefulWidget {
 }
 
 class _NotInterestedSheetState extends State<_NotInterestedSheet> {
-  static const _c = lightColors;
-
   static const _predefined = [
     'Budgettet er for lavt',
     'Jeg spiller ikke til denne type events',
@@ -876,6 +899,7 @@ class _NotInterestedSheetState extends State<_NotInterestedSheet> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       decoration: BoxDecoration(
         color: _c.bg.surface,
@@ -956,10 +980,9 @@ class _ReasonRow extends StatelessWidget {
   final bool selected;
   final ValueChanged<bool> onChanged;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => onChanged(!selected),

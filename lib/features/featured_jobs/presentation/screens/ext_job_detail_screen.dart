@@ -3,13 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
+import 'package:dj_tilbud_app/shared/widgets/conversation_card.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
 
 class ExtJobDetailScreen extends ConsumerStatefulWidget {
   const ExtJobDetailScreen({super.key, required this.extJob});
@@ -22,16 +25,27 @@ class ExtJobDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
+  DSColors get _c => DSTheme.of(context);
   late ExtJobStatus _status;
   late DateTime? _djReadyConfirmedAt;
-
-  static const _c = lightColors;
 
   @override
   void initState() {
     super.initState();
     _status = widget.extJob.status;
     _djReadyConfirmedAt = widget.extJob.djReadyConfirmedAt;
+  }
+
+  String _toastError(AppException? err) {
+    if (err == null) return 'Noget gik galt. Prøv igen.';
+    final msg = err.message.toLowerCase();
+    if (msg.contains('musician') && msg.contains('contact')) {
+      return 'Din instrumentalist skal også kontakte kunden, inden du kan lukke aftalen. Koordinér med dem og prøv igen.';
+    }
+    if (msg.contains('customer_contacted') || msg.contains('customer-contacted')) {
+      return 'Du skal markere kunden som kontaktet, inden du kan lukke aftalen.';
+    }
+    return err.message;
   }
 
   bool _isWithin5Days(DateTime eventDate) {
@@ -42,23 +56,55 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
     return eventMidnight.difference(todayMidnight).inDays <= 5;
   }
 
-  Future<void> _handleMarkContacted() async {
-    final success = await ref
-        .read(markExtJobContactedProvider.notifier)
-        .markContacted(widget.extJob.id);
-
-    if (!mounted) return;
-
-    if (success) {
-      setState(() => _status = ExtJobStatus.customerContacted);
-      DSToast.show(context,
-          variant: DSToastVariant.success,
-          title: 'Kunden er markeret som kontaktet');
-    } else {
-      DSToast.show(context,
-          variant: DSToastVariant.error,
-          title: 'Noget gik galt. Prøv igen.');
-    }
+  Future<void> _openContactSheet(DateTime? plannedDate) async {
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _c.bg.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
+      ),
+      builder: (_) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: ContactCustomerSheet(
+          existingPlannedDate: plannedDate,
+          onContacted: () async {
+            final success = await ref
+                .read(markExtJobContactedProvider.notifier)
+                .markContacted(widget.extJob.id);
+            if (mounted && success) {
+              setState(() => _status = ExtJobStatus.customerContacted);
+              DSToast.show(context,
+                  variant: DSToastVariant.success,
+                  title: 'Kunden er markeret som kontaktet');
+            } else if (mounted) {
+              final err = ref.read(markExtJobContactedProvider).error;
+              DSToast.show(context,
+                  variant: DSToastVariant.error,
+                  title: _toastError(err is AppException ? err : null));
+            }
+            return success;
+          },
+          onPlanned: (date) async {
+            final success = await ref
+                .read(setExtJobPlannedContactProvider.notifier)
+                .setPlanned(widget.extJob.id, date);
+            if (mounted && success) {
+              DSToast.show(context,
+                  variant: DSToastVariant.success,
+                  title: 'Planlagt kontakt gemt');
+            } else if (mounted) {
+              DSToast.show(context,
+                  variant: DSToastVariant.error,
+                  title: 'Noget gik galt. Prøv igen.');
+            }
+            return success;
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _handleReadyForBilling() async {
@@ -94,8 +140,9 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
           variant: DSToastVariant.success,
           title: 'Aftale lukket — faktura sendt til kunden');
     } else {
-      DSToast.show(context,
-          variant: DSToastVariant.error, title: 'Noget gik galt. Prøv igen.');
+      final err = ref.read(markExtJobReadyForBillingProvider).error;
+      DSToast.show(context, variant: DSToastVariant.error,
+          title: _toastError(err is AppException ? err : null));
     }
   }
 
@@ -110,16 +157,16 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
           variant: DSToastVariant.success,
           title: 'Bekræftet! God fornøjelse med jobbet 🎵');
     } else {
-      DSToast.show(context,
-          variant: DSToastVariant.error, title: 'Noget gik galt. Prøv igen.');
+      final err = ref.read(confirmExtJobDjReadyProvider).error;
+      DSToast.show(context, variant: DSToastVariant.error,
+          title: _toastError(err is AppException ? err : null));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final extJob = widget.extJob;
-    final contactLoading =
-        ref.watch(markExtJobContactedProvider) is AsyncLoading;
     final billingLoading =
         ref.watch(markExtJobReadyForBillingProvider) is AsyncLoading;
     final readyLoading = ref.watch(confirmExtJobDjReadyProvider) is AsyncLoading;
@@ -210,17 +257,23 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
               const Divider(height: 1),
               const SizedBox(height: DSSpacing.s4),
 
-              // Step 1: Mark contacted
+              // Step 1: Mark contacted (or set planned date)
               if (isContacted)
                 _DoneButton(label: 'Kunden er kontaktet')
-              else
+              else ...[
+                if (extJob.customerContactPlannedFor != null)
+                  _PlannedContactBanner(date: extJob.customerContactPlannedFor!),
                 DSButton(
-                  label: 'Jeg har kontaktet kunden',
-                  variant: DSButtonVariant.primary,
+                  label: extJob.customerContactPlannedFor != null
+                      ? 'Ændr kontaktdato'
+                      : 'Kontakt kunden',
+                  variant: extJob.customerContactPlannedFor != null
+                      ? DSButtonVariant.secondary
+                      : DSButtonVariant.primary,
                   expand: true,
-                  isLoading: contactLoading,
-                  onTap: contactLoading ? null : _handleMarkContacted,
+                  onTap: () => _openContactSheet(extJob.customerContactPlannedFor),
                 ),
+              ],
 
               // Step 2: Mark ready for billing
               if (isContacted) ...[
@@ -260,6 +313,10 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
           ),
           const SizedBox(height: DSSpacing.s4),
 
+          // ── Chat with instrumentalist ────────────────────────────────────
+          ConversationCard(extJobId: extJob.id),
+          const SizedBox(height: DSSpacing.s4),
+
           // ── Invoice badge ────────────────────────────────────────────────
           InvoiceStatusBadge(extJobId: extJob.id),
           const SizedBox(height: DSSpacing.s4),
@@ -281,10 +338,9 @@ class _JobInfoCard extends StatelessWidget {
 
   final ExtJob extJob;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final dateStr =
         DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(extJob.date);
 
@@ -413,10 +469,9 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -452,10 +507,9 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(DSSpacing.s4),
@@ -490,19 +544,18 @@ class _DoneButton extends StatelessWidget {
 
   final String label;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
           horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
       decoration: BoxDecoration(
-        color: _c.state.success.withValues(alpha: 0.08),
+        color: _c.state.success.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(DSRadius.md),
         border:
-            Border.all(color: _c.state.success.withValues(alpha: 0.4)),
+            Border.all(color: _c.state.success.withValues(alpha: 0.55)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -530,10 +583,9 @@ class _LockedInfo extends StatelessWidget {
 
   final String label;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -572,10 +624,9 @@ class _ContactRow extends StatelessWidget {
   final String label;
   final VoidCallback? onCopy;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 18, color: _c.text.secondary),
@@ -593,6 +644,40 @@ class _ContactRow extends StatelessWidget {
               size: DSButtonSize.sm,
               onTap: onCopy),
       ],
+    );
+  }
+}
+
+class _PlannedContactBanner extends StatelessWidget {
+  const _PlannedContactBanner({required this.date});
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
+    final dateStr = DateFormat('d. MMMM yyyy', 'da_DK').format(date);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: DSSpacing.s2),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+            vertical: DSSpacing.s2, horizontal: DSSpacing.s3),
+        decoration: BoxDecoration(
+          color: _c.state.warning.withValues(alpha: 0.20),
+          borderRadius: BorderRadius.circular(DSRadius.md),
+          border: Border.all(color: _c.state.warning.withValues(alpha: 0.55)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today_outlined,
+                size: 14, color: _c.state.warning),
+            const SizedBox(width: DSSpacing.s2),
+            Text('Husk at kontakte d. $dateStr',
+                style: DSTextStyle.bodySm.copyWith(
+                    color: _c.text.primary, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
     );
   }
 }

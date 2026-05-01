@@ -59,11 +59,20 @@ abstract class JobsRepository {
   /// Marks a regular job as customer-contacted (DJ flow).
   Future<void> markJobCustomerContacted(int jobId);
 
+  /// Sets a planned contact date on a regular job (YYYY-MM-DD).
+  Future<void> setJobPlannedContact(int jobId, String date);
+
   /// Marks an ext job as customer-contacted (DJ ext job flow).
   Future<void> markExtJobCustomerContacted(int extJobId);
 
+  /// Sets a planned contact date on an ext job (YYYY-MM-DD).
+  Future<void> setExtJobPlannedContact(int extJobId, String date);
+
   /// Marks a service offer as customer-contacted (instrumentalist flow).
   Future<void> markServiceOfferCustomerContacted(int offerId);
+
+  /// Sets a planned contact date on a service offer (YYYY-MM-DD).
+  Future<void> setServiceOfferPlannedContact(int offerId, String date);
 
   /// Fetches first_invoice_paid for a job or ext job invoice.
   /// Pass exactly one of [jobId] or [extJobId].

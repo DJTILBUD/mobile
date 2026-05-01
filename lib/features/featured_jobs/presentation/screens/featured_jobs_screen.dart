@@ -8,6 +8,7 @@ import 'package:dj_tilbud_app/core/widgets/animated_card.dart';
 import 'package:dj_tilbud_app/core/widgets/skeleton_loading.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/empty_jobs_view.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -16,10 +17,9 @@ import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 class FeaturedJobsScreen extends ConsumerWidget {
   const FeaturedJobsScreen({super.key});
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
     final extJobsAsync = ref.watch(djExtJobsProvider);
 
     return DefaultTabController(
@@ -99,22 +99,31 @@ class _JobList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     if (jobs.isEmpty) {
       return EmptyJobsView(message: emptyMessage, icon: LucideIcons.star);
     }
+    // Sort: jobs with a pending action first, then by date ascending.
+    final sorted = [...jobs]..sort((a, b) {
+        final aAction = a.hasAction ? 0 : 1;
+        final bAction = b.hasAction ? 0 : 1;
+        if (aAction != bAction) return aAction.compareTo(bAction);
+        return a.date.compareTo(b.date);
+      });
+
     return RefreshIndicator(
-      color: lightColors.brand.primary,
+      color: _c.brand.primary,
       onRefresh: onRefresh,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 12),
-        itemCount: jobs.length,
+        itemCount: sorted.length,
         itemBuilder: (context, index) => AnimatedCard(
           index: index,
           child: _ExtJobCard(
-            extJob: jobs[index],
+            extJob: sorted[index],
             onTap: () => context.pushNamed(
               AppRoutes.extJobDetail,
-              extra: jobs[index],
+              extra: sorted[index],
             ),
           ),
         ),
@@ -131,10 +140,9 @@ class _ExtJobCard extends StatelessWidget {
   final ExtJob extJob;
   final VoidCallback onTap;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final accentColor = _c.state.success;
 
     return GestureDetector(
@@ -214,6 +222,15 @@ class _ExtJobCard extends StatelessWidget {
                         child: _PriceRow(extJob: extJob, c: _c),
                       ),
 
+                      // Action chip (shown when there's a pending action)
+                      if (extJob.pendingAction != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                              DSSpacing.s4, DSSpacing.s2, DSSpacing.s4, 0),
+                          child: _ExtJobActionChip(
+                              action: extJob.pendingAction!, c: _c),
+                        ),
+
                       const SizedBox(height: DSSpacing.s3),
                     ],
                   ),
@@ -242,6 +259,7 @@ class _DateBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final day = date.day.toString();
     final month = DateFormat('MMM', 'da_DK')
         .format(date)
@@ -305,6 +323,7 @@ class _MetaList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -338,6 +357,7 @@ class _MetaItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 13, color: c.text.muted),
@@ -376,6 +396,7 @@ class _PriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: DSSpacing.s3, vertical: DSSpacing.s2),
@@ -402,6 +423,63 @@ class _PriceRow extends StatelessWidget {
   }
 }
 
+// ─── Action Chip ─────────────────────────────────────────────────────────────
+
+class _ExtJobActionChip extends StatelessWidget {
+  const _ExtJobActionChip({required this.action, required this.c});
+
+  final JobActionType action;
+  final DSColors c;
+
+  @override
+  Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
+    final (label, color, icon) = switch (action) {
+      JobActionType.contactCustomer => (
+          'Kontakt kunden nu',
+          c.state.danger,
+          LucideIcons.phone,
+        ),
+      JobActionType.contactCustomerPlanned => (
+          'Kontakt kunden planlagt',
+          c.state.warning,
+          LucideIcons.calendarClock,
+        ),
+      JobActionType.moveToReady => (
+          'Luk aftale og send faktura',
+          c.state.danger,
+          LucideIcons.fileCheck,
+        ),
+      JobActionType.confirmReady => (
+          'Bekræft klar!',
+          c.state.danger,
+          LucideIcons.checkCircle,
+        ),
+      JobActionType.readyForBilling => (
+          'Send faktura',
+          c.state.danger,
+          LucideIcons.fileText,
+        ),
+    };
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ─── Error View ───────────────────────────────────────────────────────────────
 
 class _ErrorView extends StatelessWidget {
@@ -410,10 +488,9 @@ class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(DSSpacing.s8),

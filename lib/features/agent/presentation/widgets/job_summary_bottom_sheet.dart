@@ -17,8 +17,6 @@ class JobSummaryBottomSheet extends ConsumerStatefulWidget {
 }
 
 class _JobSummaryBottomSheetState extends ConsumerState<JobSummaryBottomSheet> {
-  static const _c = lightColors;
-
   @override
   void initState() {
     super.initState();
@@ -35,6 +33,7 @@ class _JobSummaryBottomSheetState extends ConsumerState<JobSummaryBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final agentState = ref.watch(agentSessionProvider);
 
     return DraggableScrollableSheet(
@@ -69,7 +68,7 @@ class _JobSummaryBottomSheetState extends ConsumerState<JobSummaryBottomSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
                 child: Row(
                   children: [
-                    Icon(LucideIcons.sparkle,
+                    Icon(LucideIcons.sparkles,
                         size: 18, color: _c.brand.primaryActive),
                     const SizedBox(width: DSSpacing.s2),
                     Text(
@@ -144,8 +143,6 @@ class _LoadingDotsState extends State<_LoadingDots>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  static const _c = lightColors;
-
   @override
   void initState() {
     super.initState();
@@ -163,6 +160,7 @@ class _LoadingDotsState extends State<_LoadingDots>
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (_, __) {
@@ -182,10 +180,9 @@ class _SummaryText extends StatelessWidget {
   final String text;
   final bool streaming;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(DSSpacing.s4),
@@ -207,10 +204,9 @@ class _ErrorView extends StatelessWidget {
 
   final String message;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -243,12 +239,13 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(
           DSSpacing.s4, DSSpacing.s3, DSSpacing.s4, DSSpacing.s3),
       decoration: BoxDecoration(
-        color: lightColors.bg.surface,
-        border: Border(top: BorderSide(color: lightColors.border.subtle)),
+        color: _c.bg.surface,
+        border: Border(top: BorderSide(color: _c.border.subtle)),
       ),
       child: Row(
         children: [

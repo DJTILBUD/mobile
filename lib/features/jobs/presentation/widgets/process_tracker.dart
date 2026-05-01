@@ -12,10 +12,9 @@ class ProcessTracker extends StatelessWidget {
   final List<String> steps;
   final int completedSteps;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -78,10 +77,9 @@ class _StepCircle extends StatelessWidget {
   final bool isCurrent;
   final int number;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     if (isCompleted) {
       return Container(
         width: 28,
@@ -99,9 +97,9 @@ class _StepCircle extends StatelessWidget {
       height: 28,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isCurrent ? _c.text.primary : Colors.transparent,
+        color: isCurrent ? _c.brand.primary : Colors.transparent,
         border: Border.all(
-          color: isCurrent ? _c.text.primary : _c.border.strong,
+          color: isCurrent ? _c.brand.primary : _c.border.strong,
           width: 2,
         ),
       ),
@@ -110,7 +108,7 @@ class _StepCircle extends StatelessWidget {
           '$number',
           style: DSTextStyle.labelSm.copyWith(
             fontWeight: FontWeight.w600,
-            color: isCurrent ? _c.text.onDark : _c.text.muted,
+            color: isCurrent ? _c.brand.onPrimary : _c.text.muted,
           ),
         ),
       ),

@@ -1,9 +1,83 @@
+import 'dart:convert';
+import 'dart:io' show Platform;
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dj_tilbud_app/core/config/env_config.dart';
+import 'package:dj_tilbud_app/core/error/app_exception.dart';
 
 class JobsRemoteDatasource {
   JobsRemoteDatasource(this._client);
 
   final SupabaseClient _client;
+
+  String get _webAppBaseUrl {
+    String url = EnvConfig.webAppUrl;
+    if (EnvConfig.isLocal && Platform.isAndroid) {
+      url = url.replaceFirst('localhost', '10.0.2.2');
+    }
+    return url;
+  }
+
+  String get _accessToken {
+    final token = _client.auth.currentSession?.accessToken;
+    if (token == null) throw Exception('Not authenticated');
+    return token;
+  }
+
+  Future<void> _webApiPut(String path, {Map<String, dynamic>? body}) async {
+    final uri = Uri.parse('$_webAppBaseUrl$path');
+    final response = await http.put(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: body != null ? jsonEncode(body) : null,
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw DatabaseException(_extractMessage(response.body));
+    }
+  }
+
+  Future<Map<String, dynamic>> _webApiPost(
+      String path, Map<String, dynamic> body) async {
+    final uri = Uri.parse('$_webAppBaseUrl$path');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(body),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw DatabaseException(_extractMessage(response.body));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<void> _webApiPatch(String path) async {
+    final uri = Uri.parse('$_webAppBaseUrl$path');
+    final response = await http.patch(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw DatabaseException(_extractMessage(response.body));
+    }
+  }
+
+  String _extractMessage(String body) {
+    try {
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      return json['message'] as String? ?? body;
+    } catch (_) {
+      return body;
+    }
+  }
 
   /// Fetches open jobs for a DJ.
   /// Region filtering is NOT applied here — it is handled client-side via
@@ -59,71 +133,99 @@ class JobsRemoteDatasource {
         .order('date', ascending: false);
   }
 
-  /// Fetches open jobs available for an instrumentalist.
+  /// Fetches jobs available for an instrumentalist to bid on.
+  /// Mirrors web app useAvailableJobsForMusicians exactly:
+  /// - Wide status filter (open/sent/re_sent/reopened/another_round/closed/customer_contacted)
+  /// - requested_saxophonist = true, filtered to musician's regions
+  /// - Excludes if this musician already has any offer (will be in their lanes)
+  /// - Excludes if any musician has a WON offer
+  /// - Excludes jobs within first 24 h where job region is not in musician's regions (regional window)
+  /// - Marks has_active_offer when another musician has a non-lost offer
   Future<List<Map<String, dynamic>>> fetchNewInstrumentalistJobs(
       String userId) async {
     final musicianInfo = await _client
         .from('Musicians')
-        .select('regions')
+        .select('regions, instrument')
         .eq('id', userId)
         .single();
     final regions = (musicianInfo['regions'] as List<dynamic>).cast<String>();
+    final instrument = musicianInfo['instrument'] as String? ?? 'saxophone';
 
     if (regions.isEmpty) return [];
 
-    final offeredRows = await _client
-        .from('ServiceOffers')
-        .select('job_id')
-        .eq('musician_id', userId)
-        .not('job_id', 'is', null);
-    final offeredJobIds = offeredRows
-        .where((r) => r['job_id'] != null)
-        .map((r) => (r['job_id'] as num).toInt())
-        .toSet();
-
+    // Fetch all relevant jobs (wide status filter, matches web app)
     final jobs = await _client
         .from('Jobs')
         .select()
-        .inFilter('status', ['open', 'another_round', 'sent'])
+        .inFilter('status', [
+          'open', 'sent', 're_sent', 'reopened',
+          'another_round', 'closed', 'customer_contacted',
+        ])
         .inFilter('region', regions)
         .eq('requested_saxophonist', true)
-        .order('date', ascending: true);
+        .order('created_at', ascending: false);
 
-    return jobs
-        .where((j) => !offeredJobIds.contains((j['id'] as num).toInt()))
-        .toList();
+    if (jobs.isEmpty) return [];
+
+    // Fetch all service offers for these jobs in one query
+    final allJobIds = jobs.map((j) => (j['id'] as num).toInt()).toList();
+    final allOffers = await _client
+        .from('ServiceOffers')
+        .select('job_id, musician_id, status')
+        .inFilter('job_id', allJobIds)
+        .not('job_id', 'is', null);
+
+    // Group by job_id
+    final offersByJob = <int, List<Map<String, dynamic>>>{};
+    for (final o in allOffers) {
+      final jid = (o['job_id'] as num).toInt();
+      (offersByJob[jid] ??= []).add(o);
+    }
+
+    final now = DateTime.now();
+    const first24h = Duration(hours: 24);
+
+    return jobs.where((j) {
+      final id = (j['id'] as num).toInt();
+      final jobOffers = offersByJob[id] ?? [];
+
+      // Regional window: within first 24 h, only show to musicians in this region
+      if (instrument == 'saxophone') {
+        final createdAt = DateTime.tryParse(j['created_at'] as String? ?? '');
+        if (createdAt != null && now.difference(createdAt) < first24h) {
+          final jobRegion = j['region'] as String?;
+          if (jobRegion != null && !regions.contains(jobRegion)) return false;
+        }
+      }
+
+      // Exclude if this musician already has any offer on this job
+      final hasMine = jobOffers.any((o) => o['musician_id'] == userId);
+      if (hasMine) return false;
+
+      // Exclude if any musician has won this job
+      final hasWon = jobOffers.any((o) => o['status'] == 'won');
+      if (hasWon) return false;
+
+      return true;
+    }).map((j) {
+      final id = (j['id'] as num).toInt();
+      final jobOffers = offersByJob[id] ?? [];
+      final hasActiveOffer = jobOffers.any((o) => o['status'] != 'lost');
+      return {...j, 'has_active_offer': hasActiveOffer};
+    }).toList();
   }
 
   /// Fetches ext jobs available for this instrumentalist to bid on.
-  /// Matches web app useExtJobsForMusicians:
-  /// - Unassigned (assigned_musician_id IS NULL)
-  /// - Role type requires a musician (musician_only or dj_and_musician)
-  /// - Statuses open/sent/closed/customer_contacted
-  /// - Excludes jobs this musician already offered on
-  /// - Excludes jobs already won by another musician
+  /// Mirrors web app useExtJobsForMusicians exactly.
   Future<List<Map<String, dynamic>>> fetchInstrumentalistExtJobs(
       String userId) async {
-    // Jobs this musician already has an offer on (will appear in their offers lane)
-    final myOffersRows = await _client
-        .from('ServiceOffers')
-        .select('ext_job_id')
-        .eq('musician_id', userId)
-        .not('ext_job_id', 'is', null);
-    final offeredExtJobIds = myOffersRows
-        .where((r) => r['ext_job_id'] != null)
-        .map((r) => (r['ext_job_id'] as num).toInt())
-        .toSet();
-
-    // Jobs already won by any musician (hide from new-jobs feed)
-    final wonRows = await _client
-        .from('ServiceOffers')
-        .select('ext_job_id')
-        .not('ext_job_id', 'is', null)
-        .eq('status', 'won');
-    final wonExtJobIds = wonRows
-        .where((r) => r['ext_job_id'] != null)
-        .map((r) => (r['ext_job_id'] as num).toInt())
-        .toSet();
+    final musicianInfo = await _client
+        .from('Musicians')
+        .select('instrument, regions')
+        .eq('id', userId)
+        .single();
+    final instrument = musicianInfo['instrument'] as String? ?? 'saxophone';
+    final regions = (musicianInfo['regions'] as List<dynamic>).cast<String>();
 
     final extJobs = await _client
         .from('ExtJobs')
@@ -133,9 +235,51 @@ class JobsRemoteDatasource {
         .inFilter('status', ['open', 'sent', 'closed', 'customer_contacted'])
         .order('created_at', ascending: false);
 
+    if (extJobs.isEmpty) return [];
+
+    // Fetch all service offers for these ext jobs in one query
+    final allExtJobIds = extJobs.map((j) => (j['id'] as num).toInt()).toList();
+    final allOffers = await _client
+        .from('ServiceOffers')
+        .select('ext_job_id, musician_id, status')
+        .inFilter('ext_job_id', allExtJobIds)
+        .not('ext_job_id', 'is', null);
+
+    // Group by ext_job_id
+    final offersByExtJob = <int, List<Map<String, dynamic>>>{};
+    for (final o in allOffers) {
+      final eid = (o['ext_job_id'] as num).toInt();
+      (offersByExtJob[eid] ??= []).add(o);
+    }
+
+    final now = DateTime.now();
+    const first24h = Duration(hours: 24);
+
     return extJobs.where((j) {
       final id = (j['id'] as num).toInt();
-      return !offeredExtJobIds.contains(id) && !wonExtJobIds.contains(id);
+      final jobOffers = offersByExtJob[id] ?? [];
+
+      // Regional window: within first 24 h, only show if job region is in musician's regions
+      if (instrument == 'saxophone') {
+        final createdAt = DateTime.tryParse(j['created_at'] as String? ?? '');
+        if (createdAt != null && now.difference(createdAt) < first24h) {
+          final jobRegion = j['region'] as String?;
+          if (jobRegion != null && !regions.contains(jobRegion)) return false;
+        }
+      }
+
+      // Exclude if this musician already has any offer on this job
+      if (jobOffers.any((o) => o['musician_id'] == userId)) return false;
+
+      // Exclude if any musician has won this job
+      if (jobOffers.any((o) => o['status'] == 'won')) return false;
+
+      return true;
+    }).map((j) {
+      final id = (j['id'] as num).toInt();
+      final jobOffers = offersByExtJob[id] ?? [];
+      final hasActiveOffer = jobOffers.any((o) => o['status'] != 'lost');
+      return {...j, 'has_active_offer': hasActiveOffer};
     }).toList();
   }
 
@@ -204,24 +348,29 @@ class JobsRemoteDatasource {
     required String salesPitch,
     required String instrument,
   }) async {
-    final payload = {
-      'musician_id': musicianId,
+    // Route through the web API so the server handles side-effects:
+    // specifically, updating ExtJob.status → "sent" when role_type = "musician_only".
+    final body = <String, dynamic>{
       'price_dkk': priceDkk,
       'musician_payout_dkk': musicianPayoutDkk,
       'sales_pitch': salesPitch,
       'instrument': instrument,
       'status': 'sent',
     };
-    if (jobId != null) payload['job_id'] = jobId;
-    if (extJobId != null) payload['ext_job_id'] = extJobId;
+    if (jobId != null) body['job_id'] = jobId;
+    if (extJobId != null) body['ext_job_id'] = extJobId;
 
-    // Select with both possible joins so ServiceOfferModel can parse correctly.
-    return _client
-        .from('ServiceOffers')
-        .insert(payload)
-        .select(
-            '*, job:Jobs!ServiceOffers_job_id_fkey(*), ext_job:ExtJobs!ServiceOffers_ext_job_id_fkey(*)')
-        .single();
+    final result = await _webApiPost('/api/service-offers', body);
+    // The web API returns { message, offer } — extract the offer object.
+    final offer = result['offer'] as Map<String, dynamic>?;
+    if (offer == null) throw const DatabaseException('No offer returned from API');
+
+    // The web API offer join uses "extJob" (camelCase); normalise to the
+    // snake_case key expected by ServiceOfferModel.fromJson.
+    if (offer.containsKey('extJob') && !offer.containsKey('ext_job')) {
+      offer['ext_job'] = offer['extJob'];
+    }
+    return offer;
   }
 
   /// Fetches a single job with full details.
@@ -233,23 +382,47 @@ class JobsRemoteDatasource {
   Future<void> markJobCustomerContacted(int jobId) async {
     await _client
         .from('Jobs')
-        .update({'status': 'customer_contacted'})
+        .update({'status': 'customer_contacted', 'customer_contact_planned_for': null})
         .eq('id', jobId);
   }
 
-  /// Updates ExtJobs.status = 'customer_contacted'.
-  Future<void> markExtJobCustomerContacted(int extJobId) async {
+  /// Sets Jobs.customer_contact_planned_for (YYYY-MM-DD) without changing status.
+  Future<void> setJobPlannedContact(int jobId, String date) async {
     await _client
-        .from('ExtJobs')
-        .update({'status': 'customer_contacted'})
-        .eq('id', extJobId);
+        .from('Jobs')
+        .update({'customer_contact_planned_for': date})
+        .eq('id', jobId);
+  }
+
+  /// Updates ExtJobs.status = 'customer_contacted' via web API (requires elevated access).
+  Future<void> markExtJobCustomerContacted(int extJobId) async {
+    await _webApiPut(
+      '/api/ext-jobs/$extJobId/customer-contact',
+      body: {'contactStatus': 'contacted'},
+    );
+  }
+
+  /// Sets ExtJobs.customer_contact_planned_for via web API.
+  Future<void> setExtJobPlannedContact(int extJobId, String date) async {
+    await _webApiPut(
+      '/api/ext-jobs/$extJobId/customer-contact',
+      body: {'contactStatus': 'planned', 'plannedContactDate': date},
+    );
   }
 
   /// Updates ServiceOffers.customer_contacted = true.
   Future<void> markServiceOfferCustomerContacted(int offerId) async {
     await _client
         .from('ServiceOffers')
-        .update({'customer_contacted': true})
+        .update({'customer_contacted': true, 'customer_contact_planned_for': null})
+        .eq('id', offerId);
+  }
+
+  /// Sets ServiceOffers.customer_contact_planned_for (YYYY-MM-DD).
+  Future<void> setServiceOfferPlannedContact(int offerId, String date) async {
+    await _client
+        .from('ServiceOffers')
+        .update({'customer_contact_planned_for': date})
         .eq('id', offerId);
   }
 
@@ -261,12 +434,9 @@ class JobsRemoteDatasource {
         .eq('id', jobId);
   }
 
-  /// Marks an ext job as ready for billing.
+  /// Marks an ext job as ready for billing via web API (requires elevated access).
   Future<void> markExtJobReadyForBilling(int extJobId) async {
-    await _client
-        .from('ExtJobs')
-        .update({'status': 'ready_for_billing'})
-        .eq('id', extJobId);
+    await _webApiPut('/api/ext-jobs/$extJobId/ready-for-billing');
   }
 
   /// Resolves the early setup status on a quote ('accepted' or 'rejected').
@@ -285,20 +455,14 @@ class JobsRemoteDatasource {
         .eq('id', quoteId);
   }
 
-  /// Confirms the DJ is ready for an ext job.
+  /// Confirms the DJ is ready for an ext job via web API (requires elevated access).
   Future<void> confirmExtJobDjReady(int extJobId) async {
-    await _client
-        .from('ExtJobs')
-        .update({'dj_ready_confirmed_at': DateTime.now().toIso8601String()})
-        .eq('id', extJobId);
+    await _webApiPatch('/api/ext-jobs/$extJobId/ready');
   }
 
   /// Confirms the musician is ready for their service offer.
   Future<void> confirmMusicianReady(int offerId) async {
-    await _client
-        .from('ServiceOffers')
-        .update({'musician_ready_confirmed_at': DateTime.now().toIso8601String()})
-        .eq('id', offerId);
+    await _webApiPatch('/api/service-offer/$offerId/ready');
   }
 
   /// Adds / updates extra hours on a won DJ quote.

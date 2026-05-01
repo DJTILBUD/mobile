@@ -8,8 +8,6 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/admin_message.dar
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-const _c = lightColors;
-
 class AdminMessagesScreen extends ConsumerWidget {
   const AdminMessagesScreen({super.key, required this.role});
 
@@ -19,6 +17,7 @@ class AdminMessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
     final messagesAsync = ref.watch(adminMessagesProvider(_isDj));
 
     return Scaffold(
@@ -103,8 +102,9 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final msg = widget.message;
-    final dateStr = DateFormat('d. MMM yyyy', 'da_DK').format(msg.createdAt);
+    final dateStr = DateFormat('d. MMM yyyy', 'da_DK').format(msg.createdAt.toLocal());
 
     return GestureDetector(
       onTap: _toggle,
@@ -171,9 +171,9 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                 const SizedBox(height: DSSpacing.s3),
                 Divider(height: 1, color: _c.border.subtle),
                 const SizedBox(height: DSSpacing.s3),
-                Text(
-                  msg.content,
-                  style: DSTextStyle.bodyMd.copyWith(
+                _FormattedText(
+                  text: msg.content,
+                  baseStyle: DSTextStyle.bodyMd.copyWith(
                     color: _c.text.primary,
                     height: 1.6,
                   ),
@@ -183,6 +183,80 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─── Formatted text (bold + bullets + paragraphs) ────────────────────────────
+
+class _FormattedText extends StatelessWidget {
+  const _FormattedText({required this.text, required this.baseStyle});
+
+  final String text;
+  final TextStyle baseStyle;
+
+  static final _boldRegex = RegExp(r'\*\*(.*?)\*\*');
+
+  List<InlineSpan> _parseInline(String raw) {
+    final spans = <InlineSpan>[];
+    int cursor = 0;
+    for (final match in _boldRegex.allMatches(raw)) {
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: raw.substring(cursor, match.start)));
+      }
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ));
+      cursor = match.end;
+    }
+    if (cursor < raw.length) spans.add(TextSpan(text: raw.substring(cursor)));
+    if (spans.isEmpty) spans.add(TextSpan(text: raw));
+    return spans;
+  }
+
+  Widget _buildLine(String line) {
+    final isBullet = line.startsWith('- ');
+    final content = isBullet ? line.substring(2) : line;
+    final inlineSpans = _parseInline(content);
+
+    if (isBullet) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('• ', style: baseStyle),
+          Flexible(
+            child: RichText(
+              text: TextSpan(style: baseStyle, children: inlineSpans),
+            ),
+          ),
+        ],
+      );
+    }
+    return RichText(
+      text: TextSpan(style: baseStyle, children: inlineSpans),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
+    final paragraphs = text.split(RegExp(r'\n\n+'));
+    final blocks = <Widget>[];
+
+    for (int p = 0; p < paragraphs.length; p++) {
+      if (p > 0) blocks.add(const SizedBox(height: 8));
+      final lines = paragraphs[p].split('\n');
+      for (int l = 0; l < lines.length; l++) {
+        if (l > 0) blocks.add(const SizedBox(height: 3));
+        blocks.add(_buildLine(lines[l]));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: blocks,
     );
   }
 }

@@ -34,8 +34,6 @@ class _ProfileBioBottomSheetState
   final _eventsCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
 
-  static const _c = lightColors;
-
   @override
   void dispose() {
     _strengthsCtrl.dispose();
@@ -70,6 +68,7 @@ class _ProfileBioBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
       minChildSize: 0.4,
@@ -103,7 +102,7 @@ class _ProfileBioBottomSheetState
                 padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
                 child: Row(
                   children: [
-                    Icon(LucideIcons.sparkle,
+                    Icon(LucideIcons.sparkles,
                         size: 18, color: _c.brand.primaryActive),
                     const SizedBox(width: DSSpacing.s2),
                     Text(
@@ -160,10 +159,9 @@ class _QuestionsPhase extends StatelessWidget {
   final VoidCallback onGenerate;
   final ScrollController scrollController;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final role = isDj ? 'DJ' : 'musiker';
     return ListView(
       controller: scrollController,
@@ -243,10 +241,9 @@ class _GeneratingPhase extends ConsumerWidget {
   final void Function(String) onAccepted;
   final VoidCallback onRetry;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
     final agentState = ref.watch(agentSessionProvider);
 
     return ListView(
@@ -309,9 +306,9 @@ class _GeneratingPhase extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(DSSpacing.s4),
             decoration: BoxDecoration(
-              color: _c.state.danger.withValues(alpha: 0.08),
+              color: _c.state.danger.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(DSRadius.md),
-              border: Border.all(color: _c.state.danger.withValues(alpha: 0.3)),
+              border: Border.all(color: _c.state.danger.withValues(alpha: 0.55)),
             ),
             child: Text(
               agentState.message,

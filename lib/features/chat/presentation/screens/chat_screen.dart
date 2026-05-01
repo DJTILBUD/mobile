@@ -11,10 +11,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
     final conversationsAsync = ref.watch(conversationsProvider);
 
     return Scaffold(
@@ -57,19 +56,22 @@ class _ConversationTile extends StatelessWidget {
 
   final Conversation conversation;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final lastMsgTime = conversation.lastMessageAt;
     final timeLabel = lastMsgTime != null ? _formatTime(lastMsgTime) : '';
+
+    final hasUnread = conversation.hasUnread;
+    final unreadCount = conversation.unreadCount;
 
     return InkWell(
       onTap: () => context.pushNamed(
         AppRoutes.conversationDetail,
         extra: conversation,
       ),
-      child: Padding(
+      child: Container(
+        color: hasUnread ? _c.brand.primary.withValues(alpha: 0.06) : null,
         padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,9 +95,7 @@ class _ConversationTile extends StatelessWidget {
                           style: DSTextStyle.headingSm.copyWith(
                             fontSize: 15,
                             color: _c.text.primary,
-                            fontWeight: conversation.hasUnread
-                                ? FontWeight.w800
-                                : FontWeight.w500,
+                            fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w500,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -106,12 +106,8 @@ class _ConversationTile extends StatelessWidget {
                         Text(
                           timeLabel,
                           style: DSTextStyle.bodySm.copyWith(
-                            color: conversation.hasUnread
-                                ? _c.brand.primary
-                                : _c.text.muted,
-                            fontWeight: conversation.hasUnread
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                            color: hasUnread ? _c.brand.primaryActive : _c.text.muted,
+                            fontWeight: hasUnread ? FontWeight.w700 : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -121,7 +117,8 @@ class _ConversationTile extends StatelessWidget {
                   Text(
                     conversation.jobInfo,
                     style: DSTextStyle.bodySm.copyWith(
-                      color: _c.text.muted,
+                      color: hasUnread ? _c.text.secondary : _c.text.muted,
+                      fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -129,17 +126,14 @@ class _ConversationTile extends StatelessWidget {
                   if (conversation.lastMessageText != null) ...[
                     const SizedBox(height: 4),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Text(
                             _buildPreview(conversation),
                             style: DSTextStyle.labelMd.copyWith(
-                              color: conversation.hasUnread
-                                  ? _c.text.primary
-                                  : _c.text.muted,
-                              fontWeight: conversation.hasUnread
-                                  ? FontWeight.w700
-                                  : FontWeight.w400,
+                              color: hasUnread ? _c.text.primary : _c.text.muted,
+                              fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w400,
                               fontStyle: conversation.lastMessageIsSystem
                                   ? FontStyle.italic
                                   : FontStyle.normal,
@@ -148,25 +142,21 @@ class _ConversationTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (conversation.hasUnread) ...[
-                          const SizedBox(width: 8),
+                        if (hasUnread) ...[
+                          const SizedBox(width: DSSpacing.s2),
                           Container(
-                            width: 20,
-                            height: 20,
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
-                              color: _c.brand.primary,
-                              shape: BoxShape.circle,
+                              color: _c.brand.primaryActive,
+                              borderRadius: BorderRadius.circular(DSRadius.pill),
                             ),
-                            child: Center(
-                              child: Text(
-                                conversation.unreadCount > 9
-                                    ? '9+'
-                                    : '${conversation.unreadCount}',
-                                style: DSTextStyle.bodySm.copyWith(
-                                  fontSize: 11,
-                                  color: _c.brand.onPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            child: Text(
+                              '$unreadCount',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                height: 1.1,
                               ),
                             ),
                           ),
@@ -191,22 +181,22 @@ class _ConversationTile extends StatelessWidget {
   }
 
   String _formatTime(DateTime dt) {
+    final local = dt.toLocal();
     final now = DateTime.now();
-    final diff = now.difference(dt);
+    final today = DateTime(now.year, now.month, now.day);
+    final msgDay = DateTime(local.year, local.month, local.day);
 
-    if (diff.inDays == 0) {
-      // Today — show time
-      final h = dt.hour.toString().padLeft(2, '0');
-      final m = dt.minute.toString().padLeft(2, '0');
+    if (msgDay == today) {
+      final h = local.hour.toString().padLeft(2, '0');
+      final m = local.minute.toString().padLeft(2, '0');
       return '$h:$m';
-    } else if (diff.inDays == 1) {
-      return 'I går';
-    } else if (diff.inDays < 7) {
-      const days = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
-      return days[dt.weekday - 1];
-    } else {
-      return '${dt.day}/${dt.month}';
     }
+
+    const months = [
+      'januar', 'februar', 'marts', 'april', 'maj', 'juni',
+      'juli', 'august', 'september', 'oktober', 'november', 'december',
+    ];
+    return '${local.day}. ${months[local.month - 1]}';
   }
 }
 
@@ -218,11 +208,11 @@ class _ConversationAvatar extends StatelessWidget {
   final String name;
   final String? imageUrl;
 
-  static const _c = lightColors;
   static const _size = 48.0;
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return ClipOval(
         child: CachedNetworkImage(
@@ -272,10 +262,9 @@ class _InitialsAvatar extends StatelessWidget {
 class _ConversationListSkeleton extends StatelessWidget {
   const _ConversationListSkeleton();
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: 5,
@@ -341,10 +330,9 @@ class _ConversationListSkeleton extends StatelessWidget {
 class _EmptyConversationsView extends StatelessWidget {
   const _EmptyConversationsView();
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -372,10 +360,9 @@ class _ErrorView extends StatelessWidget {
 
   final VoidCallback onRetry;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,

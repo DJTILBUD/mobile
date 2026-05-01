@@ -25,12 +25,14 @@ class ExtJobModel {
     this.assignedMusicianName,
     this.roleType,
     this.requestedMusicianHours,
+    this.musicianStartTime,
     this.region,
     this.notes,
     this.birthdayPersonAge,
     this.company,
     this.djReadyConfirmedAt,
     this.customerContactPlannedFor,
+    this.hasActiveOffer = false,
   });
 
   final int id;
@@ -54,12 +56,14 @@ class ExtJobModel {
   final String? assignedMusicianName;
   final String? roleType;
   final double? requestedMusicianHours;
+  final String? musicianStartTime;
   final String? region;
   final String? notes;
   final String? birthdayPersonAge;
   final String? company;
   final DateTime? djReadyConfirmedAt;
   final String? customerContactPlannedFor;
+  final bool hasActiveOffer;
 
   factory ExtJobModel.fromJson(Map<String, dynamic> json) {
     // PostgreSQL time fields come as "HH:MM:SS", display as "HH:MM"
@@ -79,6 +83,7 @@ class ExtJobModel {
       email: json['email'] as String?,
       startTime: formatTime(json['start_time']),
       endTime: formatTime(json['end_time']),
+      musicianStartTime: formatTime(json['musician_start_time']),
       location: json['location'] as String?,
       guestsAmount: (json['guests_amount'] as num?)?.toInt(),
       eventType: json['event_type'] as String?,
@@ -100,6 +105,7 @@ class ExtJobModel {
           ? DateTime.parse(json['dj_ready_confirmed_at'] as String)
           : null,
       customerContactPlannedFor: json['customer_contact_planned_for'] as String?,
+      hasActiveOffer: json['has_active_offer'] as bool? ?? false,
     );
   }
 
@@ -166,6 +172,9 @@ class ExtJobModel {
       requestedSaxophonist: true,
       leadRequest: notes,
       assignedDjName: assignedDjName,
+      musicianStartTime: musicianStartTime,
+      roleType: roleType,
+      hasActiveOffer: hasActiveOffer,
     );
   }
 }

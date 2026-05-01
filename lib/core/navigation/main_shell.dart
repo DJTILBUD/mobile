@@ -24,18 +24,20 @@ class MainShell extends ConsumerWidget {
     final List<DSNavigationItem> items;
 
     if (role == MusicianRole.dj) {
-      final actionBadge = ref.watch(djWonActionCountProvider);
+      final jobsBadge = ref.watch(djQuoteActionCountProvider);
+      final udvalgteBadge = ref.watch(djExtJobActionCountProvider);
       items = [
         DSNavigationItem(
           label: 'Jobs',
           icon: LucideIcons.listMusic,
           activeIcon: LucideIcons.listMusic,
-          badgeCount: actionBadge,
+          badgeCount: jobsBadge,
         ),
-        const DSNavigationItem(
+        DSNavigationItem(
           label: 'Udvalgte',
-          icon: LucideIcons.sparkle,
-          activeIcon: LucideIcons.sparkle,
+          icon: LucideIcons.star,
+          activeIcon: LucideIcons.star,
+          badgeCount: udvalgteBadge,
         ),
         DSNavigationItem(
           label: 'Chat',

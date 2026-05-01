@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-const _c = lightColors;
-
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
 
@@ -12,6 +10,7 @@ class FeedbackScreen extends StatefulWidget {
 }
 
 class _FeedbackScreenState extends State<FeedbackScreen> {
+  DSColors get _c => DSTheme.of(context);
   final _controller = TextEditingController();
   bool _submitted = false;
 
@@ -30,6 +29,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(

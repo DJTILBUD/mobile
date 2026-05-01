@@ -35,8 +35,6 @@ class EditQuoteBottomSheet extends ConsumerStatefulWidget {
 }
 
 class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
-  static const _c = lightColors;
-
   late final TextEditingController _priceCtrl;
   late final TextEditingController _pitchCtrl;
   late final TextEditingController _earlyPriceCtrl;
@@ -104,9 +102,8 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
   bool get _windowOpen => _secondsLeft > 0;
 
   String get _countdownLabel {
-    final m = (_secondsLeft ~/ 60).toString().padLeft(2, '0');
-    final s = (_secondsLeft % 60).toString().padLeft(2, '0');
-    return '$m:$s';
+    final m = (_secondsLeft / 60).ceil();
+    return '$m min';
   }
 
   String? _validate() {
@@ -161,6 +158,7 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final isSaving = ref.watch(editDjQuoteProvider) is AsyncLoading;
     final isExpired = !_windowOpen;
     final isUrgent = _secondsLeft < 120; // < 2 minutes
@@ -284,10 +282,10 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
                       Container(
                         padding: const EdgeInsets.all(DSSpacing.s3),
                         decoration: BoxDecoration(
-                          color: _c.state.danger.withValues(alpha: 0.08),
+                          color: _c.state.danger.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(DSRadius.sm),
                           border: Border.all(
-                              color: _c.state.danger.withValues(alpha: 0.3)),
+                              color: _c.state.danger.withValues(alpha: 0.50)),
                         ),
                         child: Text(
                           _validationError!,
@@ -334,10 +332,9 @@ class _CountdownBanner extends StatelessWidget {
   final bool isUrgent;
   final String countdownLabel;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final Color bg;
     final Color border;
     final Color text;
@@ -345,20 +342,20 @@ class _CountdownBanner extends StatelessWidget {
     final IconData icon;
 
     if (isExpired) {
-      bg = _c.state.danger.withValues(alpha: 0.08);
-      border = _c.state.danger.withValues(alpha: 0.3);
+      bg = _c.state.danger.withValues(alpha: 0.15);
+      border = _c.state.danger.withValues(alpha: 0.50);
       text = _c.state.danger;
       label = 'Redigeringsvinduet er udløbet';
       icon = LucideIcons.timerOff;
     } else if (isUrgent) {
-      bg = _c.state.warning.withValues(alpha: 0.12);
-      border = _c.state.warning.withValues(alpha: 0.4);
+      bg = _c.state.warning.withValues(alpha: 0.22);
+      border = _c.state.warning.withValues(alpha: 0.55);
       text = _c.text.primary;
       label = 'Skynd dig! Du kan redigere i $countdownLabel';
       icon = LucideIcons.timer;
     } else {
-      bg = _c.state.info.withValues(alpha: 0.08);
-      border = _c.state.info.withValues(alpha: 0.3);
+      bg = _c.state.info.withValues(alpha: 0.16);
+      border = _c.state.info.withValues(alpha: 0.50);
       text = _c.text.primary;
       label = 'Du kan redigere dit tilbud i $countdownLabel';
       icon = LucideIcons.timer;

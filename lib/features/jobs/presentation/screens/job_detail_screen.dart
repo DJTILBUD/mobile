@@ -1,20 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 
-class JobDetailScreen extends StatelessWidget {
+class JobDetailScreen extends ConsumerWidget {
   const JobDetailScreen({super.key, required this.job});
 
   final Job job;
 
-  static const _c = lightColors;
+  static final _numFmt = NumberFormat('#,###', 'da_DK');
+  static String _fmt(int n) => _numFmt.format(n).replaceAll(',', '.');
+
+  String _adjustedBudgetDisplay(String? djTier) {
+    final adjEnd = adjustBudgetForDjView(
+      budget: job.budgetEnd ?? job.budgetStart,
+      requestedSaxophonist: job.requestedSaxophonist,
+      requestedMusicianHours: job.requestedMusicianHours,
+      djTier: djTier,
+      maxBudget: job.budgetEnd,
+      jobCreatedAt: job.createdAt,
+    );
+    if (adjEnd == null) return 'Ikke angivet';
+
+    if (job.budgetStart != null && job.budgetStart != job.budgetEnd) {
+      final adjStart = adjustBudgetForDjView(
+        budget: job.budgetStart,
+        requestedSaxophonist: job.requestedSaxophonist,
+        requestedMusicianHours: job.requestedMusicianHours,
+        djTier: djTier,
+        maxBudget: job.budgetEnd,
+        jobCreatedAt: job.createdAt,
+      );
+      if (adjStart != null) {
+        return '${_fmt(adjStart.toInt())} – ${_fmt(adjEnd.toInt())} kr.';
+      }
+    }
+    return '${_fmt(adjEnd.toInt())} kr.';
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
+    final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
     final dateStr = DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);
 
     return Scaffold(
@@ -30,7 +63,7 @@ class JobDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            JobIdBadge(id: job.id),
+            JobIdBadge(id: job.isExtJob ? (job.extJobId ?? job.id) : job.id, isExtJob: job.isExtJob),
           ],
         ),
         backgroundColor: _c.bg.surface,
@@ -100,7 +133,7 @@ class JobDetailScreen extends StatelessWidget {
                       size: 16, color: _c.brand.primaryActive),
                   const SizedBox(width: DSSpacing.s2),
                   Text(
-                    job.budgetDisplay,
+                    _adjustedBudgetDisplay(djTier),
                     style: DSTextStyle.headingSm.copyWith(
                         color: _c.brand.primaryActive,
                         fontWeight: FontWeight.w700),
@@ -166,7 +199,8 @@ class JobDetailScreen extends StatelessWidget {
             // ── Musician request ─────────────────────────────────────────────
             if (job.requestedSaxophonist ||
                 (job.requestedMusicianHours != null &&
-                    job.requestedMusicianHours! > 0)) ...[
+                    job.requestedMusicianHours! > 0) ||
+                job.musicianStartTime != null) ...[
               _SectionCard(
                 title: 'Musikerforespørgsel',
                 child: Column(
@@ -174,7 +208,7 @@ class JobDetailScreen extends StatelessWidget {
                   children: [
                     if (job.requestedSaxophonist)
                       _InfoRow(
-                          icon: LucideIcons.mic,
+                          icon: LucideIcons.music2,
                           label: 'Saxofonist',
                           value: 'Ja'),
                     if (job.requestedSaxophonist &&
@@ -186,6 +220,13 @@ class JobDetailScreen extends StatelessWidget {
                           label: 'Timer',
                           value:
                               '${job.requestedMusicianHours!.toStringAsFixed(1)} timer'),
+                    if (job.musicianStartTime != null) ...[
+                      const SizedBox(height: DSSpacing.s2),
+                      _InfoRow(
+                          icon: LucideIcons.clock,
+                          label: 'Saxofonist starter',
+                          value: job.musicianStartTime!),
+                    ],
                   ],
                 ),
               ),
@@ -243,10 +284,9 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final Widget child;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
@@ -286,10 +326,9 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 15, color: _c.text.muted),

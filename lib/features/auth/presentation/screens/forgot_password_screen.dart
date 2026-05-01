@@ -15,14 +15,13 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
+  DSColors get _c => DSTheme.of(context);
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
   bool _emailSent = false;
   String? _errorMessage;
-
-  static const _c = lightColors;
 
   @override
   void dispose() {
@@ -57,6 +56,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
@@ -131,7 +131,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             Container(
               padding: const EdgeInsets.all(DSSpacing.s3),
               decoration: BoxDecoration(
-                color: _c.state.danger.withValues(alpha: 0.1),
+                color: _c.state.danger.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(DSRadius.sm),
                 border: Border.all(color: _c.state.danger),
               ),

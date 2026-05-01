@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:dj_tilbud_app/core/widgets/restart_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
+import 'package:dj_tilbud_app/core/theme/theme_provider.dart';
 import 'package:dj_tilbud_app/features/agent/presentation/providers/agent_provider.dart';
 import 'package:dj_tilbud_app/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
@@ -12,8 +15,6 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-
-const _c = lightColors;
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key, required this.role});
@@ -39,9 +40,15 @@ class ProfileScreen extends ConsumerWidget {
             Navigator.of(context).pop();
             context.pushNamed(AppRoutes.editProfile, extra: role);
           },
+          onGoToReviews: () {
+            Navigator.of(context).pop();
+            context.pushNamed(AppRoutes.reviews, extra: role);
+          },
+          onGoToMedia: () {
+            Navigator.of(context).pop();
+            context.pushNamed(AppRoutes.media);
+          },
           onBioAccepted: (_) {
-            // Bio was accepted inside the nested sheet — user still needs to save
-            // from EditProfileScreen, so just navigate there.
             Navigator.of(context).pop();
             context.pushNamed(AppRoutes.editProfile, extra: role);
           },
@@ -52,20 +59,45 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
     final nameAsync = role == MusicianRole.dj
         ? ref.watch(djProfileProvider.select((p) => p.whenData((d) => d.fullName)))
         : ref.watch(musicianProfileProvider.select((p) => p.whenData((d) => d.fullName)));
 
     final displayName = nameAsync.valueOrNull ?? '';
 
-    // Full profile for coach context — loaded silently, doesn't block UI
+    // Full profile + reviews + files for coach context — loaded silently, don't block UI
     final profileAsync = role == MusicianRole.dj
         ? ref.watch(djProfileProvider)
         : ref.watch(musicianProfileProvider);
 
-    final userContext = profileAsync.whenData((p) => role == MusicianRole.dj
-        ? djToUserContext(p as DjProfile)
-        : musicianToUserContext(p as MusicianProfile));
+    final reviewsAsync = role == MusicianRole.dj
+        ? ref.watch(djReviewsProvider)
+        : ref.watch(musicianReviewsProvider);
+
+    final filesAsync = ref.watch(userFilesProvider);
+
+    final coachContext = profileAsync.whenData((p) {
+      final base = role == MusicianRole.dj
+          ? djToUserContext(p as DjProfile)
+          : musicianToUserContext(p as MusicianProfile);
+      final files = filesAsync.valueOrNull ?? [];
+      final videoCount = files
+          .where((f) =>
+              f.type == UserFileType.profileVideo ||
+              f.type == UserFileType.commonVideo)
+          .length;
+      return <String, dynamic>{
+        ...base,
+        'reviewCount': reviewsAsync.valueOrNull?.length ?? 0,
+        'hasProfileImage': files.any((f) => f.type == UserFileType.profile),
+        'videoCount': videoCount,
+        if (role == MusicianRole.dj)
+          'hasSoundcloud': (p as DjProfile).soundcloudUrl?.isNotEmpty == true,
+      };
+    });
+
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
 
     return Scaffold(
       backgroundColor: _c.bg.canvas,
@@ -73,15 +105,25 @@ class ProfileScreen extends ConsumerWidget {
         title: Text('Profil', style: DSTextStyle.headingSm.copyWith(color: _c.text.primary)),
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
+        actions: [
+          IconButton(
+            icon: Icon(
+              isDark ? LucideIcons.sun : LucideIcons.moon,
+              color: _c.text.secondary,
+              size: 20,
+            ),
+            onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
+          ),
+        ],
       ),
-      floatingActionButton: userContext.valueOrNull != null
+      floatingActionButton: coachContext.valueOrNull != null
           ? FloatingActionButton.extended(
               onPressed: () =>
-                  _openCoach(context, ref, userContext.valueOrNull!),
+                  _openCoach(context, ref, coachContext.valueOrNull!),
               backgroundColor: _c.brand.primary,
               foregroundColor: _c.brand.onPrimary,
               elevation: 2,
-              icon: const Icon(LucideIcons.sparkle, size: 18),
+              icon: const Icon(LucideIcons.sparkles, size: 18),
               label: Text(
                 'Profilcoach',
                 style: DSTextStyle.labelMd.copyWith(fontWeight: FontWeight.w600),
@@ -91,45 +133,62 @@ class ProfileScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: DSSpacing.s4),
         children: [
-          // User header
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s6),
-            child: Row(
-              children: [
-                DSAvatar(
-                  size: 56,
-                  imageUrl: ref
-                      .watch(userFilesProvider)
-                      .valueOrNull
-                      ?.where((f) => f.type == UserFileType.profile)
-                      .firstOrNull
-                      ?.url,
-                ),
-                const SizedBox(width: DSSpacing.s3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        displayName.isNotEmpty ? displayName : 'Indlæser...',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: _c.text.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        role == MusicianRole.dj ? 'DJ' : 'Musiker',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: _c.text.secondary,
-                        ),
-                      ),
-                    ],
+          // User header — tappable → profile preview
+          GestureDetector(
+            onTap: () => context.pushNamed(AppRoutes.profilePreview, extra: role),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s6),
+              child: Row(
+                children: [
+                  DSAvatar(
+                    size: 56,
+                    imageUrl: ref
+                        .watch(userFilesProvider)
+                        .valueOrNull
+                        ?.where((f) => f.type == UserFileType.profile)
+                        .firstOrNull
+                        ?.url,
                   ),
-                ),
-              ],
+                  const SizedBox(width: DSSpacing.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayName.isNotEmpty ? displayName : 'Indlæser...',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: _c.text.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              role == MusicianRole.dj ? 'DJ' : 'Musiker',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _c.text.secondary,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '· Se forhåndsvisning',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _c.brand.primaryActive,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(LucideIcons.chevronRight, size: 18, color: _c.text.muted),
+                ],
+              ),
             ),
           ),
 
@@ -171,11 +230,6 @@ class ProfileScreen extends ConsumerWidget {
                   : AppRoutes.instrumentalistCalendar,
             ),
           ),
-          _MenuItem(
-            icon: LucideIcons.eye,
-            label: 'Forhåndsvisning',
-            onTap: () => context.pushNamed(AppRoutes.profilePreview, extra: role),
-          ),
           if (role == MusicianRole.dj)
             _MenuItem(
               icon: LucideIcons.sliders,
@@ -194,14 +248,17 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.pushNamed(AppRoutes.adminMessages, extra: role),
           ),
           _MenuItem(
-            icon: LucideIcons.messageSquare,
-            label: 'Feedback',
-            onTap: () => context.pushNamed(AppRoutes.feedback),
-          ),
-          _MenuItem(
             icon: LucideIcons.bookOpen,
             label: 'FAQ',
-            onTap: () => context.pushNamed(AppRoutes.faq),
+            onTap: () => context.pushNamed(AppRoutes.faq, extra: role),
+          ),
+          _MenuItem(
+            icon: LucideIcons.shield,
+            label: 'Privatlivspolitik',
+            onTap: () => launchUrl(
+              Uri.parse('https://djtilbud.dk/privacy-policy/'),
+              mode: LaunchMode.externalApplication,
+            ),
           ),
 
           const SizedBox(height: DSSpacing.s4),
@@ -213,7 +270,10 @@ class ProfileScreen extends ConsumerWidget {
             icon: LucideIcons.logOut,
             label: 'Log ud',
             color: _c.state.danger,
-            onTap: () => ref.read(authRepositoryProvider).signOut(),
+            onTap: () async {
+              await ref.read(authRepositoryProvider).signOut();
+              if (context.mounted) RestartWidget.restartApp(context);
+            },
           ),
         ],
       ),
@@ -236,6 +296,7 @@ class _MenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     final c = color ?? _c.text.primary;
     return ListTile(
       leading: Icon(icon, color: c, size: 22),

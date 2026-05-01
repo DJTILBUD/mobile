@@ -24,6 +24,29 @@ class AppColors {
   static const peachRed = Color(0xFFFF8B8B);
 }
 
+ThemeData buildDarkAppTheme() {
+  final textTheme = GoogleFonts.promptTextTheme(ThemeData.dark().textTheme);
+  return ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: AppColors.boogieBuster,
+      brightness: Brightness.dark,
+      primary: AppColors.boogieBuster,
+      onPrimary: AppColors.eerieBlack,
+      surface: const Color(0xFF1F2937),
+      onSurface: const Color(0xFFF9FAFB),
+    ),
+    textTheme: textTheme,
+    scaffoldBackgroundColor: const Color(0xFF111827),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF1F2937),
+      foregroundColor: Color(0xFFF9FAFB),
+      surfaceTintColor: Color(0xFF1F2937),
+    ),
+  );
+}
+
 ThemeData buildAppTheme() {
   final textTheme = GoogleFonts.promptTextTheme();
 

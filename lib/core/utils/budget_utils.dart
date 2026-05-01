@@ -1,3 +1,12 @@
+// Jobs created before this date pay the legacy 20% fee; on/after pay 25%.
+final _feeChangeDate = DateTime.utc(2025, 10, 15);
+
+/// Returns the platform fee fraction (0.20 or 0.25) for a job based on its
+/// creation date. Mirrors `getFeeForJob` from the web app.
+double getFeeForJob(DateTime jobCreatedAt) {
+  return jobCreatedAt.isBefore(_feeChangeDate) ? 0.20 : 0.25;
+}
+
 const _bTierBudgetDeduction = 500;
 const _bTierDeductionWindowMs = 24 * 60 * 60 * 1000;
 const _fourHoursMs = 4 * 60 * 60 * 1000;

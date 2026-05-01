@@ -8,8 +8,6 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/review.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-const _c = lightColors;
-
 const _eventTypes = [
   'bryllup', 'firmafest', 'fødselsdagsfest', 'fødselsdag',
   'julefrokost', 'privatfest', 'ungdomsfest', 'klub/bar',
@@ -23,6 +21,7 @@ class ReviewsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+      final _c = DSTheme.of(context);
     final isDj = role == MusicianRole.dj;
     final reviewsAsync = isDj ? ref.watch(djReviewsProvider) : ref.watch(musicianReviewsProvider);
 
@@ -76,6 +75,7 @@ class ReviewsScreen extends ConsumerWidget {
   }
 
   void _showUpsertDialog(BuildContext context, WidgetRef ref, {required bool isDj, Review? existing}) {
+    final _c = DSTheme.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -159,6 +159,7 @@ class _ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: DSSpacing.s3),
       child: DSSurface(
@@ -216,6 +217,7 @@ class _ReviewForm extends StatefulWidget {
 }
 
 class _ReviewFormState extends State<_ReviewForm> {
+  DSColors get _c => DSTheme.of(context);
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _reviewCtrl;
@@ -243,6 +245,7 @@ class _ReviewFormState extends State<_ReviewForm> {
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Padding(
       padding: EdgeInsets.only(
         left: DSSpacing.s6, right: DSSpacing.s6, top: DSSpacing.s6,

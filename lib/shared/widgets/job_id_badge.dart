@@ -9,12 +9,11 @@ class JobIdBadge extends StatelessWidget {
   final int id;
   final bool isExtJob;
 
-  static const _c = lightColors;
-
   String get _label => isExtJob ? '#E$id' : '#$id';
 
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return Text(
       _label,
       style: DSTextStyle.labelMd.copyWith(

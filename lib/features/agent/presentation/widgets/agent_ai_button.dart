@@ -16,10 +16,9 @@ class AgentAiButton extends StatelessWidget {
   final bool isDj;
   final ValueChanged<String> onDraftAccepted;
 
-  static const _c = lightColors;
-
   @override
   Widget build(BuildContext context) {
+      final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: () => _openSheet(context),
       child: Container(
@@ -35,7 +34,7 @@ class AgentAiButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.sparkle, size: 13, color: _c.brand.primaryActive),
+            Icon(LucideIcons.sparkles, size: 13, color: _c.brand.primaryActive),
             const SizedBox(width: DSSpacing.s1),
             Text(
               'Skriv med AI',
