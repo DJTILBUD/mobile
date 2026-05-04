@@ -998,13 +998,11 @@ class _MusicianExtraHoursSectionState
   }
 
   bool _isWithinExtraHoursWindow(DateTime eventDate) {
-    final today = DateTime.now();
-    final todayMidnight =
-        DateTime(today.year, today.month, today.day);
+    final todayMidnight = DateTime.now();
     final eventMidnight =
         DateTime(eventDate.year, eventDate.month, eventDate.day);
-    final diff = todayMidnight.difference(eventMidnight).inDays;
-    return diff >= 0 && diff <= 2;
+    // Show on event day and any day after — never before the event
+    return !eventMidnight.isAfter(DateTime(todayMidnight.year, todayMidnight.month, todayMidnight.day));
   }
 
   Future<void> _save() async {
@@ -1027,9 +1025,7 @@ class _MusicianExtraHoursSectionState
       final _c = DSTheme.of(context);
     final job = widget.offer.job;
     final inWindow = _isWithinExtraHoursWindow(job.date);
-    if (!inWindow && widget.offer.extraHours == null) {
-      return const SizedBox.shrink();
-    }
+    if (!inWindow) return const SizedBox.shrink();
 
     final isSaving =
         ref.watch(addMusicianExtraHoursProvider) is AsyncLoading;

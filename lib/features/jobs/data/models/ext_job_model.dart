@@ -162,7 +162,7 @@ class ExtJobModel {
       city: location ?? '',
       region: region ?? '',
       guestsAmount: guestsAmount ?? 0,
-      status: 'open',
+      status: status,
       createdAt: createdAt,
       requestedMusicianHours: requestedMusicianHours,
       birthdayPersonAge: birthdayPersonAge,
