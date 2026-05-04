@@ -280,10 +280,14 @@ final wonDjQuotesProvider = Provider<AsyncValue<List<DjQuote>>>((ref) {
   return ref.watch(djQuotesProvider).whenData((quotes) {
     final list = quotes.where((q) => q.status == QuoteStatus.won).toList();
     list.sort((a, b) {
-      // Actions (pending tasks) first, then by event date ascending
-      final aAction = a.hasAction ? 0 : 1;
-      final bAction = b.hasAction ? 0 : 1;
-      if (aAction != bAction) return aAction.compareTo(bAction);
+      // Tier 0: red actions first, tier 1: planned contact, tier 2: no action
+      int actionTier(DjQuote q) {
+        if (q.hasAction) return 0;
+        if (q.pendingAction == JobActionType.contactCustomerPlanned) return 1;
+        return 2;
+      }
+      final tierDiff = actionTier(a).compareTo(actionTier(b));
+      if (tierDiff != 0) return tierDiff;
       return a.job.date.compareTo(b.job.date);
     });
     return list;
@@ -346,7 +350,9 @@ final instrumentalistExtJobsProvider = FutureProvider<List<Job>>((ref) {
       .fetchInstrumentalistExtJobs(_currentUserId);
 });
 
-/// Combined feed: regular jobs + ext jobs, sorted by date ascending.
+/// Combined feed: regular jobs + ext jobs.
+/// Sort order: eligible first (newest created_at) → active offer (taken but biddable)
+/// → date conflict (musician already booked). Mirrors web app priority logic.
 final combinedInstrumentalistJobsProvider =
     Provider<AsyncValue<List<Job>>>((ref) {
   final regular = ref.watch(newInstrumentalistJobsProvider);
@@ -358,10 +364,20 @@ final combinedInstrumentalistJobsProvider =
   if (regular is AsyncError) return regular;
   if (ext is AsyncError) return ext;
 
+  int tier(Job j) {
+    if (j.hasDateConflict) return 2;
+    if (j.hasActiveOffer) return 1;
+    return 0;
+  }
+
   final combined = <Job>[
     ...regular.valueOrNull ?? [],
     ...ext.valueOrNull ?? [],
-  ]..sort((a, b) => a.date.compareTo(b.date));
+  ]..sort((a, b) {
+      final tierDiff = tier(a).compareTo(tier(b));
+      if (tierDiff != 0) return tierDiff;
+      return b.createdAt.compareTo(a.createdAt); // newest first within tier
+    });
 
   return AsyncData(combined);
 });
@@ -417,10 +433,14 @@ final wonServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((ref) 
   return ref.watch(serviceOffersProvider).whenData((offers) {
     final list = offers.where((o) => o.status == ServiceOfferStatus.won).toList();
     list.sort((a, b) {
-      // Actions (pending tasks) first, then by event date ascending
-      final aAction = a.hasAction ? 0 : 1;
-      final bAction = b.hasAction ? 0 : 1;
-      if (aAction != bAction) return aAction.compareTo(bAction);
+      // Tier 0: red actions first, tier 1: planned contact, tier 2: no action
+      int actionTier(ServiceOffer o) {
+        if (o.hasAction) return 0;
+        if (o.pendingAction == JobActionType.contactCustomerPlanned) return 1;
+        return 2;
+      }
+      final tierDiff = actionTier(a).compareTo(actionTier(b));
+      if (tierDiff != 0) return tierDiff;
       return a.job.date.compareTo(b.job.date);
     });
     return list;

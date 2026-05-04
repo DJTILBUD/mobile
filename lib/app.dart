@@ -7,7 +7,9 @@ import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent;
 import 'package:dj_tilbud_app/core/config/role_cache.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
+import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/theme/app_theme.dart';
+import 'package:dj_tilbud_app/core/theme/theme_provider.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/screens/forgot_password_screen.dart';
@@ -439,22 +441,34 @@ class _AppState extends ConsumerState<App> {
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
 
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
       title: 'DJ Tilbud',
       theme: buildAppTheme(),
+      darkTheme: buildDarkAppTheme(),
+      themeMode: themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => GestureDetector(
-        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        behavior: HitTestBehavior.translucent,
-        child: Stack(
-          children: [
-            child!,
-            const InAppNotificationBanner(),
-            const DevEnvBanner(),
-          ],
-        ),
-      ),
+      builder: (context, child) {
+        final isDark = themeMode == ThemeMode.dark ||
+            (themeMode == ThemeMode.system &&
+                MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+        return DSTheme(
+          colors: isDark ? darkColors : lightColors,
+          child: GestureDetector(
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            behavior: HitTestBehavior.translucent,
+            child: Stack(
+              children: [
+                child!,
+                const InAppNotificationBanner(),
+                const DevEnvBanner(),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

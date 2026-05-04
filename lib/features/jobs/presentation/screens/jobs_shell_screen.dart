@@ -17,6 +17,7 @@ import 'package:dj_tilbud_app/features/calendar/presentation/widgets/ical_export
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
@@ -26,7 +27,6 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/service_offer_c
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/empty_jobs_view.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-const _c = lightColors;
 
 class JobsShellScreen extends ConsumerStatefulWidget {
   const JobsShellScreen({super.key, required this.role});
@@ -42,6 +42,7 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
     final isDj = widget.role == MusicianRole.dj;
 
     if (_calendarMode) {
@@ -139,7 +140,7 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
               ? [
                   _DjNewJobsTab(),
                   _DjQuotesTab(filter: QuoteStatus.pending),
-                  _DjQuotesTab(filter: QuoteStatus.won),
+                  const _DjWonQuotesTab(),
                   _DjExpiredTab(),
                 ]
               : [
@@ -165,6 +166,7 @@ class _ModeTogglePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(right: 12, top: 12, bottom: 12),
       child: GestureDetector(
@@ -196,6 +198,7 @@ class _IconSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
     return AnimatedContainer(
       duration: DSMotion.normal,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -215,6 +218,7 @@ class _FilterTogglePill extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
     final enabled = ref.watch(djFiltersEnabledProvider);
     final color = _c.state.success;
     return Padding(
@@ -366,6 +370,7 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
 
   @override
   Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
     final newJobsAsync = ref.watch(filteredDjJobsProvider);
     final pendingAsync = ref.watch(pendingDjQuotesProvider);
     final wonAsync = ref.watch(calendarEventsProvider(MusicianRole.dj));
@@ -630,6 +635,7 @@ class _InstrumentalistCalendarViewState
 
   @override
   Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
     final newJobsAsync = ref.watch(combinedInstrumentalistJobsProvider);
     final sentAsync = ref.watch(sentServiceOffersProvider);
     final wonEventsAsync = ref.watch(calendarEventsProvider(MusicianRole.instrumentalist));
@@ -857,6 +863,7 @@ class _KindChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -908,6 +915,7 @@ class _UnavailableDatesPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
     return Padding(
       padding:
           const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
@@ -960,7 +968,7 @@ class _UnavailableDatesPanel extends StatelessWidget {
                   style: DSTextStyle.labelSm.copyWith(
                     fontWeight: FontWeight.w700,
                     color: isEditing
-                        ? Colors.white
+                        ? _c.text.onDark
                         : _c.text.secondary,
                   ),
                 ),
@@ -978,6 +986,7 @@ class _UnavailableDatesPanel extends StatelessWidget {
 class _DjNewJobsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
     final jobsAsync = ref.watch(filteredDjJobsProvider);
     final quotes = ref.watch(djQuotesProvider).valueOrNull ?? [];
     final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
@@ -1060,6 +1069,7 @@ class _DjQuotesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
     final quotesAsync = switch (filter) {
       QuoteStatus.pending => ref.watch(pendingDjQuotesProvider),
       QuoteStatus.won => ref.watch(wonDjQuotesProvider),
@@ -1118,9 +1128,156 @@ class _DjQuotesTab extends ConsumerWidget {
   }
 }
 
+// ── DJ Won Quotes Tab (with played-jobs toggle) ──
+
+class _DjWonQuotesTab extends ConsumerStatefulWidget {
+  const _DjWonQuotesTab();
+
+  @override
+  ConsumerState<_DjWonQuotesTab> createState() => _DjWonQuotesTabState();
+}
+
+class _DjWonQuotesTabState extends ConsumerState<_DjWonQuotesTab> {
+  bool _showPlayed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    final quotesAsync = ref.watch(wonDjQuotesProvider);
+
+    return quotesAsync.when(
+      loading: () => const SkeletonListView(),
+      error: (error, _) => _ErrorView(
+        message: error.toString(),
+        onRetry: () => ref.read(djQuotesProvider.notifier).refresh(),
+      ),
+      data: (quotes) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+
+        int actionTier(DjQuote q) {
+          if (q.hasAction) return 0;
+          if (q.pendingAction == JobActionType.contactCustomerPlanned) return 1;
+          return 2;
+        }
+
+        final upcoming = quotes
+            .where((q) => !DateTime(
+                    q.job.date.year, q.job.date.month, q.job.date.day)
+                .isBefore(today))
+            .toList()
+          ..sort((a, b) {
+            final tierDiff = actionTier(a).compareTo(actionTier(b));
+            if (tierDiff != 0) return tierDiff;
+            return a.job.date.compareTo(b.job.date);
+          });
+
+        final played = quotes
+            .where((q) => DateTime(
+                    q.job.date.year, q.job.date.month, q.job.date.day)
+                .isBefore(today))
+            .toList()
+          ..sort((a, b) => b.job.date.compareTo(a.job.date));
+
+        final displayList = _showPlayed ? played : upcoming;
+
+        return RefreshIndicator(
+          color: _c.brand.primary,
+          onRefresh: () => ref.read(djQuotesProvider.notifier).refresh(),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            children: [
+              if (played.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: DSSpacing.s4, vertical: DSSpacing.s2),
+                  child: GestureDetector(
+                    onTap: () => setState(() => _showPlayed = !_showPlayed),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: DSSpacing.s3, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _showPlayed
+                            ? _c.state.success.withValues(alpha: 0.10)
+                            : _c.bg.inputBg,
+                        borderRadius: BorderRadius.circular(DSRadius.pill),
+                        border: Border.all(
+                          color: _showPlayed
+                              ? _c.state.success
+                              : _c.border.subtle,
+                          width: _showPlayed ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _showPlayed
+                                ? LucideIcons.calendarCheck
+                                : LucideIcons.history,
+                            size: 14,
+                            color: _showPlayed
+                                ? _c.state.success
+                                : _c.text.secondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _showPlayed
+                                ? 'Kommende jobs (${upcoming.length})'
+                                : 'Vis spillede jobs (${played.length})',
+                            style: DSTextStyle.labelSm.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: _showPlayed
+                                  ? _c.state.success
+                                  : _c.text.secondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+              if (displayList.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 80),
+                  child: EmptyJobsView(
+                    message: _showPlayed
+                        ? 'Ingen spillede jobs endnu.'
+                        : quotes.isEmpty
+                            ? 'Du har ikke vundet nogen jobs endnu.'
+                            : 'Ingen kommende vundne jobs.',
+                    icon: LucideIcons.calendarCheck,
+                  ),
+                )
+              else
+                ...displayList.asMap().entries.map(
+                      (e) => AnimatedCard(
+                        index: e.key,
+                        child: QuoteCard(
+                          quote: e.value,
+                          isPlayed: _showPlayed,
+                          onTap: () => context.pushNamed(
+                            AppRoutes.quoteDetail,
+                            extra: e.value,
+                          ),
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _DjExpiredTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
     final quotesAsync = ref.watch(expiredDjQuotesProvider);
 
     return quotesAsync.when(
@@ -1177,6 +1334,7 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
     final jobsAsync = ref.watch(combinedInstrumentalistJobsProvider);
 
     return jobsAsync.when(
@@ -1245,6 +1403,7 @@ class _InstrumentalistWonOffersTabState
 
   @override
   Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
     final offersAsync = ref.watch(wonServiceOffersProvider);
 
     return offersAsync.when(
@@ -1257,12 +1416,22 @@ class _InstrumentalistWonOffersTabState
         final now = DateTime.now();
         final today = DateTime(now.year, now.month, now.day);
 
+        int actionTier(ServiceOffer o) {
+          if (o.hasAction) return 0;
+          if (o.pendingAction == JobActionType.contactCustomerPlanned) return 1;
+          return 2;
+        }
+
         final upcoming = offers
             .where((o) => !DateTime(
                     o.job.date.year, o.job.date.month, o.job.date.day)
                 .isBefore(today))
             .toList()
-          ..sort((a, b) => a.job.date.compareTo(b.job.date));
+          ..sort((a, b) {
+            final tierDiff = actionTier(a).compareTo(actionTier(b));
+            if (tierDiff != 0) return tierDiff;
+            return a.job.date.compareTo(b.job.date);
+          });
 
         final played = offers
             .where((o) => DateTime(
@@ -1270,6 +1439,8 @@ class _InstrumentalistWonOffersTabState
                 .isBefore(today))
             .toList()
           ..sort((a, b) => b.job.date.compareTo(a.job.date));
+
+        final displayList = _showPlayed ? played : upcoming;
 
         return RefreshIndicator(
           color: _c.brand.primary,
@@ -1306,7 +1477,7 @@ class _InstrumentalistWonOffersTabState
                         children: [
                           Icon(
                             _showPlayed
-                                ? LucideIcons.eyeOff
+                                ? LucideIcons.calendarCheck
                                 : LucideIcons.history,
                             size: 14,
                             color: _showPlayed
@@ -1316,7 +1487,7 @@ class _InstrumentalistWonOffersTabState
                           const SizedBox(width: 6),
                           Text(
                             _showPlayed
-                                ? 'Skjul spillede jobs'
+                                ? 'Kommende jobs (${upcoming.length})'
                                 : 'Vis spillede jobs (${played.length})',
                             style: DSTextStyle.labelSm.copyWith(
                               fontWeight: FontWeight.w600,
@@ -1331,23 +1502,26 @@ class _InstrumentalistWonOffersTabState
                   ),
                 ),
 
-              // Upcoming offers
-              if (upcoming.isEmpty)
+              // Either upcoming or played — never both at once
+              if (displayList.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 60),
                   child: EmptyJobsView(
-                    message: offers.isEmpty
-                        ? 'Ingen accepterede jobs endnu.'
-                        : 'Ingen kommende accepterede jobs.',
+                    message: _showPlayed
+                        ? 'Ingen spillede jobs endnu.'
+                        : offers.isEmpty
+                            ? 'Ingen accepterede jobs endnu.'
+                            : 'Ingen kommende accepterede jobs.',
                     icon: LucideIcons.calendarCheck,
                   ),
                 )
               else
-                ...upcoming.asMap().entries.map(
+                ...displayList.asMap().entries.map(
                       (e) => AnimatedCard(
                         index: e.key,
                         child: ServiceOfferCard(
                           offer: e.value,
+                          isPlayed: _showPlayed,
                           onTap: () => context.pushNamed(
                             AppRoutes.serviceOfferDetail,
                             extra: e.value,
@@ -1355,41 +1529,6 @@ class _InstrumentalistWonOffersTabState
                         ),
                       ),
                     ),
-
-              // Played offers (only when toggled)
-              if (_showPlayed && played.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
-                  child: Row(
-                    children: [
-                      Expanded(child: Divider(color: _c.border.subtle)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: DSSpacing.s3),
-                        child: Text(
-                          'Spillede jobs',
-                          style: DSTextStyle.labelSm
-                              .copyWith(color: _c.text.muted),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: _c.border.subtle)),
-                    ],
-                  ),
-                ),
-                ...played.asMap().entries.map(
-                      (e) => AnimatedCard(
-                        index: upcoming.length + e.key + 1,
-                        child: ServiceOfferCard(
-                          offer: e.value,
-                          onTap: () => context.pushNamed(
-                            AppRoutes.serviceOfferDetail,
-                            extra: e.value,
-                          ),
-                        ),
-                      ),
-                    ),
-              ],
             ],
           ),
         );
@@ -1407,6 +1546,7 @@ class _InstrumentalistOffersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
     final offersAsync = switch (filter) {
       ServiceOfferStatus.sent => ref.watch(sentServiceOffersProvider),
       ServiceOfferStatus.won => ref.watch(wonServiceOffersProvider),
@@ -1479,6 +1619,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(DSSpacing.s8),
