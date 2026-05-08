@@ -325,6 +325,9 @@ class _ServiceOfferDetailScreenState
         _MusicianExtraHoursSection(offer: offer),
         const SizedBox(height: DSSpacing.s4),
 
+        _SpecialRequestFeeSection(offer: offer),
+        const SizedBox(height: DSSpacing.s4),
+
         _MusicianNotesSection(offer: offer),
         const SizedBox(height: DSSpacing.s4),
 
@@ -412,9 +415,11 @@ class _JobHeroCard extends StatelessWidget {
             _MetaRow(icon: LucideIcons.clock, label: job.timeDisplay),
           ],
           const SizedBox(height: DSSpacing.s2),
-          _MetaRow(
-              icon: LucideIcons.mapPin,
-              label: '${job.city}, ${job.region}'),
+          _MetaRow(icon: LucideIcons.flag, label: job.region),
+          if (job.city.isNotEmpty) ...[
+            const SizedBox(height: DSSpacing.s2),
+            _MetaRow(icon: LucideIcons.mapPin, label: job.city),
+          ],
           if (job.guestsAmount > 0) ...[
             const SizedBox(height: DSSpacing.s2),
             _MetaRow(
@@ -1068,6 +1073,223 @@ class _MusicianExtraHoursSectionState
             ),
           ],
         ],
+      ],
+    );
+  }
+}
+
+// ─── Special Request Fee Section ─────────────────────────────────────────────
+
+class _SpecialRequestFeeSection extends ConsumerStatefulWidget {
+  const _SpecialRequestFeeSection({required this.offer});
+  final ServiceOffer offer;
+
+  @override
+  ConsumerState<_SpecialRequestFeeSection> createState() =>
+      _SpecialRequestFeeSectionState();
+}
+
+class _SpecialRequestFeeSectionState
+    extends ConsumerState<_SpecialRequestFeeSection> {
+  DSColors get _c => DSTheme.of(context);
+  late final TextEditingController _feeController;
+  late int _currentFee;
+  late bool _isConfirmed;
+  bool _editing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentFee = widget.offer.specialRequestExtraFeeDkk;
+    _isConfirmed = widget.offer.specialRequestExtraFeeConfirmed;
+    _feeController = TextEditingController(
+      text: _currentFee > 0 ? _currentFee.toString() : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _feeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final fee = int.tryParse(_feeController.text.trim());
+    if (fee == null || fee <= 0) {
+      DSToast.show(context,
+          variant: DSToastVariant.error, title: 'Angiv et gyldigt beløb');
+      return;
+    }
+    final ok = await ref
+        .read(setSpecialRequestFeeProvider.notifier)
+        .set(widget.offer.id, feeDkk: fee);
+    if (ok && mounted) {
+      setState(() {
+        _currentFee = fee;
+        _editing = false;
+      });
+      DSToast.show(context,
+          variant: DSToastVariant.success,
+          title: 'Tillæg registreret – vi bekræfter snart');
+    }
+  }
+
+  Future<void> _remove() async {
+    final ok = await ref
+        .read(removeSpecialRequestFeeProvider.notifier)
+        .remove(widget.offer.id);
+    if (ok && mounted) {
+      setState(() {
+        _currentFee = 0;
+        _editing = false;
+        _feeController.clear();
+      });
+      DSToast.show(context,
+          variant: DSToastVariant.success, title: 'Tillæg fjernet');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSaving = ref.watch(setSpecialRequestFeeProvider) is AsyncLoading;
+    final isRemoving = ref.watch(removeSpecialRequestFeeProvider) is AsyncLoading;
+    final musicianCut = (_currentFee * 0.8).round();
+
+    // Confirmed
+    if (_isConfirmed && _currentFee > 0) {
+      return _Section(
+        title: 'Særligt ønske – ekstra tillæg',
+        children: [
+          Container(
+            padding: const EdgeInsets.all(DSSpacing.s3),
+            decoration: BoxDecoration(
+              color: _c.state.success.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(DSRadius.md),
+              border: Border.all(color: _c.state.success.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              children: [
+                Icon(LucideIcons.checkCircle, size: 16, color: _c.state.success),
+                const SizedBox(width: DSSpacing.s2),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Tillæg bekræftet og lagt til prisen',
+                          style: DSTextStyle.labelMd.copyWith(
+                              color: _c.state.success,
+                              fontWeight: FontWeight.w600)),
+                      Text(
+                          '+${_fmt(_currentFee)} kr. (kunde) · +${_fmt(musicianCut)} kr. (dig)',
+                          style: DSTextStyle.bodySm
+                              .copyWith(color: _c.state.success)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Pending
+    if (!_editing && _currentFee > 0) {
+      return _Section(
+        title: 'Særligt ønske – ekstra tillæg',
+        children: [
+          Container(
+            padding: const EdgeInsets.all(DSSpacing.s3),
+            decoration: BoxDecoration(
+              color: _c.state.warning.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(DSRadius.md),
+              border:
+                  Border.all(color: _c.state.warning.withValues(alpha: 0.4)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(LucideIcons.clock, size: 15, color: _c.state.warning),
+                    const SizedBox(width: DSSpacing.s2),
+                    Text('Registreret – vi bekræfter snart',
+                        style: DSTextStyle.labelMd.copyWith(
+                            color: _c.text.primary,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const SizedBox(height: DSSpacing.s1),
+                Text(
+                    '+${_fmt(_currentFee)} kr. ekstra til kunden · +${_fmt(musicianCut)} kr. til dig',
+                    style:
+                        DSTextStyle.bodySm.copyWith(color: _c.text.secondary)),
+                Text('Beløbet lægges til prisen, når vi har set det.',
+                    style: DSTextStyle.bodySm.copyWith(color: _c.text.muted)),
+              ],
+            ),
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          Row(
+            children: [
+              Expanded(
+                child: DSButton(
+                  label: 'Rediger',
+                  variant: DSButtonVariant.secondary,
+                  size: DSButtonSize.sm,
+                  onTap: () => setState(() => _editing = true),
+                ),
+              ),
+              const SizedBox(width: DSSpacing.s2),
+              DSButton(
+                label: isRemoving ? '...' : 'Fjern',
+                variant: DSButtonVariant.secondary,
+                size: DSButtonSize.sm,
+                onTap: isRemoving ? null : _remove,
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Input
+    return _Section(
+      title: 'Særligt ønske – ekstra tillæg',
+      children: [
+        Text(
+          'Har du og kunden aftalt et ekstra beløb? Registrer det her — vi ser det og lægger det til prisen. Du får 80%, vi tager 20%.',
+          style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+        ),
+        const SizedBox(height: DSSpacing.s3),
+        DSInput(
+          label: 'Aftalt ekstra beløb (kunden betaler)',
+          hint: 'F.eks. 1500',
+          controller: _feeController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        ),
+        const SizedBox(height: DSSpacing.s3),
+        Row(
+          children: [
+            Expanded(
+              child: DSButton(
+                label: isSaving ? 'Gemmer...' : 'Registrer ekstra tillæg',
+                variant: DSButtonVariant.primary,
+                expand: true,
+                onTap: isSaving ? null : _save,
+              ),
+            ),
+            if (_currentFee > 0) ...[
+              const SizedBox(width: DSSpacing.s2),
+              DSButton(
+                label: 'Annuller',
+                variant: DSButtonVariant.secondary,
+                onTap: () => setState(() => _editing = false),
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }

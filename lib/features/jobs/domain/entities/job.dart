@@ -32,6 +32,8 @@ class Job {
     this.roleType,
     this.hasActiveOffer = false,
     this.hasDateConflict = false,
+    this.saxType,
+    this.musicianSpecialRequest,
   });
 
   final int id;
@@ -71,6 +73,10 @@ class Job {
   final bool hasActiveOffer;
   /// True when the current musician already has a sent/won service offer on the same date.
   final bool hasDateConflict;
+  /// 'lounge' | 'party' — type of saxophone performance requested.
+  final String? saxType;
+  /// Free-text special request from the customer directed at the musician.
+  final String? musicianSpecialRequest;
 
   Job withDateConflict() => Job(
         id: id,
@@ -105,15 +111,33 @@ class Job {
         roleType: roleType,
         hasActiveOffer: hasActiveOffer,
         hasDateConflict: true,
+        saxType: saxType,
+        musicianSpecialRequest: musicianSpecialRequest,
       );
+
+  static String _fmtNum(double v) {
+    final s = v.toInt().toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
+
+  static String _stripSeconds(String t) {
+    final parts = t.split(':');
+    if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
+    return t;
+  }
 
   String get budgetDisplay {
     if (budgetStart == null || budgetEnd == null) return 'Ikke angivet';
-    if (budgetStart == budgetEnd) return '${budgetStart!.toInt()} kr.';
-    return '${budgetStart!.toInt()} - ${budgetEnd!.toInt()} kr.';
+    if (budgetStart == budgetEnd) return '${_fmtNum(budgetStart!)} kr.';
+    return '${_fmtNum(budgetStart!)} – ${_fmtNum(budgetEnd!)} kr.';
   }
 
-  String get timeDisplay => '$timeStart - $timeEnd';
+  String get timeDisplay => '${_stripSeconds(timeStart)} - ${_stripSeconds(timeEnd)}';
 }
 
 enum JobStatus {

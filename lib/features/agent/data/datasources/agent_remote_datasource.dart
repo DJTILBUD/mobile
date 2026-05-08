@@ -57,6 +57,14 @@ class AgentRemoteDatasource {
       throw NetworkException('Could not reach agent service: $e');
     }
 
+    if (response.statusCode == 429) {
+      final body = await response.stream.bytesToString();
+      Map<String, dynamic> parsed = {};
+      try { parsed = jsonDecode(body) as Map<String, dynamic>; } catch (_) {}
+      final limitType = (parsed['error'] as String? ?? '').contains('daily') ? 'daily' : 'monthly';
+      throw AgentLimitException(limitType: limitType);
+    }
+
     if (response.statusCode != 200) {
       final body = await response.stream.bytesToString();
       throw AgentException('Agent error ${response.statusCode}: $body');
@@ -95,6 +103,33 @@ class AgentRemoteDatasource {
         }
       }
     }
+  }
+
+  Future<({int dailyUsed, int monthlyUsed})> fetchUsageCounts() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return (dailyUsed: 0, monthlyUsed: 0);
+
+    final now = DateTime.now().toUtc();
+    final dayStart = DateTime.utc(now.year, now.month, now.day).toIso8601String();
+    final monthStart = DateTime.utc(now.year, now.month, 1).toIso8601String();
+
+    final results = await Future.wait([
+      _supabase
+          .from('AgentInteractions')
+          .select('id')
+          .eq('user_id', userId)
+          .gte('created_at', dayStart),
+      _supabase
+          .from('AgentInteractions')
+          .select('id')
+          .eq('user_id', userId)
+          .gte('created_at', monthStart),
+    ]);
+
+    return (
+      dailyUsed: (results[0] as List).length,
+      monthlyUsed: (results[1] as List).length,
+    );
   }
 
   Future<void> updateFinalSubmittedText({

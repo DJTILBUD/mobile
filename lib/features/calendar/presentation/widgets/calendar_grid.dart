@@ -12,6 +12,7 @@ class CalendarGrid extends StatelessWidget {
     required this.onDaySelected,
     this.unavailableDays = const {},
     this.onDayLongPress,
+    this.onMonthChanged,
   });
 
   final DateTime month;
@@ -24,6 +25,9 @@ class CalendarGrid extends StatelessWidget {
 
   /// Optional long-press callback for toggling unavailability.
   final ValueChanged<DateTime>? onDayLongPress;
+
+  /// If provided, horizontal swipe gestures navigate to prev/next month.
+  final ValueChanged<DateTime>? onMonthChanged;
 
   static const _weekDays = ['Ma', 'Ti', 'On', 'To', 'Fr', 'Lø', 'Sø'];
 
@@ -46,7 +50,19 @@ class CalendarGrid extends StatelessWidget {
       }
     }
 
-    return Padding(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragEnd: onMonthChanged == null
+          ? null
+          : (details) {
+              final v = details.primaryVelocity ?? 0;
+              if (v < -300) {
+                onMonthChanged!(DateTime(month.year, month.month + 1));
+              } else if (v > 300) {
+                onMonthChanged!(DateTime(month.year, month.month - 1));
+              }
+            },
+      child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
       child: Column(
         children: [
@@ -105,6 +121,7 @@ class CalendarGrid extends StatelessWidget {
             },
           ),
         ],
+      ),
       ),
     );
   }

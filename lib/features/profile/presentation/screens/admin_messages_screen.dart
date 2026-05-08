@@ -23,7 +23,7 @@ class AdminMessagesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
-        title: const Text('Beskeder fra admin'),
+        title: const Text('Beskeder fra DJTilbud'),
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
       ),

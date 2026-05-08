@@ -16,6 +16,7 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/standard_message.
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/equipment_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 
@@ -50,6 +51,8 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   bool _offersEarlySetup = false;
   bool _earlySetupHasPrice = false;
 
+  bool _usedAiDraft = false;
+
   bool get _isDirty =>
       _priceController.text.isNotEmpty ||
       _salesPitchController.text.isNotEmpty ||
@@ -70,7 +73,10 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   Future<void> _onPopInvoked(bool didPop, _) async {
     if (didPop) return;
     final confirmed = await showUnsavedChangesDialog(context);
-    if (confirmed == true && mounted) Navigator.of(context).pop();
+    if (confirmed == true && mounted) {
+      AnalyticsService.logOfferFormAbandoned(widget.job.id, role: 'dj');
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -152,6 +158,13 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     if (!mounted) return;
 
     if (success) {
+      AnalyticsService.logOfferSubmitted(
+        widget.job.id,
+        widget.job.eventType,
+        role: 'dj',
+        pitchLength: _salesPitchController.text.trim().length,
+        usedAiDraft: _usedAiDraft,
+      );
       DSToast.show(context, variant: DSToastVariant.success, title: 'Dit bud er afgivet!');
       context.pop();
     } else {
@@ -174,6 +187,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     if (!mounted) return;
 
     if (success) {
+      AnalyticsService.logDateMarkedUnavailable();
       DSToast.show(context,
           variant: DSToastVariant.info,
           title: 'Dato markeret som optaget',
@@ -301,7 +315,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
 
             DSInput(
               label: 'Din pris',
-              hint: 'F.eks. 5000',
+              hint: 'F.eks. 5.000',
               controller: _priceController,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -413,6 +427,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
                       onDraftAccepted: (draft) {
                         setState(() {
                           _salesPitchController.text = draft;
+                          _usedAiDraft = true;
                         });
                       },
                     ),
@@ -595,7 +610,11 @@ class _JobSummary extends StatelessWidget {
           const SizedBox(height: DSSpacing.s1),
           _SummaryRow(LucideIcons.clock, job.timeDisplay),
           const SizedBox(height: DSSpacing.s1),
-          _SummaryRow(LucideIcons.mapPin, '${job.city}, ${job.region}'),
+          _SummaryRow(LucideIcons.flag, job.region),
+          if (job.city.isNotEmpty) ...[
+            const SizedBox(height: DSSpacing.s1),
+            _SummaryRow(LucideIcons.mapPin, job.city),
+          ],
           const SizedBox(height: DSSpacing.s1),
           _SummaryRow(LucideIcons.users, '${job.guestsAmount} gæster'),
           const SizedBox(height: DSSpacing.s1),
@@ -614,6 +633,23 @@ class _JobSummary extends StatelessWidget {
             const SizedBox(height: DSSpacing.s1),
             Text(
               job.leadRequest!,
+              style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+            ),
+          ],
+          if (job.additionalInformation != null && job.additionalInformation!.isNotEmpty) ...[
+            const SizedBox(height: DSSpacing.s3),
+            const Divider(height: 1),
+            const SizedBox(height: DSSpacing.s3),
+            Text(
+              'Yderligere information',
+              style: DSTextStyle.labelSm.copyWith(
+                fontWeight: FontWeight.w600,
+                color: _c.text.muted,
+              ),
+            ),
+            const SizedBox(height: DSSpacing.s1),
+            Text(
+              job.additionalInformation!,
               style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
             ),
           ],

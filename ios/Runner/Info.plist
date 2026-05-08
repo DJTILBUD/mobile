@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>DJ Tilbud</string>
+	<string>DJTilbud</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -32,13 +32,13 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>DJ Tilbud har brug for adgang til dit kamera for at tage profilbilleder.</string>
+	<string>DJTilbud har brug for adgang til dit kamera for at tage profilbilleder.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>DJ Tilbud har brug for adgang til mikrofonen for at optage videoer.</string>
+	<string>DJTilbud har brug for adgang til mikrofonen for at optage videoer.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>DJ Tilbud har brug for tilladelse til at gemme billeder i dit fotobibliotek.</string>
+	<string>DJTilbud har brug for tilladelse til at gemme billeder i dit fotobibliotek.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>DJ Tilbud har brug for adgang til dit fotobibliotek for at du kan uploade profilbilleder og mediefiler.</string>
+	<string>DJTilbud har brug for adgang til dit fotobibliotek for at du kan uploade profilbilleder og mediefiler.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

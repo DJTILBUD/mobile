@@ -5,8 +5,6 @@ class CalendarRemoteDatasource {
 
   final SupabaseClient _client;
 
-  static const _unavailablePrefix = '__unavailable_date__:';
-
   /// Fetches won Quotes (with joined Job data) for a DJ.
   Future<List<Map<String, dynamic>>> fetchDjWonQuotes(String userId) async {
     return _client
@@ -53,33 +51,33 @@ class CalendarRemoteDatasource {
 
   // ── Unavailable dates (DJ only) ──
 
-  /// Fetches all DjJobRejections with no job_id for a DJ
-  /// (i.e. manually-marked unavailable dates).
-  Future<List<Map<String, dynamic>>> fetchDjUnavailableDateRejections(
+  /// Fetches all manually-marked unavailable dates for a DJ from UnavailableDates.
+  Future<List<Map<String, dynamic>>> fetchDjUnavailableDates(
       String userId) async {
     return _client
-        .from('DjJobRejections')
-        .select('id, reason')
-        .eq('dj_id', userId)
-        .isFilter('job_id', null);
+        .from('UnavailableDates')
+        .select('id, unavailable_date')
+        .eq('profile_type', 'dj')
+        .eq('dj_id', userId);
   }
 
-  /// Inserts a single unavailable-date rejection row. Returns the new row's id.
+  /// Inserts an unavailable date for a DJ. Returns the new row.
   Future<Map<String, dynamic>> createDjUnavailableDate(
       String userId, String dateStr) async {
     return _client
-        .from('DjJobRejections')
+        .from('UnavailableDates')
         .insert({
+          'profile_type': 'dj',
           'dj_id': userId,
-          'job_id': null,
-          'reason': ['$_unavailablePrefix$dateStr'],
+          'unavailable_date': dateStr,
+          'source': 'manual',
         })
         .select('id')
         .single();
   }
 
-  /// Deletes a single unavailable-date rejection row by its id.
+  /// Deletes an unavailable date row by id.
   Future<void> deleteDjUnavailableDate(int id) async {
-    await _client.from('DjJobRejections').delete().eq('id', id);
+    await _client.from('UnavailableDates').delete().eq('id', id);
   }
 }

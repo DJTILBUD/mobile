@@ -9,10 +9,10 @@ String generateIcal(List<CalendarEvent> events) {
   final lines = <String>[
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//DJ Tilbud//Kalender//DA',
+    'PRODID:-//DJTilbud//Kalender//DA',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:Mine jobs – DJ Tilbud',
+    'X-WR-CALNAME:Mine jobs – DJTilbud',
     'X-WR-TIMEZONE:Europe/Copenhagen',
     'REFRESH-INTERVAL;VALUE=DURATION:PT12H',
     'X-PUBLISHED-TTL:PT12H',

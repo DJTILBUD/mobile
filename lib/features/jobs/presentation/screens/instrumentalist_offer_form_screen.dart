@@ -11,6 +11,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
 class InstrumentalistOfferFormScreen extends ConsumerStatefulWidget {
   const InstrumentalistOfferFormScreen({super.key, required this.job});
@@ -27,6 +28,7 @@ class _InstrumentalistOfferFormScreenState
   final _formKey = GlobalKey<FormState>();
   final _salesPitchController = TextEditingController();
   int _pitchLength = 0;
+  bool _usedAiDraft = false;
 
   bool get _isDirty => _salesPitchController.text.isNotEmpty;
 
@@ -41,18 +43,16 @@ class _InstrumentalistOfferFormScreenState
   Future<void> _onPopInvoked(bool didPop, _) async {
     if (didPop) return;
     final confirmed = await showUnsavedChangesDialog(context);
-    if (confirmed == true && mounted) Navigator.of(context).pop();
+    if (confirmed == true && mounted) {
+      AnalyticsService.logOfferFormAbandoned(widget.job.id, role: 'musician');
+      Navigator.of(context).pop();
+    }
   }
 
   @override
   void dispose() {
     _salesPitchController.dispose();
     super.dispose();
-  }
-
-  String _locationDisplay(String city, String region) {
-    final parts = [city, region].where((s) => s.isNotEmpty).toList();
-    return parts.isEmpty ? 'Ikke angivet' : parts.join(', ');
   }
 
   Future<void> _handleSubmit() async {
@@ -73,6 +73,13 @@ class _InstrumentalistOfferFormScreenState
     if (!mounted) return;
 
     if (success) {
+      AnalyticsService.logOfferSubmitted(
+        job.id,
+        job.eventType,
+        role: 'musician',
+        pitchLength: _salesPitchController.text.trim().length,
+        usedAiDraft: _usedAiDraft,
+      );
       DSToast.show(context, variant: DSToastVariant.success, title: 'Dit tilbud er sendt!');
       context.pop();
     } else {
@@ -91,6 +98,7 @@ class _InstrumentalistOfferFormScreenState
     final hasConflict = conflictAsync.valueOrNull == true;
     final hasActiveOffer = job.hasActiveOffer;
     final musicianPayout = calculateMusicianOfferPrice(job.requestedMusicianHours, job.createdAt);
+    final customerPrice = calculateCustomerMusicianPrice(job.requestedMusicianHours);
     String fmt(int n) => NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
 
     return PopScope(
@@ -207,7 +215,11 @@ class _InstrumentalistOfferFormScreenState
                   const SizedBox(height: DSSpacing.s1),
                   _InfoRow(LucideIcons.clock, job.timeDisplay),
                   const SizedBox(height: DSSpacing.s1),
-                  _InfoRow(LucideIcons.mapPin, _locationDisplay(job.city, job.region)),
+                  _InfoRow(LucideIcons.flag, job.region),
+                  if (job.city.isNotEmpty) ...[
+                    const SizedBox(height: DSSpacing.s1),
+                    _InfoRow(LucideIcons.mapPin, job.city),
+                  ],
                   if (job.guestsAmount > 0) ...[
                     const SizedBox(height: DSSpacing.s1),
                     _InfoRow(LucideIcons.users, '${job.guestsAmount} gæster'),
@@ -217,18 +229,34 @@ class _InstrumentalistOfferFormScreenState
                     _InfoRow(LucideIcons.timer,
                         '${job.requestedMusicianHours!.toStringAsFixed(0)} timers musik ønsket'),
                   ],
+                  if (job.additionalInformation != null && job.additionalInformation!.isNotEmpty) ...[
+                    const SizedBox(height: DSSpacing.s3),
+                    const Divider(height: 1),
+                    const SizedBox(height: DSSpacing.s3),
+                    Text(
+                      'Yderligere information',
+                      style: DSTextStyle.labelSm.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: _c.text.muted,
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    Text(
+                      job.additionalInformation!,
+                      style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: DSSpacing.s6),
 
             if (!hasActiveOffer) ...[
-              // Locked price display
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Pris for dette job',
+                    'Din betaling',
                     style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
                   ),
                   const SizedBox(height: 4),
@@ -238,6 +266,11 @@ class _InstrumentalistOfferFormScreenState
                       color: _c.text.primary,
                       fontWeight: FontWeight.w700,
                     ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Kundepris: ${fmt(customerPrice)} kr.',
+                    style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
                   ),
                 ],
               ),
@@ -256,6 +289,7 @@ class _InstrumentalistOfferFormScreenState
                     onDraftAccepted: (draft) {
                       setState(() {
                         _salesPitchController.text = draft;
+                        _usedAiDraft = true;
                       });
                     },
                   ),

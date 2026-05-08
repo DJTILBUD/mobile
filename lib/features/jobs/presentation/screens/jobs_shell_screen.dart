@@ -25,6 +25,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/job_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/quote_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/service_offer_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/empty_jobs_view.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 
@@ -51,14 +52,17 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
           backgroundColor: _c.bg.surface,
           appBar: AppBar(
             toolbarHeight: 64,
-            title: const Text('DJ Tilbud'),
+            title: const Text('DJTilbud'),
             backgroundColor: _c.bg.surface,
             surfaceTintColor: _c.bg.surface,
             actions: [
               const _FilterTogglePill(),
               _ModeTogglePill(
                 isCalendarMode: true,
-                onToggle: () => setState(() => _calendarMode = false),
+                onToggle: () {
+                  setState(() => _calendarMode = false);
+                  AnalyticsService.logCalendarModeToggled(toMode: 'list');
+                },
               ),
             ],
           ),
@@ -75,7 +79,10 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
             actions: [
               _ModeTogglePill(
                 isCalendarMode: true,
-                onToggle: () => setState(() => _calendarMode = false),
+                onToggle: () {
+                  setState(() => _calendarMode = false);
+                  AnalyticsService.logCalendarModeToggled(toMode: 'list');
+                },
               ),
             ],
           ),
@@ -93,14 +100,17 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
       child: Scaffold(
         appBar: AppBar(
           toolbarHeight: 64,
-          title: const Text('DJ Tilbud'),
+          title: const Text('DJTilbud'),
           backgroundColor: _c.bg.surface,
           surfaceTintColor: _c.bg.surface,
           actions: [
             if (isDj) const _FilterTogglePill(),
             _ModeTogglePill(
               isCalendarMode: false,
-              onToggle: () => setState(() => _calendarMode = true),
+              onToggle: () {
+                setState(() => _calendarMode = true);
+                AnalyticsService.logCalendarModeToggled(toMode: 'calendar');
+              },
             ),
           ],
           bottom: DSTabBar(
@@ -224,7 +234,11 @@ class _FilterTogglePill extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 4, top: 14, bottom: 14),
       child: GestureDetector(
-        onTap: () => ref.read(djFiltersEnabledProvider.notifier).state = !enabled,
+        onTap: () {
+          final newEnabled = !enabled;
+          ref.read(djFiltersEnabledProvider.notifier).state = newEnabled;
+          AnalyticsService.logDjFiltersToggled(enabled: newEnabled);
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s3, vertical: 6),
@@ -320,7 +334,13 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
   void _onDayTapped(DateTime day, Map<String, int> unavailableMap) {
     if (_isEditingUnavailable) {
       final dateStr = DateFormat('yyyy-MM-dd').format(day);
+      final isCurrentlyUnavailable = unavailableMap.containsKey(dateStr);
       ref.read(djUnavailableDatesProvider.notifier).toggle(dateStr);
+      if (isCurrentlyUnavailable) {
+        AnalyticsService.logDateUnmarkedUnavailable();
+      } else {
+        AnalyticsService.logDateMarkedUnavailable();
+      }
     } else {
       setState(() {
         _selectedDay = (_selectedDay != null &&
@@ -463,6 +483,10 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
                 unavailableDays: unavailableDates,
                 onDaySelected: (day) =>
                     _onDayTapped(day, unavailableMap),
+                onMonthChanged: (m) => setState(() {
+                  _month = m;
+                  _selectedDay = null;
+                }),
               ),
               const SizedBox(height: DSSpacing.s4),
               Divider(height: 1, color: _c.border.subtle),
@@ -715,6 +739,10 @@ class _InstrumentalistCalendarViewState
                           _selectedDay!.day == day.day)
                       ? null
                       : day;
+                }),
+                onMonthChanged: (m) => setState(() {
+                  _month = m;
+                  _selectedDay = null;
                 }),
               ),
               const SizedBox(height: DSSpacing.s4),
@@ -1336,6 +1364,8 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final _c = DSTheme.of(context);
     final jobsAsync = ref.watch(combinedInstrumentalistJobsProvider);
+    final sentOffers = ref.watch(sentServiceOffersProvider).valueOrNull ?? [];
+    final wonOffers = ref.watch(wonServiceOffersProvider).valueOrNull ?? [];
 
     return jobsAsync.when(
       loading: () => const SkeletonListView(),
@@ -1365,26 +1395,40 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 12),
             itemCount: jobs.length,
-            itemBuilder: (context, index) => AnimatedCard(
-              index: index,
-              child: JobCard(
-                job: jobs[index],
-                isMusicianView: true,
-                musicianPrice: calculateMusicianOfferPrice(
-                  jobs[index].requestedMusicianHours,
-                  jobs[index].createdAt,
+            itemBuilder: (context, index) {
+              final job = jobs[index];
+              final hasConflict =
+                  _musicianHasDateConflict(job, sentOffers, wonOffers);
+              return AnimatedCard(
+                index: index,
+                child: JobCard(
+                  job: job,
+                  isMusicianView: true,
+                  isColliding: hasConflict,
+                  musicianPrice: calculateMusicianOfferPrice(
+                    job.requestedMusicianHours,
+                    job.createdAt,
+                  ),
+                  onTap: () => context.pushNamed(
+                    AppRoutes.instrumentalistOfferForm,
+                    extra: job,
+                  ),
                 ),
-                onTap: () => context.pushNamed(
-                  AppRoutes.instrumentalistOfferForm,
-                  extra: jobs[index],
-                ),
-              ),
-            ),
+              );
+            },
           ),
         );
       },
     );
   }
+}
+
+bool _musicianHasDateConflict(
+    Job job, List<ServiceOffer> sent, List<ServiceOffer> won) {
+  bool sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+  return sent.any((o) => sameDay(o.job.date, job.date)) ||
+      won.any((o) => sameDay(o.job.date, job.date));
 }
 
 // ── Instrumentalist Won Offers Tab (with played-jobs toggle) ──

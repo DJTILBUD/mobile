@@ -33,6 +33,8 @@ class JobModel {
     this.musicianStartTime,
     this.roleType,
     this.hasActiveOffer = false,
+    this.saxType,
+    this.musicianSpecialRequest,
   });
 
   final int id;
@@ -66,6 +68,8 @@ class JobModel {
   final String? musicianStartTime;
   final String? roleType;
   final bool hasActiveOffer;
+  final String? saxType;
+  final String? musicianSpecialRequest;
 
   factory JobModel.fromJson(Map<String, dynamic> json) {
     return JobModel(
@@ -98,6 +102,8 @@ class JobModel {
       musicianStartTime: _formatTime(json['musician_start_time']),
       roleType: json['role_type'] as String?,
       hasActiveOffer: json['has_active_offer'] as bool? ?? false,
+      saxType: json['sax_type'] as String?,
+      musicianSpecialRequest: json['musician_special_request'] as String?,
     );
   }
 
@@ -144,6 +150,8 @@ class JobModel {
       musicianStartTime: musicianStartTime,
       roleType: roleType,
       hasActiveOffer: hasActiveOffer,
+      saxType: saxType,
+      musicianSpecialRequest: musicianSpecialRequest,
     );
   }
 }

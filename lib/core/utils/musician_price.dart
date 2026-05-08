@@ -1,30 +1,31 @@
-/// Pricing helpers for musician service offers.
-/// Ported 1-to-1 from web-app/src/helpers/calculateMusicianOfferPrice.ts
-/// and calculateCustomerMusicianPrice.ts.
+// Mirrors calculateMusicianOfferPrice and calculateCustomerMusicianPrice
+// from the web app (web-app/src/helpers/).
+//
+// calculateMusicianOfferPrice — what the musician is paid (payout):
+//   0.5h–1.0h → 3150, 1.5h → 3500, >1.5h → 3500 + 1000/0.5h
+//   After first price increase (3 days post-creation):
+//     ≤0.5h +150, ≤1.0h +350, >1.0h +500
+//
+// calculateCustomerMusicianPrice — what the customer pays (fixed, no time bonus):
+//   ≤0.5h → 3500, ≤1.0h → 4000, >1.0h → 4000 + 1000/0.5h
 
-/// What the musician earns (musician_payout_dkk).
-/// Time-based: the price increases after a threshold derived from when the job
-/// was created.
-///
-/// Tiers (base price):
-///   ≤ 1.0 h  → 3 150 DKK
-///   ≤ 1.5 h  → 3 500 DKK
-///   > 1.5 h  → 3 500 + ceil((hours − 1.5) / 0.5) × 1 000
-///
-/// Increase bonus (applied after the threshold time):
-///   ≤ 0.5 h  → +150
-///   ≤ 1.0 h  → +350
-///   > 1.0 h  → +500
-///
-/// Threshold time (based on job creation time):
-///   before 08:00       → 15:00 same day
-///   08:00 – 20:00      → 08:00 next day
-///   after  20:00       → 15:00 next day
-int calculateMusicianOfferPrice(double? requestedHours, DateTime createdAt) {
+DateTime _calculateFirstPriceIncreaseTime(DateTime createdAt) {
+  final hour = createdAt.hour;
+  final threeDaysLater = createdAt.add(const Duration(days: 3));
+  return DateTime(
+    threeDaysLater.year,
+    threeDaysLater.month,
+    threeDaysLater.day,
+    (hour < 8 || hour >= 20) ? 15 : 8,
+    0,
+    0,
+  );
+}
+
+int calculateMusicianOfferPrice(double? requestedHours, [DateTime? createdAt]) {
   final hours = (requestedHours == null || requestedHours <= 0) ? 0.0 : requestedHours;
 
-  // Base price
-  final int basePrice;
+  int basePrice;
   if (hours <= 1.0) {
     basePrice = 3150;
   } else if (hours <= 1.5) {
@@ -34,11 +35,11 @@ int calculateMusicianOfferPrice(double? requestedHours, DateTime createdAt) {
     basePrice = 3500 + increments * 1000;
   }
 
-  // Check if we've passed the first price-increase threshold
-  final threshold = _firstIncreaseTime(createdAt);
-  if (DateTime.now().isBefore(threshold)) return basePrice;
+  if (createdAt == null) return basePrice;
 
-  // Apply bonus
+  final firstIncreaseTime = _calculateFirstPriceIncreaseTime(createdAt);
+  if (DateTime.now().isBefore(firstIncreaseTime)) return basePrice;
+
   final int bonus;
   if (hours <= 0.5) {
     bonus = 150;
@@ -50,27 +51,6 @@ int calculateMusicianOfferPrice(double? requestedHours, DateTime createdAt) {
   return basePrice + bonus;
 }
 
-DateTime _firstIncreaseTime(DateTime sentAt) {
-  final local = sentAt.toLocal();
-  final hour = local.hour;
-  if (hour < 8) {
-    final target = local.add(const Duration(days: 3));
-    return DateTime(target.year, target.month, target.day, 15);
-  } else if (hour < 20) {
-    final target = local.add(const Duration(days: 3));
-    return DateTime(target.year, target.month, target.day, 8);
-  } else {
-    final target = local.add(const Duration(days: 3));
-    return DateTime(target.year, target.month, target.day, 15);
-  }
-}
-
-/// What the customer pays (price_dkk) — fixed, does not change with time.
-///
-/// Tiers:
-///   ≤ 0.5 h  → 3 500 DKK
-///   ≤ 1.0 h  → 4 000 DKK
-///   > 1.0 h  → 4 000 + ceil((hours − 1.0) / 0.5) × 1 000
 int calculateCustomerMusicianPrice(double? requestedHours) {
   final hours = (requestedHours == null || requestedHours <= 0) ? 0.0 : requestedHours;
   if (hours <= 0.5) return 3500;

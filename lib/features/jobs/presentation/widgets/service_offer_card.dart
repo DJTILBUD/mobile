@@ -214,7 +214,7 @@ class _MetaList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _MetaItem(icon: LucideIcons.mapPin, label: job.city, c: c),
+        _MetaItem(icon: LucideIcons.mapPin, label: job.region, c: c),
         const SizedBox(height: 3),
         _MetaItem(icon: LucideIcons.clock, label: job.timeDisplay, c: c),
         if (job.guestsAmount > 0) ...[

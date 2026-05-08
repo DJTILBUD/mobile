@@ -398,6 +398,24 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
+  Future<void> setSpecialRequestFee(int offerId, {required int feeDkk}) async {
+    try {
+      await _datasource.setSpecialRequestFee(offerId, feeDkk: feeDkk);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> removeSpecialRequestFee(int offerId) async {
+    try {
+      await _datasource.removeSpecialRequestFee(offerId);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
   Future<void> saveMusicianNotes(int offerId, String notes) async {
     try {
       await _datasource.saveMusicianNotes(offerId, notes);

@@ -57,15 +57,33 @@ class ExtJob {
   final DateTime? djReadyConfirmedAt;
   final DateTime? customerContactPlannedFor;
 
+  static String _fmtNum(double v) {
+    final s = v.toInt().toString();
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
+
+  static String _stripSeconds(String t) {
+    final parts = t.split(':');
+    if (parts.length >= 2) return '${parts[0]}:${parts[1]}';
+    return t;
+  }
+
   String get timeDisplay {
-    if (startTime != null && endTime != null) return '$startTime - $endTime';
-    if (startTime != null) return startTime!;
+    if (startTime != null && endTime != null) {
+      return '${_stripSeconds(startTime!)} - ${_stripSeconds(endTime!)}';
+    }
+    if (startTime != null) return _stripSeconds(startTime!);
     return 'Ikke angivet';
   }
 
   String get budgetDisplay {
-    if (fullAmount != null) return '${fullAmount!.toInt()} kr.';
-    if (honorar != null) return '${honorar!.toInt()} kr. (honorar)';
+    if (fullAmount != null) return '${_fmtNum(fullAmount!)} kr.';
+    if (honorar != null) return '${_fmtNum(honorar!)} kr. (honorar)';
     if (budgetTarget != null && budgetTarget!.isNotEmpty) return budgetTarget!;
     return 'Ikke angivet';
   }

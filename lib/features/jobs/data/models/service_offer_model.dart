@@ -23,6 +23,8 @@ class ServiceOfferModel {
     this.musicianPhone,
     this.musicianEmail,
     this.customerContactPlannedFor,
+    this.specialRequestExtraFeeDkk = 0,
+    this.specialRequestExtraFeeConfirmed = false,
   });
 
   final int id;
@@ -44,6 +46,8 @@ class ServiceOfferModel {
   final String? musicianPhone;
   final String? musicianEmail;
   final String? customerContactPlannedFor;
+  final int specialRequestExtraFeeDkk;
+  final bool specialRequestExtraFeeConfirmed;
 
   factory ServiceOfferModel.fromJson(Map<String, dynamic> json) {
     final jobJson = json['job'] as Map<String, dynamic>?;
@@ -84,6 +88,8 @@ class ServiceOfferModel {
       musicianPhone: musicianJson?['phone'] as String?,
       musicianEmail: musicianJson?['email'] as String?,
       customerContactPlannedFor: json['customer_contact_planned_for'] as String?,
+      specialRequestExtraFeeDkk: (json['special_request_extra_fee_dkk'] as num?)?.toInt() ?? 0,
+      specialRequestExtraFeeConfirmed: json['special_request_extra_fee_confirmed'] as bool? ?? false,
     );
   }
 
@@ -110,6 +116,8 @@ class ServiceOfferModel {
       customerContactPlannedFor: customerContactPlannedFor != null
           ? DateTime.parse(customerContactPlannedFor!)
           : null,
+      specialRequestExtraFeeDkk: specialRequestExtraFeeDkk,
+      specialRequestExtraFeeConfirmed: specialRequestExtraFeeConfirmed,
     );
   }
 

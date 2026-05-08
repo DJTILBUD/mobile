@@ -2,21 +2,21 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "DJ Tilbud (local)",
+      "name": "DJTilbud (local)",
       "request": "launch",
       "type": "dart",
       "args": ["--dart-define=ENV=local"],
       "flutterMode": "debug"
     },
     {
-      "name": "DJ Tilbud (dev)",
+      "name": "DJTilbud (dev)",
       "request": "launch",
       "type": "dart",
       "args": ["--dart-define=ENV=dev"],
       "flutterMode": "debug"
     },
     {
-      "name": "DJ Tilbud (dev - release)",
+      "name": "DJTilbud (dev - release)",
       "request": "launch",
       "type": "dart",
       "args": ["--dart-define=ENV=dev"],

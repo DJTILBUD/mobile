@@ -244,7 +244,7 @@ class ProfileScreen extends ConsumerWidget {
 
           _MenuItem(
             icon: LucideIcons.mailOpen,
-            label: 'Beskeder fra admin',
+            label: 'Beskeder fra DJTilbud',
             onTap: () => context.pushNamed(AppRoutes.adminMessages, extra: role),
           ),
           _MenuItem(

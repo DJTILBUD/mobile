@@ -46,6 +46,7 @@ import 'package:dj_tilbud_app/core/widgets/dev_env_banner.dart';
 import 'package:dj_tilbud_app/core/notifications/in_app_notification_banner.dart';
 import 'package:dj_tilbud_app/core/notifications/in_app_notification_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
 /// Converts Supabase auth state stream into a [Listenable]
 /// so GoRouter can react to changes without being rebuilt.
@@ -111,6 +112,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/login',
     refreshListenable: _authNotifier,
+    observers: [AnalyticsService.observer],
     redirect: (context, state) {
       final isAuthenticated = supabase.auth.currentSession != null;
       final loc = state.matchedLocation;
@@ -233,6 +235,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (job is! Job) {
             return const _MissingRouteDataScreen(label: 'job-detaljer');
           }
+          AnalyticsService.logJobViewed(job.id, job.eventType, jobStatus: job.status.name);
           return JobDetailScreen(job: job);
         },
       ),
@@ -244,6 +247,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (job is! Job) {
             return const _MissingRouteDataScreen(label: 'tilbudsformular');
           }
+          AnalyticsService.logOfferFormOpened(job.id, job.eventType, role: 'dj');
           return DjQuoteFormScreen(job: job);
         },
       ),
@@ -255,6 +259,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (job is! Job) {
             return const _MissingRouteDataScreen(label: 'jobtilbudsformular');
           }
+          AnalyticsService.logOfferFormOpened(job.id, job.eventType, role: 'musician');
           return InstrumentalistOfferFormScreen(job: job);
         },
       ),
@@ -404,6 +409,49 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+class _KeyboardDismissBar extends StatelessWidget {
+  const _KeyboardDismissBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    if (keyboardHeight == 0) return const SizedBox.shrink();
+
+    final c = DSTheme.of(context);
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: keyboardHeight,
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          color: c.bg.surface,
+          padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4, vertical: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              GestureDetector(
+                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: DSSpacing.s2, vertical: 4),
+                  child: Text(
+                    'Luk',
+                    style: DSTextStyle.labelMd.copyWith(
+                      color: c.brand.primaryActive,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class App extends ConsumerStatefulWidget {
   const App({super.key});
 
@@ -444,7 +492,7 @@ class _AppState extends ConsumerState<App> {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
-      title: 'DJ Tilbud',
+      title: 'DJTilbud',
       theme: buildAppTheme(),
       darkTheme: buildDarkAppTheme(),
       themeMode: themeMode,
@@ -464,6 +512,7 @@ class _AppState extends ConsumerState<App> {
                 child!,
                 const InAppNotificationBanner(),
                 const DevEnvBanner(),
+                const _KeyboardDismissBar(),
               ],
             ),
           ),

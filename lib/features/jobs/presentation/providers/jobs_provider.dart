@@ -12,6 +12,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/repositories/jobs_repository.dart';
 import 'package:dj_tilbud_app/features/jobs/data/datasources/jobs_remote_datasource.dart';
+import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/data/repositories/jobs_repository_impl.dart';
 
 final jobsRepositoryProvider = Provider<JobsRepository>((ref) {
@@ -166,6 +167,8 @@ final filteredDjJobsProvider = Provider<AsyncValue<List<Job>>>((ref) {
   final filtersEnabled = ref.watch(djFiltersEnabledProvider);
   final quotes = ref.watch(djQuotesProvider).valueOrNull ?? [];
   final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
+  final unavailableMap = ref.watch(djUnavailableDatesProvider).valueOrNull ?? {};
+  final unavailableDates = Set<String>.from(unavailableMap.keys);
 
   return jobs.whenData((jobList) {
     final profile = profileAsync.valueOrNull;
@@ -175,6 +178,14 @@ final filteredDjJobsProvider = Provider<AsyncValue<List<Job>>>((ref) {
     if (profile?.isSuppressed == true) return [];
 
     final filtered = jobList.where((job) {
+      // Hard constraint: hide jobs on manually-marked unavailable dates
+      if (unavailableDates.isNotEmpty) {
+        final d = job.date;
+        final dateStr =
+            '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+        if (unavailableDates.contains(dateStr)) return false;
+      }
+
       // Hard constraint: event types excluded on the DJ profile (not a user toggle)
       if (profile != null && profile.excludedEventTypes.isNotEmpty) {
         final jobType = job.eventType.trim().toLowerCase();
@@ -328,6 +339,19 @@ class NewInstrumentalistJobsNotifier extends _RealtimeNotifier<List<Job>> {
             event: PostgresChangeEvent.all,
             schema: 'public',
             table: 'Jobs',
+            callback: (_) => _loadSilently(),
+          )
+          .subscribe(),
+    );
+    // Also refresh when ANY service offer changes status (e.g. "sent" → "lost")
+    // so hasActiveOffer updates for other musicians without requiring a manual refresh.
+    addChannel(
+      client
+          .channel('instrumentalist-jobs-offers-$_userId')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: 'ServiceOffers',
             callback: (_) => _loadSilently(),
           )
           .subscribe(),
@@ -1099,6 +1123,52 @@ final addMusicianExtraHoursProvider = StateNotifierProvider.autoDispose<
     AddMusicianExtraHoursNotifier, AsyncValue<void>>(
   (ref) =>
       AddMusicianExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
+);
+
+// ─── Special request fee ──────────────────────────────────────────────────────
+
+class SetSpecialRequestFeeNotifier extends StateNotifier<AsyncValue<void>> {
+  SetSpecialRequestFeeNotifier(this._repository) : super(const AsyncData(null));
+  final JobsRepository _repository;
+
+  Future<bool> set(int offerId, {required int feeDkk}) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.setSpecialRequestFee(offerId, feeDkk: feeDkk);
+      state = const AsyncData(null);
+      return true;
+    } catch (e) {
+      state = AsyncError(e, StackTrace.current);
+      return false;
+    }
+  }
+}
+
+final setSpecialRequestFeeProvider = StateNotifierProvider.autoDispose<
+    SetSpecialRequestFeeNotifier, AsyncValue<void>>(
+  (ref) => SetSpecialRequestFeeNotifier(ref.watch(jobsRepositoryProvider)),
+);
+
+class RemoveSpecialRequestFeeNotifier extends StateNotifier<AsyncValue<void>> {
+  RemoveSpecialRequestFeeNotifier(this._repository) : super(const AsyncData(null));
+  final JobsRepository _repository;
+
+  Future<bool> remove(int offerId) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.removeSpecialRequestFee(offerId);
+      state = const AsyncData(null);
+      return true;
+    } catch (e) {
+      state = AsyncError(e, StackTrace.current);
+      return false;
+    }
+  }
+}
+
+final removeSpecialRequestFeeProvider = StateNotifierProvider.autoDispose<
+    RemoveSpecialRequestFeeNotifier, AsyncValue<void>>(
+  (ref) => RemoveSpecialRequestFeeNotifier(ref.watch(jobsRepositoryProvider)),
 );
 
 // ─── Musician notes ───────────────────────────────────────────────────────────

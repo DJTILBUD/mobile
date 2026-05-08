@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_provider.dart';
@@ -8,6 +10,11 @@ import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_ev
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_grid.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_header.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -22,6 +29,14 @@ class CalendarScreen extends ConsumerStatefulWidget {
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   late DateTime _month;
   DateTime? _selectedDay;
+  bool _showNew = true;
+  bool _showSent = true;
+  bool _showWon = true;
+
+  static const _monthNames = [
+    'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
+    'Juli', 'August', 'September', 'Oktober', 'November', 'December',
+  ];
 
   @override
   void initState() {
@@ -30,33 +45,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     _month = DateTime(now.year, now.month);
   }
 
-  void _onMonthChanged(DateTime month) {
-    setState(() {
-      _month = month;
-      _selectedDay = null;
-    });
-  }
-
-  void _onTodayTapped() {
-    final now = DateTime.now();
-    setState(() {
-      _month = DateTime(now.year, now.month);
-      _selectedDay = null;
-    });
-  }
-
-  void _onDaySelected(DateTime day) {
-    setState(() {
-      // Deselect if tapping the same day again
-      if (_selectedDay != null &&
-          _selectedDay!.year == day.year &&
-          _selectedDay!.month == day.month &&
-          _selectedDay!.day == day.day) {
-        _selectedDay = null;
-      } else {
-        _selectedDay = day;
-      }
-    });
+  List<CalendarEvent> _buildEvents({
+    required List<Job> newJobs,
+    required List<CalendarEvent> sentEvents,
+    required List<CalendarEvent> wonEvents,
+  }) {
+    return [
+      if (_showNew) ...newJobs.map(_jobToEvent),
+      if (_showSent) ...sentEvents,
+      if (_showWon) ...wonEvents,
+    ];
   }
 
   List<CalendarEvent> _eventsForView(List<CalendarEvent> all) {
@@ -68,219 +66,373 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               e.date.day == _selectedDay!.day)
           .toList();
     }
-    final today = DateTime.now();
-    final startOfToday = DateTime(today.year, today.month, today.day);
     return all
-        .where((e) => !e.date.isBefore(startOfToday))
-        .toList()
-      ..sort((a, b) => a.date.compareTo(b.date));
+        .where((e) =>
+            e.date.year == _month.year && e.date.month == _month.month)
+        .toList();
+  }
+
+  void _navigateDj(
+    BuildContext context,
+    CalendarEvent event,
+    Map<int, Job> jobById,
+    Map<int, DjQuote> pendingById,
+    Map<int, DjQuote> wonByJobId,
+    Map<int, ExtJob> extJobById,
+  ) {
+    switch (event.kind) {
+      case CalendarEventKind.newJob:
+        final job = jobById[event.jobId ?? event.id];
+        if (job != null) context.pushNamed(AppRoutes.djQuoteForm, extra: job);
+      case CalendarEventKind.sent:
+        final quote = pendingById[event.id];
+        if (quote != null) context.pushNamed(AppRoutes.quoteDetail, extra: quote);
+      case CalendarEventKind.won:
+        if (event.type == CalendarEventType.internal && event.jobId != null) {
+          final quote = wonByJobId[event.jobId!];
+          if (quote != null) context.pushNamed(AppRoutes.quoteDetail, extra: quote);
+        } else if (event.type == CalendarEventType.external && event.extJobId != null) {
+          final extJob = extJobById[event.extJobId!];
+          if (extJob != null) context.pushNamed(AppRoutes.extJobDetail, extra: extJob);
+        }
+    }
+  }
+
+  void _navigateInstrumentalist(
+    BuildContext context,
+    CalendarEvent event,
+    Map<int, Job> jobById,
+    Map<int, ServiceOffer> sentById,
+    Map<int, ServiceOffer> wonById,
+  ) {
+    switch (event.kind) {
+      case CalendarEventKind.newJob:
+        final job = jobById[event.id];
+        if (job != null) context.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
+      case CalendarEventKind.sent:
+        final offer = sentById[event.id];
+        if (offer != null) context.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
+      case CalendarEventKind.won:
+        final offer = wonById[event.id];
+        if (offer != null) context.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
-    final eventsAsync = ref.watch(calendarEventsProvider(widget.role));
+    final c = DSTheme.of(context);
     final isDj = widget.role == MusicianRole.dj;
 
-    return Scaffold(
-      backgroundColor: _c.bg.canvas,
-      appBar: AppBar(
-        title: Text('Kalender', style: DSTextStyle.headingSm.copyWith(color: _c.text.primary)),
-        backgroundColor: _c.bg.surface,
-        surfaceTintColor: _c.bg.surface,
-        iconTheme: IconThemeData(color: _c.text.primary),
-        actions: [
-          if (eventsAsync.valueOrNull != null)
-            DSIconButton(
-              icon: LucideIcons.share2,
-              variant: DSIconButtonVariant.ghost,
-              onTap: () => showIcalExportBottomSheet(
-                context,
-                events: eventsAsync.value!,
-                isDj: isDj,
-              ),
-            ),
-        ],
-      ),
-      body: eventsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _ErrorView(
-          onRetry: () =>
-              ref.read(calendarEventsProvider(widget.role).notifier).refresh(),
-        ),
-        data: (events) => _CalendarBody(
-          month: _month,
-          selectedDay: _selectedDay,
-          events: events,
-          visibleEvents: _eventsForView(events),
-          onMonthChanged: _onMonthChanged,
-          onTodayTapped: _onTodayTapped,
-          onDaySelected: _onDaySelected,
-        ),
-      ),
+    // ── Data ──
+    final newJobs = isDj
+        ? (ref.watch(filteredDjJobsProvider).valueOrNull ?? <Job>[])
+        : (ref.watch(combinedInstrumentalistJobsProvider).valueOrNull ?? <Job>[]);
+
+    final sentEvents = isDj
+        ? (ref.watch(pendingDjQuotesProvider).valueOrNull ?? <DjQuote>[])
+            .map(_quoteToEvent)
+            .toList()
+        : (ref.watch(sentServiceOffersProvider).valueOrNull ?? <ServiceOffer>[])
+            .map(_offerToEvent)
+            .toList();
+
+    final wonEvents = ref.watch(calendarEventsProvider(widget.role)).valueOrNull ?? <CalendarEvent>[];
+
+    // Navigation lookup maps
+    final jobById = {for (final j in newJobs) j.id: j};
+    final pendingDjById = isDj
+        ? {for (final q in ref.watch(pendingDjQuotesProvider).valueOrNull ?? <DjQuote>[]) q.id: q}
+        : <int, DjQuote>{};
+    final wonDjByJobId = isDj
+        ? {for (final q in ref.watch(wonDjQuotesProvider).valueOrNull ?? <DjQuote>[]) q.jobId: q}
+        : <int, DjQuote>{};
+    final extJobById = isDj
+        ? {for (final e in ref.watch(djExtJobsProvider).valueOrNull ?? <ExtJob>[]) e.id: e}
+        : <int, ExtJob>{};
+    final sentMusicianById = !isDj
+        ? {for (final o in ref.watch(sentServiceOffersProvider).valueOrNull ?? <ServiceOffer>[]) o.id: o}
+        : <int, ServiceOffer>{};
+    final wonMusicianById = !isDj
+        ? {for (final o in ref.watch(wonServiceOffersProvider).valueOrNull ?? <ServiceOffer>[]) o.id: o}
+        : <int, ServiceOffer>{};
+
+    final allEvents = _buildEvents(
+      newJobs: newJobs,
+      sentEvents: sentEvents,
+      wonEvents: wonEvents,
     );
-  }
-}
+    final visibleEvents = _eventsForView(allEvents);
 
-class _CalendarBody extends StatelessWidget {
-  const _CalendarBody({
-    required this.month,
-    required this.selectedDay,
-    required this.events,
-    required this.visibleEvents,
-    required this.onMonthChanged,
-    required this.onTodayTapped,
-    required this.onDaySelected,
-  });
+    final selectedLabel = _selectedDay != null
+        ? '${_selectedDay!.day}. ${_monthNames[_selectedDay!.month - 1]}'
+        : '${_monthNames[_month.month - 1]} ${_month.year}';
 
-  final DateTime month;
-  final DateTime? selectedDay;
-  final List<CalendarEvent> events;
-  final List<CalendarEvent> visibleEvents;
-  final ValueChanged<DateTime> onMonthChanged;
-  final VoidCallback onTodayTapped;
-  final ValueChanged<DateTime> onDaySelected;
-
-  @override
-  Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Column(
-            children: [
-              const SizedBox(height: DSSpacing.s2),
-              CalendarHeader(
-                month: month,
-                onMonthChanged: onMonthChanged,
-                onTodayTapped: onTodayTapped,
-              ),
-              const SizedBox(height: DSSpacing.s2),
-              CalendarGrid(
-                month: month,
-                events: events,
-                selectedDay: selectedDay,
-                onDaySelected: onDaySelected,
-              ),
-              const SizedBox(height: DSSpacing.s4),
-              Divider(height: 1, color: _c.border.subtle),
-              const SizedBox(height: DSSpacing.s2),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
-                child: Row(
-                  children: [
-                    Text(
-                      selectedDay != null
-                          ? _formatSelectedDay(selectedDay!)
-                          : 'Kommende gigs',
-                      style: DSTextStyle.labelLg.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: _c.text.primary,
-                      ),
-                    ),
-                    const SizedBox(width: DSSpacing.s2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _c.brand.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(DSRadius.pill),
-                      ),
-                      child: Text(
-                        '${visibleEvents.length}',
-                        style: DSTextStyle.bodySm.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: _c.brand.primaryActive,
+    return Scaffold(
+      backgroundColor: c.bg.canvas,
+      appBar: AppBar(
+        title: Text('Kalender', style: DSTextStyle.headingSm.copyWith(color: c.text.primary)),
+        backgroundColor: c.bg.surface,
+        surfaceTintColor: c.bg.surface,
+        iconTheme: IconThemeData(color: c.text.primary),
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                const SizedBox(height: DSSpacing.s2),
+                CalendarHeader(
+                  month: _month,
+                  onMonthChanged: (m) => setState(() {
+                    _month = m;
+                    _selectedDay = null;
+                  }),
+                  onTodayTapped: () {
+                    final now = DateTime.now();
+                    setState(() {
+                      _month = DateTime(now.year, now.month);
+                      _selectedDay = null;
+                    });
+                  },
+                  onShare: wonEvents.isNotEmpty
+                      ? () => showIcalExportBottomSheet(
+                            context,
+                            events: wonEvents,
+                            isDj: isDj,
+                          )
+                      : null,
+                ),
+                const SizedBox(height: DSSpacing.s2),
+                // ── Filter chips ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _CalFilterChip(
+                          label: 'Nye jobs',
+                          active: _showNew,
+                          activeColor: c.state.info,
+                          onTap: () => setState(() => _showNew = !_showNew),
                         ),
                       ),
+                      const SizedBox(width: DSSpacing.s2),
+                      Expanded(
+                        child: _CalFilterChip(
+                          label: isDj ? 'Bud afgivet' : 'Tilbud afgivet',
+                          active: _showSent,
+                          activeColor: c.state.warning,
+                          onTap: () => setState(() => _showSent = !_showSent),
+                        ),
+                      ),
+                      const SizedBox(width: DSSpacing.s2),
+                      Expanded(
+                        child: _CalFilterChip(
+                          label: 'Vundet',
+                          active: _showWon,
+                          activeColor: c.state.success,
+                          onTap: () => setState(() => _showWon = !_showWon),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: DSSpacing.s2),
+                // ── Calendar grid ──
+                CalendarGrid(
+                  month: _month,
+                  events: allEvents,
+                  selectedDay: _selectedDay,
+                  onDaySelected: (day) => setState(() {
+                    _selectedDay = (_selectedDay != null &&
+                            _selectedDay!.year == day.year &&
+                            _selectedDay!.month == day.month &&
+                            _selectedDay!.day == day.day)
+                        ? null
+                        : day;
+                  }),
+                  onMonthChanged: (m) => setState(() {
+                    _month = m;
+                    _selectedDay = null;
+                  }),
+                ),
+                const SizedBox(height: DSSpacing.s4),
+                Divider(height: 1, color: c.border.subtle),
+                const SizedBox(height: DSSpacing.s2),
+                // ── Section label ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
+                  child: Row(
+                    children: [
+                      Text(
+                        selectedLabel,
+                        style: DSTextStyle.labelLg.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: c.text.primary,
+                        ),
+                      ),
+                      const SizedBox(width: DSSpacing.s2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: c.brand.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(DSRadius.pill),
+                        ),
+                        child: Text(
+                          '${visibleEvents.length}',
+                          style: DSTextStyle.bodySm.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: c.brand.primaryActive,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: DSSpacing.s2),
+              ],
+            ),
+          ),
+          if (visibleEvents.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.calendar, size: 40, color: c.text.muted),
+                    const SizedBox(height: DSSpacing.s3),
+                    Text(
+                      _selectedDay != null
+                          ? 'Ingen jobs denne dag'
+                          : 'Ingen jobs denne måned',
+                      style: DSTextStyle.labelMd.copyWith(
+                          fontSize: 15, color: c.text.secondary),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: DSSpacing.s2),
-            ],
-          ),
-        ),
-        if (visibleEvents.isEmpty)
-          const SliverFillRemaining(
-            hasScrollBody: false,
-            child: _EmptyState(),
-          )
-        else
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => CalendarEventCard(
-                event: visibleEvents[index],
-                showTypeTag: true,
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final event = visibleEvents[index];
+                  return CalendarEventCard(
+                    event: event,
+                    showTypeTag: true,
+                    onTap: () => isDj
+                        ? _navigateDj(context, event, jobById, pendingDjById,
+                            wonDjByJobId, extJobById)
+                        : _navigateInstrumentalist(context, event, jobById,
+                            sentMusicianById, wonMusicianById),
+                  );
+                },
+                childCount: visibleEvents.length,
               ),
-              childCount: visibleEvents.length,
             ),
-          ),
-        const SliverToBoxAdapter(child: SizedBox(height: DSSpacing.s8)),
-      ],
-    );
-  }
-
-  static const _monthNames = [
-    'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
-    'Juli', 'August', 'September', 'Oktober', 'November', 'December',
-  ];
-
-  String _formatMonth(DateTime m) =>
-      '${_monthNames[m.month - 1]} ${m.year}';
-
-  String _formatSelectedDay(DateTime d) =>
-      '${d.day}. ${_monthNames[d.month - 1]}';
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(LucideIcons.calendar,
-              size: 40, color: _c.text.muted),
-          const SizedBox(height: DSSpacing.s3),
-          Text(
-            'Ingen jobs denne periode',
-            style: DSTextStyle.labelMd.copyWith(fontSize: 15, color: _c.text.secondary),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: DSSpacing.s8)),
         ],
       ),
     );
   }
 }
 
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.onRetry});
+// ── Event converters ──
 
-  final VoidCallback onRetry;
+CalendarEvent _jobToEvent(Job job) => CalendarEvent(
+      id: job.id,
+      date: job.date,
+      label: job.eventType,
+      type: CalendarEventType.internal,
+      kind: CalendarEventKind.newJob,
+      startTime: job.timeStart.isEmpty ? null : job.timeStart,
+      endTime: job.timeEnd.isEmpty ? null : job.timeEnd,
+      location: job.city.isEmpty ? null : job.city,
+      region: job.region.isEmpty ? null : job.region,
+      guestsAmount: job.guestsAmount,
+      jobId: job.id,
+    );
+
+CalendarEvent _quoteToEvent(DjQuote quote) => CalendarEvent(
+      id: quote.id,
+      date: quote.job.date,
+      label: quote.job.eventType,
+      type: CalendarEventType.internal,
+      kind: CalendarEventKind.sent,
+      startTime: quote.job.timeStart.isEmpty ? null : quote.job.timeStart,
+      endTime: quote.job.timeEnd.isEmpty ? null : quote.job.timeEnd,
+      location: quote.job.city.isEmpty ? null : quote.job.city,
+      region: quote.job.region.isEmpty ? null : quote.job.region,
+      guestsAmount: quote.job.guestsAmount,
+      jobId: quote.jobId,
+    );
+
+CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
+      id: offer.id,
+      date: offer.job.date,
+      label: offer.job.eventType,
+      type: offer.isExtJob ? CalendarEventType.external : CalendarEventType.internal,
+      kind: CalendarEventKind.sent,
+      startTime: offer.job.timeStart.isEmpty ? null : offer.job.timeStart,
+      endTime: offer.job.timeEnd.isEmpty ? null : offer.job.timeEnd,
+      location: offer.job.city.isEmpty ? null : offer.job.city,
+      region: offer.job.region.isEmpty ? null : offer.job.region,
+      guestsAmount: offer.job.guestsAmount > 0 ? offer.job.guestsAmount : null,
+      jobId: offer.isExtJob ? null : offer.jobId,
+      extJobId: offer.isExtJob ? offer.extJobId : null,
+    );
+
+// ── Filter chip ──
+
+class _CalFilterChip extends StatelessWidget {
+  const _CalFilterChip({
+    required this.label,
+    required this.active,
+    required this.activeColor,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final Color activeColor;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(LucideIcons.alertCircle, size: 40, color: _c.state.danger),
-          const SizedBox(height: DSSpacing.s3),
-          Text(
-            'Kunne ikke indlæse kalender',
-            style: DSTextStyle.labelMd.copyWith(fontSize: 15, color: _c.text.secondary),
+    final c = DSTheme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s3, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? activeColor.withValues(alpha: 0.12) : c.bg.inputBg,
+          borderRadius: BorderRadius.circular(DSRadius.pill),
+          border: Border.all(
+            color: active ? activeColor : c.border.subtle,
+            width: active ? 1.5 : 1,
           ),
-          const SizedBox(height: DSSpacing.s4),
-          DSButton(
-            label: 'Prøv igen',
-            onTap: onRetry,
-            variant: DSButtonVariant.secondary,
-          ),
-        ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: DSTextStyle.labelSm.copyWith(
+                fontWeight: FontWeight.w600,
+                color: active ? activeColor : c.text.secondary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              active ? LucideIcons.check : LucideIcons.x,
+              size: 11,
+              color: active ? activeColor : c.text.secondary,
+            ),
+          ],
+        ),
       ),
     );
   }

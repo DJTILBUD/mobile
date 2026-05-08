@@ -18,6 +18,13 @@ class JobDetailScreen extends ConsumerWidget {
   static String _fmt(int n) => _numFmt.format(n).replaceAll(',', '.');
 
   String _adjustedBudgetDisplay(String? djTier) {
+    final noBudget = job.budgetStart == null && job.budgetEnd == null;
+
+    // B-tier fallback: show fixed range when no budget is provided
+    if (djTier == 'B' && noBudget) {
+      return '${_fmt(3500)} – ${_fmt(6500)} kr.';
+    }
+
     final adjEnd = adjustBudgetForDjView(
       budget: job.budgetEnd ?? job.budgetStart,
       requestedSaxophonist: job.requestedSaxophonist,
@@ -38,7 +45,8 @@ class JobDetailScreen extends ConsumerWidget {
         jobCreatedAt: job.createdAt,
       );
       if (adjStart != null) {
-        return '${_fmt(adjStart.toInt())} – ${_fmt(adjEnd.toInt())} kr.';
+        final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
+        return '${_fmt(adjStart.toInt())} – ${_fmt(adjEndClamped.toInt())} kr.';
       }
     }
     return '${_fmt(adjEnd.toInt())} kr.';
@@ -49,6 +57,15 @@ class JobDetailScreen extends ConsumerWidget {
       final _c = DSTheme.of(context);
     final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
     final dateStr = DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);
+    final noBudget = job.budgetStart == null && job.budgetEnd == null;
+    final showBTierFallback = djTier == 'B' && noBudget;
+    final showBudgetIncrease = !showBTierFallback &&
+        hasBTierBudgetIncreaseAfter24h(
+          budget: job.budgetEnd ?? job.budgetStart,
+          djTier: djTier,
+          maxBudget: job.budgetEnd,
+          jobCreatedAt: job.createdAt,
+        );
 
     return Scaffold(
       backgroundColor: _c.bg.canvas,
@@ -97,19 +114,37 @@ class JobDetailScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: DSSpacing.s2),
-                  // Location
+                  // Region
                   Row(
                     children: [
-                      Icon(LucideIcons.mapPin,
+                      Icon(LucideIcons.flag,
                           size: 14, color: _c.text.muted),
                       const SizedBox(width: 6),
                       Text(
-                        '${job.city}, ${job.region}',
+                        job.region,
                         style: DSTextStyle.labelMd
                             .copyWith(color: _c.text.secondary),
                       ),
                     ],
                   ),
+                  if (job.city.isNotEmpty) ...[
+                    const SizedBox(height: DSSpacing.s1),
+                    // Lokation (venue)
+                    Row(
+                      children: [
+                        Icon(LucideIcons.mapPin,
+                            size: 14, color: _c.text.muted),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            job.city,
+                            style: DSTextStyle.labelMd
+                                .copyWith(color: _c.text.secondary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: DSSpacing.s3),
                 ],
               ),
@@ -127,34 +162,53 @@ class JobDetailScreen extends ConsumerWidget {
                       color: _c.brand.primary.withValues(alpha: 0.25)),
                 ),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(LucideIcons.banknote,
-                      size: 16, color: _c.brand.primaryActive),
-                  const SizedBox(width: DSSpacing.s2),
-                  Text(
-                    _adjustedBudgetDisplay(djTier),
-                    style: DSTextStyle.headingSm.copyWith(
-                        color: _c.brand.primaryActive,
-                        fontWeight: FontWeight.w700),
+                  Row(
+                    children: [
+                      Icon(LucideIcons.banknote,
+                          size: 16, color: _c.brand.primaryActive),
+                      const SizedBox(width: DSSpacing.s2),
+                      Text(
+                        _adjustedBudgetDisplay(djTier),
+                        style: DSTextStyle.headingSm.copyWith(
+                            color: _c.brand.primaryActive,
+                            fontWeight: FontWeight.w700),
+                      ),
+                      if (showBudgetIncrease) ...[
+                        const SizedBox(width: 6),
+                        _BudgetIncreasePulse(colors: _c),
+                      ],
+                      const Spacer(),
+                      Icon(LucideIcons.clock,
+                          size: 15, color: _c.text.secondary),
+                      const SizedBox(width: 6),
+                      Text(
+                        job.timeDisplay,
+                        style: DSTextStyle.labelMd
+                            .copyWith(color: _c.text.secondary),
+                      ),
+                      const SizedBox(width: DSSpacing.s3),
+                      Icon(LucideIcons.users,
+                          size: 15, color: _c.text.secondary),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${job.guestsAmount} gæster',
+                        style: DSTextStyle.labelMd
+                            .copyWith(color: _c.text.secondary),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  Icon(LucideIcons.clock,
-                      size: 15, color: _c.text.secondary),
-                  const SizedBox(width: 6),
-                  Text(
-                    job.timeDisplay,
-                    style: DSTextStyle.labelMd
-                        .copyWith(color: _c.text.secondary),
-                  ),
-                  const SizedBox(width: DSSpacing.s3),
-                  Icon(LucideIcons.users, size: 15, color: _c.text.secondary),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${job.guestsAmount} gæster',
-                    style: DSTextStyle.labelMd
-                        .copyWith(color: _c.text.secondary),
-                  ),
+                  if (job.requestedSaxophonist) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Budgettet gælder kun DJ. Saxofonist afregnes separat.',
+                      style: DSTextStyle.bodySm.copyWith(
+                          color: _c.brand.primaryActive
+                              .withValues(alpha: 0.70)),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -200,7 +254,8 @@ class JobDetailScreen extends ConsumerWidget {
             if (job.requestedSaxophonist ||
                 (job.requestedMusicianHours != null &&
                     job.requestedMusicianHours! > 0) ||
-                job.musicianStartTime != null) ...[
+                job.musicianStartTime != null ||
+                job.saxType != null) ...[
               _SectionCard(
                 title: 'Musikerforespørgsel',
                 child: Column(
@@ -211,15 +266,28 @@ class JobDetailScreen extends ConsumerWidget {
                           icon: LucideIcons.music2,
                           label: 'Saxofonist',
                           value: 'Ja'),
-                    if (job.requestedSaxophonist &&
-                        job.requestedMusicianHours != null)
+                    if (job.saxType != null) ...[
+                      if (job.requestedSaxophonist)
+                        const SizedBox(height: DSSpacing.s2),
+                      _InfoRow(
+                          icon: LucideIcons.music,
+                          label: 'Spiltype',
+                          value: job.saxType == 'lounge'
+                              ? 'Lounge'
+                              : job.saxType == 'party'
+                                  ? 'Party'
+                                  : '${job.saxType![0].toUpperCase()}${job.saxType!.substring(1)}'),
                       const SizedBox(height: DSSpacing.s2),
-                    if (job.requestedMusicianHours != null)
+                      _SaxTypeDescription(saxType: job.saxType!),
+                    ],
+                    if (job.requestedMusicianHours != null) ...[
+                      const SizedBox(height: DSSpacing.s2),
                       _InfoRow(
                           icon: LucideIcons.timer,
                           label: 'Timer',
                           value:
                               '${job.requestedMusicianHours!.toStringAsFixed(1)} timer'),
+                    ],
                     if (job.musicianStartTime != null) ...[
                       const SizedBox(height: DSSpacing.s2),
                       _InfoRow(
@@ -227,6 +295,30 @@ class JobDetailScreen extends ConsumerWidget {
                           label: 'Saxofonist starter',
                           value: job.musicianStartTime!),
                     ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: DSSpacing.s3),
+            ],
+
+            // ── Musician special request ──────────────────────────────────────
+            if (job.musicianSpecialRequest != null &&
+                job.musicianSpecialRequest!.isNotEmpty) ...[
+              _SectionCard(
+                title: 'Særligt ønske til musikeren',
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(LucideIcons.star,
+                        size: 15, color: _c.state.warning),
+                    const SizedBox(width: DSSpacing.s2),
+                    Expanded(
+                      child: Text(
+                        job.musicianSpecialRequest!,
+                        style: DSTextStyle.bodyMd
+                            .copyWith(color: _c.text.secondary),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -344,6 +436,125 @@ class _InfoRow extends StatelessWidget {
               color: _c.text.primary, fontWeight: FontWeight.w600),
         ),
       ],
+    );
+  }
+}
+
+class _SaxTypeDescription extends StatefulWidget {
+  const _SaxTypeDescription({required this.saxType});
+  final String saxType;
+
+  @override
+  State<_SaxTypeDescription> createState() => _SaxTypeDescriptionState();
+}
+
+class _SaxTypeDescriptionState extends State<_SaxTypeDescription> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DSTheme.of(context);
+
+    final (IconData icon, Color color, String description) = switch (widget.saxType) {
+      'lounge' => (
+          LucideIcons.coffee,
+          c.state.info,
+          'Du spiller blød baggrundsmusik – jazz, bossa nova og rolige melodier. Du er ikke centrum for opmærksomhed, men sætter stemningen diskret.',
+        ),
+      'party' => (
+          LucideIcons.partyPopper,
+          c.state.warning,
+          'Du er centrum for opmærksomhed – spil kendte hits, bring energi og dansevibes til festen. Tænd for salen og giv den gas.',
+        ),
+      _ => (LucideIcons.music, c.text.muted, ''),
+    };
+
+    if (description.isEmpty) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(DSSpacing.s3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(DSRadius.sm),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: DSSpacing.s2),
+            Expanded(
+              child: _expanded
+                  ? Text(
+                      description,
+                      style: DSTextStyle.bodySm.copyWith(color: c.text.secondary),
+                    )
+                  : Text(
+                      'Tryk for at læse mere',
+                      style: DSTextStyle.bodySm.copyWith(
+                          color: color, fontWeight: FontWeight.w600),
+                    ),
+            ),
+            Icon(
+              _expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+              size: 14,
+              color: color,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BudgetIncreasePulse extends StatefulWidget {
+  const _BudgetIncreasePulse({required this.colors});
+  final DSColors colors;
+
+  @override
+  State<_BudgetIncreasePulse> createState() => _BudgetIncreasePulseState();
+}
+
+class _BudgetIncreasePulseState extends State<_BudgetIncreasePulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.colors;
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(3, (i) {
+          final t = (_anim.value - i * 0.25).clamp(0.0, 1.0);
+          final opacity = Curves.easeInOut.transform(t);
+          return Opacity(
+            opacity: opacity < 0.4 ? 0.3 : opacity,
+            child: Icon(LucideIcons.chevronUp, size: 14, color: c.state.success),
+          );
+        }),
+      ),
     );
   }
 }

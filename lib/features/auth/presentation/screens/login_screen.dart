@@ -192,16 +192,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: DSSpacing.s2),
-                    Center(
-                      child: GestureDetector(
-                        onTap: () => context.pushNamed(AppRoutes.designSystem),
-                        child: Text(
-                          'Design System',
-                          style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),

@@ -64,25 +64,14 @@ class CalendarRepositoryImpl implements CalendarRepository {
     }
   }
 
-  static const _unavailablePrefix = '__unavailable_date__:';
-
   @override
   Future<Map<String, int>> fetchDjUnavailableDates(String userId) async {
     try {
-      final rows =
-          await _datasource.fetchDjUnavailableDateRejections(userId);
-      final result = <String, int>{};
-      for (final row in rows) {
-        final id = (row['id'] as num).toInt();
-        final reasons = (row['reason'] as List?)?.cast<String>() ?? [];
-        for (final reason in reasons) {
-          if (reason.startsWith(_unavailablePrefix)) {
-            final date = reason.substring(_unavailablePrefix.length);
-            if (date.isNotEmpty) result[date] = id;
-          }
-        }
-      }
-      return result;
+      final rows = await _datasource.fetchDjUnavailableDates(userId);
+      return {
+        for (final row in rows)
+          (row['unavailable_date'] as String): (row['id'] as num).toInt()
+      };
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }

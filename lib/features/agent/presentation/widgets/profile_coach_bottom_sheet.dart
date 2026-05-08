@@ -133,7 +133,7 @@ class _ProfileCoachBottomSheetState
         stat: '+40% bookinger',
         description: reviewCount == 0
             ? 'Ingen anbefalinger endnu — social proof er afgørende for nye kunder. '
-                'Bed dine tidligere kunder om en kort anmeldelse via DJ Tilbud efter eventet.'
+                'Bed dine tidligere kunder om en kort anmeldelse via DJTilbud efter eventet.'
             : 'Du har $reviewCount anbefalinger — profiler med 10+ lukker 40% flere bookinger. '
                 'Kontakt tidligere kunder og bed dem skrive en kort anmeldelse.',
         onTap: widget.onGoToReviews,

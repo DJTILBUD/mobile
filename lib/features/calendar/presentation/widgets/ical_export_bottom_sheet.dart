@@ -53,7 +53,7 @@ class _ICalExportBottomSheetState
       await file.writeAsString(ics);
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'text/calendar')],
-        subject: 'Mine jobs – DJ Tilbud',
+        subject: 'Mine jobs – DJTilbud',
       );
     } finally {
       if (mounted) setState(() => _isExporting = false);

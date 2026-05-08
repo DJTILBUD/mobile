@@ -600,6 +600,30 @@ class JobsRemoteDatasource {
         .eq('musician_id', userId);
   }
 
+  Future<void> setSpecialRequestFee(int offerId, {required int feeDkk}) async {
+    final userId = _client.auth.currentUser!.id;
+    await _client
+        .from('ServiceOffers')
+        .update({
+          'special_request_extra_fee_dkk': feeDkk,
+          'special_request_extra_fee_confirmed': false,
+        })
+        .eq('id', offerId)
+        .eq('musician_id', userId);
+  }
+
+  Future<void> removeSpecialRequestFee(int offerId) async {
+    final userId = _client.auth.currentUser!.id;
+    await _client
+        .from('ServiceOffers')
+        .update({
+          'special_request_extra_fee_dkk': 0,
+          'special_request_extra_fee_confirmed': false,
+        })
+        .eq('id', offerId)
+        .eq('musician_id', userId);
+  }
+
   /// Saves private musician notes on a service offer.
   Future<void> saveMusicianNotes(int offerId, String notes) async {
     final userId = _client.auth.currentUser!.id;

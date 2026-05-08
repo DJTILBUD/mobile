@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/features/agent/domain/entities/agent_state.dart';
 import 'package:dj_tilbud_app/features/agent/presentation/providers/agent_provider.dart';
@@ -25,6 +26,7 @@ class AgentBottomSheet extends ConsumerStatefulWidget {
 
 class _AgentBottomSheetState extends ConsumerState<AgentBottomSheet> {
   bool _started = false;
+  DateTime? _requestStartTime;
 
   @override
   void didChangeDependencies() {
@@ -36,6 +38,7 @@ class _AgentBottomSheetState extends ConsumerState<AgentBottomSheet> {
   }
 
   void _kickOff() {
+    _requestStartTime = DateTime.now();
     final jobContext = jobToContext(widget.job);
 
     if (widget.isDj) {
@@ -78,8 +81,18 @@ class _AgentBottomSheetState extends ConsumerState<AgentBottomSheet> {
       final _c = DSTheme.of(context);
     final agentState = ref.watch(agentSessionProvider);
 
+    ref.listen<AgentState>(agentSessionProvider, (prev, next) {
+      if (next is AgentDone && prev is! AgentDone) {
+        final latencyMs = _requestStartTime != null
+            ? DateTime.now().difference(_requestStartTime!).inMilliseconds
+            : 0;
+        AnalyticsService.logAiDraftReceived(widget.job.id, latencyMs: latencyMs);
+        ref.invalidate(agentUsageProvider);
+      }
+    });
+
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
+      initialChildSize: 0.75,
       minChildSize: 0.4,
       maxChildSize: 0.92,
       expand: false,
@@ -152,6 +165,10 @@ class _AgentBottomSheetState extends ConsumerState<AgentBottomSheet> {
                   agentState: agentState,
                   onAccept: () {
                     if (agentState is AgentDone) {
+                      AnalyticsService.logAiDraftAccepted(
+                        widget.job.id,
+                        role: widget.isDj ? 'dj' : 'musician',
+                      );
                       widget.onDraftAccepted(agentState.text);
                       Navigator.of(context).pop();
                     }
@@ -229,7 +246,7 @@ class _DraftText extends StatelessWidget {
       children: [
         Container(
           width: double.infinity,
-          constraints: const BoxConstraints(minHeight: 150),
+          constraints: const BoxConstraints(minHeight: 220),
           padding: const EdgeInsets.all(DSSpacing.s4),
           decoration: BoxDecoration(
             color: _c.bg.canvas,

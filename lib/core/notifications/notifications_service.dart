@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/chat/data/models/conversation_model.dart';
@@ -120,6 +121,8 @@ class NotificationsService {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
 
+    AnalyticsService.logNotificationTapped(type ?? 'unknown', role: role);
+
     // Helper: go to shell tab then push detail synchronously (no async gap between
     // them) so the shell stays underneath and the back button works — exactly
     // the same as navigating from within the app.
@@ -212,6 +215,17 @@ class NotificationsService {
           } else {
             router.go(featuredTab);
           }
+
+        case 'custom_notification':
+          // Admin-sent custom notification — no deep link, just dismiss.
+          break;
+
+        case 'admin_message':
+          final profileTab =
+              role == 'musician' ? '/instrumentalist/profile' : '/dj/profile';
+          router.go(profileTab);
+          router.pushNamed(AppRoutes.adminMessages, extra: role);
+          break;
 
         case 'ready_reminder':
           final jobId = _parseInt(data['job_id']);

@@ -21,6 +21,8 @@ class ServiceOffer {
     this.musicianPhone,
     this.musicianEmail,
     this.customerContactPlannedFor,
+    this.specialRequestExtraFeeDkk = 0,
+    this.specialRequestExtraFeeConfirmed = false,
   });
 
   final int id;
@@ -43,6 +45,8 @@ class ServiceOffer {
   final String? musicianPhone;
   final String? musicianEmail;
   final DateTime? customerContactPlannedFor;
+  final int specialRequestExtraFeeDkk;
+  final bool specialRequestExtraFeeConfirmed;
 
   bool get isExtJob => extJobId != null;
 }

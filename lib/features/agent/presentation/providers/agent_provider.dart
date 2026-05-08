@@ -11,6 +11,30 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
 
+// ── Usage model ───────────────────────────────────────────────────────────────
+
+class AgentUsage {
+  const AgentUsage({
+    required this.dailyUsed,
+    required this.monthlyUsed,
+    this.dailyLimit = 5,
+    this.monthlyLimit = 20,
+  });
+
+  final int dailyUsed;
+  final int monthlyUsed;
+  final int dailyLimit;
+  final int monthlyLimit;
+
+  int get dailyRemaining => (dailyLimit - dailyUsed).clamp(0, dailyLimit);
+  int get monthlyRemaining => (monthlyLimit - monthlyUsed).clamp(0, monthlyLimit);
+  bool get isDailyLimitReached => dailyUsed >= dailyLimit;
+  bool get isMonthlyLimitReached => monthlyUsed >= monthlyLimit;
+  bool get isLimitReached => isDailyLimitReached || isMonthlyLimitReached;
+
+  static const empty = AgentUsage(dailyUsed: 0, monthlyUsed: 0);
+}
+
 // ── Repository provider ──────────────────────────────────────────────────────
 
 final agentRepositoryProvider = Provider<AgentRepository>((ref) {
@@ -60,6 +84,13 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
 
       state = AgentDone(text: _accumulatedText);
     } catch (e) {
+      if (e is AgentLimitException) {
+        final msg = e.limitType == 'daily'
+            ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
+            : 'Du har brugt dine 20 AI-udkast for denne måned.';
+        state = AgentError(message: msg);
+        return;
+      }
       final message = e is AppException ? e.message : e.toString();
       state = AgentError(message: message);
     }
@@ -117,6 +148,13 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
 
       state = AgentDone(text: _accumulatedText);
     } catch (e) {
+      if (e is AgentLimitException) {
+        final msg = e.limitType == 'daily'
+            ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
+            : 'Du har brugt dine 20 AI-udkast for denne måned.';
+        state = AgentError(message: msg);
+        return;
+      }
       final message = e is AppException ? e.message : e.toString();
       state = AgentError(message: message);
     }
@@ -152,6 +190,13 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
 
       state = AgentDone(text: _accumulatedText);
     } catch (e) {
+      if (e is AgentLimitException) {
+        final msg = e.limitType == 'daily'
+            ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
+            : 'Du har brugt dine 20 AI-udkast for denne måned.';
+        state = AgentError(message: msg);
+        return;
+      }
       final message = e is AppException ? e.message : e.toString();
       state = AgentError(message: message);
     }
@@ -182,6 +227,17 @@ final profileCoachSessionProvider =
     StateNotifierProvider<AgentSessionNotifier, AgentState>(
   (ref) => AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
 );
+
+// ── Usage provider ────────────────────────────────────────────────────────────
+
+final agentUsageProvider = FutureProvider.autoDispose<AgentUsage>((ref) async {
+  final datasource = AgentRemoteDatasource(ref.watch(supabaseClientProvider));
+  final counts = await datasource.fetchUsageCounts();
+  return AgentUsage(
+    dailyUsed: counts.dailyUsed,
+    monthlyUsed: counts.monthlyUsed,
+  );
+});
 
 // ── Context builders (pure functions, no providers needed) ────────────────────
 

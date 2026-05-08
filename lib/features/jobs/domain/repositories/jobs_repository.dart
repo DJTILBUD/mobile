@@ -123,6 +123,10 @@ abstract class JobsRepository {
   /// Adds or updates extra hours on a won musician service offer.
   Future<void> addMusicianExtraHours(int offerId, {required double extraHours});
 
+  Future<void> setSpecialRequestFee(int offerId, {required int feeDkk});
+
+  Future<void> removeSpecialRequestFee(int offerId);
+
   /// Saves private musician notes on a won service offer.
   Future<void> saveMusicianNotes(int offerId, String notes);
 

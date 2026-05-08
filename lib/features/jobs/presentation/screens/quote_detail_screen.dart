@@ -197,7 +197,11 @@ class _JobHeroCard extends StatelessWidget {
           const SizedBox(height: DSSpacing.s2),
           _MetaRow(icon: LucideIcons.clock, label: job.timeDisplay),
           const SizedBox(height: DSSpacing.s2),
-          _MetaRow(icon: LucideIcons.mapPin, label: '${job.city}, ${job.region}'),
+          _MetaRow(icon: LucideIcons.flag, label: job.region),
+          if (job.city.isNotEmpty) ...[
+            const SizedBox(height: DSSpacing.s2),
+            _MetaRow(icon: LucideIcons.mapPin, label: job.city),
+          ],
           if (job.guestsAmount > 0) ...[
             const SizedBox(height: DSSpacing.s2),
             _MetaRow(icon: LucideIcons.users, label: '${job.guestsAmount} gæster'),

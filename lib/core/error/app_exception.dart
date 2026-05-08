@@ -27,3 +27,10 @@ class DatabaseException extends AppException {
 class AgentException extends AppException {
   const AgentException(super.message);
 }
+
+class AgentLimitException extends AppException {
+  const AgentLimitException({required this.limitType})
+      : super('');
+  // 'daily' | 'monthly'
+  final String limitType;
+}
