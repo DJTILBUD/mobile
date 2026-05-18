@@ -49,11 +49,9 @@ class CalendarRemoteDatasource {
         .not('ext_job_id', 'is', null);
   }
 
-  // ── Unavailable dates (DJ only) ──
+  // ── Unavailable dates (DJ) ──
 
-  /// Fetches all manually-marked unavailable dates for a DJ from UnavailableDates.
-  Future<List<Map<String, dynamic>>> fetchDjUnavailableDates(
-      String userId) async {
+  Future<List<Map<String, dynamic>>> fetchDjUnavailableDates(String userId) async {
     return _client
         .from('UnavailableDates')
         .select('id, unavailable_date')
@@ -61,23 +59,37 @@ class CalendarRemoteDatasource {
         .eq('dj_id', userId);
   }
 
-  /// Inserts an unavailable date for a DJ. Returns the new row.
-  Future<Map<String, dynamic>> createDjUnavailableDate(
-      String userId, String dateStr) async {
+  Future<Map<String, dynamic>> createDjUnavailableDate(String userId, String dateStr) async {
     return _client
         .from('UnavailableDates')
-        .insert({
-          'profile_type': 'dj',
-          'dj_id': userId,
-          'unavailable_date': dateStr,
-          'source': 'manual',
-        })
+        .insert({'profile_type': 'dj', 'dj_id': userId, 'unavailable_date': dateStr, 'source': 'manual'})
         .select('id')
         .single();
   }
 
-  /// Deletes an unavailable date row by id.
   Future<void> deleteDjUnavailableDate(int id) async {
+    await _client.from('UnavailableDates').delete().eq('id', id);
+  }
+
+  // ── Unavailable dates (Musician) ──
+
+  Future<List<Map<String, dynamic>>> fetchMusicianUnavailableDates(String userId) async {
+    return _client
+        .from('UnavailableDates')
+        .select('id, unavailable_date')
+        .eq('profile_type', 'musician')
+        .eq('musician_id', userId);
+  }
+
+  Future<Map<String, dynamic>> createMusicianUnavailableDate(String userId, String dateStr) async {
+    return _client
+        .from('UnavailableDates')
+        .insert({'profile_type': 'musician', 'musician_id': userId, 'unavailable_date': dateStr, 'source': 'manual'})
+        .select('id')
+        .single();
+  }
+
+  Future<void> deleteMusicianUnavailableDate(int id) async {
     await _client.from('UnavailableDates').delete().eq('id', id);
   }
 }

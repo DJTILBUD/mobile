@@ -241,11 +241,15 @@ class ProfileRemoteDatasource {
     final readJoin = isDj
         ? 'AdminMessageReads!left(readAt, djId)'
         : 'AdminMessageReads!left(readAt, musicianId)';
-    return _client
+    final userCreatedAt = _client.auth.currentUser?.createdAt;
+    var query = _client
         .from('AdminMessages')
         .select('*, $readJoin')
-        .inFilter('target_audience', audiences)
-        .order('createdAt', ascending: false);
+        .inFilter('target_audience', audiences);
+    if (userCreatedAt != null) {
+      query = query.gte('createdAt', userCreatedAt);
+    }
+    return query.order('createdAt', ascending: false);
   }
 
   Future<void> markAdminMessageRead({
@@ -256,9 +260,20 @@ class ProfileRemoteDatasource {
     final payload = isDj
         ? {'messageId': messageId, 'djId': userId}
         : {'messageId': messageId, 'musicianId': userId};
+    await _client.from('AdminMessageReads').insert(payload);
+  }
+
+  // ── Onboarding ──
+
+  Future<void> setOnboardingCompleted({
+    required String userId,
+    required bool isDj,
+  }) async {
+    final table = isDj ? 'DjInfos' : 'Musicians';
     await _client
-        .from('AdminMessageReads')
-        .upsert(payload, onConflict: isDj ? 'messageId,djId' : 'messageId,musicianId');
+        .from(table)
+        .update({'onboarding_completed_at': DateTime.now().toIso8601String()})
+        .eq('id', userId);
   }
 
   // ── iCal Token ──

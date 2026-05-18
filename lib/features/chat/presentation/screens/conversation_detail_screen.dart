@@ -29,8 +29,9 @@ class _ConversationDetailScreenState
   bool _isSending = false;
   String? _errorMsg;
 
-  // Captured in initState so it can be safely called from dispose()
+  // Captured in initState so they can be safely called from dispose()
   late final StateController<int?> _activeConvNotifier;
+  late final StateController<bool> _suppressDismissBarNotifier;
 
   String get _currentUserId => supabase.auth.currentUser!.id;
 
@@ -38,19 +39,33 @@ class _ConversationDetailScreenState
   void initState() {
     super.initState();
     _activeConvNotifier = ref.read(activeConversationIdProvider.notifier);
+    _suppressDismissBarNotifier =
+        ref.read(suppressKeyboardDismissBarProvider.notifier);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       // Mark this conversation as active so foreground FCM banners are suppressed
       _activeConvNotifier.state = widget.conversation.id;
+      // Hide the global keyboard dismiss bar — the chat input is already at the
+      // bottom of the screen, and the bar would overlay it.
+      _suppressDismissBarNotifier.state = true;
       _markAsRead();
+      // Force a fresh message fetch: the provider may be reused from a previous
+      // visit (autoDispose can keep it alive across same-frame navigation), so
+      // stale state would be shown without this refresh.
+      ref
+          .read(conversationMessagesProvider(widget.conversation.id).notifier)
+          .refresh();
     });
   }
 
   @override
   void dispose() {
-    // Defer the state write — Riverpod disallows provider mutations during
+    // Defer state writes — Riverpod disallows provider mutations during
     // widget tree finalization (dispose is called while the tree is unmounting).
-    Future.microtask(() => _activeConvNotifier.state = null);
+    Future.microtask(() {
+      _activeConvNotifier.state = null;
+      _suppressDismissBarNotifier.state = false;
+    });
     _textController.dispose();
     _scrollController.dispose();
     _focusNode.dispose();

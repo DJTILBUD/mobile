@@ -17,6 +17,7 @@ class DjProfileModel {
     this.soundcloudUrl,
     this.venuesAndEvents,
     this.excludedEventTypes = const [],
+    this.onboardingCompletedAt,
   });
 
   final String id;
@@ -34,6 +35,7 @@ class DjProfileModel {
   final String? soundcloudUrl;
   final List<String>? venuesAndEvents;
   final List<String> excludedEventTypes;
+  final DateTime? onboardingCompletedAt;
 
   factory DjProfileModel.fromJson(Map<String, dynamic> json) {
     return DjProfileModel(
@@ -52,6 +54,9 @@ class DjProfileModel {
       soundcloudUrl: json['soundcloud_url'] as String?,
       venuesAndEvents: (json['venues_and_events'] as List<dynamic>?)?.cast<String>(),
       excludedEventTypes: (json['excluded_event_types'] as List<dynamic>?)?.cast<String>() ?? [],
+      onboardingCompletedAt: json['onboarding_completed_at'] != null
+          ? DateTime.tryParse(json['onboarding_completed_at'] as String)
+          : null,
     );
   }
 
@@ -89,6 +94,7 @@ class DjProfileModel {
       soundcloudUrl: soundcloudUrl,
       venuesAndEvents: venuesAndEvents,
       excludedEventTypes: excludedEventTypes,
+      onboardingCompletedAt: onboardingCompletedAt,
     );
   }
 }

@@ -118,6 +118,41 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     return raw;
   }
 
+  String _adjustedBudgetDisplay(String? djTier) {
+    final job = widget.job;
+    final noBudget = job.budgetStart == null && job.budgetEnd == null;
+    if (djTier == 'B' && noBudget) return '3.500 – 6.500 kr.';
+
+    final adjEnd = adjustBudgetForDjView(
+      budget: job.budgetEnd ?? job.budgetStart,
+      requestedSaxophonist: job.requestedSaxophonist,
+      requestedMusicianHours: job.requestedMusicianHours,
+      djTier: djTier,
+      maxBudget: job.budgetEnd,
+      jobCreatedAt: job.createdAt,
+    );
+    if (adjEnd == null) return 'Ikke angivet';
+
+    if (job.budgetStart != null && job.budgetStart != job.budgetEnd) {
+      final adjStart = adjustBudgetForDjView(
+        budget: job.budgetStart,
+        requestedSaxophonist: job.requestedSaxophonist,
+        requestedMusicianHours: job.requestedMusicianHours,
+        djTier: djTier,
+        maxBudget: job.budgetEnd,
+        jobCreatedAt: job.createdAt,
+      );
+      if (adjStart != null) {
+        final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
+        return '${_fmtNum(adjStart.toInt())} – ${_fmtNum(adjEndClamped.toInt())} kr.';
+      }
+    }
+    return '${_fmtNum(adjEnd.toInt())} kr.';
+  }
+
+  static String _fmtNum(int n) =>
+      NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
+
   Future<void> _handleSubmit() async {
     final equipmentValid = _selectedEquipment.isNotEmpty || _noEquipmentSelected;
     if (!equipmentValid) {
@@ -310,7 +345,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(DSSpacing.s4),
           children: [
-            _JobSummary(job: job, dateStr: dateStr),
+            _JobSummary(job: job, dateStr: dateStr, budgetDisplay: _adjustedBudgetDisplay(djTier)),
             const SizedBox(height: DSSpacing.s6),
 
             DSInput(
@@ -578,10 +613,11 @@ class _EarlySetupSection extends StatelessWidget {
 }
 
 class _JobSummary extends StatelessWidget {
-  const _JobSummary({required this.job, required this.dateStr});
+  const _JobSummary({required this.job, required this.dateStr, required this.budgetDisplay});
 
   final Job job;
   final String dateStr;
+  final String budgetDisplay;
 
   @override
   Widget build(BuildContext context) {
@@ -618,7 +654,7 @@ class _JobSummary extends StatelessWidget {
           const SizedBox(height: DSSpacing.s1),
           _SummaryRow(LucideIcons.users, '${job.guestsAmount} gæster'),
           const SizedBox(height: DSSpacing.s1),
-          _SummaryRow(LucideIcons.banknote, job.budgetDisplay),
+          _SummaryRow(LucideIcons.banknote, budgetDisplay),
           if (job.leadRequest != null && job.leadRequest!.isNotEmpty) ...[
             const SizedBox(height: DSSpacing.s3),
             const Divider(height: 1),

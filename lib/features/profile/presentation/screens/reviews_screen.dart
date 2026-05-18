@@ -280,45 +280,79 @@ class _ReviewFormState extends State<_ReviewForm> {
                 onChanged: (v) => setState(() => _eventType = v!),
               ),
               const SizedBox(height: DSSpacing.s3),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Dato: ${DateFormat('dd/MM/yyyy').format(_eventDate)}',
-                  style: DSTextStyle.bodyMd.copyWith(color: _c.text.primary),
-                ),
-                trailing: Icon(LucideIcons.calendar, size: 20, color: _c.text.secondary),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _eventDate,
-                    firstDate: DateTime(2015),
-                    lastDate: DateTime.now(),
-                    builder: (context, child) => Theme(
-                      data: ThemeData.light().copyWith(
-                        colorScheme: ColorScheme.light(
-                          primary: _c.brand.primary,
-                          onPrimary: _c.brand.onPrimary,
-                          surface: Colors.white,
-                          onSurface: _c.text.primary,
-                        ),
-                        datePickerTheme: DatePickerThemeData(
-                          backgroundColor: Colors.white,
-                          headerBackgroundColor: _c.brand.primary,
-                          headerForegroundColor: _c.brand.onPrimary,
-                          dayOverlayColor: WidgetStatePropertyAll(
-                            _c.brand.primary.withValues(alpha: 0.12),
-                          ),
-                          todayBorder: BorderSide(color: _c.brand.primary),
-                        ),
-                        dialogTheme: const DialogThemeData(
-                          backgroundColor: Colors.white,
-                        ),
-                      ),
-                      child: child!,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Dato for arrangement',
+                    style: DSTextStyle.bodyMd.copyWith(
+                      color: _c.text.primary,
+                      fontWeight: FontWeight.w500,
                     ),
-                  );
-                  if (picked != null) setState(() => _eventDate = picked);
-                },
+                  ),
+                  const SizedBox(height: DSSpacing.s1),
+                  GestureDetector(
+                    onTap: () async {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _eventDate,
+                        firstDate: DateTime(2015),
+                        lastDate: DateTime.now(),
+                        builder: (context, child) => Theme(
+                          data: (isDark ? ThemeData.dark() : ThemeData.light()).copyWith(
+                            colorScheme: (isDark
+                                    ? const ColorScheme.dark()
+                                    : const ColorScheme.light())
+                                .copyWith(
+                              primary: _c.brand.primary,
+                              onPrimary: _c.brand.onPrimary,
+                              surface: _c.bg.surface,
+                              onSurface: _c.text.primary,
+                            ),
+                            datePickerTheme: DatePickerThemeData(
+                              backgroundColor: _c.bg.surface,
+                              headerBackgroundColor: _c.brand.primary,
+                              headerForegroundColor: _c.brand.onPrimary,
+                              dayOverlayColor: WidgetStatePropertyAll(
+                                _c.brand.primary.withValues(alpha: 0.12),
+                              ),
+                              todayBorder: BorderSide(color: _c.brand.primary),
+                            ),
+                            dialogTheme: DialogThemeData(
+                              backgroundColor: _c.bg.surface,
+                            ),
+                          ),
+                          child: child!,
+                        ),
+                      );
+                      if (picked != null) setState(() => _eventDate = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DSSpacing.s4,
+                        vertical: DSSpacing.s3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _c.bg.inputBg,
+                        borderRadius: BorderRadius.circular(DSRadius.sm),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              DateFormat('dd/MM/yyyy').format(_eventDate),
+                              style: DSTextStyle.bodyMd.copyWith(
+                                color: _c.text.primary,
+                              ),
+                            ),
+                          ),
+                          Icon(LucideIcons.calendar, size: 18, color: _c.text.secondary),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: DSSpacing.s3),
               DSInput(

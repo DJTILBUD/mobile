@@ -153,7 +153,19 @@ class _AgentBottomSheetState extends ConsumerState<AgentBottomSheet> {
                   child: switch (agentState) {
                     AgentIdle() => const _LoadingDots(),
                     AgentStreaming(:final text) => _DraftText(text: text, streaming: true),
-                    AgentDone(:final text) => _DraftText(text: text, streaming: false),
+                    AgentDone(:final text) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _DraftText(text: text, streaming: false),
+                        const SizedBox(height: DSSpacing.s4),
+                        _RefinementStrip(
+                          onRefine: (message) => ref
+                              .read(agentSessionProvider.notifier)
+                              .refineWith(message),
+                        ),
+                      ],
+                    ),
                     AgentError(:final message) => _ErrorView(message: message),
                   },
                 ),
@@ -304,6 +316,170 @@ class _ErrorView extends StatelessWidget {
     );
   }
 }
+
+// ── Refinement strip ──────────────────────────────────────────────────────────
+
+class _RefinementStrip extends StatefulWidget {
+  const _RefinementStrip({required this.onRefine});
+
+  final void Function(String message) onRefine;
+
+  @override
+  State<_RefinementStrip> createState() => _RefinementStripState();
+}
+
+class _RefinementStripState extends State<_RefinementStrip> {
+  bool _showCustom = false;
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _sendChip(String message) {
+    setState(() => _showCustom = false);
+    widget.onRefine(message);
+  }
+
+  void _sendCustom() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    _controller.clear();
+    setState(() => _showCustom = false);
+    widget.onRefine(text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+
+    if (_showCustom) {
+      return Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              autofocus: true,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendCustom(),
+              style: DSTextStyle.labelMd.copyWith(fontSize: 14, color: _c.text.primary),
+              decoration: InputDecoration(
+                hintText: 'Hvad skal ændres?',
+                hintStyle: DSTextStyle.labelMd.copyWith(fontSize: 14, color: _c.text.muted),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                filled: true,
+                fillColor: _c.bg.canvas,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(DSRadius.md),
+                  borderSide: BorderSide(color: _c.border.subtle),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(DSRadius.md),
+                  borderSide: BorderSide(color: _c.border.subtle),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(DSRadius.md),
+                  borderSide: BorderSide(color: _c.brand.primaryActive),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: DSSpacing.s2),
+          GestureDetector(
+            onTap: _sendCustom,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _c.brand.primaryActive,
+                borderRadius: BorderRadius.circular(DSRadius.md),
+              ),
+              child: Icon(LucideIcons.arrowRight, size: 16, color: _c.brand.onPrimary),
+            ),
+          ),
+          const SizedBox(width: DSSpacing.s1),
+          GestureDetector(
+            onTap: () => setState(() => _showCustom = false),
+            child: Icon(LucideIcons.x, size: 18, color: _c.text.muted),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Vil du ændre noget?',
+          style: DSTextStyle.bodySm.copyWith(color: _c.text.muted, fontSize: 12),
+        ),
+        const SizedBox(height: DSSpacing.s2),
+        Wrap(
+          spacing: DSSpacing.s2,
+          runSpacing: DSSpacing.s2,
+          children: [
+            _Chip(
+              label: 'Kortere',
+              onTap: () => _sendChip('Gør pitchen kortere.'),
+            ),
+            _Chip(
+              label: 'Varmere tone',
+              onTap: () => _sendChip('Giv pitchen en varmere, mere personlig tone.'),
+            ),
+            _Chip(
+              label: 'Skift vinkel',
+              onTap: () => _sendChip('Skriv en pitch med et helt nyt åbning og en anderledes vinkel.'),
+            ),
+            _Chip(
+              label: 'Andet...',
+              onTap: () => setState(() => _showCustom = true),
+              isDotted: true,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({
+    required this.label,
+    required this.onTap,
+    this.isDotted = false,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool isDotted;
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: _c.bg.canvas,
+          borderRadius: BorderRadius.circular(DSRadius.pill),
+          border: Border.all(color: _c.border.subtle),
+        ),
+        child: Text(
+          label,
+          style: DSTextStyle.bodySm.copyWith(
+            fontSize: 13,
+            color: isDotted ? _c.text.muted : _c.text.secondary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Action bar ────────────────────────────────────────────────────────────────
 
 class _ActionBar extends StatelessWidget {
   const _ActionBar({

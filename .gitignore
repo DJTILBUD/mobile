@@ -47,3 +47,6 @@ app.*.map.json
 # Environment files (keep .env.example)
 .env.*
 !.env.example
+
+# Claude context reference folder — local only, not committed
+webapp-reference/

@@ -14,6 +14,7 @@ class MusicianProfileModel {
     this.genres,
     this.djSaxCollaboration,
     this.venuesAndEvents,
+    this.onboardingCompletedAt,
   });
 
   final String id;
@@ -28,6 +29,7 @@ class MusicianProfileModel {
   final List<String>? genres;
   final String? djSaxCollaboration;
   final List<String>? venuesAndEvents;
+  final DateTime? onboardingCompletedAt;
 
   factory MusicianProfileModel.fromJson(Map<String, dynamic> json) {
     return MusicianProfileModel(
@@ -43,6 +45,9 @@ class MusicianProfileModel {
       genres: (json['genres'] as List<dynamic>?)?.cast<String>(),
       djSaxCollaboration: json['dj_sax_collaboration'] as String?,
       venuesAndEvents: (json['venues_and_events'] as List<dynamic>?)?.cast<String>(),
+      onboardingCompletedAt: json['onboarding_completed_at'] != null
+          ? DateTime.tryParse(json['onboarding_completed_at'] as String)
+          : null,
     );
   }
 
@@ -77,6 +82,7 @@ class MusicianProfileModel {
       genres: genres,
       djSaxCollaboration: djSaxCollaboration,
       venuesAndEvents: venuesAndEvents,
+      onboardingCompletedAt: onboardingCompletedAt,
     );
   }
 }

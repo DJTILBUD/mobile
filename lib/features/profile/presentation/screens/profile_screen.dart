@@ -243,8 +243,14 @@ class ProfileScreen extends ConsumerWidget {
             ),
 
           _MenuItem(
+            icon: LucideIcons.bell,
+            label: 'Notifikationer',
+            onTap: () => context.pushNamed(AppRoutes.notificationSettings, extra: role),
+          ),
+          _MenuItem(
             icon: LucideIcons.mailOpen,
             label: 'Beskeder fra DJTilbud',
+            badgeCount: ref.watch(unreadAdminMessageCountProvider(role == MusicianRole.dj)),
             onTap: () => context.pushNamed(AppRoutes.adminMessages, extra: role),
           ),
           _MenuItem(
@@ -287,16 +293,18 @@ class _MenuItem extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.color,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final Color? color;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final c = color ?? _c.text.primary;
     return ListTile(
       leading: Icon(icon, color: c, size: 22),
@@ -308,9 +316,25 @@ class _MenuItem extends StatelessWidget {
           color: c,
         ),
       ),
-      trailing: color == null
-          ? Icon(LucideIcons.chevronRight, color: _c.text.muted, size: 20)
-          : null,
+      trailing: badgeCount > 0
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _c.brand.primaryActive,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$badgeCount',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _c.brand.onPrimary,
+                ),
+              ),
+            )
+          : color == null
+              ? Icon(LucideIcons.chevronRight, color: _c.text.muted, size: 20)
+              : null,
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: DSSpacing.s6, vertical: 2),
     );

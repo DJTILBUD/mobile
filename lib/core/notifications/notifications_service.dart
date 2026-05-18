@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -78,6 +79,14 @@ class NotificationsService {
       },
       onConflict: 'user_id, token',
     );
+
+    // Remove stale tokens for this user — iOS FCM tokens rotate on reinstall
+    // or APNs refresh, which would otherwise accumulate duplicate rows.
+    await supabase
+        .from('DeviceTokens')
+        .delete()
+        .eq('user_id', userId)
+        .neq('token', token);
   }
 
   /// Deletes the current device token on logout.
@@ -113,6 +122,47 @@ class NotificationsService {
     if (msg != null) await navigateTo(msg.data, router);
   }
 
+  /// Extracts the primary reference ID from FCM data (job_id, offer_id, etc.).
+  static String? extractReferenceId(Map<String, dynamic> data) {
+    final type = data['type'] as String?;
+    switch (type) {
+      case 'new_job':
+      case 'another_round':
+      case 'ready_reminder':
+        return data['job_id'] as String?;
+      case 'new_ext_job':
+      case 'ext_job_assigned':
+        return data['ext_job_id'] as String?;
+      case 'quote_won':
+      case 'quote_lost':
+        return data['quote_id'] as String?;
+      case 'offer_won':
+      case 'offer_lost':
+        return data['offer_id'] as String?;
+      case 'chat_message':
+        return data['conversation_id'] as String?;
+      case 'admin_message':
+        return data['message_id'] as String?;
+      default:
+        return null;
+    }
+  }
+
+  /// Logs a foreground received event to NotificationLogs (requires auth session).
+  static Future<void> logReceivedToSupabase(Map<String, dynamic> data) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      await supabase.from('NotificationLogs').insert({
+        'user_id': userId,
+        'notification_type': data['type'] ?? 'unknown',
+        'role': data['role'],
+        'reference_id': extractReferenceId(data),
+        'event': 'received',
+      });
+    } catch (_) {}
+  }
+
   /// Public entry-point used by the in-app notification banner on tap.
   static Future<void> navigateTo(
       Map<String, dynamic> data, GoRouter router) async {
@@ -122,6 +172,13 @@ class NotificationsService {
     if (userId == null) return;
 
     AnalyticsService.logNotificationTapped(type ?? 'unknown', role: role);
+    unawaited(supabase.from('NotificationLogs').insert({
+      'user_id': userId,
+      'notification_type': type ?? 'unknown',
+      'role': role,
+      'reference_id': extractReferenceId(data),
+      'event': 'tapped',
+    }).catchError((_) {}));
 
     // Helper: go to shell tab then push detail synchronously (no async gap between
     // them) so the shell stays underneath and the back button works — exactly
@@ -198,6 +255,21 @@ class NotificationsService {
             router.pushNamed(AppRoutes.conversationDetail, extra: conversation);
           } else {
             router.go(chatTab);
+          }
+
+        case 'new_ext_job':
+          final extJobId = _parseInt(data['ext_job_id']);
+          if (extJobId != null) {
+            final json = await supabase
+                .from('ExtJobs')
+                .select()
+                .eq('id', extJobId)
+                .single();
+            final extJob = ExtJobModel.fromJson(json).toEntity();
+            router.go('/instrumentalist/home');
+            router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
+          } else {
+            router.go('/instrumentalist/home');
           }
 
         case 'ext_job_assigned':

@@ -3,6 +3,13 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 
+bool _isWithin5Days(DateTime eventDate) {
+  final now = DateTime.now();
+  final todayMidnight = DateTime(now.year, now.month, now.day);
+  final eventMidnight = DateTime(eventDate.year, eventDate.month, eventDate.day);
+  return eventMidnight.difference(todayMidnight).inDays <= 5;
+}
+
 /// Represents a pending action the user must take on a won job.
 /// Mirrors the web app's action-notification logic exactly.
 enum JobActionType {
@@ -42,7 +49,7 @@ extension DjQuoteAction on DjQuote {
 
     if (jobStatus == JobStatus.readyForBilling) {
       if (djReadyConfirmedAt != null) return null;
-      if (job.date.difference(DateTime.now()).inDays <= 5) {
+      if (_isWithin5Days(job.date)) {
         return JobActionType.confirmReady;
       }
     }
@@ -72,7 +79,7 @@ extension ExtJobAction on ExtJob {
 
     if (status == ExtJobStatus.readyForBilling) {
       if (djReadyConfirmedAt != null) return null;
-      if (date.difference(DateTime.now()).inDays <= 5) {
+      if (_isWithin5Days(date)) {
         return JobActionType.confirmReady;
       }
     }
@@ -114,7 +121,7 @@ extension ServiceOfferAction on ServiceOffer {
     }
 
     if (musicianReadyConfirmedAt == null) {
-      if (job.date.difference(DateTime.now()).inDays <= 5) {
+      if (_isWithin5Days(job.date)) {
         return JobActionType.confirmReady;
       }
     }

@@ -27,4 +27,6 @@ abstract class AppRoutes {
   static const adminMessages = 'admin-messages';
   static const feedback = 'feedback';
   static const faq = 'faq';
+  static const notificationSettings = 'notification-settings';
+  static const onboarding = 'onboarding';
 }

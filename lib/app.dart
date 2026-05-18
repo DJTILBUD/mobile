@@ -42,25 +42,74 @@ import 'package:dj_tilbud_app/features/profile/presentation/screens/profile_prev
 import 'package:dj_tilbud_app/features/profile/presentation/screens/admin_messages_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/feedback_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/faq_screen.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/screens/notification_settings_screen.dart';
+import 'package:dj_tilbud_app/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:dj_tilbud_app/core/widgets/dev_env_banner.dart';
 import 'package:dj_tilbud_app/core/notifications/in_app_notification_banner.dart';
 import 'package:dj_tilbud_app/core/notifications/in_app_notification_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
+/// Tracks whether the current user has completed onboarding so GoRouter
+/// can gate the rest of the app until onboarding_completed_at is set.
+class _OnboardingNotifier extends ChangeNotifier {
+  // Pessimistic default: gate is closed until the server confirms completion.
+  bool _completed = false;
+
+  bool get onboardingCompleted => _completed;
+
+  Future<void> checkStatus() async {
+    final session = supabase.auth.currentSession;
+    if (session == null || RoleCache.role == null) {
+      // Can't check yet — leave gate closed, auth listener will retry.
+      return;
+    }
+    try {
+      final table = RoleCache.role == MusicianRole.dj ? 'DjInfos' : 'Musicians';
+      final data = await supabase
+          .from(table)
+          .select('onboarding_completed_at')
+          .eq('id', session.user.id)
+          .maybeSingle();
+      _completed = data?['onboarding_completed_at'] != null;
+    } catch (_) {
+      // Network error — leave current state unchanged so we don't
+      // accidentally gate a user who has already completed onboarding.
+    }
+    notifyListeners();
+  }
+
+  void markComplete() {
+    _completed = true;
+    notifyListeners();
+  }
+
+  void reset() {
+    _completed = false;
+    notifyListeners();
+  }
+}
+
+final _onboardingNotifier = _OnboardingNotifier();
+
+/// Called by [OnboardingScreen] after persisting onboarding_completed_at to the DB.
+void markOnboardingComplete() => _onboardingNotifier.markComplete();
+
 /// Converts Supabase auth state stream into a [Listenable]
 /// so GoRouter can react to changes without being rebuilt.
 class _AuthNotifier extends ChangeNotifier {
   _AuthNotifier() {
-    supabase.auth.onAuthStateChange.listen((event) {
+    supabase.auth.onAuthStateChange.listen((event) async {
       if (event.event == AuthChangeEvent.signedIn ||
           event.event == AuthChangeEvent.initialSession) {
         if (event.session != null) {
           NotificationsService.registerToken();
+          await _onboardingNotifier.checkStatus();
         }
       }
       if (event.event == AuthChangeEvent.signedOut) {
         RoleCache.clear();
+        _onboardingNotifier.reset();
       }
       notifyListeners();
     });
@@ -68,6 +117,15 @@ class _AuthNotifier extends ChangeNotifier {
 }
 
 final _authNotifier = _AuthNotifier();
+
+/// Call once in main() after Supabase is initialized so _authNotifier is
+/// subscribed before recoverSession() fires its background events.
+void authNotifierEarlyInit() => _authNotifier;
+
+/// Call once in main() after authNotifierEarlyInit() to eagerly resolve the
+/// onboarding status before GoRouter is created, so the initial redirect is
+/// correct without relying on an async re-evaluation after the first frame.
+Future<void> initOnboardingStatus() => _onboardingNotifier.checkStatus();
 
 String _defaultHomePath() {
   final role = RoleCache.role;
@@ -108,26 +166,53 @@ class _MissingRouteDataScreen extends StatelessWidget {
   }
 }
 
+String _resolveInitialLocation() {
+  final session = supabase.auth.currentSession;
+  if (session == null) return '/login';
+  return switch (RoleCache.role) {
+    MusicianRole.dj => '/dj/home',
+    MusicianRole.instrumentalist => '/instrumentalist/home',
+    _ => '/profile-setup',
+  };
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/login',
-    refreshListenable: _authNotifier,
+    initialLocation: _resolveInitialLocation(),
+    refreshListenable: Listenable.merge([_authNotifier, _onboardingNotifier]),
     observers: [AnalyticsService.observer],
     redirect: (context, state) {
       final isAuthenticated = supabase.auth.currentSession != null;
       final loc = state.matchedLocation;
-      final isPublicRoute = loc == '/login' || loc == '/forgot-password' || loc == '/design-system' || loc == '/profile-setup';
+      final isPublicRoute = loc == '/login' ||
+          loc == '/forgot-password' ||
+          loc == '/design-system' ||
+          loc == '/profile-setup' ||
+          loc == '/onboarding';
 
       if (!isAuthenticated && !isPublicRoute) return '/login';
 
-      // Restore session: redirect away from login if already authenticated
       if (isAuthenticated && loc == '/login') {
         final role = RoleCache.role;
-        if (role == MusicianRole.dj) return '/dj/home';
-        if (role == MusicianRole.instrumentalist) return '/instrumentalist/home';
-        // No cached role — could be a new user mid-setup, or a returning user
-        // whose cache was cleared. Send to profile-setup; the screen handles both.
+        if (role == MusicianRole.dj) {
+          if (!_onboardingNotifier.onboardingCompleted) return '/onboarding';
+          return '/dj/home';
+        }
+        if (role == MusicianRole.instrumentalist) {
+          if (!_onboardingNotifier.onboardingCompleted) return '/onboarding';
+          return '/instrumentalist/home';
+        }
         return '/profile-setup';
+      }
+
+      // Gate the entire authenticated app behind onboarding completion
+      if (isAuthenticated && !isPublicRoute && !_onboardingNotifier.onboardingCompleted) {
+        return '/onboarding';
+      }
+
+      // Once onboarding is confirmed complete, leave the onboarding screen.
+      if (isAuthenticated && loc == '/onboarding' && _onboardingNotifier.onboardingCompleted) {
+        return _defaultHomePath();
       }
 
       return null;
@@ -148,6 +233,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile-setup',
         name: AppRoutes.profileSetup,
         builder: (context, state) => const ProfileSetupScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        name: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/design-system',
@@ -405,15 +495,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.faq,
         builder: (context, state) => FaqScreen(role: state.extra as MusicianRole),
       ),
+      GoRoute(
+        path: '/notification-settings',
+        name: AppRoutes.notificationSettings,
+        builder: (context, state) {
+          final role = state.extra;
+          if (role is! MusicianRole) {
+            return const _MissingRouteDataScreen(label: 'notifikationsindstillinger');
+          }
+          return NotificationSettingsScreen(role: role);
+        },
+      ),
     ],
   );
 });
 
-class _KeyboardDismissBar extends StatelessWidget {
+class _KeyboardDismissBar extends ConsumerWidget {
   const _KeyboardDismissBar();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (ref.watch(suppressKeyboardDismissBarProvider)) return const SizedBox.shrink();
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     if (keyboardHeight == 0) return const SizedBox.shrink();
 
@@ -474,6 +576,11 @@ class _AppState extends ConsumerState<App> {
       // Suppress chat_message notifications for the conversation already on screen.
       FirebaseMessaging.onMessage.listen((message) {
         final type = message.data['type'] as String?;
+        AnalyticsService.logNotificationReceived(
+          type ?? 'unknown',
+          role: message.data['role'] as String?,
+        );
+        NotificationsService.logReceivedToSupabase(message.data);
         if (type == 'chat_message') {
           final convId = int.tryParse(
               message.data['conversation_id']?.toString() ?? '');

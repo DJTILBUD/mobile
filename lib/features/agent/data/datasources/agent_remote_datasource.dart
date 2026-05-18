@@ -32,6 +32,7 @@ class AgentRemoteDatasource {
     List<Map<String, dynamic>> messageHistory = const [],
     String purpose = 'sales_pitch',
     Map<String, String>? profileAnswers,
+    String? followUpMessage,
   }) async* {
     final uri = Uri.parse('$_functionsBaseUrl/agent-assist');
 
@@ -44,6 +45,7 @@ class AgentRemoteDatasource {
       'purpose': purpose,
     };
     if (profileAnswers != null) bodyMap['profileAnswers'] = profileAnswers;
+    if (followUpMessage != null) bodyMap['followUpMessage'] = followUpMessage;
 
     final request = http.Request('POST', uri)
       ..headers['Authorization'] = 'Bearer $_accessToken'

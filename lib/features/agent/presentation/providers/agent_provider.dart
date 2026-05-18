@@ -54,6 +54,14 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
 
   String _accumulatedText = '';
 
+  // Accumulated conversation history for refinement turns.
+  List<Map<String, String>> _messageHistory = [];
+
+  // Cached context so refineWith() can re-use them without re-passing from UI.
+  Map<String, dynamic> _lastJobContext = {};
+  Map<String, dynamic> _lastUserContext = {};
+  String _lastUserRole = 'dj';
+
   static String _generateSessionId() {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     final rng = Random.secure();
@@ -67,6 +75,10 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
   }) async {
     state = const AgentStreaming(text: '');
     _accumulatedText = '';
+    _messageHistory = [];
+    _lastJobContext = jobContext;
+    _lastUserContext = userContext;
+    _lastUserRole = userRole;
 
     try {
       final stream = _repository.streamAssist(
@@ -81,6 +93,56 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
         _accumulatedText += token;
         state = AgentStreaming(text: _accumulatedText);
       }
+
+      // Store the completed exchange so refinements have full context.
+      _messageHistory = [
+        {'role': 'user', 'content': 'Skriv en salgstale til dette job.'},
+        {'role': 'assistant', 'content': _accumulatedText},
+      ];
+
+      state = AgentDone(text: _accumulatedText);
+    } catch (e) {
+      if (e is AgentLimitException) {
+        final msg = e.limitType == 'daily'
+            ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
+            : 'Du har brugt dine 20 AI-udkast for denne måned.';
+        state = AgentError(message: msg);
+        return;
+      }
+      final message = e is AppException ? e.message : e.toString();
+      state = AgentError(message: message);
+    }
+  }
+
+  /// Sends a follow-up refinement request using the accumulated session history.
+  Future<void> refineWith(String refinementMessage) async {
+    if (state is! AgentDone) return;
+    state = const AgentStreaming(text: '');
+    _accumulatedText = '';
+
+    try {
+      final stream = _repository.streamAssist(
+        jobContext: _lastJobContext,
+        userContext: _lastUserContext,
+        userRole: _lastUserRole,
+        sessionId: sessionId,
+        messageHistory: _messageHistory
+            .map((m) => Map<String, dynamic>.from(m))
+            .toList(),
+        followUpMessage: refinementMessage,
+      );
+
+      await for (final token in stream) {
+        _accumulatedText += token;
+        state = AgentStreaming(text: _accumulatedText);
+      }
+
+      // Extend history with this exchange.
+      _messageHistory = [
+        ..._messageHistory,
+        {'role': 'user', 'content': refinementMessage},
+        {'role': 'assistant', 'content': _accumulatedText},
+      ];
 
       state = AgentDone(text: _accumulatedText);
     } catch (e) {

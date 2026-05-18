@@ -428,6 +428,20 @@ class ProfileRepositoryImpl implements ProfileRepository {
     }
   }
 
+  // ── Onboarding ──
+
+  @override
+  Future<void> setOnboardingCompleted({
+    required String userId,
+    required bool isDj,
+  }) async {
+    try {
+      await _datasource.setOnboardingCompleted(userId: userId, isDj: isDj);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
   @override
   Future<String?> fetchIcalToken({
     required String userId,

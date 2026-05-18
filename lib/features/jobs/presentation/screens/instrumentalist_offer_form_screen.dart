@@ -213,8 +213,24 @@ class _InstrumentalistOfferFormScreenState
                   const SizedBox(height: DSSpacing.s2),
                   _InfoRow(LucideIcons.calendar, dateStr),
                   const SizedBox(height: DSSpacing.s1),
-                  _InfoRow(LucideIcons.clock, job.timeDisplay),
-                  const SizedBox(height: DSSpacing.s1),
+                  if (job.roleType == 'musician_only') ...[
+                    if (job.musicianStartTime != null) ...[
+                      _InfoRow(LucideIcons.clock, 'Spillestart: ${job.musicianStartTime}'),
+                      const SizedBox(height: DSSpacing.s1),
+                    ],
+                  ] else ...[
+                    _InfoRow(
+                      LucideIcons.clock,
+                      job.requestedSaxophonist || job.roleType == 'dj_and_musician'
+                          ? 'DJ: ${job.timeDisplay}'
+                          : job.timeDisplay,
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    if (job.musicianStartTime != null) ...[
+                      _InfoRow(LucideIcons.music, 'Saxofonist: ${job.musicianStartTime}'),
+                      const SizedBox(height: DSSpacing.s1),
+                    ],
+                  ],
                   _InfoRow(LucideIcons.flag, job.region),
                   if (job.city.isNotEmpty) ...[
                     const SizedBox(height: DSSpacing.s1),
@@ -243,6 +259,29 @@ class _InstrumentalistOfferFormScreenState
                     const SizedBox(height: DSSpacing.s1),
                     Text(
                       job.additionalInformation!,
+                      style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                    ),
+                  ],
+                  if (job.musicianSpecialRequest != null && job.musicianSpecialRequest!.isNotEmpty) ...[
+                    const SizedBox(height: DSSpacing.s3),
+                    const Divider(height: 1),
+                    const SizedBox(height: DSSpacing.s3),
+                    Row(
+                      children: [
+                        Icon(LucideIcons.star, size: 14, color: _c.state.warning),
+                        const SizedBox(width: DSSpacing.s1),
+                        Text(
+                          'Særligt ønske til musikeren',
+                          style: DSTextStyle.labelSm.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: _c.state.warning,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    Text(
+                      job.musicianSpecialRequest!,
                       style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
                     ),
                   ],

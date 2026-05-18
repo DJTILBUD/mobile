@@ -35,6 +35,7 @@ class EnvConfig {
   static String get supabaseUrl => dotenv.get('SUPABASE_URL');
   static String get supabaseAnonKey => dotenv.get('SUPABASE_ANON_KEY');
   static String get webAppUrl => dotenv.get('WEB_APP_URL');
+  static String get notifyLogSecret => dotenv.get('NOTIFY_LOG_SECRET', fallback: '');
 
   static bool get isLocal => env == 'local';
   static bool get isDev => env == 'dev';

@@ -14,6 +14,7 @@ class _GapItem {
     required this.title,
     required this.description,
     required this.onTap,
+    required this.onDismiss,
     this.stat,
   });
 
@@ -21,6 +22,7 @@ class _GapItem {
   final String title;
   final String description;
   final VoidCallback onTap;
+  final VoidCallback onDismiss;
   final String? stat;
 }
 
@@ -53,6 +55,12 @@ class ProfileCoachBottomSheet extends ConsumerStatefulWidget {
 
 class _ProfileCoachBottomSheetState
     extends ConsumerState<ProfileCoachBottomSheet> {
+  final Set<String> _dismissedGapTitles = {};
+
+  void _dismissGap(String title) {
+    setState(() => _dismissedGapTitles.add(title));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -101,6 +109,12 @@ class _ProfileCoachBottomSheetState
   }
 
   List<_GapItem> _buildGaps() {
+    return _buildAllGaps()
+        .where((g) => !_dismissedGapTitles.contains(g.title))
+        .toList();
+  }
+
+  List<_GapItem> _buildAllGaps() {
     final ctx = widget.userContext;
     final reviewCount = ctx['reviewCount'] as int? ?? 0;
     final hasProfileImage = ctx['hasProfileImage'] as bool? ?? false;
@@ -123,6 +137,7 @@ class _ProfileCoachBottomSheetState
             'Kunder klikker 50% sjældnere på profiler uden billede — det er det første de ser. '
             'Upload et godt foto fra et event eller et professionelt portræt.',
         onTap: widget.onGoToMedia,
+        onDismiss: () => _dismissGap('Tilføj profilbillede'),
       ));
     }
 
@@ -137,6 +152,7 @@ class _ProfileCoachBottomSheetState
             : 'Du har $reviewCount anbefalinger — profiler med 10+ lukker 40% flere bookinger. '
                 'Kontakt tidligere kunder og bed dem skrive en kort anmeldelse.',
         onTap: widget.onGoToReviews,
+        onDismiss: () => _dismissGap('Få flere anbefalinger'),
       ));
     }
 
@@ -149,9 +165,9 @@ class _ProfileCoachBottomSheetState
             'Kunder klikker 60% sjældnere på profiler uden video — de vil se dig i aktion. '
             'En 1–2 minutters klip fra et event er nok, det behøver ikke være professionelt optaget.',
         onTap: widget.onGoToMedia,
+        onDismiss: () => _dismissGap('Upload en video'),
       ));
     }
-
 
     if (aboutText.length < 80) {
       gaps.add(_GapItem(
@@ -164,6 +180,7 @@ class _ProfileCoachBottomSheetState
             : 'Din bio er kun ${aboutText.length} tegn — for kort til at overbevise. '
                 'Tryk her og lad AI hjælpe dig med at udvide den med din stil og erfaring.',
         onTap: _openBioSheet,
+        onDismiss: () => _dismissGap('Udbyg din bio'),
       ));
     }
 
@@ -175,6 +192,7 @@ class _ProfileCoachBottomSheetState
             'Uden genrer dukker din profil ikke op, når kunder søger på specifikke musiktyper. '
             'Gå til profil-redigering og tilføj de genrer du oftest spiller — det tager under et minut.',
         onTap: widget.onEditProfile,
+        onDismiss: () => _dismissGap('Tilføj genrer'),
       ));
     }
 
@@ -188,6 +206,7 @@ class _ProfileCoachBottomSheetState
             : 'Jo mere specifik du er, jo mere tillid skaber du. '
                 'Tilføj flere venues og eventtyper — f.eks. konkrete navne og arrangementsstørrelser.',
         onTap: widget.onEditProfile,
+        onDismiss: () => _dismissGap('Tilføj flere spillesteder'),
       ));
     }
 
@@ -371,7 +390,7 @@ class _GapCard extends StatelessWidget {
   final _GapItem gap;
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: gap.onTap,
       child: Container(
@@ -383,6 +402,7 @@ class _GapCard extends StatelessWidget {
           boxShadow: DSShadow.sm,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 40,
@@ -428,6 +448,15 @@ class _GapCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                      GestureDetector(
+                        onTap: gap.onDismiss,
+                        behavior: HitTestBehavior.opaque,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: DSSpacing.s2),
+                          child: Icon(LucideIcons.x,
+                              size: 16, color: _c.text.muted),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 2),
@@ -439,9 +468,6 @@ class _GapCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: DSSpacing.s2),
-            Icon(LucideIcons.chevronRight,
-                size: 18, color: _c.text.muted),
           ],
         ),
       ),

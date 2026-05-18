@@ -12,6 +12,7 @@ class MusicianProfile {
     this.genres,
     this.djSaxCollaboration,
     this.venuesAndEvents,
+    this.onboardingCompletedAt,
   });
 
   final String id;
@@ -26,4 +27,5 @@ class MusicianProfile {
   final List<String>? genres;
   final String? djSaxCollaboration;
   final List<String>? venuesAndEvents;
+  final DateTime? onboardingCompletedAt;
 }

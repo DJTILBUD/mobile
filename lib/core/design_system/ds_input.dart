@@ -89,7 +89,7 @@ class DSInput extends StatelessWidget {
     final stateBorderColor = switch (state) {
       DSInputState.success => c.state.success,
       DSInputState.error => c.state.danger,
-      DSInputState.normal => null,
+      DSInputState.normal => c.border.subtle,
     };
 
     final helperColor = switch (state) {
@@ -161,6 +161,7 @@ class DSInput extends StatelessWidget {
             counterText: '', // hide built-in counter
             filled: true,
             fillColor: enabled ? c.bg.inputBg : c.border.subtle,
+            focusColor: Colors.transparent,
             prefixIcon: iconLeft != null
                 ? Icon(iconLeft, color: iconColor, size: 20)
                 : null,

@@ -7,6 +7,7 @@ abstract class AgentRepository {
     List<Map<String, dynamic>> messageHistory,
     String purpose,
     Map<String, String>? profileAnswers,
+    String? followUpMessage,
   });
 
   Future<void> updateFinalSubmittedText({

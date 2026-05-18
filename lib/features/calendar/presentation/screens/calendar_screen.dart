@@ -340,14 +340,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
 // ── Event converters ──
 
+bool _isZeroTime(String t) => t.isEmpty || t.startsWith('00:00');
+
 CalendarEvent _jobToEvent(Job job) => CalendarEvent(
       id: job.id,
       date: job.date,
       label: job.eventType,
       type: CalendarEventType.internal,
       kind: CalendarEventKind.newJob,
-      startTime: job.timeStart.isEmpty ? null : job.timeStart,
-      endTime: job.timeEnd.isEmpty ? null : job.timeEnd,
+      startTime: _isZeroTime(job.timeStart) ? null : job.timeStart,
+      endTime: _isZeroTime(job.timeEnd) ? null : job.timeEnd,
       location: job.city.isEmpty ? null : job.city,
       region: job.region.isEmpty ? null : job.region,
       guestsAmount: job.guestsAmount,
@@ -360,8 +362,8 @@ CalendarEvent _quoteToEvent(DjQuote quote) => CalendarEvent(
       label: quote.job.eventType,
       type: CalendarEventType.internal,
       kind: CalendarEventKind.sent,
-      startTime: quote.job.timeStart.isEmpty ? null : quote.job.timeStart,
-      endTime: quote.job.timeEnd.isEmpty ? null : quote.job.timeEnd,
+      startTime: _isZeroTime(quote.job.timeStart) ? null : quote.job.timeStart,
+      endTime: _isZeroTime(quote.job.timeEnd) ? null : quote.job.timeEnd,
       location: quote.job.city.isEmpty ? null : quote.job.city,
       region: quote.job.region.isEmpty ? null : quote.job.region,
       guestsAmount: quote.job.guestsAmount,
@@ -374,8 +376,8 @@ CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
       label: offer.job.eventType,
       type: offer.isExtJob ? CalendarEventType.external : CalendarEventType.internal,
       kind: CalendarEventKind.sent,
-      startTime: offer.job.timeStart.isEmpty ? null : offer.job.timeStart,
-      endTime: offer.job.timeEnd.isEmpty ? null : offer.job.timeEnd,
+      startTime: _isZeroTime(offer.job.timeStart) ? null : offer.job.timeStart,
+      endTime: _isZeroTime(offer.job.timeEnd) ? null : offer.job.timeEnd,
       location: offer.job.city.isEmpty ? null : offer.job.city,
       region: offer.job.region.isEmpty ? null : offer.job.region,
       guestsAmount: offer.job.guestsAmount > 0 ? offer.job.guestsAmount : null,

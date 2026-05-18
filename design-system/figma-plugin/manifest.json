@@ -1,0 +1,7 @@
+{
+  "name": "DJTilbud Design System",
+  "id": "djtilbud-design-system-generator",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": ["figma"]
+}

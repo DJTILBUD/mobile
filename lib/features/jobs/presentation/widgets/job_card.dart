@@ -172,7 +172,7 @@ class JobCard extends StatelessWidget {
                                       color: c.text.muted),
                                 if (isDateConflict)
                                   DSStatusBadge(
-                                      label: 'Dato optaget',
+                                      label: '📅 Dato-konflikt – kan ikke byde',
                                       color: c.state.danger),
                                 if (!isMusicianView && job.requestedSaxophonist)
                                   DSStatusBadge(
@@ -296,24 +296,43 @@ class _MetaLine extends StatelessWidget {
           colors: c,
         ),
         const SizedBox(height: 3),
-        _MetaItem(
-          icon: LucideIcons.clock,
-          label: job.timeDisplay,
-          colors: c,
-        ),
+        if (isMusicianView) ...[
+          if (job.roleType == 'musician_only') ...[
+            // Musician-only: just show their start time
+            _MetaItem(
+              icon: LucideIcons.clock,
+              label: job.musicianStartTime != null
+                  ? 'Spillestart: ${job.musicianStartTime}'
+                  : job.timeDisplay,
+              colors: c,
+            ),
+          ] else ...[
+            // DJ + musician (or internal sax job): label the DJ time clearly
+            _MetaItem(
+              icon: LucideIcons.clock,
+              label: 'DJ: ${job.timeDisplay}',
+              colors: c,
+            ),
+            if (job.musicianStartTime != null) ...[
+              const SizedBox(height: 3),
+              _MetaItem(
+                icon: LucideIcons.music,
+                label: 'Saxofonist: ${job.musicianStartTime}',
+                colors: c,
+              ),
+            ],
+          ],
+        ] else
+          _MetaItem(
+            icon: LucideIcons.clock,
+            label: job.timeDisplay,
+            colors: c,
+          ),
         if (job.guestsAmount > 0) ...[
           const SizedBox(height: 3),
           _MetaItem(
             icon: LucideIcons.users,
             label: '${job.guestsAmount} gæster',
-            colors: c,
-          ),
-        ],
-        if (isMusicianView && job.musicianStartTime != null) ...[
-          const SizedBox(height: 3),
-          _MetaItem(
-            icon: LucideIcons.music,
-            label: 'Spillestart: ${job.musicianStartTime}',
             colors: c,
           ),
         ],

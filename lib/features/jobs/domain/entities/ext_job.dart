@@ -82,8 +82,8 @@ class ExtJob {
   }
 
   String get budgetDisplay {
-    if (fullAmount != null) return '${_fmtNum(fullAmount!)} kr.';
     if (honorar != null) return '${_fmtNum(honorar!)} kr. (honorar)';
+    if (fullAmount != null) return '${_fmtNum(fullAmount!)} kr.';
     if (budgetTarget != null && budgetTarget!.isNotEmpty) return budgetTarget!;
     return 'Ikke angivet';
   }

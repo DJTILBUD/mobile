@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dj_tilbud_app/core/notifications/notifications_service.dart';
 
 class AuthRemoteDatasource {
   AuthRemoteDatasource(this._client);
@@ -18,7 +19,10 @@ class AuthRemoteDatasource {
     return _auth.signInWithPassword(email: email, password: password);
   }
 
-  Future<void> signOut() => _auth.signOut();
+  Future<void> signOut() async {
+    await NotificationsService.removeToken();
+    await _auth.signOut();
+  }
 
   Future<void> resetPasswordForEmail(String email) {
     return _auth.resetPasswordForEmail(email);

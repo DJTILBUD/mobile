@@ -115,9 +115,11 @@ class CalendarEventModel {
   }
 
   /// Formats a Postgres time string "HH:MM:SS" → "HH:MM".
+  /// Returns null for null or zero-time values (00:00*) which indicate "not set".
   static String? _fmt(dynamic raw) {
     if (raw == null) return null;
     final s = raw.toString();
+    if (s.startsWith('00:00')) return null;
     return s.length >= 5 ? s.substring(0, 5) : s;
   }
 }

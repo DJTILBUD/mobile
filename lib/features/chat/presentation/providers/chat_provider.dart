@@ -212,6 +212,9 @@ class ConversationMessagesNotifier
         });
   }
 
+  /// Silent re-fetch triggered externally (e.g. on screen re-entry via notification).
+  Future<void> refresh() => _reload();
+
   Future<bool> sendMessage({
     required String senderId,
     required String senderType,

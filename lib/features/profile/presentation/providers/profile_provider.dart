@@ -109,6 +109,11 @@ final adminMessagesProvider =
       );
 });
 
+final unreadAdminMessageCountProvider = Provider.family<int, bool>((ref, isDj) {
+  final messages = ref.watch(adminMessagesProvider(isDj)).valueOrNull ?? [];
+  return messages.where((m) => !m.isRead).length;
+});
+
 class MarkAdminMessageReadNotifier extends StateNotifier<AsyncValue<void>> {
   MarkAdminMessageReadNotifier(this._repository)
       : super(const AsyncData(null));

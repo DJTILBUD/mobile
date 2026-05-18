@@ -41,8 +41,8 @@ class AnalyticsService {
         'job_id': jobId,
         'event_type': eventType,
         'role': role,
-        'has_conflict': hasConflict,
-        'has_active_offer': hasActiveOffer,
+        'has_conflict': hasConflict ? 1 : 0,
+        'has_active_offer': hasActiveOffer ? 1 : 0,
       });
 
   /// Fired on a successful offer/quote submission.
@@ -58,7 +58,7 @@ class AnalyticsService {
         'event_type': eventType,
         'role': role,
         'pitch_length': pitchLength,
-        'used_ai_draft': usedAiDraft,
+        'used_ai_draft': usedAiDraft ? 1 : 0,
       });
 
   /// Fired when the user exits the offer form after writing something
@@ -108,6 +108,16 @@ class AnalyticsService {
 
   // ── Notifications ─────────────────────────────────────────────────────────
 
+  /// Fired when a push notification is received (foreground or background).
+  static Future<void> logNotificationReceived(
+    String type, {
+    String? role,
+  }) =>
+      _log('notification_received', {
+        'notification_type': type,
+        if (role != null) 'role': role,
+      });
+
   /// Fired when the user taps a push notification.
   static Future<void> logNotificationTapped(
     String type, {
@@ -131,7 +141,7 @@ class AnalyticsService {
       _log('calendar_mode_toggled', {'to_mode': toMode});
 
   static Future<void> logDjFiltersToggled({required bool enabled}) =>
-      _log('dj_filters_toggled', {'enabled': enabled});
+      _log('dj_filters_toggled', {'enabled': enabled ? 1 : 0});
 
   // ── Internal ──────────────────────────────────────────────────────────────
 

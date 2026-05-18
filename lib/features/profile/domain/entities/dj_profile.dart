@@ -15,6 +15,7 @@ class DjProfile {
     this.soundcloudUrl,
     this.venuesAndEvents,
     this.excludedEventTypes = const [],
+    this.onboardingCompletedAt,
   });
 
   final String id;
@@ -32,4 +33,5 @@ class DjProfile {
   final String? soundcloudUrl;
   final List<String>? venuesAndEvents;
   final List<String> excludedEventTypes;
+  final DateTime? onboardingCompletedAt;
 }

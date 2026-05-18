@@ -41,6 +41,9 @@ abstract class ProfileRepository {
   Future<List<AdminMessage>> fetchAdminMessages({required String userId, required bool isDj});
   Future<void> markAdminMessageRead({required int messageId, required String userId, required bool isDj});
 
+  // Onboarding
+  Future<void> setOnboardingCompleted({required String userId, required bool isDj});
+
   // iCal token
   Future<String?> fetchIcalToken({required String userId, required bool isDj});
   Future<String> generateIcalToken({required String userId, required bool isDj});

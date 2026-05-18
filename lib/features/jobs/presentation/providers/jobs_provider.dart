@@ -375,8 +375,10 @@ final instrumentalistExtJobsProvider = FutureProvider<List<Job>>((ref) {
 });
 
 /// Combined feed: regular jobs + ext jobs.
-/// Sort order: eligible first (newest created_at) → active offer (taken but biddable)
-/// → date conflict (musician already booked). Mirrors web app priority logic.
+/// Sort order: eligible first (newest created_at)
+/// → optaget/taken (another musician has an active offer — can't bid)
+/// → dato-konflikt (musician already has a won job on the same date — can't bid).
+/// Mirrors web app priority logic.
 final combinedInstrumentalistJobsProvider =
     Provider<AsyncValue<List<Job>>>((ref) {
   final regular = ref.watch(newInstrumentalistJobsProvider);
@@ -388,6 +390,19 @@ final combinedInstrumentalistJobsProvider =
   if (regular is AsyncError) return regular;
   if (ext is AsyncError) return ext;
 
+  // Dates on which the musician has already won a job → date conflict
+  final wonDates = ref.watch(wonServiceOffersProvider)
+      .valueOrNull
+      ?.map((o) => o.job.date)
+      .toSet() ?? const <DateTime>{};
+
+  bool isOccupied(Job j) => wonDates.any(
+    (d) => d.year == j.date.year && d.month == j.date.month && d.day == j.date.day,
+  );
+
+  // Tier 0 = eligible (shown first)
+  // Tier 1 = optaget — another musician already has an active offer (shown second)
+  // Tier 2 = dato-konflikt — musician has a won job on the same date (shown last)
   int tier(Job j) {
     if (j.hasDateConflict) return 2;
     if (j.hasActiveOffer) return 1;
@@ -397,11 +412,14 @@ final combinedInstrumentalistJobsProvider =
   final combined = <Job>[
     ...regular.valueOrNull ?? [],
     ...ext.valueOrNull ?? [],
-  ]..sort((a, b) {
-      final tierDiff = tier(a).compareTo(tier(b));
-      if (tierDiff != 0) return tierDiff;
-      return b.createdAt.compareTo(a.createdAt); // newest first within tier
-    });
+  ]
+    .map((j) => isOccupied(j) ? j.withDateConflict() : j)
+    .toList()
+    ..sort((a, b) {
+        final tierDiff = tier(a).compareTo(tier(b));
+        if (tierDiff != 0) return tierDiff;
+        return b.createdAt.compareTo(a.createdAt); // newest first within tier
+      });
 
   return AsyncData(combined);
 });

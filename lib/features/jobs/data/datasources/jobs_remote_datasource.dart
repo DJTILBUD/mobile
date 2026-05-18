@@ -153,17 +153,31 @@ class JobsRemoteDatasource {
 
     if (regions.isEmpty) return [];
 
-    // Fetch all relevant jobs (wide status filter, matches web app)
-    final jobs = await _client
+    // Two queries: normal open statuses + ready_for_billing only when sax_round_active = true.
+    final regularJobs = await _client
         .from('Jobs')
         .select()
+        .eq('requested_saxophonist', true)
         .inFilter('status', [
           'open', 'sent', 're_sent', 'reopened',
           'another_round', 'closed', 'customer_contacted',
         ])
-        .inFilter('region', regions)
-        .eq('requested_saxophonist', true)
         .order('created_at', ascending: false);
+
+    List<Map<String, dynamic>> saxCampaignJobs = [];
+    try {
+      saxCampaignJobs = await _client
+          .from('Jobs')
+          .select()
+          .eq('requested_saxophonist', true)
+          .eq('status', 'ready_for_billing')
+          .eq('sax_round_active', true)
+          .order('created_at', ascending: false);
+    } catch (_) {
+      // sax_round_active column may not exist yet — skip gracefully
+    }
+
+    final jobs = [...regularJobs, ...saxCampaignJobs];
 
     if (jobs.isEmpty) return [];
 
@@ -189,7 +203,8 @@ class JobsRemoteDatasource {
       final id = (j['id'] as num).toInt();
       final jobOffers = offersByJob[id] ?? [];
 
-      // Regional window: within first 24 h, only show to musicians in this region
+      // Regional window: within first 24 h only show sax jobs to musicians
+      // whose regions include the job's region. After 24 h visible to all.
       if (instrument == 'saxophone') {
         final createdAt = DateTime.tryParse(j['created_at'] as String? ?? '');
         if (createdAt != null && now.difference(createdAt) < first24h) {

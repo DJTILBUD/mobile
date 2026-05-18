@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/auth/data/datasources/auth_remote_datasource.dart';
+import 'package:dj_tilbud_app/core/notifications/notifications_service.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
@@ -174,6 +175,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   }
 
   void _handleSignOut() async {
+    await NotificationsService.removeToken();
     await supabase.auth.signOut();
     if (mounted) context.goNamed(AppRoutes.login);
   }

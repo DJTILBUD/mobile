@@ -325,8 +325,11 @@ class _ServiceOfferDetailScreenState
         _MusicianExtraHoursSection(offer: offer),
         const SizedBox(height: DSSpacing.s4),
 
-        _SpecialRequestFeeSection(offer: offer),
-        const SizedBox(height: DSSpacing.s4),
+        if ((offer.job.musicianSpecialRequest?.isNotEmpty ?? false) ||
+            offer.specialRequestExtraFeeDkk > 0) ...[
+          _SpecialRequestFeeSection(offer: offer),
+          const SizedBox(height: DSSpacing.s4),
+        ],
 
         _MusicianNotesSection(offer: offer),
         const SizedBox(height: DSSpacing.s4),
@@ -407,14 +410,24 @@ class _JobHeroCard extends StatelessWidget {
           // Meta rows
           _MetaRow(icon: LucideIcons.calendar, label: dateStr),
           const SizedBox(height: DSSpacing.s2),
-          if (job.musicianStartTime != null) ...[
-            _MetaRow(
-                icon: LucideIcons.clock,
-                label: 'Saxofonist: ${job.musicianStartTime!}  •  DJ: ${job.timeDisplay}'),
+          if (job.roleType == 'musician_only') ...[
+            if (job.musicianStartTime != null) ...[
+              _MetaRow(icon: LucideIcons.clock, label: 'Spillestart: ${job.musicianStartTime}'),
+              const SizedBox(height: DSSpacing.s2),
+            ],
           ] else ...[
-            _MetaRow(icon: LucideIcons.clock, label: job.timeDisplay),
+            _MetaRow(
+              icon: LucideIcons.clock,
+              label: job.requestedSaxophonist || job.roleType == 'dj_and_musician'
+                  ? 'DJ: ${job.timeDisplay}'
+                  : job.timeDisplay,
+            ),
+            const SizedBox(height: DSSpacing.s2),
+            if (job.musicianStartTime != null) ...[
+              _MetaRow(icon: LucideIcons.music, label: 'Saxofonist: ${job.musicianStartTime}'),
+              const SizedBox(height: DSSpacing.s2),
+            ],
           ],
-          const SizedBox(height: DSSpacing.s2),
           _MetaRow(icon: LucideIcons.flag, label: job.region),
           if (job.city.isNotEmpty) ...[
             const SizedBox(height: DSSpacing.s2),

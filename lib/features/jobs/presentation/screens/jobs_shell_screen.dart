@@ -40,11 +40,73 @@ class JobsShellScreen extends ConsumerStatefulWidget {
 
 class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
   bool _calendarMode = false;
+  bool _availabilityGateDismissed = false;
+  bool _availabilityGateShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final isDj = widget.role == MusicianRole.dj;
+      final async = isDj
+          ? ref.read(djUnavailableDatesProvider)
+          : ref.read(musicianUnavailableDatesProvider);
+      _checkAvailabilityGate(async);
+    });
+  }
+
+  void _checkAvailabilityGate(AsyncValue<Map<String, int>> async) {
+    if (_calendarMode) return;
+    if (_availabilityGateDismissed) return;
+    if (_availabilityGateShowing) return;
+    final dateMap = async.valueOrNull;
+    if (dateMap == null) return;
+    final distinctMonths = dateMap.keys.map((d) => d.substring(0, 7)).toSet();
+    if (distinctMonths.length >= 2) return;
+    _availabilityGateShowing = true;
+    final missingMonths = 2 - distinctMonths.length;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        _availabilityGateShowing = false;
+        return;
+      }
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => _AvailabilityGateDialog(
+          missingMonthsCount: missingMonths,
+          onGoToCalendar: () {
+            Navigator.of(ctx).pop();
+            setState(() {
+              _calendarMode = true;
+              _availabilityGateShowing = false;
+            });
+          },
+          onRemindLater: () {
+            Navigator.of(ctx).pop();
+            setState(() {
+              _availabilityGateDismissed = true;
+              _availabilityGateShowing = false;
+            });
+          },
+        ),
+      ).then((_) {
+        if (mounted) setState(() => _availabilityGateShowing = false);
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
     final isDj = widget.role == MusicianRole.dj;
+
+    ref.listen<AsyncValue<Map<String, int>>>(djUnavailableDatesProvider, (_, next) {
+      if (isDj) _checkAvailabilityGate(next);
+    });
+    ref.listen<AsyncValue<Map<String, int>>>(musicianUnavailableDatesProvider, (_, next) {
+      if (!isDj) _checkAvailabilityGate(next);
+    });
 
     if (_calendarMode) {
       if (isDj) {
@@ -60,8 +122,12 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
               _ModeTogglePill(
                 isCalendarMode: true,
                 onToggle: () {
-                  setState(() => _calendarMode = false);
+                  setState(() {
+                    _calendarMode = false;
+                    _availabilityGateShowing = false;
+                  });
                   AnalyticsService.logCalendarModeToggled(toMode: 'list');
+                  _checkAvailabilityGate(ref.read(djUnavailableDatesProvider));
                 },
               ),
             ],
@@ -80,8 +146,12 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
               _ModeTogglePill(
                 isCalendarMode: true,
                 onToggle: () {
-                  setState(() => _calendarMode = false);
+                  setState(() {
+                    _calendarMode = false;
+                    _availabilityGateShowing = false;
+                  });
                   AnalyticsService.logCalendarModeToggled(toMode: 'list');
+                  _checkAvailabilityGate(ref.read(musicianUnavailableDatesProvider));
                 },
               ),
             ],
@@ -595,6 +665,7 @@ class _InstrumentalistCalendarViewState
   bool _showNew = true;
   bool _showSent = true;
   bool _showWon = true;
+  bool _isEditingUnavailable = false;
 
   static const _monthNames = [
     'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
@@ -621,7 +692,7 @@ class _InstrumentalistCalendarViewState
   }
 
   List<CalendarEvent> _eventsForView(List<CalendarEvent> all) {
-    if (_selectedDay != null) {
+    if (_selectedDay != null && !_isEditingUnavailable) {
       return all
           .where((e) =>
               e.date.year == _selectedDay!.year &&
@@ -633,6 +704,28 @@ class _InstrumentalistCalendarViewState
         .where((e) =>
             e.date.year == _month.year && e.date.month == _month.month)
         .toList();
+  }
+
+  void _onDayTapped(DateTime day, Map<String, int> unavailableMap) {
+    if (_isEditingUnavailable) {
+      final dateStr = DateFormat('yyyy-MM-dd').format(day);
+      final isCurrentlyUnavailable = unavailableMap.containsKey(dateStr);
+      ref.read(musicianUnavailableDatesProvider.notifier).toggle(dateStr);
+      if (isCurrentlyUnavailable) {
+        AnalyticsService.logDateUnmarkedUnavailable();
+      } else {
+        AnalyticsService.logDateMarkedUnavailable();
+      }
+    } else {
+      setState(() {
+        _selectedDay = (_selectedDay != null &&
+                _selectedDay!.year == day.year &&
+                _selectedDay!.month == day.month &&
+                _selectedDay!.day == day.day)
+            ? null
+            : day;
+      });
+    }
   }
 
   void _navigate(BuildContext context, CalendarEvent event,
@@ -664,11 +757,14 @@ class _InstrumentalistCalendarViewState
     final sentAsync = ref.watch(sentServiceOffersProvider);
     final wonEventsAsync = ref.watch(calendarEventsProvider(MusicianRole.instrumentalist));
     final wonOffersAsync = ref.watch(wonServiceOffersProvider);
+    final unavailableAsync = ref.watch(musicianUnavailableDatesProvider);
 
     final newJobs = newJobsAsync.valueOrNull ?? [];
     final sent = sentAsync.valueOrNull ?? [];
     final wonEvents = wonEventsAsync.valueOrNull ?? [];
     final wonOffers = wonOffersAsync.valueOrNull ?? [];
+    final unavailableMap = unavailableAsync.valueOrNull ?? {};
+    final unavailableDates = Set<String>.from(unavailableMap.keys);
 
     final jobById = {for (final j in newJobs) j.id: j};
     final sentById = {for (final o in sent) o.id: o};
@@ -681,7 +777,7 @@ class _InstrumentalistCalendarViewState
     );
     final visibleEvents = _eventsForView(allEvents);
 
-    final selectedLabel = _selectedDay != null
+    final selectedLabel = _selectedDay != null && !_isEditingUnavailable
         ? '${_selectedDay!.day}. ${_monthNames[_selectedDay!.month - 1]}'
         : '${_monthNames[_month.month - 1]} ${_month.year}';
 
@@ -727,19 +823,22 @@ class _InstrumentalistCalendarViewState
                 ),
               ),
               const SizedBox(height: DSSpacing.s2),
+              // ── Unavailable dates panel ──
+              _UnavailableDatesPanel(
+                isEditing: _isEditingUnavailable,
+                onToggleEdit: () => setState(() {
+                  _isEditingUnavailable = !_isEditingUnavailable;
+                  if (_isEditingUnavailable) _selectedDay = null;
+                }),
+              ),
+              const SizedBox(height: DSSpacing.s2),
               // ── Calendar grid ──
               CalendarGrid(
                 month: _month,
                 events: allEvents,
-                selectedDay: _selectedDay,
-                onDaySelected: (day) => setState(() {
-                  _selectedDay = (_selectedDay != null &&
-                          _selectedDay!.year == day.year &&
-                          _selectedDay!.month == day.month &&
-                          _selectedDay!.day == day.day)
-                      ? null
-                      : day;
-                }),
+                selectedDay: _isEditingUnavailable ? null : _selectedDay,
+                unavailableDays: unavailableDates,
+                onDaySelected: (day) => _onDayTapped(day, unavailableMap),
                 onMonthChanged: (m) => setState(() {
                   _month = m;
                   _selectedDay = null;
@@ -796,9 +895,11 @@ class _InstrumentalistCalendarViewState
                       size: 40, color: _c.text.muted),
                   const SizedBox(height: DSSpacing.s3),
                   Text(
-                    _selectedDay != null
-                        ? 'Ingen jobs denne dag'
-                        : 'Ingen jobs denne måned',
+                    _isEditingUnavailable
+                        ? 'Tryk på datoer for at markere dem'
+                        : (_selectedDay != null
+                            ? 'Ingen jobs denne dag'
+                            : 'Ingen jobs denne måned'),
                     style: DSTextStyle.labelMd
                         .copyWith(fontSize: 15, color: _c.text.secondary),
                   ),
@@ -1650,6 +1751,66 @@ class _InstrumentalistOffersTab extends ConsumerWidget {
       ServiceOfferStatus.won => 'Ingen accepterede jobs endnu.',
       ServiceOfferStatus.lost => 'Ingen udgåede tilbud.',
     };
+  }
+}
+
+// ── Availability gate dialog ──
+
+class _AvailabilityGateDialog extends StatelessWidget {
+  const _AvailabilityGateDialog({
+    required this.missingMonthsCount,
+    required this.onGoToCalendar,
+    required this.onRemindLater,
+  });
+
+  final int missingMonthsCount;
+  final VoidCallback onGoToCalendar;
+  final VoidCallback onRemindLater;
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    final monthText = missingMonthsCount == 1 ? '1 måned' : '$missingMonthsCount måneder';
+    return Dialog(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(DSRadius.lg)),
+      backgroundColor: _c.bg.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(DSSpacing.s6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(LucideIcons.calendarDays, size: 40, color: _c.brand.primary),
+            const SizedBox(height: DSSpacing.s4),
+            Text(
+              'Husk dine optagne datoer',
+              style: DSTextStyle.headingSm.copyWith(color: _c.text.primary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: DSSpacing.s3),
+            Text(
+              'Du mangler at markere optagne datoer for mindst $monthText. Det hjælper os med at vise dig relevante jobs.',
+              style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: DSSpacing.s6),
+            DSButton(
+              label: 'Gå til kalender',
+              variant: DSButtonVariant.primary,
+              onTap: onGoToCalendar,
+            ),
+            const SizedBox(height: DSSpacing.s3),
+            GestureDetector(
+              onTap: onRemindLater,
+              child: Text(
+                'Påmind mig senere',
+                style: DSTextStyle.labelMd.copyWith(color: _c.text.muted),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

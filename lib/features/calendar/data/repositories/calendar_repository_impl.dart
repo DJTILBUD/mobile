@@ -95,4 +95,33 @@ class CalendarRepositoryImpl implements CalendarRepository {
       throw DatabaseException(e.message);
     }
   }
+
+  @override
+  Future<Map<String, int>> fetchMusicianUnavailableDates(String userId) async {
+    try {
+      final rows = await _datasource.fetchMusicianUnavailableDates(userId);
+      return {for (final row in rows) (row['unavailable_date'] as String): (row['id'] as num).toInt()};
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<int> createMusicianUnavailableDate(String userId, String dateStr) async {
+    try {
+      final row = await _datasource.createMusicianUnavailableDate(userId, dateStr);
+      return (row['id'] as num).toInt();
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> deleteMusicianUnavailableDate(int id) async {
+    try {
+      await _datasource.deleteMusicianUnavailableDate(id);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
 }

@@ -16,6 +16,7 @@ class AgentRepositoryImpl implements AgentRepository {
     List<Map<String, dynamic>> messageHistory = const [],
     String purpose = 'sales_pitch',
     Map<String, String>? profileAnswers,
+    String? followUpMessage,
   }) {
     try {
       return _datasource.streamAssist(
@@ -26,6 +27,7 @@ class AgentRepositoryImpl implements AgentRepository {
         messageHistory: messageHistory,
         purpose: purpose,
         profileAnswers: profileAnswers,
+        followUpMessage: followUpMessage,
       );
     } on AppException {
       rethrow;

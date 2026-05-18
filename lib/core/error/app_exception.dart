@@ -1,6 +1,9 @@
 sealed class AppException implements Exception {
   const AppException(this.message);
   final String message;
+
+  @override
+  String toString() => message.isNotEmpty ? message : 'Noget gik galt. Prøv igen.';
 }
 
 class NetworkException extends AppException {
@@ -22,6 +25,9 @@ class NeedsProfileSetupException extends AppException {
 
 class DatabaseException extends AppException {
   const DatabaseException(super.message);
+
+  @override
+  String toString() => 'Kunne ikke hente data. Prøv igen.';
 }
 
 class AgentException extends AppException {

@@ -42,10 +42,10 @@ class CalendarEventCard extends StatelessWidget {
         tagBg = c.state.warning.withValues(alpha: 0.22);
         tagFg = c.state.warning;
       case CalendarEventKind.won:
-        barColor = isExternal ? c.brand.accent : c.brand.primary;
+        barColor = c.state.success;
         tagLabel = isExternal ? 'Eksternt' : 'Internt';
-        tagBg = barColor.withValues(alpha: 0.12);
-        tagFg = isExternal ? c.brand.accent : c.brand.primaryActive;
+        tagBg = c.state.success.withValues(alpha: 0.12);
+        tagFg = c.state.success;
     }
 
     return GestureDetector(

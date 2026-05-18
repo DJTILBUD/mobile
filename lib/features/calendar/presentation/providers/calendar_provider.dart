@@ -129,3 +129,57 @@ final djUnavailableDatesProvider = StateNotifierProvider<
     AsyncValue<Map<String, int>>>((ref) {
   return DjUnavailableDatesNotifier(ref.watch(calendarRepositoryProvider));
 });
+
+// ── Unavailable dates (Musician) ──
+
+class MusicianUnavailableDatesNotifier
+    extends StateNotifier<AsyncValue<Map<String, int>>> {
+  MusicianUnavailableDatesNotifier(this._repository) : super(const AsyncLoading()) {
+    _load();
+  }
+
+  final CalendarRepository _repository;
+
+  Future<void> _load() async {
+    final userId = supabase.auth.currentUser!.id;
+    try {
+      final dateToId = await _repository.fetchMusicianUnavailableDates(userId);
+      state = AsyncData(dateToId);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
+  }
+
+  Future<void> toggle(String dateStr) async {
+    final current = Map<String, int>.from(state.valueOrNull ?? {});
+    final userId = supabase.auth.currentUser!.id;
+
+    if (current.containsKey(dateStr)) {
+      final id = current[dateStr]!;
+      final next = Map<String, int>.from(current)..remove(dateStr);
+      state = AsyncData(next);
+      try {
+        await _repository.deleteMusicianUnavailableDate(id);
+      } catch (_) {
+        state = AsyncData(current);
+      }
+    } else {
+      final next = Map<String, int>.from(current)..[dateStr] = -1;
+      state = AsyncData(next);
+      try {
+        final newId = await _repository.createMusicianUnavailableDate(userId, dateStr);
+        final updated = Map<String, int>.from(state.valueOrNull ?? next)..[dateStr] = newId;
+        state = AsyncData(updated);
+      } catch (_) {
+        final rollback = Map<String, int>.from(state.valueOrNull ?? next)..remove(dateStr);
+        state = AsyncData(rollback);
+      }
+    }
+  }
+}
+
+final musicianUnavailableDatesProvider = StateNotifierProvider<
+    MusicianUnavailableDatesNotifier,
+    AsyncValue<Map<String, int>>>((ref) {
+  return MusicianUnavailableDatesNotifier(ref.watch(calendarRepositoryProvider));
+});
