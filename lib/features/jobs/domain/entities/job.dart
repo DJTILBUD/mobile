@@ -26,6 +26,7 @@ class Job {
     this.extJobId,
     this.quoteSendMode,
     this.assignedDjName,
+    this.sentAt,
     this.deadlineExtendedUntil,
     this.customerContactPlannedFor,
     this.musicianStartTime,
@@ -63,6 +64,10 @@ class Job {
   /// 'first_quote_only' → high-season priority (Højsæson-prioritet)
   final String? quoteSendMode;
   final String? assignedDjName;
+  /// When the job was sent to the customer for selection. Null for unsent jobs
+  /// and for ExtJobs (which don't have this column). Drives the customer
+  /// response deadline countdown.
+  final DateTime? sentAt;
   final DateTime? deadlineExtendedUntil;
   final DateTime? customerContactPlannedFor;
   /// HH:MM string for the musician's start time (separate from event start).
@@ -105,6 +110,7 @@ class Job {
         extJobId: extJobId,
         quoteSendMode: quoteSendMode,
         assignedDjName: assignedDjName,
+        sentAt: sentAt,
         deadlineExtendedUntil: deadlineExtendedUntil,
         customerContactPlannedFor: customerContactPlannedFor,
         musicianStartTime: musicianStartTime,
@@ -138,6 +144,21 @@ class Job {
   }
 
   String get timeDisplay => '${_stripSeconds(timeStart)} - ${_stripSeconds(timeEnd)}';
+
+  /// Customer response deadline. Mirrors web-app `getCountdownTargetDate`:
+  ///   - admin-extended deadline wins if set,
+  ///   - otherwise min(sentAt + 7d, jobDate − 2d).
+  /// Returns null when the job hasn't been sent yet (no countdown should
+  /// be shown). ExtJobs never have sent_at, so this is null for them too.
+  DateTime? get customerDeadline {
+    if (deadlineExtendedUntil != null) return deadlineExtendedUntil;
+    if (sentAt == null) return null;
+    final sevenDaysAfterSent = sentAt!.add(const Duration(days: 7));
+    final twoDaysBeforeJob = date.subtract(const Duration(days: 2));
+    return sevenDaysAfterSent.isBefore(twoDaysBeforeJob)
+        ? sevenDaysAfterSent
+        : twoDaysBeforeJob;
+  }
 }
 
 enum JobStatus {

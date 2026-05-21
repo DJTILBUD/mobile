@@ -113,6 +113,8 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   Widget _pendingBody(int payout) => ListView(
         padding: const EdgeInsets.all(DSSpacing.s4),
         children: [
+          _TopStatusRow(quote: _quote),
+          const SizedBox(height: DSSpacing.s3),
           _JobHeroCard(quote: _quote),
           const SizedBox(height: DSSpacing.s3),
           if (_quote.status == QuoteStatus.pending) ...[
@@ -132,6 +134,8 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   Widget _wonBody(int payout) => ListView(
         padding: const EdgeInsets.all(DSSpacing.s4),
         children: [
+          _TopStatusRow(quote: _quote),
+          const SizedBox(height: DSSpacing.s3),
           _WonSection(quote: _quote),
           const SizedBox(height: DSSpacing.s4),
           _ExtraHoursSection(quote: _quote),
@@ -146,6 +150,35 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           const SizedBox(height: DSSpacing.s8),
         ],
       );
+}
+
+// ─── Top Status Row (primary status pill + invoice pill if won) ──────────────
+
+class _TopStatusRow extends StatelessWidget {
+  const _TopStatusRow({required this.quote});
+
+  final DjQuote quote;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DSTheme.of(context);
+    final (label, color) = switch (quote.status) {
+      QuoteStatus.pending => ('Bud givet', c.state.warning),
+      QuoteStatus.won => ('Vundet', c.state.success),
+      QuoteStatus.overwritten => ('Overskrevet', c.text.muted),
+      QuoteStatus.lost => ('Udgået', c.state.danger),
+    };
+    return Wrap(
+      spacing: DSSpacing.s2,
+      runSpacing: DSSpacing.s2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        DSStatusBadge(label: label, color: color),
+        if (quote.status == QuoteStatus.won)
+          InvoiceStatusBadge(jobId: quote.jobId, expand: false),
+      ],
+    );
+  }
 }
 
 // ─── Job Hero Card ────────────────────────────────────────────────────────────
@@ -415,19 +448,23 @@ class _CustomerDeadlineBanner extends StatelessWidget {
 
   final DjQuote quote;
 
-  static DateTime _deadline(DjQuote q) {
-    if (q.job.deadlineExtendedUntil != null) return q.job.deadlineExtendedUntil!;
-    final sevenDays = q.createdAt.add(const Duration(days: 7));
-    final twoDaysBefore = q.job.date.subtract(const Duration(days: 2));
-    return sevenDays.isBefore(twoDaysBefore) ? sevenDays : twoDaysBefore;
+  DateTime? get _deadline => quote.job.customerDeadline;
+
+  bool get _isExpired {
+    final d = _deadline;
+    return d != null && d.isBefore(DateTime.now());
   }
 
-  bool get _isExpired => _deadline(quote).isBefore(DateTime.now());
-  bool get _isUrgent =>
-      !_isExpired && _deadline(quote).difference(DateTime.now()).inHours < 24;
+  bool get _isUrgent {
+    final d = _deadline;
+    return d != null &&
+        !_isExpired &&
+        d.difference(DateTime.now()).inHours < 24;
+  }
 
   String _label() {
-    final deadline = _deadline(quote);
+    final deadline = _deadline;
+    if (deadline == null) return 'Tilbuddet er endnu ikke sendt til kunden';
     final diff = deadline.difference(DateTime.now());
     if (diff.isNegative) return 'Fristen for kundens valg er udløbet';
     if (diff.inDays >= 2) return 'Kunden skal svare inden ${diff.inDays} dage';
@@ -441,7 +478,8 @@ class _CustomerDeadlineBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
+    final hasDeadline = _deadline != null;
     final color = _isExpired
         ? _c.state.danger
         : _isUrgent
@@ -452,7 +490,11 @@ class _CustomerDeadlineBanner extends StatelessWidget {
         : _isUrgent
             ? _c.state.warning.withValues(alpha: 0.20)
             : _c.bg.inputBg;
-    final icon = _isExpired ? LucideIcons.timerOff : LucideIcons.hourglass;
+    final icon = !hasDeadline
+        ? LucideIcons.send
+        : _isExpired
+            ? LucideIcons.timerOff
+            : LucideIcons.hourglass;
 
     return Container(
       width: double.infinity,
@@ -467,9 +509,12 @@ class _CustomerDeadlineBanner extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 8),
-          Text(
-            _label(),
-            style: DSTextStyle.labelMd.copyWith(color: _c.text.primary, fontWeight: FontWeight.w600),
+          Expanded(
+            child: Text(
+              _label(),
+              style: DSTextStyle.labelMd.copyWith(
+                  color: _c.text.primary, fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
@@ -764,9 +809,6 @@ class _WonSectionState extends ConsumerState<_WonSection> {
 
         return Column(
           children: [
-            InvoiceStatusBadge(jobId: widget.quote.jobId),
-            const SizedBox(height: DSSpacing.s4),
-
             // ── Contact info ───────────────────────────────────────
             _Section(
               title: 'Kundekontakt',

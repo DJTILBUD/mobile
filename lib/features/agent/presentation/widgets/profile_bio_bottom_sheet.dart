@@ -106,7 +106,7 @@ class _ProfileBioBottomSheetState
                         size: 18, color: _c.brand.primaryActive),
                     const SizedBox(width: DSSpacing.s2),
                     Text(
-                      'AI Profilbeskrivelse',
+                      'Profilbeskrivelse',
                       style: DSTextStyle.headingSm.copyWith(fontWeight: FontWeight.w700, color: _c.text.primary),
                     ),
                   ],

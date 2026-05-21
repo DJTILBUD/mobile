@@ -126,7 +126,7 @@ class _AgentBottomSheetState extends ConsumerState<AgentBottomSheet> {
                     Icon(LucideIcons.sparkles, size: 18, color: _c.brand.primaryActive),
                     const SizedBox(width: DSSpacing.s2),
                     Text(
-                      'AI Assistent',
+                      'Salgstale',
                       style: DSTextStyle.headingMd.copyWith(fontSize: 17, fontWeight: FontWeight.w700, color: _c.text.primary, letterSpacing: -0.3),
                     ),
                   ],

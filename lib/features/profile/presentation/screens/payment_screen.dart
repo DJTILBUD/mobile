@@ -87,7 +87,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         info: PaymentInfo(
           payment: _paymentType,
           cpr: _cprCtrl.text.trim().isEmpty ? null : _cprCtrl.text.trim(),
-          registrationNumber: int.tryParse(_regNumCtrl.text.trim()),
+          registrationNumber: _regNumCtrl.text.trim().isEmpty ? null : _regNumCtrl.text.trim(),
           accountNumber: _accountCtrl.text.trim().isEmpty ? null : _accountCtrl.text.trim(),
           street: _streetCtrl.text.trim().isEmpty ? null : _streetCtrl.text.trim(),
           cityPostalCode: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),

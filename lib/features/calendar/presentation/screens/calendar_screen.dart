@@ -420,11 +420,15 @@ class _CalFilterChip extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              label,
-              style: DSTextStyle.labelSm.copyWith(
-                fontWeight: FontWeight.w600,
-                color: active ? activeColor : c.text.secondary,
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: DSTextStyle.labelSm.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: active ? activeColor : c.text.secondary,
+                ),
               ),
             ),
             const SizedBox(width: 4),

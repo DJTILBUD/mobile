@@ -14,17 +14,7 @@ class QuoteCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isPlayed;
 
-  /// Matches web app getCountdownTargetDate:
-  /// If admin extended deadline, use that.
-  /// Otherwise: min(sentAt + 7d, jobDate − 2d).
-  static DateTime _deadline(DjQuote q) {
-    if (q.job.deadlineExtendedUntil != null) {
-      return q.job.deadlineExtendedUntil!;
-    }
-    final sevenDays = q.createdAt.add(const Duration(days: 7));
-    final twoDaysBefore = q.job.date.subtract(const Duration(days: 2));
-    return sevenDays.isBefore(twoDaysBefore) ? sevenDays : twoDaysBefore;
-  }
+  static DateTime? _deadline(DjQuote q) => q.job.customerDeadline;
 
   @override
   Widget build(BuildContext context) {
@@ -112,19 +102,31 @@ class QuoteCard extends StatelessWidget {
                         child: _BidRow(quote: quote, c: c),
                       ),
 
-                      // Bottom row: countdown (pending) / action chip (won) / status badge
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                            DSSpacing.s4, DSSpacing.s3, DSSpacing.s4, DSSpacing.s3),
-                        child: quote.status == QuoteStatus.pending
-                            ? _CountdownRow(
-                                deadline: _deadline(quote), c: c)
-                            : quote.status == QuoteStatus.won &&
-                                    quote.pendingAction != null
-                                ? _ActionChip(
-                                    action: quote.pendingAction!, c: c)
-                                : _StatusRow(quote: quote, c: c),
-                      ),
+                      // Bottom row: countdown (pending+sent) / action chip (won) / status badge
+                      Builder(builder: (_) {
+                        final deadline = _deadline(quote);
+                        final showCountdown =
+                            quote.status == QuoteStatus.pending &&
+                                deadline != null;
+                        final showActionChip = quote.status == QuoteStatus.won &&
+                            quote.pendingAction != null;
+                        Widget child;
+                        if (showCountdown) {
+                          child = _CountdownRow(deadline: deadline, c: c);
+                        } else if (showActionChip) {
+                          child = _ActionChip(action: quote.pendingAction!, c: c);
+                        } else if (quote.status == QuoteStatus.pending) {
+                          // Quote submitted, but job not yet sent to customer.
+                          child = _AwaitingSendRow(c: c);
+                        } else {
+                          child = _StatusRow(quote: quote, c: c);
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(DSSpacing.s4,
+                              DSSpacing.s3, DSSpacing.s4, DSSpacing.s3),
+                          child: child,
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -366,6 +368,33 @@ class _CountdownRow extends StatelessWidget {
           _label(),
           style: DSTextStyle.labelSm.copyWith(
             color: _isExpired ? color : _c.text.primary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Awaiting-Send Row (pending quote, job not yet sent to customer) ─────────
+
+class _AwaitingSendRow extends StatelessWidget {
+  const _AwaitingSendRow({required this.c});
+
+  final DSColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(LucideIcons.send, size: 14, color: c.text.secondary),
+        const SizedBox(width: 5),
+        Text(
+          'Afventer udsending til kunden',
+          style: DSTextStyle.labelSm.copyWith(
+            color: _c.text.primary,
             fontWeight: FontWeight.w600,
           ),
         ),

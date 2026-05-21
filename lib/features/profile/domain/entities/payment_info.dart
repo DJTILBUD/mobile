@@ -35,7 +35,7 @@ class PaymentInfo {
 
   final PaymentType payment;
   final String? cpr;
-  final int? registrationNumber;
+  final String? registrationNumber;
   final String? accountNumber;
   final String? street;
   final String? cityPostalCode;

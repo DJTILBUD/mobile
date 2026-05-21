@@ -25,6 +25,8 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/job_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/quote_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/service_offer_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/empty_jobs_view.dart';
+import 'package:dj_tilbud_app/features/first_win/presentation/providers/first_win_provider.dart';
+import 'package:dj_tilbud_app/features/first_win/presentation/widgets/first_win_dialog.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -42,6 +44,7 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
   bool _calendarMode = false;
   bool _availabilityGateDismissed = false;
   bool _availabilityGateShowing = false;
+  bool _firstWinShowing = false;
 
   @override
   void initState() {
@@ -53,7 +56,17 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
           ? ref.read(djUnavailableDatesProvider)
           : ref.read(musicianUnavailableDatesProvider);
       _checkAvailabilityGate(async);
+      _checkFirstWinGate();
     });
+  }
+
+  Future<void> _checkFirstWinGate() async {
+    if (_firstWinShowing) return;
+    final eligible = await ref.read(firstWinEligibleProvider(widget.role).future);
+    if (!eligible || !mounted || _firstWinShowing) return;
+    _firstWinShowing = true;
+    await showFirstWinDialog(context, ref, widget.role);
+    if (mounted) _firstWinShowing = false;
   }
 
   void _checkAvailabilityGate(AsyncValue<Map<String, int>> async) {
@@ -106,6 +119,9 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
     });
     ref.listen<AsyncValue<Map<String, int>>>(musicianUnavailableDatesProvider, (_, next) {
       if (!isDj) _checkAvailabilityGate(next);
+    });
+    ref.listen<AsyncValue<bool>>(firstWinEligibleProvider(widget.role), (_, next) {
+      if (next.valueOrNull == true) _checkFirstWinGate();
     });
 
     if (_calendarMode) {

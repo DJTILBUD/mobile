@@ -8,6 +8,7 @@ import 'package:dj_tilbud_app/core/config/role_cache.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/providers/auth_provider.dart';
+import 'package:dj_tilbud_app/app.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -46,6 +47,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
 
       await RoleCache.save(role);
+      await initOnboardingStatus();
 
       if (!mounted) return;
 

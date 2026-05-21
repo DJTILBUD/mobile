@@ -12,7 +12,7 @@ class PaymentInfoModel {
 
   final String payment;
   final String? cpr;
-  final int? registrationNumber;
+  final String? registrationNumber;
   final String? accountNumber;
   final String? street;
   final String? cityPostalCode;
@@ -21,7 +21,7 @@ class PaymentInfoModel {
     return PaymentInfoModel(
       payment: json['payment'] as String? ?? 'Invoice',
       cpr: json['cpr'] as String?,
-      registrationNumber: (json['registration_number'] as num?)?.toInt(),
+      registrationNumber: json['registration_number']?.toString(),
       accountNumber: json['account_number'] as String?,
       street: json['street'] as String?,
       cityPostalCode: json['city_postal_code'] as String?,

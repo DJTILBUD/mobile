@@ -163,6 +163,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           venuesAndEvents: _venues.isEmpty ? null : _venues,
         ));
         ref.invalidate(djProfileProvider);
+        await ref.read(djProfileProvider.future);
       } else {
         await repo.updateMusicianProfile(MusicianProfile(
           id: ref.read(musicianProfileProvider).value!.id,
@@ -179,6 +180,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           venuesAndEvents: _venues.isEmpty ? null : _venues,
         ));
         ref.invalidate(musicianProfileProvider);
+        await ref.read(musicianProfileProvider.future);
       }
 
       if (mounted) {
@@ -187,7 +189,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        DSToast.show(context, variant: DSToastVariant.error, title: 'Kunne ikke gemme');
+        final msg = e.toString();
+        final isSaxRegionLimit =
+            msg.contains('musicians_saxophone_regions_max_two');
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: isSaxRegionLimit
+              ? 'Saxofonister kan kun vælge 2 regioner'
+              : 'Kunne ikke gemme',
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -315,7 +326,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   _allRegions,
                   _selectedRegions,
                   singleSelect: isDj,
-                  subtitle: isDj ? 'Vælg én region — din hjemby/base' : null,
+                  maxSelections: !isDj && _instrument == 'saxophone' ? 2 : null,
+                  subtitle: isDj
+                      ? 'Vælg én region — din hjemby/base'
+                      : (_instrument == 'saxophone'
+                          ? 'Saxofonister kan vælge op til 2 regioner'
+                          : null),
                 ),
 
                 const SizedBox(height: DSSpacing.s6),
@@ -398,6 +414,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     List<String> options,
     List<String> selected, {
     bool singleSelect = false,
+    int? maxSelections,
     String? subtitle,
   }) {
     return Column(
@@ -418,6 +435,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               label: opt,
               selected: isSelected,
               onTap: () {
+                if (!isSelected &&
+                    !singleSelect &&
+                    maxSelections != null &&
+                    selected.length >= maxSelections) {
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.warning,
+                    title: 'Du kan højst vælge $maxSelections regioner',
+                  );
+                  return;
+                }
                 setState(() {
                   if (singleSelect) {
                     selected.clear();

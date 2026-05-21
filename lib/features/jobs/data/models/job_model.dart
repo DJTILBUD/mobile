@@ -28,6 +28,7 @@ class JobModel {
     this.extJobId,
     this.quoteSendMode,
     this.assignedDjName,
+    this.sentAt,
     this.deadlineExtendedUntil,
     this.customerContactPlannedFor,
     this.musicianStartTime,
@@ -63,6 +64,7 @@ class JobModel {
   final int? extJobId;
   final String? quoteSendMode;
   final String? assignedDjName;
+  final String? sentAt;
   final String? deadlineExtendedUntil;
   final String? customerContactPlannedFor;
   final String? musicianStartTime;
@@ -97,6 +99,7 @@ class JobModel {
       leadPhoneNumber: json['lead_phone_number'] as String?,
       customerNote: json['customer_note'] as String?,
       quoteSendMode: json['quote_send_mode'] as String?,
+      sentAt: json['sent_at'] as String?,
       deadlineExtendedUntil: json['deadline_extended_until'] as String?,
       customerContactPlannedFor: json['customer_contact_planned_for'] as String?,
       musicianStartTime: _formatTime(json['musician_start_time']),
@@ -141,6 +144,7 @@ class JobModel {
       extJobId: extJobId,
       quoteSendMode: quoteSendMode,
       assignedDjName: assignedDjName,
+      sentAt: sentAt != null ? DateTime.parse(sentAt!) : null,
       deadlineExtendedUntil: deadlineExtendedUntil != null
           ? DateTime.parse(deadlineExtendedUntil!)
           : null,

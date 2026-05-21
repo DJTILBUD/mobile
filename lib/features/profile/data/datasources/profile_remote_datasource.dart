@@ -37,7 +37,9 @@ class ProfileRemoteDatasource {
 
   Future<void> updateDjProfile(Map<String, dynamic> data) async {
     final id = data['id'] as String;
-    await _client.from('DjInfos').update(data).eq('id', id);
+    final payload = Map<String, dynamic>.from(data)..remove('id');
+    final result = await _client.from('DjInfos').update(payload).eq('id', id).select();
+    if (result.isEmpty) throw Exception('DjInfos update matched 0 rows (id=$id)');
   }
 
   // ── Musician Profile ──
@@ -52,19 +54,34 @@ class ProfileRemoteDatasource {
 
   Future<void> updateMusicianProfile(Map<String, dynamic> data) async {
     final id = data['id'] as String;
-    await _client.from('Musicians').update(data).eq('id', id);
+    final payload = Map<String, dynamic>.from(data)..remove('id');
+    final result = await _client.from('Musicians').update(payload).eq('id', id).select();
+    if (result.isEmpty) throw Exception('Musicians update matched 0 rows (id=$id)');
   }
 
   // ── Payment Info ──
+  // Routed through the web-app Next.js API routes so AES-256-GCM
+  // encryption/decryption of sensitive fields stays server-side
+  // (same endpoints the web app uses).
+
+  String _paymentInfoPath(bool isDj) =>
+      isDj ? '/api/private-dj-info' : '/api/private-musician-info';
 
   Future<Map<String, dynamic>?> fetchPaymentInfo({
     required String userId,
     required bool isDj,
   }) async {
-    final table = isDj ? 'PrivateDjInfos' : 'PrivateMusiciansInfo';
-    final results = await _client.from(table).select().eq('id', userId);
-    if (results.isEmpty) return null;
-    return results.first;
+    final uri = Uri.parse('$_webAppBaseUrl${_paymentInfoPath(isDj)}');
+    final response = await http.get(
+      uri,
+      headers: {'Authorization': 'Bearer $_accessToken'},
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+          'fetchPaymentInfo failed (${response.statusCode}): ${response.body}');
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['data'] as Map<String, dynamic>?;
   }
 
   Future<void> upsertPaymentInfo({
@@ -72,8 +89,19 @@ class ProfileRemoteDatasource {
     required bool isDj,
     required Map<String, dynamic> data,
   }) async {
-    final table = isDj ? 'PrivateDjInfos' : 'PrivateMusiciansInfo';
-    await _client.from(table).upsert({'id': userId, ...data});
+    final uri = Uri.parse('$_webAppBaseUrl${_paymentInfoPath(isDj)}');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(data),
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+          'upsertPaymentInfo failed (${response.statusCode}): ${response.body}');
+    }
   }
 
   // ── DJ Job Filters ──

@@ -1,56 +1,46 @@
 # AI Agent
 
-This folder governs two distinct AI features in the app. Before building or modifying either one, read the files in the order shown below.
+This folder is a high-level overview of the two AI features in the mobile app. It is **not** the source of truth for prompt content — see "Canonical prompt source" below.
 
 ---
 
-## Canonical prompt files
+## Canonical prompt source
 
-**The `.md` files in this folder are developer documentation only — they are not what Claude reads at runtime.**
+**What Claude actually receives at runtime lives in `web-app/supabase/functions/agent-assist/prompts.ts`** — exported TypeScript string constants that the Edge Function imports and composes per `purpose`.
 
-The live prompt files that Claude actually receives are in:
 ```
-web-app/supabase/functions/agent-assist/prompts/
-├── domain-context.md        ← platform background, musician personas, research grounding
-├── agent-behaviour.md       ← tone, interaction style, what Claude must never do
-├── pitch-guidelines.md      ← pitch-specific rules, format, character limit, examples
-├── summary-guidelines.md    ← job summary rules
-├── profile-bio-guidelines.md
-└── profile-coach-guidelines.md
+web-app/supabase/functions/agent-assist/
+├── index.ts        ← composes the system prompt per purpose (sales_pitch, profile_bio, etc.)
+├── prompts.ts      ← THE source of truth — exported string constants
+└── prompts/        ← reference .md copies of the same strings (kept in sync manually)
 ```
 
-**To change Claude's behavior, edit those files — not this folder and not the TypeScript code.**
+**To change Claude's behaviour, edit `prompts.ts` and mirror the same change in the matching `prompts/*.md` file.** The Edge Function does not load the `.md` files at runtime — it bundles `prompts.ts` at deploy time. Run `supabase functions deploy agent-assist` after editing.
 
-The Edge Function reads them at cold start, concatenates the relevant files for the current `purpose`, caches the static portion via Anthropic prompt caching, and appends the dynamic job/profile data per request.
+The exported constants are:
 
-## Reading map (for understanding the system)
-
-| File | What it contains |
+| Constant | Mirror file |
 |---|---|
-| `domain-context.md` | What DJTilbud is, how jobs flow, the closing rate problem, who the musicians are, and why the agent exists. |
-| `agent-behaviour.md` | Shared tone, interaction style, what the agent must never do. |
-
-### Agent-specific files
-
-| If you are building... | Read |
-|---|---|
-| The **pitch agent** | `pitch-guidelines.md` |
-| The **profile coach** | `profile-coach-guidelines.md` + `profile-bio-guidelines.md` |
-
-If you are building something that touches both (e.g. a shared AI service layer, the Edge Function, or the AgentInteractions logging), read all files in the `prompts/` directory.
+| `DOMAIN_CONTEXT` | `prompts/domain-context.md` |
+| `AGENT_BEHAVIOUR` | `prompts/agent-behaviour.md` |
+| `HUMAN_AI_GUIDELINES` | `prompts/human-ai-guidelines.md` |
+| `PITCH_GUIDELINES` | `prompts/pitch-guidelines.md` |
+| `SUMMARY_GUIDELINES` | `prompts/summary-guidelines.md` |
+| `PROFILE_BIO_GUIDELINES` | `prompts/profile-bio-guidelines.md` |
+| `PROFILE_COACH_GUIDELINES` | `prompts/profile-coach-guidelines.md` |
 
 ---
 
 ## What the two agents do
 
-**Pitch agent** (`pitch-guidelines.md`)
+**Pitch agent** (uses `PITCH_GUIDELINES` + shared constants)
 - Triggered when a musician opens a job request and taps "Get AI Help"
 - Reads the job details + musician profile into context
-- Asks 1–2 short questions about the event
-- Generates 2–3 pitch variations for the musician to choose from and edit
+- Generates pitch immediately — no clarifying questions first
+- Accepts inline follow-up edits ("make it warmer", "make it shorter")
 - Goal: a personal, specific, well-written pitch that wins the job
 
-**Profile coach** (`profile-guidelines.md`)
+**Profile coach** (uses `PROFILE_COACH_GUIDELINES` + `PROFILE_BIO_GUIDELINES` + shared constants)
 - Triggered from the musician's profile screen
 - Reads the current profile state (photo, videos, bio, reviews)
 - Identifies the single highest-impact gap
@@ -61,14 +51,13 @@ If you are building something that touches both (e.g. a shared AI service layer,
 
 ## Technical implementation
 
-**Never call the Anthropic API directly from Flutter.** All Claude API calls go through a Supabase Edge Function. Flutter calls the Edge Function only — see `webapp-reference/supabase/functions/` for the existing proxy implementation.
+**Never call the Anthropic API directly from Flutter.** All Claude API calls go through the Supabase Edge Function at `web-app/supabase/functions/agent-assist/`.
 
 | Setting | Value |
 |---|---|
 | Model | `claude-sonnet-4-5-20250929` |
 | Streaming | Always — never show a full-response loading spinner |
 | Context to include | Job details, musician profile summary, event type, previous offers by this musician |
-| Max questions per turn | 2 — never 3+ |
 
 ---
 
@@ -96,6 +85,5 @@ Flag any design decision that affects agent evaluability before implementing. La
 
 - Call the Anthropic API directly from Dart — Edge Function only
 - Invent facts: price, equipment, availability, experience
-- Generate a pitch without asking at least one question first
 - Give the same pitch twice — every output must be unique to the job
 - Produce output that cannot be edited inline by the musician before submission

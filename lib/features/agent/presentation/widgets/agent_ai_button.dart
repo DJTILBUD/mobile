@@ -38,9 +38,9 @@ class AgentAiButton extends ConsumerWidget {
     String label = 'Skriv med AI';
     if (usage != null) {
       if (usage.isMonthlyLimitReached) {
-        label = 'AI: maks nået';
+        label = 'Maks nået';
       } else if (usage.isDailyLimitReached) {
-        label = 'AI: 0 i dag';
+        label = '0 tilbage i dag';
       } else if (dailyRemaining != null && dailyRemaining <= 3) {
         label = 'Skriv med AI · $dailyRemaining';
       }

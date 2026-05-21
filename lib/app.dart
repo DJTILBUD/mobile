@@ -5,12 +5,14 @@ import 'package:dj_tilbud_app/core/notifications/notifications_service.dart';
 import 'package:dj_tilbud_app/core/navigation/main_shell.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent;
+import 'package:dj_tilbud_app/core/config/env_config.dart';
 import 'package:dj_tilbud_app/core/config/role_cache.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/theme/app_theme.dart';
 import 'package:dj_tilbud_app/core/theme/theme_provider.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
+import 'package:dj_tilbud_app/features/first_win/presentation/providers/first_win_provider.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/screens/profile_setup_screen.dart';
@@ -47,13 +49,13 @@ import 'package:dj_tilbud_app/features/onboarding/presentation/screens/onboardin
 import 'package:dj_tilbud_app/core/widgets/dev_env_banner.dart';
 import 'package:dj_tilbud_app/core/notifications/in_app_notification_banner.dart';
 import 'package:dj_tilbud_app/core/notifications/in_app_notification_provider.dart';
+import 'package:dj_tilbud_app/features/app_config/presentation/widgets/update_gate.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
 /// Tracks whether the current user has completed onboarding so GoRouter
 /// can gate the rest of the app until onboarding_completed_at is set.
 class _OnboardingNotifier extends ChangeNotifier {
-  // Pessimistic default: gate is closed until the server confirms completion.
   bool _completed = false;
 
   bool get onboardingCompleted => _completed;
@@ -166,6 +168,11 @@ class _MissingRouteDataScreen extends StatelessWidget {
   }
 }
 
+/// Root navigator key shared with the GoRouter so widgets that sit above
+/// the router (e.g. the force-update gate) can still push dialogs/routes
+/// onto the same navigator the routed tree uses.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 String _resolveInitialLocation() {
   final session = supabase.auth.currentSession;
   if (session == null) return '/login';
@@ -178,6 +185,7 @@ String _resolveInitialLocation() {
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: _resolveInitialLocation(),
     refreshListenable: Listenable.merge([_authNotifier, _onboardingNotifier]),
     observers: [AnalyticsService.observer],
@@ -581,6 +589,11 @@ class _AppState extends ConsumerState<App> {
           role: message.data['role'] as String?,
         );
         NotificationsService.logReceivedToSupabase(message.data);
+        if (type == 'quote_won') {
+          ref.invalidate(firstWinEligibleProvider(MusicianRole.dj));
+        } else if (type == 'offer_won') {
+          ref.invalidate(firstWinEligibleProvider(MusicianRole.instrumentalist));
+        }
         if (type == 'chat_message') {
           final convId = int.tryParse(
               message.data['conversation_id']?.toString() ?? '');
@@ -614,13 +627,15 @@ class _AppState extends ConsumerState<App> {
           child: GestureDetector(
             onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
             behavior: HitTestBehavior.translucent,
-            child: Stack(
-              children: [
-                child!,
-                const InAppNotificationBanner(),
-                const DevEnvBanner(),
-                const _KeyboardDismissBar(),
-              ],
+            child: UpdateGate(
+              child: Stack(
+                children: [
+                  child!,
+                  const InAppNotificationBanner(),
+                  const DevEnvBanner(),
+                  const _KeyboardDismissBar(),
+                ],
+              ),
             ),
           ),
         );

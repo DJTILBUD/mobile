@@ -456,6 +456,7 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
 
   List<String> _selectedRegions = [];
   List<String> _selectedGenres = [];
+  String _musicianInstrument = '';
 
   bool _initialized = false;
   bool _saving = false;
@@ -489,17 +490,29 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
     _hourlyRateCtrl.text = p.hourlyRate > 0 ? p.hourlyRate.toString() : '';
     _selectedRegions = List.of(p.regions);
     _selectedGenres = List.of(p.genres ?? []);
+    _musicianInstrument = p.instrument;
   }
 
+  int? get _regionLimit =>
+      !widget.isDj && _musicianInstrument == 'saxophone' ? 2 : null;
+
   void _toggleRegion(String r) {
+    if (widget.isDj) {
+      setState(() => _selectedRegions = [r]);
+      return;
+    }
+    final isSelected = _selectedRegions.contains(r);
+    final limit = _regionLimit;
+    if (!isSelected && limit != null && _selectedRegions.length >= limit) {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.warning,
+        title: 'Du kan højst vælge $limit regioner',
+      );
+      return;
+    }
     setState(() {
-      if (widget.isDj) {
-        _selectedRegions = [r];
-      } else {
-        _selectedRegions.contains(r)
-            ? _selectedRegions.remove(r)
-            : _selectedRegions.add(r);
-      }
+      isSelected ? _selectedRegions.remove(r) : _selectedRegions.add(r);
     });
   }
 
@@ -533,6 +546,7 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
           venuesAndEvents: cur.venuesAndEvents,
         ));
         ref.invalidate(djProfileProvider);
+        await ref.read(djProfileProvider.future);
       } else {
         final cur = ref.read(musicianProfileProvider).value!;
         await repo.updateMusicianProfile(MusicianProfile(
@@ -550,6 +564,7 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
           venuesAndEvents: cur.venuesAndEvents,
         ));
         ref.invalidate(musicianProfileProvider);
+        await ref.read(musicianProfileProvider.future);
       }
       if (mounted) {
         DSToast.show(context, variant: DSToastVariant.success, title: 'Profil gemt');
@@ -557,7 +572,16 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
       }
     } catch (e) {
       if (mounted) {
-        DSToast.show(context, variant: DSToastVariant.error, title: 'Kunne ikke gemme: $e');
+        final msg = e.toString();
+        final isSaxRegionLimit =
+            msg.contains('musicians_saxophone_regions_max_two');
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: isSaxRegionLimit
+              ? 'Saxofonister kan kun vælge 2 regioner'
+              : 'Kunne ikke gemme: $e',
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -655,6 +679,13 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
           widget.isDj ? 'Region (vælg én)' : 'Regioner',
           style: DSTextStyle.labelLg.copyWith(color: _c.text.primary),
         ),
+        if (_regionLimit != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            'Saxofonister kan vælge op til 2 regioner',
+            style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+          ),
+        ],
         const SizedBox(height: DSSpacing.s2),
         Wrap(
           spacing: 8,
@@ -1418,7 +1449,9 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
     final userId = supabase.auth.currentUser!.id;
     _filters = saved ?? DjJobFilters(djId: userId);
     _initialized = true;
-    widget.onChanged(_filters!);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onChanged(_filters!);
+    });
   }
 
   void _update(DjJobFilters updated) {

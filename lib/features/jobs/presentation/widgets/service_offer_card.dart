@@ -14,12 +14,7 @@ class ServiceOfferCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isPlayed;
 
-  static DateTime _deadline(ServiceOffer o) {
-    if (o.job.deadlineExtendedUntil != null) return o.job.deadlineExtendedUntil!;
-    final sevenDays = o.createdAt.add(const Duration(days: 7));
-    final twoDaysBefore = o.job.date.subtract(const Duration(days: 2));
-    return sevenDays.isBefore(twoDaysBefore) ? sevenDays : twoDaysBefore;
-  }
+  static DateTime? _deadline(ServiceOffer o) => o.job.customerDeadline;
 
   @override
   Widget build(BuildContext context) {
@@ -106,19 +101,35 @@ class ServiceOfferCard extends StatelessWidget {
                         child: _BidRow(offer: offer, c: c),
                       ),
 
-                      // Bottom: countdown (sent) / action chip (won) / status badge
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                            DSSpacing.s4, DSSpacing.s3, DSSpacing.s4, DSSpacing.s3),
-                        child: offer.status == ServiceOfferStatus.sent
-                            ? _CountdownRow(
-                                deadline: _deadline(offer), c: c)
-                            : offer.status == ServiceOfferStatus.won &&
-                                    offer.pendingAction != null
-                                ? _ActionChip(
-                                    action: offer.pendingAction!, c: c)
-                                : _StatusRow(offer: offer, c: c),
-                      ),
+                      // Bottom: countdown (sent+job-sent) / action chip (won) / status badge
+                      Builder(builder: (_) {
+                        final deadline = _deadline(offer);
+                        final showCountdown =
+                            offer.status == ServiceOfferStatus.sent &&
+                                deadline != null;
+                        final showActionChip =
+                            offer.status == ServiceOfferStatus.won &&
+                                offer.pendingAction != null;
+                        Widget child;
+                        if (showCountdown) {
+                          child = _CountdownRow(deadline: deadline, c: c);
+                        } else if (showActionChip) {
+                          child = _ActionChip(action: offer.pendingAction!, c: c);
+                        } else if (offer.status == ServiceOfferStatus.sent &&
+                            !offer.isExtJob) {
+                          // Internal job, offer submitted, job not yet sent
+                          // to customer. ExtJobs don't have a customer-send
+                          // step — fall through to the status row.
+                          child = _AwaitingSendRow(c: c);
+                        } else {
+                          child = _StatusRow(offer: offer, c: c);
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.fromLTRB(DSSpacing.s4,
+                              DSSpacing.s3, DSSpacing.s4, DSSpacing.s3),
+                          child: child,
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -353,6 +364,33 @@ class _CountdownRow extends StatelessWidget {
           _label(),
           style: DSTextStyle.labelSm.copyWith(
             color: _isExpired ? color : _c.text.primary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Awaiting-Send Row (offer submitted, job not yet sent to customer) ───────
+
+class _AwaitingSendRow extends StatelessWidget {
+  const _AwaitingSendRow({required this.c});
+
+  final DSColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(LucideIcons.send, size: 14, color: c.text.secondary),
+        const SizedBox(width: 5),
+        Text(
+          'Afventer udsending til kunden',
+          style: DSTextStyle.labelSm.copyWith(
+            color: _c.text.primary,
             fontWeight: FontWeight.w600,
           ),
         ),

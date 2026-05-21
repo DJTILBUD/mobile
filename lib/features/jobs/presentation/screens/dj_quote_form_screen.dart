@@ -474,7 +474,8 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
             DSInput(
               hint: 'Fortæl kunden hvorfor du er det rette valg til deres event...',
               controller: _salesPitchController,
-              maxLines: 5,
+              minLines: 8,
+              maxLines: 15,
               maxLength: 450,
               showCounter: true,
               helperText: '$_pitchLength / 450',

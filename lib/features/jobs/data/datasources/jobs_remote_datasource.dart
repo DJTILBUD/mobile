@@ -104,7 +104,7 @@ class JobsRemoteDatasource {
     final jobs = await _client
         .from('Jobs')
         .select()
-        .inFilter('status', ['open', 'another_round'])
+        .inFilter('status', ['open', 'another_round', 'sent', 're_sent'])
         .order('created_at', ascending: false);
 
     return jobs
