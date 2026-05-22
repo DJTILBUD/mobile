@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dj_tilbud_app/core/notifications/notifications_service.dart';
@@ -618,6 +619,16 @@ class _AppState extends ConsumerState<App> {
       themeMode: themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('da'),
+        Locale('en'),
+      ],
+      locale: const Locale('da'),
       builder: (context, child) {
         final isDark = themeMode == ThemeMode.dark ||
             (themeMode == ThemeMode.system &&

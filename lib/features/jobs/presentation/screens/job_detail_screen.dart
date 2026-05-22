@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
@@ -329,9 +330,34 @@ class JobDetailScreen extends ConsumerWidget {
             if (job.leadRequest != null && job.leadRequest!.isNotEmpty) ...[
               _SectionCard(
                 title: 'Kundens ønske',
-                child: Text(
-                  job.leadRequest!,
-                  style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      job.leadRequest!,
+                      style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary),
+                    ),
+                    const SizedBox(height: DSSpacing.s2),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: job.leadRequest!));
+                        DSToast.show(context,
+                            variant: DSToastVariant.success,
+                            title: 'Kundens ønske kopieret');
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(LucideIcons.copy, size: 13, color: _c.text.muted),
+                          const SizedBox(width: DSSpacing.s1),
+                          Text(
+                            'Kopier',
+                            style: DSTextStyle.labelSm.copyWith(color: _c.text.muted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: DSSpacing.s3),

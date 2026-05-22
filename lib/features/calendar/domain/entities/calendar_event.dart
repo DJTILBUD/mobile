@@ -16,6 +16,7 @@ class CalendarEvent {
     this.location,
     this.region,
     this.guestsAmount,
+    this.budgetDisplay,
     this.jobId,
     this.extJobId,
   });
@@ -30,6 +31,7 @@ class CalendarEvent {
   final String? location;
   final String? region;
   final int? guestsAmount;
+  final String? budgetDisplay;
   final int? jobId;
   final int? extJobId;
 

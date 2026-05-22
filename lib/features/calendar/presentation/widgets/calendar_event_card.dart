@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -82,7 +83,7 @@ class CalendarEventCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          event.label,
+                          eventTypeLabel(event.label),
                           style: DSTextStyle.headingSm.copyWith(
                             fontSize: 15,
                             color: c.text.primary,
@@ -124,6 +125,13 @@ class CalendarEventCard extends StatelessWidget {
                     _InfoRow(
                       icon: LucideIcons.users,
                       text: '${event.guestsAmount} gæster',
+                    ),
+                  ],
+                  if (event.budgetDisplay != null) ...[
+                    const SizedBox(height: 2),
+                    _InfoRow(
+                      icon: LucideIcons.banknote,
+                      text: event.budgetDisplay!,
                     ),
                   ],
                 ],

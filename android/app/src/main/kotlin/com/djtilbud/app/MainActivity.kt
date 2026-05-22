@@ -1,4 +1,4 @@
-package com.djtilbud.dj_tilbud_app
+package com.djtilbud.app
 
 import io.flutter.embedding.android.FlutterActivity
 

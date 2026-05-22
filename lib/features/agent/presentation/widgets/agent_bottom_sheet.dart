@@ -329,7 +329,6 @@ class _RefinementStrip extends StatefulWidget {
 }
 
 class _RefinementStripState extends State<_RefinementStrip> {
-  bool _showCustom = false;
   final _controller = TextEditingController();
 
   @override
@@ -338,74 +337,18 @@ class _RefinementStripState extends State<_RefinementStrip> {
     super.dispose();
   }
 
-  void _sendChip(String message) {
-    setState(() => _showCustom = false);
-    widget.onRefine(message);
-  }
+  void _sendChip(String message) => widget.onRefine(message);
 
   void _sendCustom() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
-    setState(() => _showCustom = false);
     widget.onRefine(text);
   }
 
   @override
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
-
-    if (_showCustom) {
-      return Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              autofocus: true,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _sendCustom(),
-              style: DSTextStyle.labelMd.copyWith(fontSize: 14, color: _c.text.primary),
-              decoration: InputDecoration(
-                hintText: 'Hvad skal ændres?',
-                hintStyle: DSTextStyle.labelMd.copyWith(fontSize: 14, color: _c.text.muted),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                filled: true,
-                fillColor: _c.bg.canvas,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(DSRadius.md),
-                  borderSide: BorderSide(color: _c.border.subtle),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(DSRadius.md),
-                  borderSide: BorderSide(color: _c.border.subtle),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(DSRadius.md),
-                  borderSide: BorderSide(color: _c.brand.primaryActive),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: DSSpacing.s2),
-          GestureDetector(
-            onTap: _sendCustom,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: _c.brand.primaryActive,
-                borderRadius: BorderRadius.circular(DSRadius.md),
-              ),
-              child: Icon(LucideIcons.arrowRight, size: 16, color: _c.brand.onPrimary),
-            ),
-          ),
-          const SizedBox(width: DSSpacing.s1),
-          GestureDetector(
-            onTap: () => setState(() => _showCustom = false),
-            child: Icon(LucideIcons.x, size: 18, color: _c.text.muted),
-          ),
-        ],
-      );
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,10 +374,49 @@ class _RefinementStripState extends State<_RefinementStrip> {
               label: 'Skift vinkel',
               onTap: () => _sendChip('Skriv en pitch med et helt nyt åbning og en anderledes vinkel.'),
             ),
-            _Chip(
-              label: 'Andet...',
-              onTap: () => setState(() => _showCustom = true),
-              isDotted: true,
+          ],
+        ),
+        const SizedBox(height: DSSpacing.s3),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _sendCustom(),
+                style: DSTextStyle.labelMd.copyWith(fontSize: 14, color: _c.text.primary),
+                decoration: InputDecoration(
+                  hintText: 'Skriv til AI\'en...',
+                  hintStyle: DSTextStyle.labelMd.copyWith(fontSize: 14, color: _c.text.muted),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  filled: true,
+                  fillColor: _c.bg.canvas,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(DSRadius.md),
+                    borderSide: BorderSide(color: _c.border.subtle),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(DSRadius.md),
+                    borderSide: BorderSide(color: _c.border.subtle),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(DSRadius.md),
+                    borderSide: BorderSide(color: _c.brand.primaryActive),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: DSSpacing.s2),
+            GestureDetector(
+              onTap: _sendCustom,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _c.brand.primaryActive,
+                  borderRadius: BorderRadius.circular(DSRadius.md),
+                ),
+                child: Icon(LucideIcons.arrowRight, size: 16, color: _c.brand.onPrimary),
+              ),
             ),
           ],
         ),
@@ -444,15 +426,10 @@ class _RefinementStripState extends State<_RefinementStrip> {
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.onTap,
-    this.isDotted = false,
-  });
+  const _Chip({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
-  final bool isDotted;
 
   @override
   Widget build(BuildContext context) {
@@ -470,7 +447,7 @@ class _Chip extends StatelessWidget {
           label,
           style: DSTextStyle.bodySm.copyWith(
             fontSize: 13,
-            color: isDotted ? _c.text.muted : _c.text.secondary,
+            color: _c.text.secondary,
             fontWeight: FontWeight.w500,
           ),
         ),

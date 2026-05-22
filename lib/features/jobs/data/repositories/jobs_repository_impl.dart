@@ -5,6 +5,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/song_request.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/repositories/jobs_repository.dart';
 import 'package:dj_tilbud_app/features/jobs/data/datasources/jobs_remote_datasource.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/job_model.dart';
@@ -443,6 +444,24 @@ class JobsRepositoryImpl implements JobsRepository {
         earlySetupPrice: earlySetupPrice,
       );
       return DjQuoteModel.fromJson(data).toEntity();
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<List<SongRequest>> fetchSongRequestsForJob(int jobId) async {
+    try {
+      final data = await _datasource.fetchSongRequestsForJob(jobId);
+      return data.map((row) => SongRequest(
+        id: (row['id'] as num).toInt(),
+        jobId: (row['job_id'] as num).toInt(),
+        guestEmail: row['guest_email'] as String,
+        song1: row['song_1'] as String,
+        song2: row['song_2'] as String?,
+        song3: row['song_3'] as String?,
+        createdAt: DateTime.parse(row['created_at'] as String),
+      )).toList();
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }

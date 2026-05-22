@@ -10,6 +10,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/screens/song_requests_screen.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/screens/edit_quote_bottom_sheet.dart'
     show kEditWindowMinutes, showEditQuoteBottomSheet;
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
@@ -137,6 +138,8 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           _TopStatusRow(quote: _quote),
           const SizedBox(height: DSSpacing.s3),
           _WonSection(quote: _quote),
+          const SizedBox(height: DSSpacing.s4),
+          _SongRequestsRow(quote: _quote),
           const SizedBox(height: DSSpacing.s4),
           _ExtraHoursSection(quote: _quote),
           const SizedBox(height: DSSpacing.s4),
@@ -272,7 +275,28 @@ class _JobHeroCard extends StatelessWidget {
 
           // Customer request
           if (job.leadRequest != null && job.leadRequest!.isNotEmpty) ...[
-            Text('Kundens ønske', style: DSTextStyle.labelSm.copyWith(color: _c.text.muted, fontWeight: FontWeight.w600)),
+            Row(
+              children: [
+                Text('Kundens ønske', style: DSTextStyle.labelSm.copyWith(color: _c.text.muted, fontWeight: FontWeight.w600)),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: job.leadRequest!));
+                    DSToast.show(context,
+                        variant: DSToastVariant.success,
+                        title: 'Kundens ønske kopieret');
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(LucideIcons.copy, size: 13, color: _c.text.muted),
+                      const SizedBox(width: DSSpacing.s1),
+                      Text('Kopier', style: DSTextStyle.labelSm.copyWith(color: _c.text.muted)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: DSSpacing.s1),
             Text(job.leadRequest!, style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary, height: 1.5)),
             const SizedBox(height: DSSpacing.s3),
@@ -637,13 +661,7 @@ class _WonSection extends ConsumerStatefulWidget {
 
 class _WonSectionState extends ConsumerState<_WonSection> {
   DSColors get _c => DSTheme.of(context);
-  late DateTime? _djReadyConfirmedAt;
-
-  @override
-  void initState() {
-    super.initState();
-    _djReadyConfirmedAt = widget.quote.djReadyConfirmedAt;
-  }
+  bool _contactedOptimistically = false;
 
   bool _isWithin5Days(DateTime eventDate) {
     final today = DateTime.now();
@@ -654,7 +672,7 @@ class _WonSectionState extends ConsumerState<_WonSection> {
   }
 
   Future<void> _openContactSheet(int jobId, DateTime? plannedDate) async {
-    await showModalBottomSheet<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: _c.bg.surface,
@@ -700,6 +718,9 @@ class _WonSectionState extends ConsumerState<_WonSection> {
         ),
       ),
     );
+    if (result == true && mounted) {
+      setState(() => _contactedOptimistically = true);
+    }
   }
 
   Future<void> _handleReadyForBilling(int jobId, DjQuote quote) async {
@@ -758,7 +779,6 @@ class _WonSectionState extends ConsumerState<_WonSection> {
         await ref.read(confirmDjReadyProvider.notifier).confirm(quote.id);
     if (!mounted) return;
     if (success) {
-      setState(() => _djReadyConfirmedAt = DateTime.now());
       DSToast.show(context,
           variant: DSToastVariant.success,
           title: 'Bekræftet! God fornøjelse med jobbet 🎵');
@@ -772,6 +792,15 @@ class _WonSectionState extends ConsumerState<_WonSection> {
   Widget build(BuildContext context) {
       final _c = DSTheme.of(context);
     final jobAsync = ref.watch(jobDetailProvider(widget.quote.jobId));
+    // Source of truth for ready-confirmed state lives in the Quotes row.
+    // Watching djQuotesProvider keeps the UI correct across rebuilds (e.g.
+    // when this widget is re-elemented after scrolling) — local state would
+    // reset to the stale `widget.quote` value in initState.
+    final latestQuote = ref.watch(djQuotesProvider).valueOrNull?.firstWhere(
+          (q) => q.id == widget.quote.id,
+          orElse: () => widget.quote,
+        ) ??
+        widget.quote;
     final billingLoading =
         ref.watch(markJobReadyForBillingProvider) is AsyncLoading;
     final readyLoading = ref.watch(confirmDjReadyProvider) is AsyncLoading;
@@ -796,10 +825,11 @@ class _WonSectionState extends ConsumerState<_WonSection> {
         ],
       ),
       data: (job) {
-        final isContacted = job.status == JobStatus.customerContacted ||
+        final isContacted = _contactedOptimistically ||
+            job.status == JobStatus.customerContacted ||
             job.status == JobStatus.readyForBilling;
         final isReadyForBilling = job.status == JobStatus.readyForBilling;
-        final isConfirmedReady = _djReadyConfirmedAt != null;
+        final isConfirmedReady = latestQuote.djReadyConfirmedAt != null;
         final canConfirmReady = _isWithin5Days(job.date);
 
         int completedSteps = 0;
@@ -1843,6 +1873,70 @@ class _PlannedContactBanner extends StatelessWidget {
             Text('Husk at kontakte d. $dateStr',
                 style: DSTextStyle.bodySm.copyWith(
                     color: _c.text.primary, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Song Requests Row (compact nav entry in won body) ───────────────────────
+
+class _SongRequestsRow extends ConsumerWidget {
+  const _SongRequestsRow({required this.quote});
+  final DjQuote quote;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = DSTheme.of(context);
+    final requestsAsync = ref.watch(songRequestsForJobProvider(quote.jobId));
+    final jobAsync = ref.watch(jobDetailProvider(quote.jobId));
+    final token = jobAsync.valueOrNull?.songRequestToken;
+
+    final countLabel = requestsAsync.when(
+      loading: () => '…',
+      error: (_, __) => '—',
+      data: (list) => '${list.length}',
+    );
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SongRequestsScreen(
+            jobId: quote.jobId,
+            songRequestToken: token,
+          ),
+        ),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+            horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
+        decoration: BoxDecoration(
+          color: c.bg.surface,
+          borderRadius: BorderRadius.circular(DSRadius.md),
+          border: Border.all(color: c.border.subtle),
+          boxShadow: DSShadow.sm,
+        ),
+        child: Row(
+          children: [
+            Icon(LucideIcons.music, size: 18, color: c.brand.primaryActive),
+            const SizedBox(width: DSSpacing.s3),
+            Expanded(
+              child: Text(
+                'Sangønsker',
+                style: DSTextStyle.labelLg.copyWith(
+                  color: c.text.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              countLabel,
+              style: DSTextStyle.labelMd.copyWith(color: c.text.muted),
+            ),
+            const SizedBox(width: DSSpacing.s2),
+            Icon(LucideIcons.chevronRight, size: 16, color: c.text.muted),
           ],
         ),
       ),

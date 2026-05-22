@@ -353,6 +353,7 @@ CalendarEvent _jobToEvent(Job job) => CalendarEvent(
       location: job.city.isEmpty ? null : job.city,
       region: job.region.isEmpty ? null : job.region,
       guestsAmount: job.guestsAmount,
+      budgetDisplay: job.budgetDisplay == 'Ikke angivet' ? null : job.budgetDisplay,
       jobId: job.id,
     );
 
@@ -367,6 +368,7 @@ CalendarEvent _quoteToEvent(DjQuote quote) => CalendarEvent(
       location: quote.job.city.isEmpty ? null : quote.job.city,
       region: quote.job.region.isEmpty ? null : quote.job.region,
       guestsAmount: quote.job.guestsAmount,
+      budgetDisplay: quote.job.budgetDisplay == 'Ikke angivet' ? null : quote.job.budgetDisplay,
       jobId: quote.jobId,
     );
 
@@ -381,6 +383,7 @@ CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
       location: offer.job.city.isEmpty ? null : offer.job.city,
       region: offer.job.region.isEmpty ? null : offer.job.region,
       guestsAmount: offer.job.guestsAmount > 0 ? offer.job.guestsAmount : null,
+      budgetDisplay: offer.job.budgetDisplay == 'Ikke angivet' ? null : offer.job.budgetDisplay,
       jobId: offer.isExtJob ? null : offer.jobId,
       extJobId: offer.isExtJob ? offer.extJobId : null,
     );

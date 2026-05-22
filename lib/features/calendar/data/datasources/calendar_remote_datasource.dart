@@ -10,7 +10,7 @@ class CalendarRemoteDatasource {
     return _client
         .from('Quotes')
         .select(
-            'id, job:Jobs(id, event_type, date, time_start, time_end, city, region, guests_amount)')
+            'id, job:Jobs(id, event_type, date, time_start, time_end, city, region, guests_amount, budget_start, budget_end)')
         .eq('dj_id', userId)
         .eq('status', 'won');
   }
@@ -20,7 +20,7 @@ class CalendarRemoteDatasource {
       String userId) async {
     return _client
         .from('ExtJobs')
-        .select('id, event_type, date, start_time, end_time, location, region, guests_amount')
+        .select('id, event_type, date, start_time, end_time, location, region, guests_amount, budget_target')
         .eq('assigned_dj_id', userId)
         .inFilter('status', ['closed', 'customer_contacted', 'ready_for_billing']);
   }
@@ -31,7 +31,7 @@ class CalendarRemoteDatasource {
     return _client
         .from('ServiceOffers')
         .select(
-            'id, job:Jobs!ServiceOffers_job_id_fkey(id, event_type, date, time_start, time_end, city, region, guests_amount)')
+            'id, job:Jobs!ServiceOffers_job_id_fkey(id, event_type, date, time_start, time_end, city, region, guests_amount, budget_start, budget_end)')
         .eq('musician_id', userId)
         .eq('status', 'won')
         .not('job_id', 'is', null);
@@ -43,7 +43,7 @@ class CalendarRemoteDatasource {
     return _client
         .from('ServiceOffers')
         .select(
-            'id, ext_job:ExtJobs!ServiceOffers_ext_job_id_fkey(id, event_type, date, start_time, end_time, location, region, guests_amount)')
+            'id, ext_job:ExtJobs!ServiceOffers_ext_job_id_fkey(id, event_type, date, start_time, end_time, location, region, guests_amount, budget_target)')
         .eq('musician_id', userId)
         .eq('status', 'won')
         .not('ext_job_id', 'is', null);

@@ -36,6 +36,7 @@ class JobModel {
     this.hasActiveOffer = false,
     this.saxType,
     this.musicianSpecialRequest,
+    this.songRequestToken,
   });
 
   final int id;
@@ -72,6 +73,7 @@ class JobModel {
   final bool hasActiveOffer;
   final String? saxType;
   final String? musicianSpecialRequest;
+  final String? songRequestToken;
 
   factory JobModel.fromJson(Map<String, dynamic> json) {
     return JobModel(
@@ -107,6 +109,7 @@ class JobModel {
       hasActiveOffer: json['has_active_offer'] as bool? ?? false,
       saxType: json['sax_type'] as String?,
       musicianSpecialRequest: json['musician_special_request'] as String?,
+      songRequestToken: json['song_request_token'] as String?,
     );
   }
 
@@ -156,6 +159,7 @@ class JobModel {
       hasActiveOffer: hasActiveOffer,
       saxType: saxType,
       musicianSpecialRequest: musicianSpecialRequest,
+      songRequestToken: songRequestToken,
     );
   }
 }

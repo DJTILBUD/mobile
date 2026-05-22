@@ -26,15 +26,6 @@ class ExtJobDetailScreen extends ConsumerStatefulWidget {
 
 class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
   DSColors get _c => DSTheme.of(context);
-  late ExtJobStatus _status;
-  late DateTime? _djReadyConfirmedAt;
-
-  @override
-  void initState() {
-    super.initState();
-    _status = widget.extJob.status;
-    _djReadyConfirmedAt = widget.extJob.djReadyConfirmedAt;
-  }
 
   String _toastError(AppException? err) {
     if (err == null) return 'Noget gik galt. Prøv igen.';
@@ -75,7 +66,6 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
                 .read(markExtJobContactedProvider.notifier)
                 .markContacted(widget.extJob.id);
             if (mounted && success) {
-              setState(() => _status = ExtJobStatus.customerContacted);
               DSToast.show(context,
                   variant: DSToastVariant.success,
                   title: 'Kunden er markeret som kontaktet');
@@ -135,7 +125,6 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
         .markReady(widget.extJob.id);
     if (!mounted) return;
     if (success) {
-      setState(() => _status = ExtJobStatus.readyForBilling);
       DSToast.show(context,
           variant: DSToastVariant.success,
           title: 'Aftale lukket — faktura sendt til kunden');
@@ -152,7 +141,6 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
         .confirm(widget.extJob.id);
     if (!mounted) return;
     if (success) {
-      setState(() => _djReadyConfirmedAt = DateTime.now());
       DSToast.show(context,
           variant: DSToastVariant.success,
           title: 'Bekræftet! God fornøjelse med jobbet 🎵');
@@ -166,14 +154,21 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
   @override
   Widget build(BuildContext context) {
       final _c = DSTheme.of(context);
-    final extJob = widget.extJob;
+    // Source of truth: latest ExtJob row from the provider. Falling back to
+    // widget.extJob handles the brief window before djExtJobsProvider has
+    // loaded, plus non-DJ callers (musicians) where the row isn't in this list.
+    final extJob = ref.watch(djExtJobsProvider).valueOrNull?.firstWhere(
+              (e) => e.id == widget.extJob.id,
+              orElse: () => widget.extJob,
+            ) ??
+        widget.extJob;
     final billingLoading =
         ref.watch(markExtJobReadyForBillingProvider) is AsyncLoading;
     final readyLoading = ref.watch(confirmExtJobDjReadyProvider) is AsyncLoading;
-    final isContacted = _status == ExtJobStatus.customerContacted ||
-        _status == ExtJobStatus.readyForBilling;
-    final isReadyForBilling = _status == ExtJobStatus.readyForBilling;
-    final isConfirmedReady = _djReadyConfirmedAt != null;
+    final isContacted = extJob.status == ExtJobStatus.customerContacted ||
+        extJob.status == ExtJobStatus.readyForBilling;
+    final isReadyForBilling = extJob.status == ExtJobStatus.readyForBilling;
+    final isConfirmedReady = extJob.djReadyConfirmedAt != null;
     final canConfirmReady = _isWithin5Days(extJob.date);
 
     int completedSteps = 0;

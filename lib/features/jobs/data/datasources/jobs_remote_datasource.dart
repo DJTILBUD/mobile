@@ -581,6 +581,15 @@ class JobsRemoteDatasource {
         .order('created_at', ascending: false);
   }
 
+  /// Fetches song requests submitted by guests for a job (DJ view).
+  Future<List<Map<String, dynamic>>> fetchSongRequestsForJob(int jobId) async {
+    return _client
+        .from('SongRequests')
+        .select('id, job_id, guest_email, song_1, song_2, song_3, created_at')
+        .eq('job_id', jobId)
+        .order('created_at', ascending: false);
+  }
+
   /// Fetches the won DJ quote (with DJ contact info) for an internal job.
   /// Used by musicians to see who the DJ is on a job they won.
   Future<Map<String, dynamic>?> fetchWonDjInfoForJob(int jobId) async {

@@ -35,6 +35,7 @@ class Job {
     this.hasDateConflict = false,
     this.saxType,
     this.musicianSpecialRequest,
+    this.songRequestToken,
   });
 
   final int id;
@@ -82,6 +83,8 @@ class Job {
   final String? saxType;
   /// Free-text special request from the customer directed at the musician.
   final String? musicianSpecialRequest;
+  /// UUID token used to generate the public song-request link for guests.
+  final String? songRequestToken;
 
   Job withDateConflict() => Job(
         id: id,
@@ -119,6 +122,7 @@ class Job {
         hasDateConflict: true,
         saxType: saxType,
         musicianSpecialRequest: musicianSpecialRequest,
+        songRequestToken: songRequestToken,
       );
 
   static String _fmtNum(double v) {

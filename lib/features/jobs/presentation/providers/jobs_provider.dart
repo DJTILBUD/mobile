@@ -8,6 +8,7 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/dj_job_filters.da
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/song_request.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/repositories/jobs_repository.dart';
@@ -660,8 +661,12 @@ class MarkJobContactedNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
+// Not autoDispose: these mutation notifiers are read via `ref.read(.notifier)`
+// from inside a modal bottom sheet, so nothing watches them. Under autoDispose
+// the notifier is disposed before the async work completes, which then crashes
+// when it tries to set `state` or invalidate dependent providers.
 final markJobContactedProvider =
-    StateNotifierProvider.autoDispose<MarkJobContactedNotifier, AsyncValue<void>>(
+    StateNotifierProvider<MarkJobContactedNotifier, AsyncValue<void>>(
   (ref) => MarkJobContactedNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
@@ -687,7 +692,7 @@ class MarkExtJobContactedNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final markExtJobContactedProvider =
-    StateNotifierProvider.autoDispose<MarkExtJobContactedNotifier, AsyncValue<void>>(
+    StateNotifierProvider<MarkExtJobContactedNotifier, AsyncValue<void>>(
   (ref) =>
       MarkExtJobContactedNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
@@ -713,7 +718,7 @@ class MarkServiceOfferContactedNotifier extends StateNotifier<AsyncValue<void>> 
   }
 }
 
-final markServiceOfferContactedProvider = StateNotifierProvider.autoDispose<
+final markServiceOfferContactedProvider = StateNotifierProvider<
     MarkServiceOfferContactedNotifier, AsyncValue<void>>(
   (ref) => MarkServiceOfferContactedNotifier(
       ref.watch(jobsRepositoryProvider), ref),
@@ -744,7 +749,7 @@ class SetJobPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final setJobPlannedContactProvider =
-    StateNotifierProvider.autoDispose<SetJobPlannedContactNotifier, AsyncValue<void>>(
+    StateNotifierProvider<SetJobPlannedContactNotifier, AsyncValue<void>>(
   (ref) => SetJobPlannedContactNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
@@ -770,7 +775,7 @@ class SetExtJobPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final setExtJobPlannedContactProvider =
-    StateNotifierProvider.autoDispose<SetExtJobPlannedContactNotifier, AsyncValue<void>>(
+    StateNotifierProvider<SetExtJobPlannedContactNotifier, AsyncValue<void>>(
   (ref) =>
       SetExtJobPlannedContactNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
@@ -797,7 +802,7 @@ class SetServiceOfferPlannedContactNotifier extends StateNotifier<AsyncValue<voi
 }
 
 final setServiceOfferPlannedContactProvider =
-    StateNotifierProvider.autoDispose<SetServiceOfferPlannedContactNotifier, AsyncValue<void>>(
+    StateNotifierProvider<SetServiceOfferPlannedContactNotifier, AsyncValue<void>>(
   (ref) => SetServiceOfferPlannedContactNotifier(
       ref.watch(jobsRepositoryProvider), ref),
 );
@@ -1100,6 +1105,13 @@ final dateConflictProvider =
 final serviceOffersForJobProvider =
     FutureProvider.autoDispose.family<List<ServiceOffer>, int>((ref, jobId) {
   return ref.watch(jobsRepositoryProvider).fetchServiceOffersForJob(jobId);
+});
+
+// ─── Song requests for a job (DJ view) ───────────────────────────────────────
+
+final songRequestsForJobProvider =
+    FutureProvider.autoDispose.family<List<SongRequest>, int>((ref, jobId) {
+  return ref.watch(jobsRepositoryProvider).fetchSongRequestsForJob(jobId);
 });
 
 // ─── Won DJ info for a job (Musician view) ───────────────────────────────────

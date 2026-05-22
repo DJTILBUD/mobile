@@ -2,6 +2,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/song_request.dart';
 
 abstract class JobsRepository {
   /// Fetches all open jobs for a DJ (not filtered by region — only job filters apply).
@@ -111,6 +112,9 @@ abstract class JobsRepository {
 
   /// Fetches service offers for a given internal job (for DJ view).
   Future<List<ServiceOffer>> fetchServiceOffersForJob(int jobId);
+
+  /// Fetches song requests submitted by guests for a given job.
+  Future<List<SongRequest>> fetchSongRequestsForJob(int jobId);
 
   /// Fetches the won DJ's name, phone, and user ID for an internal job (for musician view).
   /// Returns null if no won quote exists yet.
