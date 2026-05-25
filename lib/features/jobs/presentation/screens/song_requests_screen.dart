@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/song_request.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
@@ -11,12 +10,12 @@ import 'package:lucide_icons/lucide_icons.dart';
 class SongRequestsScreen extends ConsumerStatefulWidget {
   const SongRequestsScreen({
     super.key,
-    required this.jobId,
-    required this.songRequestToken,
-  });
+    this.jobId,
+    this.extJobId,
+  }) : assert(jobId != null || extJobId != null, 'jobId or extJobId required');
 
-  final int jobId;
-  final String? songRequestToken;
+  final int? jobId;
+  final int? extJobId;
 
   @override
   ConsumerState<SongRequestsScreen> createState() => _SongRequestsScreenState();
@@ -26,13 +25,22 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
   DSColors get _c => DSTheme.of(context);
   Timer? _pollTimer;
 
+  bool get _isExtJob => widget.extJobId != null;
+
   @override
   void initState() {
     super.initState();
-    // Poll every 30 s so new requests appear without manual refresh.
     _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      ref.invalidate(songRequestsForJobProvider(widget.jobId));
+      _invalidate();
     });
+  }
+
+  void _invalidate() {
+    if (_isExtJob) {
+      ref.invalidate(songRequestsForExtJobProvider(widget.extJobId!));
+    } else {
+      ref.invalidate(songRequestsForJobProvider(widget.jobId!));
+    }
   }
 
   @override
@@ -41,67 +49,11 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
     super.dispose();
   }
 
-  void _showQrDialog() {
-    final token = widget.songRequestToken;
-    if (token == null) return;
-    const publicBaseUrl = 'https://app.djtilbud.dk';
-    final url = '$publicBaseUrl/song-request/$token';
-
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: _c.bg.surface,
-        title: Text(
-          'QR-kode til sangønsker',
-          style: DSTextStyle.headingSm.copyWith(color: _c.text.primary),
-        ),
-        content: SizedBox(
-          width: 280,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(DSSpacing.s3),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(DSRadius.md),
-                ),
-                child: SizedBox(
-                  width: 220,
-                  height: 220,
-                  child: QrImageView(
-                    data: url,
-                    version: QrVersions.auto,
-                    size: 220,
-                    backgroundColor: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: DSSpacing.s3),
-              Text(
-                'Gæsterne scanner koden og sender deres ønsker direkte til dig.',
-                textAlign: TextAlign.center,
-                style: DSTextStyle.bodyMd
-                    .copyWith(color: _c.text.secondary, height: 1.4),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          DSButton(
-            label: 'Luk',
-            variant: DSButtonVariant.ghost,
-            size: DSButtonSize.sm,
-            onTap: () => Navigator.of(ctx).pop(),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final requestsAsync = ref.watch(songRequestsForJobProvider(widget.jobId));
+    final requestsAsync = _isExtJob
+        ? ref.watch(songRequestsForExtJobProvider(widget.extJobId!))
+        : ref.watch(songRequestsForJobProvider(widget.jobId!));
 
     return Scaffold(
       backgroundColor: _c.bg.canvas,
@@ -110,17 +62,10 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
         actions: [
-          if (widget.songRequestToken != null)
-            IconButton(
-              icon: const Icon(LucideIcons.qrCode),
-              tooltip: 'Vis QR-kode',
-              onPressed: _showQrDialog,
-            ),
           IconButton(
             icon: const Icon(LucideIcons.refreshCw),
             tooltip: 'Opdater',
-            onPressed: () =>
-                ref.invalidate(songRequestsForJobProvider(widget.jobId)),
+            onPressed: _invalidate,
           ),
         ],
       ),
@@ -143,8 +88,7 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
               DSButton(
                 label: 'Prøv igen',
                 variant: DSButtonVariant.secondary,
-                onTap: () =>
-                    ref.invalidate(songRequestsForJobProvider(widget.jobId)),
+                onTap: _invalidate,
               ),
             ],
           ),
@@ -163,20 +107,12 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
                   ),
                   const SizedBox(height: DSSpacing.s2),
                   Text(
-                    'Gæsterne kan sende ønsker ved at scanne QR-koden.',
+                    'Gæsterne kan sende ønsker ved at scanne din QR-kode '
+                    '(find den under Profil).',
                     textAlign: TextAlign.center,
                     style: DSTextStyle.bodyMd
                         .copyWith(color: _c.text.muted, height: 1.4),
                   ),
-                  if (widget.songRequestToken != null) ...[
-                    const SizedBox(height: DSSpacing.s4),
-                    DSButton(
-                      label: 'Vis QR-kode',
-                      variant: DSButtonVariant.secondary,
-                      iconLeft: LucideIcons.qrCode,
-                      onTap: _showQrDialog,
-                    ),
-                  ],
                 ],
               ),
             );

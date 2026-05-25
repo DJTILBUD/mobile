@@ -13,6 +13,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/screens/song_requests_screen.dart';
 
 class ExtJobDetailScreen extends ConsumerStatefulWidget {
   const ExtJobDetailScreen({super.key, required this.extJob});
@@ -310,6 +311,10 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
 
           // ── Chat with instrumentalist ────────────────────────────────────
           ConversationCard(extJobId: extJob.id),
+          const SizedBox(height: DSSpacing.s4),
+
+          // ── Song requests ─────────────────────────────────────────────────
+          _ExtJobSongRequestsRow(extJob: extJob),
           const SizedBox(height: DSSpacing.s4),
 
           // ── Invoice badge ────────────────────────────────────────────────
@@ -639,6 +644,68 @@ class _ContactRow extends StatelessWidget {
               size: DSButtonSize.sm,
               onTap: onCopy),
       ],
+    );
+  }
+}
+
+// ─── Song Requests Row ────────────────────────────────────────────────────────
+
+class _ExtJobSongRequestsRow extends ConsumerWidget {
+  const _ExtJobSongRequestsRow({required this.extJob});
+  final ExtJob extJob;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = DSTheme.of(context);
+    final requestsAsync =
+        ref.watch(songRequestsForExtJobProvider(extJob.id));
+
+    final countLabel = requestsAsync.when(
+      loading: () => '…',
+      error: (_, __) => '—',
+      data: (list) => '${list.length}',
+    );
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SongRequestsScreen(
+            extJobId: extJob.id,
+          ),
+        ),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+            horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
+        decoration: BoxDecoration(
+          color: c.bg.surface,
+          borderRadius: BorderRadius.circular(DSRadius.md),
+          border: Border.all(color: c.border.subtle),
+          boxShadow: DSShadow.sm,
+        ),
+        child: Row(
+          children: [
+            Icon(LucideIcons.music, size: 18, color: c.brand.primaryActive),
+            const SizedBox(width: DSSpacing.s3),
+            Expanded(
+              child: Text(
+                'Sangønsker',
+                style: DSTextStyle.labelLg.copyWith(
+                  color: c.text.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              countLabel,
+              style: DSTextStyle.labelMd.copyWith(color: c.text.muted),
+            ),
+            const SizedBox(width: DSSpacing.s2),
+            Icon(LucideIcons.chevronRight, size: 16, color: c.text.muted),
+          ],
+        ),
+      ),
     );
   }
 }

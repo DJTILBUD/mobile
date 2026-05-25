@@ -1890,8 +1890,6 @@ class _SongRequestsRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = DSTheme.of(context);
     final requestsAsync = ref.watch(songRequestsForJobProvider(quote.jobId));
-    final jobAsync = ref.watch(jobDetailProvider(quote.jobId));
-    final token = jobAsync.valueOrNull?.songRequestToken;
 
     final countLabel = requestsAsync.when(
       loading: () => '…',
@@ -1904,7 +1902,6 @@ class _SongRequestsRow extends ConsumerWidget {
         MaterialPageRoute<void>(
           builder: (_) => SongRequestsScreen(
             jobId: quote.jobId,
-            songRequestToken: token,
           ),
         ),
       ),

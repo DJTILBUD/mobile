@@ -14,6 +14,7 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/widgets/song_request_qr_dialog.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -238,6 +239,23 @@ class ProfileScreen extends ConsumerWidget {
                 final id = ref.read(djProfileProvider).valueOrNull?.id;
                 if (id != null) {
                   context.pushNamed(AppRoutes.djJobFilters, extra: id);
+                }
+              },
+            ),
+          if (role == MusicianRole.dj)
+            _MenuItem(
+              icon: LucideIcons.qrCode,
+              label: 'QR-kode til sangønsker',
+              onTap: () {
+                final token = ref.read(djProfileProvider).valueOrNull?.songRequestToken;
+                if (token != null) {
+                  showSongRequestQrDialog(context, token);
+                } else {
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.error,
+                    title: 'QR-koden er ikke klar endnu. Prøv igen om lidt.',
+                  );
                 }
               },
             ),

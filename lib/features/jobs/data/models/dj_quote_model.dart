@@ -35,6 +35,12 @@ class DjQuoteModel {
   final String? djNotes;
 
   factory DjQuoteModel.fromJson(Map<String, dynamic> json) {
+    // The job is present when fetched with a `*, job:Jobs(*)` join (e.g. the
+    // quotes list), but absent when created via POST /api/jobs/{id}/quotes,
+    // which returns the bare quote row. Fall back to a placeholder in that case
+    // — the created quote's `job` is never read by the UI (the form uses its own
+    // `widget.job` and the list is re-fetched with the join afterwards).
+    final jobJson = json['job'] as Map<String, dynamic>?;
     return DjQuoteModel(
       id: (json['id'] as num).toInt(),
       jobId: (json['job_id'] as num).toInt(),
@@ -43,7 +49,7 @@ class DjQuoteModel {
       equipmentDescription: json['equipment_description'] as String? ?? '',
       status: json['status'] as String,
       createdAt: json['created_at'] as String,
-      job: JobModel.fromJson(json['job'] as Map<String, dynamic>),
+      job: jobJson != null ? JobModel.fromJson(jobJson) : _emptyJobModel(),
       earlySetupStatus: json['early_setup_status'] as String?,
       earlySetupPrice: (json['early_setup_price'] as num?)?.toInt(),
       djReadyConfirmedAt: json['dj_ready_confirmed_at'] != null
@@ -71,6 +77,24 @@ class DjQuoteModel {
       extraHours: extraHours,
       extraHoursPricePerHour: extraHoursPricePerHour,
       djNotes: djNotes,
+    );
+  }
+
+  /// Placeholder job used when a quote is parsed without its `job` join
+  /// (e.g. the bare row returned by POST /api/jobs/{id}/quotes). Mirrors
+  /// ServiceOfferModel._emptyJobModel().
+  static JobModel _emptyJobModel() {
+    return JobModel(
+      id: 0,
+      eventType: 'Arrangement',
+      date: DateTime.now().toIso8601String().substring(0, 10),
+      timeStart: '00:00',
+      timeEnd: '00:00',
+      city: '',
+      region: '',
+      guestsAmount: 0,
+      status: 'open',
+      createdAt: DateTime.now().toIso8601String(),
     );
   }
 }

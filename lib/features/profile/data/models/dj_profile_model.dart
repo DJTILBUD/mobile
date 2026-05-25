@@ -18,6 +18,7 @@ class DjProfileModel {
     this.venuesAndEvents,
     this.excludedEventTypes = const [],
     this.onboardingCompletedAt,
+    this.songRequestToken,
   });
 
   final String id;
@@ -36,6 +37,7 @@ class DjProfileModel {
   final List<String>? venuesAndEvents;
   final List<String> excludedEventTypes;
   final DateTime? onboardingCompletedAt;
+  final String? songRequestToken;
 
   factory DjProfileModel.fromJson(Map<String, dynamic> json) {
     return DjProfileModel(
@@ -57,6 +59,7 @@ class DjProfileModel {
       onboardingCompletedAt: json['onboarding_completed_at'] != null
           ? DateTime.tryParse(json['onboarding_completed_at'] as String)
           : null,
+      songRequestToken: json['song_request_token'] as String?,
     );
   }
 
@@ -95,6 +98,7 @@ class DjProfileModel {
       venuesAndEvents: venuesAndEvents,
       excludedEventTypes: excludedEventTypes,
       onboardingCompletedAt: onboardingCompletedAt,
+      songRequestToken: songRequestToken,
     );
   }
 }

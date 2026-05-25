@@ -1,0 +1,129 @@
+Overall outcome distribution for terminated jobs in the last year
+
+| outcome   | n   | pct  |
+| --------- | --- | ---- |
+| expired   | 684 | 40.7 |
+| won       | 525 | 31.2 |
+| cancelled | 473 | 28.1 |
+
+
+Quarterly closing rate over time
+
+| quarter    | won | expired | cancelled | total_terminated | closing_rate_pct | no_hire_rate_pct |
+| ---------- | --- | ------- | --------- | ---------------- | ---------------- | ---------------- |
+| 2024-04-01 | 3   | 40      | 0         | 43               | 7.0              | 93.0             |
+| 2024-07-01 | 4   | 67      | 1         | 72               | 5.6              | 94.4             |
+| 2024-10-01 | 8   | 38      | 1         | 47               | 17.0             | 83.0             |
+| 2025-01-01 | 53  | 71      | 0         | 124              | 42.7             | 57.3             |
+| 2025-04-01 | 70  | 103     | 0         | 173              | 40.5             | 59.5             |
+| 2025-07-01 | 86  | 220     | 8         | 314              | 27.4             | 72.6             |
+| 2025-10-01 | 82  | 190     | 20        | 292              | 28.1             | 71.9             |
+| 2026-01-01 | 204 | 141     | 262       | 607              | 33.6             | 66.4             |
+| 2026-04-01 | 115 | 82      | 183       | 380              | 30.3             | 69.7             |
+
+
+Quotes pr. Job
+
+| quotes pr. job | jobs | pct_of_jobs |
+| ----------------- | ---- | ----------- |
+| 0                 | 135  | 8.0         |
+| 1                 | 459  | 27.3        |
+| 2                 | 311  | 18.5        |
+| 3                 | 722  | 42.9        |
+| 4                 | 46   | 2.7         |
+| 5                 | 7    | 0.4         |
+| 6                 | 2    | 0.1         |
+
+
+DJ pitches in Quotes
+
+| bucket             | n    | avg_chars | pct  |
+| ------------------ | ---- | --------- | ---- |
+| 01 up to 5 words   | 79   | 31        | 2.2  |
+| 02 6 to 10 words   | 1    | 40        | 0.0  |
+| 03 11 to 25 words  | 82   | 125       | 2.3  |
+| 04 26 to 50 words  | 234  | 241       | 6.6  |
+| 05 51 to 100 words | 3129 | 411       | 88.6 |
+| 06 over 100 words  | 6    | 624       | 0.2  |
+
+
+ WIN RATE BY PITCH LENGTH (DJ)
+
+| pitch_length_bucket | won | decided | win_rate_pct |
+| ------------------- | --- | ------- | ------------ |
+| 01 up to 10 words   | 37  | 80      | 46.3         |
+| 02 11 to 25 words   | 37  | 81      | 45.7         |
+| 03 26 to 50 words   | 24  | 222     | 10.8         |
+| 04 51 to 100 words  | 433 | 3032    | 14.3         |
+| 05 over 100 words   | 1   | 5       | 20.0         |
+
+ WIN RATE BY PITCH LENGTH (Saxophone)
+
+| pitch_length_bucket | won | decided | win_rate_pct |
+| ------------------- | --- | ------- | ------------ |
+| 02 11 to 25 words   | 6   | 12      | 50.0         |
+| 03 26 to 50 words   | 14  | 51      | 27.5         |
+| 04 51 to 100 words  | 5   | 31      | 16.1         |
+| 05 over 100 words   | 13  | 27      | 48.1         |
+
+
+-- B.8  WIN RATE BY PROFILE COMPLETENESS (DJs)
+-- Thesis claim: "Photos, videos, reviews, and a biography are what turn
+-- an unknown name into someone worth hiring"
+--
+-- Score components (0 to 4) match the four trust signals the thesis names:
+--   1. Biography of meaningful length (about_you at least 300 characters)
+--   2. At least one profile photo (UserFiles type = profile)
+--   3. At least one video (UserFiles type = profile_video or common_video)
+--   4. At least five reviews
+| completeness_score | decided | won | win_rate_pct |
+| ------------------ | ------- | --- | ------------ |
+| 0                  | 3       | 2   | 66.7         |
+| 2                  | 190     | 44  | 23.2         |
+| 3                  | 859     | 118 | 13.7         |
+| 4                  | 2094    | 351 | 16.8         |
+
+
+| pitch_normalized                                                                                                                                                                                                                                                                                                                                                                                                                                                   | times_used | distinct_djs |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | ------------ |
+| hej. det vil være en ære at få lov til at komme og spille for jer og være med til at skabe en fest i sent glemmer. jeg knap 20 års erfaring og en alder på 40 år, jeg har en meget alsidig spillestil og gør meget ud af at afstemme musikstil inden jeg kommer og spiller. jeg har spillet fast for old irish pub igennem de sidste 10 år, hvor en meget bred klientel besøger beværtningen og derfor vil jeg mene at jeg har de rette kompetencer til jer :)     | 102        | 1            |
+| jeg vil med glæde sørge for et fyldt dansegulv! jeg har erfaring med at skabe den rette stemning for blandede aldersgrupper og tager gerne imod ønsker. jeg medbringer alt nødvendigt udstyr, så i ikke skal tænke på det. prisen afspejler min erfaring, professionelt udstyr og sikrer en musikalsk oplevelse af høj kvalitet, der matcher jeres ønsker og forventninger, så vi skaber en uforglemmelig fest med energi og gode minder.                          | 99         | 1            |
+| det lyder som en fantastisk fest, og jeg vil med glæde være en del af den! som erfaren dj skaber jeg en unik stemning, hvor alle aldre føler sig inkluderet. jeg læser dansegulvet, tager imod ønsker og sørger for den rette vibe hele aftenen. prisen afspejler min erfaring, professionelt udstyr og sikrer en musikalsk oplevelse af høj kvalitet, der matcher jeres ønsker og forventninger, så vi skaber en uforglemmelig fest med energi og gode minder.    | 95         | 1            |
+| 🎉💍 kæmpe tillykke med brylluppet! 💍🎉 når i vælger mig som dj til jeres bryllup, lover jeg ømme fødder og hæse stemmer – på den allerbedste måde! min energi er smittende, og jeg elsker at få enhver fest til at sprudle med glæde og dans. med masser af erfaring skaber vi sammen en uforglemmelig dag fyldt med kærlighed og fantastisk feststemning! 🥳 lad os løfte taget og skabe minder for livet! klar til at fylde natten med kærlighed og glæde?     | 92         | 1            |
+| hej. det vil være en ære at få lov til at komme og spille for jer og være med til at skabe en fest i sent glemmer. jeg knap 20 års erfaring og en alder på 40 år, jeg har en meget alsidig spillestil og gør meget ud af at afstemme musikstil inden jeg kommer og spiller. jeg har spillet for rekom (proud mary) igennem de sidste 20 år, hvor en meget bred klientel besøger beværtningerne og derfor vil jeg mene at jeg har de rette kompetencer til jer :)   | 82         | 1            |
+| tillykke med jeres kommende bryllup. jeg har mere end 15års erfaring jeg er rigtig god til at læse publikum. jeg tager rigtig gerne ønsker på aftenen, jeg går meget op i at forbedre mig sammen med kunden så der ikke opstår nogle overraskelser. jeg ser det som et tæt samarbejde at sikre en god fest. det er ikke en aften der kommer igen. jeg har rigtig meget erfaring med bryllupper og jeg kan garantere at i får et brag af en fest med mig ved pulten | 74         | 1            |
+| hej med jer dj med stor erfaring fra ind og udland. jeg spiller alle typer arrangementer, club, koncerter, festival, bryllupper og med mange kendte artister. er selv super dygtig til at læse gulvet og ved hvad folk vil høre og danse til. håber og høre fra jer? mvh. chris                                                                                                                                                                                    | 67         | 1            |
+| mit navn er dj huso, og vil gerne hjælpe. vælger i mig som dj, er i, i trykke rammer, da jeg har spillet til alle slags arrangementer. alt fra intime fødselsdage og bryllupper, til festival for 40.000 mennesker. er selv 30 år, og ved præcist hvad i søger. er også frisk på at forlænge, hvis dette skulle opstå. ser frem til at høre fra jer! :-)                                                                                                           | 58         | 1            |
+| hej med jer og tillykke! musikken fra 8o-9o'erne er jeg 1oo meter mester i + sing a-long, de der tracks man ikke kan lade være med at danse til. selvfølgelig er jeg med på beatet, og har alt nyt da jeg også spiller i holstebro natteliv! jeg modtager ønsker men kun hvis folk danser til dem, dette er en god måde at fylde dansegulvet på. selvfølgelig er der forskel når man er vært og værtinde 😉 jeg håber vi ses til en uforglemmelig fest!            | 57         | 1            |
+| hej med jer, jeg vil super gerne spille til jeres arrangement og jeg glæder mig meget til at snakke med jer om flere detaljer                                                                                                                                                                                                                                                                                                                                      | 51         | 20           |
+| hej. det vil være en ære at få lov til at komme og spille for jer og være med til at skabe en fest i sent glemmer. jeg knap 20 års erfaring og en alder på 40 år, jeg har en meget alsidig spillestil og gør meget ud af at afstemme musikstil inden jeg kommer og spiller. jeg har spillet for rekom igennem de sidste 20 år, hvor en meget bred klientel besøger beværtningerne og derfor vil jeg mene at jeg har de rette kompetencer til jer :)                | 47         | 1            |
+| vi skaber festen sammen med jer. vi har allerede spillet til mere end 20 bryllupper, hver med sin helt egen stemning og musikstil så vi ved, hvordan man får dansegulvet fyldt. hos os kan i ønske lige præcis den musik, i elsker. vi gør vores bedste for at opfylde jeres ønsker så festen føles helt som jeres egen. hvis i ikke har særlige musikønsker, kan i trygt overlade det til os da vores erfaring sikrer, at festen alligevel kører for fuld musik   | 46         | 1            |
+| jeg har 15 års erfaring med at være dj og er 37 år. 🎶🎉 jeg er sikker på at jeg kan give det musik i ønsker og er kreativ til at få en stemning for jer og jeres gæster. jeg har musik fra 70’erne og op til nutiden musik både internationalt og danske numre. jeg ser frem til at kontakte jer. ☺️🥳 mvh dj joey k                                                                                                                                              | 46         | 1            |
+| hej! og stort tillykke med det kommende brylluppet! jeg vil elske at spille til jeres bryllup og skabe en fest, i og jeres gæster sent vil glemme. jeg har en masse erfaring fra andre bryllupper, private fester og klubjobs, og med dette vil jeg sørge for musik, der passer rigtig godt til jeres venner og familie. jeg medbringer alt udstyr og garanterer der kommer gang i dansegulvet med det musik i og jeres gæster gerne vil høre!                     | 39         | 1            |
+| jeg er en erfaren og alsidig dj. jeg spiller både privat fester og natklubjobs i hele landet, får altid gode anmeldelser og bliver ofte genbooket. jeg har spillet til et utal af bryllupsfester og har helt styr på alt fra kyssesange til brudevals. med mere end 30 år bag pulten i danmark, norge og tyskland., kan jeg med garanti også levere en uforglemmelig aften til jer.                                                                                | 39         | 1            |
+| jeg er nu i gang med at lukke de sidste bookinger for 2026 og har allerede en fyldt kalender. med mange års erfaring og over 100 årlige jobs kan i være sikre på en fest i topklasse. mit fokus er at skabe den perfekte stemning og sikre, at dansegulvet altid er fyldt. jeg brænder for at levere musik, der løfter stemningen og giver jer en uforglemmelig aften. jeg har spillet et utallige bryllupper, som gør, jeg kan sikre en god fest for jer.         | 34         | 1            |
+| det lyder som en fantastisk fest, og jeg vil med glæde være en del af jeres store dag! jeg har stor erfaring som bryllups-dj og fokuserer på at skabe en fest, hvor alle aldre føler sig inkluderet. jeg læser dansegulvet, tager imod ønsker og sikrer, at traditionerne bliver fulgt. prisen er lidt højere, da den afspejler min erfaring, mit udstyr og sikrer en oplevelse af høj kvalitet, der matcher jeres forventninger og stemning.                      | 32         | 1            |
+| hej. jeg kan tilbyde et passende setup af lyd og lys som passer til lokalet. jeg har mange bryllupper i bagagen med en blandet musikstil og med et meget bredt bagkatalog. i bestemmer desuden også hvor meget indflydelse i ønsker på playlisten, der er jeg meget fleksibel. jeg tager også gerne glædeligt imod musikønsker på aftenen. mvh dennis                                                                                                              | 31         | 1            |
+| hej brudepar! 🥂 jeg er deck skipper – og i over 8 år har jeg haft æren af at sætte gang i dansegulvet til en masse fantastiske bryllupper. jeg elsker at skabe den helt rigtige stemning, hvor både bedstemor og brudepigerne danser side om side til jeres yndlingshits 💃🕺 jeg er sikker på, vi kan skabe en uforglemmelig fest sammen – jeg glæder mig til at høre om jeres planer!                                                                           | 27         | 1            |
+| manually created by marketing team                                                                                                                                                                                                                                                                                                                                                                                                                                 | 23         | 16           |
+| kære kommende brudepar, stort tillykke med kærligheden <3 jeg har stor erfaring med netop bryllupper, og er derfor sikker på jeg igennem vores snakke kan byde ind med ting i måske ikke selv havde tænkt på, så vi sammen kan skabe den helt perfekte fest for jer. det udstyr jeg medbringer fylder ikke det store, men er af meget høj kvalitet. så der vil der være masser af lys & lækker lyd. ved tidlig opstilling stiller jeg uplights i hele lokatet      | 21         | 1            |
+| hej. jeg kan tilbyde et passende setup af lyd og lys som passer til lokalet. jeg har mange arrangementer i bagagen med en blandet musikstil og med et meget bredt bagkatalog. i bestemmer desuden også hvor meget indflydelse i ønsker på playlisten, der er jeg meget fleksibel. jeg tager også gerne glædeligt imod musikønsker på aftenen. mvh dennis                                                                                                           | 21         | 1            |
+| vi har spillet til +10 bryllupper i forskellige genre, så vi er sikre på at kunne få jeres gæster ud på dansegulvet.. hos os kan man ønske musik som vi vil gøre vores bedste for at opfylde og gøre festen mere til jeres. hvis i ikke har nogle musikønsker har vi vores erfaring til at få gang i festen alligevel. i forhold til opsætning og lys kan vi aftale det inden selve festen, så i får den helt rigtig opsætning som passer til jeres ønsker.        | 20         | 1            |
+| jeg er en erfaren og alsidig dj. jeg spiller både privat fester og natklubjobs i hele landet, får altid gode anmeldelser og bliver ofte genbooket. jeg har spillet til et utal af fester og har helt styr på alt fra kim larsen til avicii. med mere end 30 år bag pulten i danmark, norge og tyskland., kan jeg med garanti også levere en uforglemmelig aften til jer.                                                                                           | 19         | 1            |
+| det lyder som en fantastisk fest, og jeg vil med glæde være en del af! jeg har stor erfaring som dj og fokuserer på at skabe en fest, hvor alle aldre føler sig inkluderet. jeg læser dansegulvet, tager imod ønsker. prisen er lidt højere, da den afspejler min erfaring, mit udstyr og sikrer en oplevelse af høj kvalitet, der matcher jeres forventninger og stemning.                                                                                        | 17         | 1            |
+
+
+| dj_tier | profile_tier      | pitch_tier                   | decided | won | win_rate_pct |
+| ------- | ----------------- | ---------------------------- | ------- | --- | ------------ |
+| A       | 2 mid (2)         | 1 short pitch (up to 25 w)   | 37      | 20  | 54.1         |
+| A       | 2 mid (2)         | 2 medium pitch (26 to 100 w) | 6       | 0   | 0.0          |
+| A       | 3 strong (3 to 4) | 1 short pitch (up to 25 w)   | 32      | 19  | 59.4         |
+| A       | 3 strong (3 to 4) | 2 medium pitch (26 to 100 w) | 2343    | 319 | 13.6         |
+| A       | 3 strong (3 to 4) | 3 long pitch (over 100 w)    | 1       | 0   | 0.0          |
+| B       | 1 thin (0 to 1)   | 1 short pitch (up to 25 w)   | 3       | 2   | 66.7         |
+| B       | 2 mid (2)         | 1 short pitch (up to 25 w)   | 2       | 2   | 100.0        |
+| B       | 2 mid (2)         | 2 medium pitch (26 to 100 w) | 143     | 22  | 15.4         |
+| B       | 2 mid (2)         | 3 long pitch (over 100 w)    | 1       | 0   | 0.0          |
+| B       | 3 strong (3 to 4) | 1 short pitch (up to 25 w)   | 70      | 26  | 37.1         |
+| B       | 3 strong (3 to 4) | 2 medium pitch (26 to 100 w) | 504     | 104 | 20.6         |
+| B       | 3 strong (3 to 4) | 3 long pitch (over 100 w)    | 3       | 1   | 33.3         |

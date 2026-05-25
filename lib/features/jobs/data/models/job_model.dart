@@ -37,6 +37,7 @@ class JobModel {
     this.saxType,
     this.musicianSpecialRequest,
     this.songRequestToken,
+    this.postalCode,
   });
 
   final int id;
@@ -74,6 +75,7 @@ class JobModel {
   final String? saxType;
   final String? musicianSpecialRequest;
   final String? songRequestToken;
+  final String? postalCode;
 
   factory JobModel.fromJson(Map<String, dynamic> json) {
     return JobModel(
@@ -110,6 +112,7 @@ class JobModel {
       saxType: json['sax_type'] as String?,
       musicianSpecialRequest: json['musician_special_request'] as String?,
       songRequestToken: json['song_request_token'] as String?,
+      postalCode: json['postal_code'] as String?,
     );
   }
 
@@ -160,6 +163,7 @@ class JobModel {
       saxType: saxType,
       musicianSpecialRequest: musicianSpecialRequest,
       songRequestToken: songRequestToken,
+      postalCode: postalCode,
     );
   }
 }

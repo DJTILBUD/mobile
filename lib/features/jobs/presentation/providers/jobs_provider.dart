@@ -1114,6 +1114,11 @@ final songRequestsForJobProvider =
   return ref.watch(jobsRepositoryProvider).fetchSongRequestsForJob(jobId);
 });
 
+final songRequestsForExtJobProvider =
+    FutureProvider.autoDispose.family<List<SongRequest>, int>((ref, extJobId) {
+  return ref.watch(jobsRepositoryProvider).fetchSongRequestsForExtJob(extJobId);
+});
+
 // ─── Won DJ info for a job (Musician view) ───────────────────────────────────
 
 final wonDjInfoForJobProvider = FutureProvider.autoDispose

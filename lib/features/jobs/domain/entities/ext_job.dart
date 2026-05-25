@@ -27,6 +27,7 @@ class ExtJob {
     this.company,
     this.djReadyConfirmedAt,
     this.customerContactPlannedFor,
+    this.songRequestToken,
   });
 
   final int id;
@@ -56,6 +57,7 @@ class ExtJob {
   final String? company;
   final DateTime? djReadyConfirmedAt;
   final DateTime? customerContactPlannedFor;
+  final String? songRequestToken;
 
   static String _fmtNum(double v) {
     final s = v.toInt().toString();

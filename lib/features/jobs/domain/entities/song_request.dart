@@ -1,7 +1,8 @@
 class SongRequest {
   const SongRequest({
     required this.id,
-    required this.jobId,
+    this.jobId,
+    this.extJobId,
     required this.guestEmail,
     required this.song1,
     this.song2,
@@ -10,7 +11,8 @@ class SongRequest {
   });
 
   final int id;
-  final int jobId;
+  final int? jobId;
+  final int? extJobId;
   final String guestEmail;
   final String song1;
   final String? song2;

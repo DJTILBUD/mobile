@@ -116,6 +116,9 @@ abstract class JobsRepository {
   /// Fetches song requests submitted by guests for a given job.
   Future<List<SongRequest>> fetchSongRequestsForJob(int jobId);
 
+  /// Fetches song requests submitted by guests for a given ext job.
+  Future<List<SongRequest>> fetchSongRequestsForExtJob(int extJobId);
+
   /// Fetches the won DJ's name, phone, and user ID for an internal job (for musician view).
   /// Returns null if no won quote exists yet.
   Future<({String djId, String fullName, String? phone})?> fetchWonDjInfoForJob(int jobId);

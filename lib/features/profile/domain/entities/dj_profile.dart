@@ -16,6 +16,7 @@ class DjProfile {
     this.venuesAndEvents,
     this.excludedEventTypes = const [],
     this.onboardingCompletedAt,
+    this.songRequestToken,
   });
 
   final String id;
@@ -34,4 +35,8 @@ class DjProfile {
   final List<String>? venuesAndEvents;
   final List<String> excludedEventTypes;
   final DateTime? onboardingCompletedAt;
+
+  /// Stable per-DJ token encoded in the song-request QR. The web resolver maps
+  /// it to the DJ's soonest upcoming event at scan time.
+  final String? songRequestToken;
 }

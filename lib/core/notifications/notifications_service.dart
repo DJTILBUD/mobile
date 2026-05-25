@@ -133,6 +133,8 @@ class NotificationsService {
       case 'new_ext_job':
       case 'ext_job_assigned':
         return data['ext_job_id'] as String?;
+      case 'song_request':
+        return (data['ext_job_id'] ?? data['job_id']) as String?;
       case 'quote_won':
       case 'quote_lost':
         return data['quote_id'] as String?;
@@ -286,6 +288,37 @@ class NotificationsService {
             router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
           } else {
             router.go(featuredTab);
+          }
+
+        case 'song_request':
+          // Navigate DJ to the job/ext-job detail so they can tap into song requests.
+          final extJobId = _parseInt(data['ext_job_id']);
+          final songJobId = _parseInt(data['job_id']);
+          if (extJobId != null) {
+            final json = await supabase
+                .from('ExtJobs')
+                .select()
+                .eq('id', extJobId)
+                .single();
+            final extJob = ExtJobModel.fromJson(json).toEntity();
+            router.go('/dj/featured');
+            router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
+          } else if (songJobId != null) {
+            final quoteJson = await supabase
+                .from('Quotes')
+                .select('*, job:Jobs(*)')
+                .eq('job_id', songJobId)
+                .eq('dj_id', userId)
+                .maybeSingle();
+            if (quoteJson != null) {
+              final quote = DjQuoteModel.fromJson(quoteJson).toEntity();
+              router.go('/dj/home');
+              router.pushNamed(AppRoutes.quoteDetail, extra: quote);
+            } else {
+              router.go('/dj/home');
+            }
+          } else {
+            router.go('/dj/home');
           }
 
         case 'custom_notification':

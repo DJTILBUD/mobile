@@ -168,6 +168,8 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<void> markJobCustomerContacted(int jobId) async {
     try {
       await _datasource.markJobCustomerContacted(jobId);
+    } on AppException {
+      rethrow;
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -177,6 +179,8 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<void> setJobPlannedContact(int jobId, String date) async {
     try {
       await _datasource.setJobPlannedContact(jobId, date);
+    } on AppException {
+      rethrow;
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -235,6 +239,8 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<void> markJobReadyForBilling(int jobId) async {
     try {
       await _datasource.markJobReadyForBilling(jobId);
+    } on AppException {
+      rethrow;
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -455,7 +461,25 @@ class JobsRepositoryImpl implements JobsRepository {
       final data = await _datasource.fetchSongRequestsForJob(jobId);
       return data.map((row) => SongRequest(
         id: (row['id'] as num).toInt(),
-        jobId: (row['job_id'] as num).toInt(),
+        jobId: (row['job_id'] as num?)?.toInt(),
+        guestEmail: row['guest_email'] as String,
+        song1: row['song_1'] as String,
+        song2: row['song_2'] as String?,
+        song3: row['song_3'] as String?,
+        createdAt: DateTime.parse(row['created_at'] as String),
+      )).toList();
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<List<SongRequest>> fetchSongRequestsForExtJob(int extJobId) async {
+    try {
+      final data = await _datasource.fetchSongRequestsForExtJob(extJobId);
+      return data.map((row) => SongRequest(
+        id: (row['id'] as num).toInt(),
+        extJobId: (row['ext_job_id'] as num?)?.toInt(),
         guestEmail: row['guest_email'] as String,
         song1: row['song_1'] as String,
         song2: row['song_2'] as String?,

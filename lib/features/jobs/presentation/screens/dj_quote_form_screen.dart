@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
@@ -203,7 +204,16 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       DSToast.show(context, variant: DSToastVariant.success, title: 'Dit bud er afgivet!');
       context.pop();
     } else {
-      DSToast.show(context, variant: DSToastVariant.error, title: 'Kunne ikke afgive bud. Prøv igen.');
+      // Surface the server's reason when it's a meaningful rejection (e.g. tier
+      // quota full, 3 quotes already placed, suppressed DJ) — these are
+      // permanent, so the generic "try again" would be misleading. Note we read
+      // AppException.message directly: DatabaseException.toString() returns a
+      // generic fallback, but .message carries the route's Danish message.
+      final error = ref.read(createDjQuoteProvider).error;
+      final message = error is AppException && error.message.isNotEmpty
+          ? error.message
+          : 'Kunne ikke afgive bud. Prøv igen.';
+      DSToast.show(context, variant: DSToastVariant.error, title: message);
     }
   }
 

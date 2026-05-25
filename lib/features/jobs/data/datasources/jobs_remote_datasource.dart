@@ -310,6 +310,17 @@ class JobsRemoteDatasource {
   }
 
   /// Creates a DJ quote.
+  ///
+  /// Routes through the web API (POST /api/jobs/{jobId}/quotes) rather than
+  /// inserting into Quotes directly. The route is the single source of truth
+  /// for the side-effect of flipping the job to "sent"/"re_sent" once it has
+  /// its 3rd pending quote (and immediately in first_quote_only mode). A direct
+  /// Supabase insert bypasses that transition, leaving jobs stuck in "open".
+  /// Going through the route also applies its suppression / excluded-event-type
+  /// / tier-quota checks consistently with the web app.
+  ///
+  /// The route returns the bare created quote row (no `job` join), so
+  /// [DjQuoteModel.fromJson] tolerates a missing `job` key.
   Future<Map<String, dynamic>> createDjQuote({
     required String djId,
     required int jobId,
@@ -333,11 +344,7 @@ class JobsRemoteDatasource {
     if (earlySetupPrice != null) {
       payload['early_setup_price'] = earlySetupPrice;
     }
-    return _client
-        .from('Quotes')
-        .insert(payload)
-        .select('*, job:Jobs(*)')
-        .single();
+    return _webApiPost('/api/jobs/$jobId/quotes', payload);
   }
 
   /// Rejects a job for the DJ, optionally recording the reasons.
@@ -393,20 +400,23 @@ class JobsRemoteDatasource {
     return _client.from('Jobs').select().eq('id', jobId).single();
   }
 
-  /// Updates Jobs.status = 'customer_contacted'.
+  /// Updates Jobs.status = 'customer_contacted' via web API (requires elevated
+  /// access — RLS does not allow the DJ to update Jobs directly, so a direct
+  /// update silently affects 0 rows and the change appears to "reset").
   Future<void> markJobCustomerContacted(int jobId) async {
-    await _client
-        .from('Jobs')
-        .update({'status': 'customer_contacted', 'customer_contact_planned_for': null})
-        .eq('id', jobId);
+    await _webApiPut(
+      '/api/jobs/$jobId/customer-contact',
+      body: {'contactStatus': 'contacted'},
+    );
   }
 
-  /// Sets Jobs.customer_contact_planned_for (YYYY-MM-DD) without changing status.
+  /// Sets Jobs.customer_contact_planned_for (YYYY-MM-DD) via web API
+  /// (elevated — see [markJobCustomerContacted]).
   Future<void> setJobPlannedContact(int jobId, String date) async {
-    await _client
-        .from('Jobs')
-        .update({'customer_contact_planned_for': date})
-        .eq('id', jobId);
+    await _webApiPut(
+      '/api/jobs/$jobId/customer-contact',
+      body: {'contactStatus': 'planned', 'plannedContactDate': date},
+    );
   }
 
   /// Updates ExtJobs.status = 'customer_contacted' via web API (requires elevated access).
@@ -441,12 +451,11 @@ class JobsRemoteDatasource {
         .eq('id', offerId);
   }
 
-  /// Marks a regular job as ready for billing.
+  /// Marks a regular job as ready for billing via web API (requires elevated
+  /// access — see [markJobCustomerContacted]). The route also enforces that the
+  /// job is already customer_contacted before allowing the transition.
   Future<void> markJobReadyForBilling(int jobId) async {
-    await _client
-        .from('Jobs')
-        .update({'status': 'ready_for_billing'})
-        .eq('id', jobId);
+    await _webApiPut('/api/jobs/$jobId/ready-for-billing');
   }
 
   /// Marks an ext job as ready for billing via web API (requires elevated access).
@@ -587,6 +596,15 @@ class JobsRemoteDatasource {
         .from('SongRequests')
         .select('id, job_id, guest_email, song_1, song_2, song_3, created_at')
         .eq('job_id', jobId)
+        .order('created_at', ascending: false);
+  }
+
+  /// Fetches song requests submitted by guests for an ext job (DJ view).
+  Future<List<Map<String, dynamic>>> fetchSongRequestsForExtJob(int extJobId) async {
+    return _client
+        .from('SongRequests')
+        .select('id, ext_job_id, guest_email, song_1, song_2, song_3, created_at')
+        .eq('ext_job_id', extJobId)
         .order('created_at', ascending: false);
   }
 

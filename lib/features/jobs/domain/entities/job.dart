@@ -36,6 +36,7 @@ class Job {
     this.saxType,
     this.musicianSpecialRequest,
     this.songRequestToken,
+    this.postalCode,
   });
 
   final int id;
@@ -85,6 +86,8 @@ class Job {
   final String? musicianSpecialRequest;
   /// UUID token used to generate the public song-request link for guests.
   final String? songRequestToken;
+  /// Postal code of the event location. Present on both Jobs and ExtJobs.
+  final String? postalCode;
 
   Job withDateConflict() => Job(
         id: id,
@@ -123,6 +126,7 @@ class Job {
         saxType: saxType,
         musicianSpecialRequest: musicianSpecialRequest,
         songRequestToken: songRequestToken,
+        postalCode: postalCode,
       );
 
   static String _fmtNum(double v) {
