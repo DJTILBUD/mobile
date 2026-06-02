@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/payment_info.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
@@ -99,7 +100,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Fejl: $e');
+      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Betalingsoplysningerne kunne ikke gemmes. Prøv igen.'));
     } finally {
       if (mounted) setState(() => _saving = false);
     }

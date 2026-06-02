@@ -1,3 +1,6 @@
+import 'package:intl/intl.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+
 // Jobs created before this date pay the legacy 20% fee; on/after pay 25%.
 final _feeChangeDate = DateTime.utc(2025, 10, 15);
 
@@ -57,6 +60,48 @@ double? adjustBudgetForDjView({
   }
 
   return adjusted;
+}
+
+String _fmtKr(int n) =>
+    NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
+
+/// The DJ-facing budget label for a job (tier-adjusted, invariant-safe).
+/// Single source of truth shared by `JobCard` and the home calendar so the
+/// DJ never sees a figure that differs between surfaces.
+/// Returns null when no budget can be shown.
+String? djAdjustedBudgetLabel(Job job, String? djTier) {
+  final noBudget = job.budgetStart == null && job.budgetEnd == null;
+
+  // B-tier fallback: show fixed range when no budget is provided.
+  if (djTier == 'B' && noBudget && !job.isExtJob) {
+    return '${_fmtKr(3500)} – ${_fmtKr(6500)} kr.';
+  }
+
+  final adjEnd = adjustBudgetForDjView(
+    budget: job.budgetEnd ?? job.budgetStart,
+    requestedSaxophonist: job.requestedSaxophonist,
+    requestedMusicianHours: job.requestedMusicianHours,
+    djTier: djTier,
+    maxBudget: job.budgetEnd,
+    jobCreatedAt: job.createdAt,
+  );
+  if (adjEnd == null) return null;
+
+  if (job.budgetStart != null && job.budgetStart != job.budgetEnd) {
+    final adjStart = adjustBudgetForDjView(
+      budget: job.budgetStart,
+      requestedSaxophonist: job.requestedSaxophonist,
+      requestedMusicianHours: job.requestedMusicianHours,
+      djTier: djTier,
+      maxBudget: job.budgetEnd,
+      jobCreatedAt: job.createdAt,
+    );
+    if (adjStart != null) {
+      final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
+      return '${_fmtKr(adjStart.toInt())} – ${_fmtKr(adjEndClamped.toInt())} kr.';
+    }
+  }
+  return '${_fmtKr(adjEnd.toInt())} kr.';
 }
 
 /// Returns true if [jobCreatedAt] is within the first 4 hours.

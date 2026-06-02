@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/widgets/animated_card.dart';
 import 'package:dj_tilbud_app/core/widgets/skeleton_loading.dart';
@@ -46,7 +47,7 @@ class FeaturedJobsScreen extends ConsumerWidget {
         body: extJobsAsync.when(
           loading: () => const SkeletonListView(),
           error: (error, _) => _ErrorView(
-            message: error.toString(),
+            message: friendlyErrorMessage(error),
             onRetry: () => ref.invalidate(djExtJobsProvider),
           ),
           data: (extJobs) {
@@ -382,17 +383,9 @@ class _PriceRow extends StatelessWidget {
   final ExtJob extJob;
   final DSColors c;
 
-  static String _fmt(int n) =>
-      NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
-
-  String get _priceLabel {
-    if (extJob.honorar != null) return '${_fmt(extJob.honorar!.toInt())} kr. (honorar)';
-    if (extJob.fullAmount != null) return '${_fmt(extJob.fullAmount!.toInt())} kr.';
-    if (extJob.budgetTarget != null && extJob.budgetTarget!.isNotEmpty) {
-      return extJob.budgetTarget!;
-    }
-    return 'Ikke angivet';
-  }
+  // Single source of truth for the DJ-visible amount — never full_amount. See
+  // ExtJob.budgetDisplay (mirrors the web app's honorar-only display).
+  String get _priceLabel => extJob.budgetDisplay;
 
   @override
   Widget build(BuildContext context) {

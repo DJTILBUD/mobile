@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -132,25 +133,21 @@ class _MediaSectionState extends ConsumerState<_MediaSection> {
       ref.invalidate(userFilesProvider);
       if (mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Fil uploadet');
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Upload fejlede: ${e.toString()}');
+      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Filen kunne ikke uploades. Prøv igen.'));
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
   }
 
   Future<void> _deleteFile(UserFile file) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Slet fil?'),
-        actions: [
-          DSButton(label: 'Annuller', variant: DSButtonVariant.ghost, size: DSButtonSize.sm, onTap: () => Navigator.of(ctx).pop(false)),
-          DSButton(label: 'Slet', variant: DSButtonVariant.tertiary, size: DSButtonSize.sm, onTap: () => Navigator.of(ctx).pop(true)),
-        ],
-      ),
+    final confirmed = await showDSConfirm(
+      context,
+      title: 'Slet fil?',
+      confirmLabel: 'Slet',
+      destructive: true,
     );
 
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     setState(() => _deletingFileId = file.id);
     try {
@@ -158,7 +155,7 @@ class _MediaSectionState extends ConsumerState<_MediaSection> {
       ref.invalidate(userFilesProvider);
       if (mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Fil slettet');
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Fejl: $e');
+      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Filen kunne ikke slettes. Prøv igen.'));
     } finally {
       if (mounted) setState(() => _deletingFileId = null);
     }

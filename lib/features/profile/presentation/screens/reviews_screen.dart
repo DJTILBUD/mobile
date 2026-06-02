@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/review.dart';
@@ -113,7 +114,7 @@ class ReviewsScreen extends ConsumerWidget {
             }
           } catch (e) {
             if (context.mounted) {
-              DSToast.show(context, variant: DSToastVariant.error, title: 'Fejl: $e');
+              DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Anmeldelsen kunne ikke gemmes. Prøv igen.'));
             }
           }
         },
@@ -121,32 +122,26 @@ class ReviewsScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, {required bool isDj, required Review review}) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Slet anmeldelse?'),
-        content: Text('Anmeldelse fra ${review.customerName} vil blive slettet.'),
-        actions: [
-          DSButton(label: 'Annuller', variant: DSButtonVariant.ghost, size: DSButtonSize.sm, onTap: () => Navigator.of(ctx).pop()),
-          DSButton(
-            label: 'Slet',
-            variant: DSButtonVariant.tertiary,
-            size: DSButtonSize.sm,
-            onTap: () async {
-              Navigator.of(ctx).pop();
-              try {
-                await ref.read(profileRepositoryProvider).deleteReview(review.id);
-                ref.invalidate(isDj ? djReviewsProvider : musicianReviewsProvider);
-                if (context.mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Anmeldelse slettet');
-              } catch (e) {
-                if (context.mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Fejl: $e');
-              }
-            },
-          ),
-        ],
-      ),
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, {required bool isDj, required Review review}) async {
+    final confirmed = await showDSConfirm(
+      context,
+      title: 'Slet anmeldelse?',
+      message: 'Anmeldelse fra ${review.customerName} vil blive slettet.',
+      confirmLabel: 'Slet',
+      destructive: true,
     );
+    if (!confirmed) return;
+    try {
+      await ref.read(profileRepositoryProvider).deleteReview(review.id);
+      ref.invalidate(isDj ? djReviewsProvider : musicianReviewsProvider);
+      if (context.mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Anmeldelse slettet');
+    } catch (e) {
+      if (context.mounted) {
+        DSToast.show(context,
+            variant: DSToastVariant.error,
+            title: friendlyErrorMessage(e, fallback: 'Anmeldelsen kunne ikke slettes. Prøv igen.'));
+      }
+    }
   }
 }
 

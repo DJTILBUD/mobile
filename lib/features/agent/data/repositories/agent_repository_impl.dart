@@ -31,8 +31,8 @@ class AgentRepositoryImpl implements AgentRepository {
       );
     } on AppException {
       rethrow;
-    } catch (e) {
-      throw AgentException('Unexpected error: $e');
+    } catch (_) {
+      throw const AgentException('AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
     }
   }
 

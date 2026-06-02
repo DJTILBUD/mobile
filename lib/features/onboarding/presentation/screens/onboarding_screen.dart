@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/app.dart';
 import 'package:dj_tilbud_app/core/config/role_cache.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
@@ -153,7 +154,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(profileRepositoryProvider).setOnboardingCompleted(userId: userId, isDj: _isDj);
       markOnboardingComplete();
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Fejl: $e');
+      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Kunne ikke afslutte opsætningen. Prøv igen.'));
       if (mounted) setState(() => _completing = false);
     }
   }
@@ -580,7 +581,7 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
           variant: DSToastVariant.error,
           title: isSaxRegionLimit
               ? 'Saxofonister kan kun vælge 2 regioner'
-              : 'Kunne ikke gemme: $e',
+              : 'Kunne ikke gemme. Prøv igen.',
         );
       }
     } finally {
@@ -769,7 +770,7 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
       ref.invalidate(userFilesProvider);
       if (mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Billede uploadet');
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Upload fejlede: $e');
+      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Billedet kunne ikke uploades. Prøv igen.'));
     } finally {
       if (mounted) setState(() {
         if (type == UserFileType.profile) _uploadingProfilePic = false;
@@ -791,7 +792,7 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
       ref.invalidate(userFilesProvider);
       if (mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Video uploadet');
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Upload fejlede: $e');
+      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Videoen kunne ikke uploades. Prøv igen.'));
     } finally {
       if (mounted) setState(() {
         if (type == UserFileType.profileVideo) _uploadingProfileVideo = false;
@@ -820,7 +821,7 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
       await ref.read(profileRepositoryProvider).deleteFile(file.id);
       ref.invalidate(userFilesProvider);
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Fejl: $e');
+      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Filen kunne ikke slettes. Prøv igen.'));
     } finally {
       if (mounted) setState(() => _deletingId = null);
     }

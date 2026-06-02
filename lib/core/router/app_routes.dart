@@ -16,6 +16,7 @@ abstract class AppRoutes {
   static const editProfile = 'edit-profile';
   static const reviews = 'reviews';
   static const media = 'media';
+  static const myContent = 'my-content';
   static const standardMessages = 'standard-messages';
   static const payment = 'payment';
   static const extJobDetail = 'ext-job-detail';

@@ -277,7 +277,8 @@ class _BidRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
       final _c = DSTheme.of(context);
-    final payout = (quote.priceDkk * 0.75).toInt();
+    // Mirrors web app: dj_payout_override ?? round(price_dkk * 0.75).
+    final payout = quote.djPayout;
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: DSSpacing.s3, vertical: DSSpacing.s2),
@@ -295,16 +296,25 @@ class _BidRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Dit bud: ${_fmt(quote.priceDkk)} kr.',
-                  style: DSTextStyle.headingSm.copyWith(
-                    color: c.text.primary,
-                    fontWeight: FontWeight.w700,
+                // When the payout was overridden by an admin, hide "Dit bud"
+                // (the full job price) and show only the payout — same as the web
+                // app — so we never reveal that the DJ's cut was changed.
+                if (!quote.hasPayoutOverride)
+                  Text(
+                    'Dit bud: ${_fmt(quote.priceDkk)} kr.',
+                    style: DSTextStyle.headingSm.copyWith(
+                      color: c.text.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
                 Text(
                   'Udbetaling: ${_fmt(payout)} kr.',
-                  style: DSTextStyle.bodySm.copyWith(color: c.text.muted),
+                  style: quote.hasPayoutOverride
+                      ? DSTextStyle.headingSm.copyWith(
+                          color: c.text.primary,
+                          fontWeight: FontWeight.w700,
+                        )
+                      : DSTextStyle.bodySm.copyWith(color: c.text.muted),
                 ),
               ],
             ),

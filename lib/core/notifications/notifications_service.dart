@@ -129,6 +129,10 @@ class NotificationsService {
       case 'new_job':
       case 'another_round':
       case 'ready_reminder':
+      case 'content_record_reminder':
+      case 'content_upload_reminder':
+      case 'content_accepted':
+      case 'content_rejected':
         return data['job_id'] as String?;
       case 'new_ext_job':
       case 'ext_job_assigned':
@@ -332,6 +336,17 @@ class NotificationsService {
           router.pushNamed(AppRoutes.adminMessages, extra: role);
           break;
 
+        // Content accepted/rejected (DJ-only) → open the content library.
+        case 'content_accepted':
+        case 'content_rejected':
+          router.go('/dj/profile');
+          router.pushNamed(AppRoutes.myContent);
+          break;
+
+        // Content reminders are DJ-only and deep-link to the same job views as
+        // the ready reminder.
+        case 'content_record_reminder':
+        case 'content_upload_reminder':
         case 'ready_reminder':
           final jobId = _parseInt(data['job_id']);
           final isExtJob = data['is_ext_job'] == 'true';

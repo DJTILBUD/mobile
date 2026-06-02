@@ -92,12 +92,48 @@ Notification routing lives in `core/notifications/notifications_service.dart`. T
 
 **Token registration:** upserted to `DeviceTokens` on app start and after login. Deleted on logout. On iOS, waits for APNs token before registering.
 
+## Job-content fields shown to musicians (what they may/may not see)
+
+Musicians must see **all** customer-facing job content; never `internal_notes`/`internal_note` (admin-only — these are NOT parsed into any mobile model). The relevant fields per source:
+- **Jobs:** `lead_request` ("Kundens ønske") + `additional_information` ("Yderligere information") + `musician_special_request` ("Særligt ønske til musikeren").
+- **ExtJobs:** `notes` ("Noter") + `musician_special_request`.
+
+A musician can reach an ext job via **two** rendering paths — keep field display in sync across both:
+1. **Browse feed → `instrumentalist_offer_form_screen.dart`.** `JobsRepositoryImpl.fetchInstrumentalistExtJobs` maps `ExtJobModel.toJobEntity()` → a `Job` where **`leadRequest` = ExtJobs.notes** and `musicianSpecialRequest` carries over. So this one screen renders both real Jobs and ext-jobs-as-Jobs; it must show `leadRequest`, `additionalInformation`, `musicianSpecialRequest`.
+2. **`new_ext_job`/`ext_job_assigned` notification → `ExtJobDetailScreen`** (takes a real `ExtJob` entity). Shows `notes` + `musicianSpecialRequest`. Note: `ExtJobModel` parses `musician_special_request` but `toEntity()` must explicitly pass it through (it was previously dropped).
+
+## Login must not flash the role-select / onboarding screen
+
+The GoRouter `redirect` in `app.dart` gates on `_onboardingNotifier.resolved` — a flag that is only true once we actually know the session's role + onboarding status. On `signIn()`, Supabase fires the `signedIn` event (→ router refresh) **before** `RoleCache.save(role)` runs, so for a moment the user is authenticated with `RoleCache.role == null`; without the gate the redirect sent them to `/profile-setup` (the "DJ or musician?" screen) for ~0.5s before bouncing home. Rule: **after any `RoleCache.save(...)`, `await initOnboardingStatus()` before navigating** (see `login_screen.dart` and all four save sites in `profile_setup_screen.dart`) so `resolved` is set and the redirect routes correctly (home vs `/onboarding`). While `resolved` is false the redirect returns `null` (stay put) instead of routing to setup/onboarding. `initOnboardingStatus()` is also awaited in `main()` before `runApp`, so cold-start is already resolved.
+
+## DSButton gotchas (design system)
+
+- **`secondary`/`tertiary` foreground must NOT be `brand.primary`.** `brand.primary` (`#D1F366` lime) is a *background* token whose readable text pair is `brand.onPrimary` (dark). On a tinted bg (secondary = `brand.primary @ 10%`) the correct, theme-aware text token is **`brand.primaryActive`** (commented "text on tinted bg"). Using `brand.primary` as fg renders light-lime-on-light-lime (invisible). Same applies to `DSIconButton`.
+- **Never animate `AnimatedContainer.constraints` between bounded and unbounded.** A button that toggles `expand` (shrink-wrap ↔ full-width) or `size` while its element is reused throws *"Cannot interpolate between finite and unbounded constraints"* (a 1-frame flash + red screen). `DSButton` applies `expand` via an outer `SizedBox(width: infinity)` so the AnimatedContainer's own constraints never change. Keep it that way.
+
+## Floating chat bubble (mirrors web `FloatingChatButton`)
+
+`shared/widgets/chat_bubble_fab.dart` (`ChatBubbleFab`) is a bottom-right floating "Beskeder" pill (paper-plane icon + overlapping partner/current-user avatars + unread badge) that opens the conversation. Pass `jobId` **or** `extJobId`; it finds the conversation from `conversationsProvider` and **self-hides** (`SizedBox.shrink()`) when none exists, so it's safe to drop into a `Stack` unconditionally. Mount it via `Positioned.fill` → `SafeArea` → `Align(bottomRight)` over a scrollable body, and add ~96px bottom padding to the scroll content so it never covers the last card. Used on the musician won-offer view (`service_offer_detail_screen.dart`). The inline `ConversationCard` (DJ-side chat list entry) still exists separately and is now configurable via `title` / `showPartnerName` / `compact`. Reminder: chats only exist on **won** internal jobs (or assigned ext jobs) with an **internal** DJ — see the embedding note below.
+
+## Embedding DjInfos: `Quotes.dj_id` does NOT FK to DjInfos
+
+`Quotes.dj_id` and `ServiceOffers`/`Musicians` ids FK to **`auth.users`**, and `DjInfos.id` also FKs to `auth.users` — so there is **no direct FK between `Quotes` and `DjInfos`**. PostgREST embeds need a declared FK, so `from('Quotes').select('dj_id, dj:DjInfos(...)')` fails with **PGRST200** ("could not find a relationship"). In Riverpod `.when()` widgets the error branch often renders `SizedBox.shrink()`, so this surfaces as a **silently missing section**, not a crash (this is exactly what hid the "DJ på jobbet" block on the musician won-offer view). To get a DJ's profile from a quote: fetch `dj_id` from `Quotes`, then query `DjInfos` by `id` separately (see `fetchWonDjInfoForJob`). Embedding DjInfos only works where the column genuinely FKs to it, e.g. `Conversations.dj_id → DjInfos.id` (chat uses the hint `DjInfos!Conversations_dj_id_fkey`). Note a won quote can be an **external DJ** (`dj_id` null, `ext_dj_id → ExtDjs`); external-DJ wins get no in-app profile and no chat.
+
 ## Song request QR (per-DJ, DJ-only)
 
 The song-request QR is **per-DJ**, shown on the profile (`profile_screen.dart`, DJ-only menu item → `widgets/song_request_qr_dialog.dart`). It encodes `DjProfile.songRequestToken` (`DjInfos.song_request_token`); the web backend resolves it to the DJ's next upcoming event at scan time.
 
 - The old **per-event** QR on `song_requests_screen.dart` was removed (that screen now only lists requests). Its call sites in `quote_detail_screen.dart` and `ext_job_detail_screen.dart` no longer pass `songRequestToken`.
 - `Job`/`ExtJob` models still parse `song_request_token`, but it is no longer used in the UI.
+
+## DJ content capture (feature 52)
+
+Step 5 of the DJ job process: short clips (max 15s, 9:16) recorded per job. `quote_detail_screen` + `ext_job_detail_screen` show a reminder/CTA (`features/jobs/presentation/widgets/job_content_section.dart`) once `djReadyConfirmedAt != null`; tapping it opens **`MyContentScreen`** (`AppRoutes.myContent`, profile menu "Mit content", DJ-only) scoped to that job via a `JobContentKey` `extra`. That screen is the library of **all** the DJ's clips (labelled by job) + the scoped uploader + delete. Data: `job_content_remote_datasource.dart` (`fetchMyJobContent`) + `job_content_provider.dart` (`myJobContentProvider`).
+
+- **Uploads go to AWS S3, not Supabase Storage** (the tech-stack table above is misleading for media). Flow: `GET /api/files/signed-url` → `PUT` to S3 → `POST /api/files/job-content` (verifies the DJ owns the job server-side). Do NOT direct-insert `UserFiles` for `job_content` — that bypasses ownership checks (same spirit as the Quotes/Jobs rules below).
+- 15s / 9:16 is hard-validated client-side via `validateContentVideo` (`video_player` duration + aspectRatio) — there is no server-side ffprobe.
+- A thumbnail is generated on upload via `video_thumbnail` and uploaded as a separate `thumbnail` row, so web + admin (and the in-app list) show a real preview.
+- Notification types `content_record_reminder` / `content_upload_reminder` are DJ-only and routed exactly like `ready_reminder` in `notifications_service.dart`.
 
 ## Things Claude must NOT do
 

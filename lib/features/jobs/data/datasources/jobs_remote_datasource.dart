@@ -70,46 +70,52 @@ class JobsRemoteDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> _webApiGet(String path) async {
+    final uri = Uri.parse('$_webAppBaseUrl$path');
+    final response = await http.get(
+      uri,
+      headers: {'Authorization': 'Bearer $_accessToken'},
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw DatabaseException(_extractMessage(response.body));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  // Returns the server's intended `message` field, or an empty string when the
+  // body isn't a clean JSON message. We never return the raw body, so technical
+  // text (HTML, stack traces) can't leak into a user-facing error toast — call
+  // sites fall back to a friendly Danish message when this is empty.
   String _extractMessage(String body) {
     try {
       final json = jsonDecode(body) as Map<String, dynamic>;
-      return json['message'] as String? ?? body;
+      return json['message'] as String? ?? '';
     } catch (_) {
-      return body;
+      return '';
     }
   }
 
-  /// Fetches open jobs for a DJ.
-  /// Region filtering is NOT applied here — it is handled client-side via
-  /// DjJobFilters (excluded_regions) to match the web app's filtering logic.
+  /// Fetches the jobs a DJ should see in "Nye jobs".
+  ///
+  /// All business/visibility rules — pending-quote cap (so 3-quote jobs drop out),
+  /// tier quotas, paused jobs, sax capability, profile-excluded event types,
+  /// already-quoted/rejected exclusion, unavailable dates and the collision sort —
+  /// now live in the web app and are applied by the shared
+  /// `GET /api/dj/biddable-jobs` route, the single source of truth shared with the
+  /// web client (web-app `src/domain/biddableJobs.ts`). This replaced a partial
+  /// Dart reimplementation that never counted quotes, which is why full jobs used
+  /// to stay visible.
+  ///
+  /// We request `applyFilters=false` so the *optional* DjJobFilters preferences
+  /// stay client-side, keeping the in-list "Filtre til/fra" toggle instant
+  /// (no network round-trip).
+  ///
+  /// [userId] is unused (the route resolves the DJ from the auth token) but kept
+  /// for interface symmetry with the other fetch methods.
   Future<List<Map<String, dynamic>>> fetchNewDjJobs(String userId) async {
-    final quotedRows = await _client
-        .from('Quotes')
-        .select('job_id')
-        .eq('dj_id', userId);
-    final quotedJobIds =
-        quotedRows.map((r) => (r['job_id'] as num).toInt()).toSet();
-
-    final rejectedRows = await _client
-        .from('DjJobRejections')
-        .select('job_id')
-        .eq('dj_id', userId);
-    final rejectedJobIds = rejectedRows
-        .where((r) => r['job_id'] != null)
-        .map((r) => (r['job_id'] as num).toInt())
-        .toSet();
-
-    final excludedIds = quotedJobIds.union(rejectedJobIds);
-
-    final jobs = await _client
-        .from('Jobs')
-        .select()
-        .inFilter('status', ['open', 'another_round', 'sent', 're_sent'])
-        .order('created_at', ascending: false);
-
-    return jobs
-        .where((j) => !excludedIds.contains((j['id'] as num).toInt()))
-        .toList();
+    final body = await _webApiGet('/api/dj/biddable-jobs?applyFilters=false');
+    final data = body['data'] as List<dynamic>? ?? const [];
+    return data.cast<Map<String, dynamic>>();
   }
 
   /// Fetches all quotes by this DJ, with joined Job data.
@@ -158,6 +164,7 @@ class JobsRemoteDatasource {
         .from('Jobs')
         .select()
         .eq('requested_saxophonist', true)
+        .eq('is_paused', false)
         .inFilter('status', [
           'open', 'sent', 're_sent', 'reopened',
           'another_round', 'closed', 'customer_contacted',
@@ -170,6 +177,7 @@ class JobsRemoteDatasource {
           .from('Jobs')
           .select()
           .eq('requested_saxophonist', true)
+          .eq('is_paused', false)
           .eq('status', 'ready_for_billing')
           .eq('sax_round_active', true)
           .order('created_at', ascending: false);
@@ -611,13 +619,30 @@ class JobsRemoteDatasource {
   /// Fetches the won DJ quote (with DJ contact info) for an internal job.
   /// Used by musicians to see who the DJ is on a job they won.
   Future<Map<String, dynamic>?> fetchWonDjInfoForJob(int jobId) async {
-    final rows = await _client
+    // NOTE: Quotes.dj_id FKs to auth.users, NOT DjInfos, so PostgREST cannot
+    // embed `dj:DjInfos(...)` directly from Quotes (it errors with PGRST200,
+    // which previously surfaced as a silent empty section). Fetch the winning
+    // internal-DJ id first, then look up DjInfos by id in a second query.
+    // External-DJ wins (dj_id null, ext_dj_id set) have no in-app DJ profile
+    // and never get a chat, so returning null hides the section as intended.
+    final quotes = await _client
         .from('Quotes')
-        .select('dj_id, dj:DjInfos(full_name, phone)')
+        .select('dj_id')
         .eq('job_id', jobId)
         .eq('status', 'won')
+        .not('dj_id', 'is', null)
         .limit(1);
-    return rows.isNotEmpty ? rows.first : null;
+    if (quotes.isEmpty) return null;
+    final djId = quotes.first['dj_id'] as String?;
+    if (djId == null) return null;
+
+    final dj = await _client
+        .from('DjInfos')
+        .select('full_name, phone')
+        .eq('id', djId)
+        .maybeSingle();
+    if (dj == null) return null;
+    return {'dj_id': djId, 'dj': dj};
   }
 
   /// Fetches the profile image URL for any user from UserFiles (type = 'profile').

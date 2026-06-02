@@ -10,6 +10,7 @@ class ExtJob {
     this.startTime,
     this.endTime,
     this.location,
+    this.postalCode,
     this.guestsAmount,
     this.eventType,
     this.budgetTarget,
@@ -28,6 +29,7 @@ class ExtJob {
     this.djReadyConfirmedAt,
     this.customerContactPlannedFor,
     this.songRequestToken,
+    this.musicianSpecialRequest,
   });
 
   final int id;
@@ -40,6 +42,7 @@ class ExtJob {
   final String? startTime;
   final String? endTime;
   final String? location;
+  final String? postalCode;
   final int? guestsAmount;
   final String? eventType;
   final String? budgetTarget;
@@ -58,6 +61,9 @@ class ExtJob {
   final DateTime? djReadyConfirmedAt;
   final DateTime? customerContactPlannedFor;
   final String? songRequestToken;
+  /// Free-text special request from the customer directed at the musician.
+  /// Distinct from [notes] (general job notes). Never holds internal/admin notes.
+  final String? musicianSpecialRequest;
 
   static String _fmtNum(double v) {
     final s = v.toInt().toString();
@@ -83,15 +89,24 @@ class ExtJob {
     return 'Ikke angivet';
   }
 
+  /// What the DJ is paid for an external job. Mirrors the web app, which shows
+  /// ONLY `honorar` ("Dit honorar"). NEVER fall back to `fullAmount` (the full
+  /// customer total) or `budgetTarget` — exposing either would reveal the
+  /// platform's cut to the DJ.
   String get budgetDisplay {
-    if (honorar != null) return '${_fmtNum(honorar!)} kr. (honorar)';
-    if (fullAmount != null) return '${_fmtNum(fullAmount!)} kr.';
-    if (budgetTarget != null && budgetTarget!.isNotEmpty) return budgetTarget!;
+    if (honorar != null) return '${_fmtNum(honorar!)} kr.';
     return 'Ikke angivet';
   }
 
   String get displayEventType => eventType ?? 'Arrangement';
-  String get displayLocation => location ?? region ?? 'Ikke angivet';
+  String get displayLocation {
+    final pc = postalCode?.trim();
+    final place = location ?? region;
+    if (pc != null && pc.isNotEmpty && place != null && place.isNotEmpty) {
+      return '$pc $place';
+    }
+    return place ?? pc ?? 'Ikke angivet';
+  }
 }
 
 enum ExtJobStatus {

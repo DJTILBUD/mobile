@@ -7,10 +7,12 @@ import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/sick_disclaimer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/shared/widgets/chat_bubble_fab.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
 
 String _fmt(num n) =>
@@ -167,7 +169,28 @@ class _ServiceOfferDetailScreenState
       ),
       body: switch (offer.status) {
         ServiceOfferStatus.sent => _sentBody(offer),
-        ServiceOfferStatus.won => _wonBody(offer),
+        ServiceOfferStatus.won => Stack(
+            children: [
+              _wonBody(offer),
+              // Floating "Beskeder" bubble (mirrors the web app). Self-hides
+              // when no conversation exists yet for this job.
+              if (offer.jobId != null || offer.extJobId != null)
+                Positioned.fill(
+                  child: SafeArea(
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: const EdgeInsets.all(DSSpacing.s4),
+                        child: ChatBubbleFab(
+                          jobId: offer.jobId,
+                          extJobId: offer.extJobId,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ServiceOfferStatus.lost => _lostBody(offer),
       },
     );
@@ -203,25 +226,6 @@ class _ServiceOfferDetailScreenState
       children: [
         _TopStatusRow(offer: offer),
         const SizedBox(height: DSSpacing.s4),
-
-        // DJ contact
-        if (offer.isExtJob && offer.job.assignedDjName != null) ...[
-          _Section(
-            title: 'DJ på jobbet',
-            children: [
-              _ContactRow(icon: LucideIcons.user, label: offer.job.assignedDjName!),
-              const SizedBox(height: DSSpacing.s2),
-              Text(
-                'Koordiner logistik og sceneopsætning med DJ\'en inden arrangementet.',
-                style: DSTextStyle.labelMd.copyWith(color: _c.text.muted),
-              ),
-            ],
-          ),
-          const SizedBox(height: DSSpacing.s4),
-        ] else if (!offer.isExtJob && offer.jobId != null) ...[
-          _WonDjSection(jobId: offer.jobId!),
-          const SizedBox(height: DSSpacing.s4),
-        ],
 
         // Non-binding call banner — shown until customer is contacted
         if (!_customerContacted) ...[
@@ -325,6 +329,25 @@ class _ServiceOfferDetailScreenState
         ),
         const SizedBox(height: DSSpacing.s4),
 
+        // DJ på jobbet — placed after the process tracker. Compact: name +
+        // phone. Chat is reached via the floating bubble (see Scaffold body).
+        if (offer.isExtJob && offer.job.assignedDjName != null) ...[
+          _Section(
+            title: 'DJ på jobbet',
+            children: [
+              _ContactRow(
+                  icon: LucideIcons.user, label: offer.job.assignedDjName!),
+            ],
+          ),
+          const SizedBox(height: DSSpacing.s4),
+        ] else if (!offer.isExtJob && offer.jobId != null) ...[
+          _WonDjSection(jobId: offer.jobId!),
+          const SizedBox(height: DSSpacing.s4),
+        ],
+
+        const SickDisclaimer(role: 'musician'),
+        const SizedBox(height: DSSpacing.s4),
+
         _MusicianExtraHoursSection(offer: offer),
         const SizedBox(height: DSSpacing.s4),
 
@@ -341,7 +364,8 @@ class _ServiceOfferDetailScreenState
         const SizedBox(height: DSSpacing.s4),
 
         _JobHeroCard(offer: offer),
-        const SizedBox(height: DSSpacing.s8),
+        // Extra clearance so the floating chat bubble never covers the last card.
+        const SizedBox(height: 96),
       ],
     );
   }
@@ -943,8 +967,8 @@ class _WonDjSection extends ConsumerWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(DSRadius.md),
                   child: SizedBox(
-                    width: 36,
-                    height: 36,
+                    width: 30,
+                    height: 30,
                     child: imageUrl != null
                         ? CachedNetworkImage(
                             imageUrl: imageUrl,
@@ -957,73 +981,42 @@ class _WonDjSection extends ConsumerWidget {
                               color:
                                   _c.brand.primary.withValues(alpha: 0.12),
                               child: Icon(LucideIcons.user,
-                                  size: 18,
+                                  size: 16,
                                   color: _c.brand.primaryActive),
                             ),
                           )
                         : Container(
                             color: _c.brand.primary.withValues(alpha: 0.12),
                             child: Icon(LucideIcons.user,
-                                size: 18, color: _c.brand.primaryActive),
+                                size: 16, color: _c.brand.primaryActive),
                           ),
                   ),
                 ),
                 const SizedBox(width: DSSpacing.s3),
-                Text(
-                  dj.fullName,
-                  style: DSTextStyle.labelLg.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: _c.text.primary,
+                Expanded(
+                  child: Text(
+                    dj.fullName,
+                    style: DSTextStyle.labelLg.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: _c.text.primary,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: DSSpacing.s3),
-            Container(
-              padding: const EdgeInsets.all(DSSpacing.s3),
-              decoration: BoxDecoration(
-                color: _c.brand.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(DSRadius.md),
-                border: Border.all(
-                    color: _c.brand.primary.withValues(alpha: 0.2)),
+            if (dj.phone != null) ...[
+              const SizedBox(height: DSSpacing.s3),
+              _ContactRow(
+                icon: LucideIcons.phone,
+                label: dj.phone!,
+                onCopy: () {
+                  Clipboard.setData(ClipboardData(text: dj.phone!));
+                  DSToast.show(context,
+                      variant: DSToastVariant.success,
+                      title: 'Telefon kopieret');
+                },
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Kontaktinformation',
-                    style: DSTextStyle.labelSm.copyWith(
-                      color: _c.text.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: DSSpacing.s2),
-                  if (dj.phone != null)
-                    _ContactRow(
-                      icon: LucideIcons.phone,
-                      label: dj.phone!,
-                      onCopy: () {
-                        Clipboard.setData(ClipboardData(text: dj.phone!));
-                        DSToast.show(context,
-                            variant: DSToastVariant.success,
-                            title: 'Telefon kopieret');
-                      },
-                    )
-                  else
-                    Text(
-                      'Ingen kontaktinfo tilgængelig',
-                      style: DSTextStyle.labelMd
-                          .copyWith(color: _c.text.muted),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: DSSpacing.s3),
-            Text(
-              'Koordiner logistik og sceneopsætning med DJ\'en inden arrangementet.',
-              style: DSTextStyle.labelMd
-                  .copyWith(color: _c.text.muted, height: 1.4),
-            ),
+            ],
           ],
         );
       },

@@ -350,7 +350,10 @@ class _RefinementStripState extends State<_RefinementStrip> {
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
 
-    return Column(
+    return Padding(
+      // Lift the refine/input bar above the keyboard when it opens.
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -421,6 +424,7 @@ class _RefinementStripState extends State<_RefinementStrip> {
           ],
         ),
       ],
+      ),
     );
   }
 }

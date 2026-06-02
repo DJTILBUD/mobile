@@ -259,6 +259,12 @@ class ProfileScreen extends ConsumerWidget {
                 }
               },
             ),
+          if (role == MusicianRole.dj)
+            _MenuItem(
+              icon: LucideIcons.video,
+              label: 'Mit content',
+              onTap: () => context.pushNamed(AppRoutes.myContent),
+            ),
 
           _MenuItem(
             icon: LucideIcons.bell,

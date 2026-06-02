@@ -37,6 +37,8 @@ import 'package:dj_tilbud_app/features/profile/presentation/screens/profile_scre
 import 'package:dj_tilbud_app/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/reviews_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/media_screen.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/screens/my_content_screen.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/providers/job_content_provider.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/standard_messages_screen.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/screens/calendar_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/dj_job_filters_screen.dart';
@@ -58,13 +60,22 @@ import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 /// can gate the rest of the app until onboarding_completed_at is set.
 class _OnboardingNotifier extends ChangeNotifier {
   bool _completed = false;
+  bool _resolved = false;
 
   bool get onboardingCompleted => _completed;
+
+  /// True once we actually know this session's role + onboarding status.
+  /// Until then the router must NOT route to /profile-setup or /onboarding,
+  /// otherwise logging in briefly flashes the role-selection screen while the
+  /// role is still being cached.
+  bool get resolved => _resolved;
 
   Future<void> checkStatus() async {
     final session = supabase.auth.currentSession;
     if (session == null || RoleCache.role == null) {
-      // Can't check yet — leave gate closed, auth listener will retry.
+      // Can't check yet — role not cached. Leave gate closed AND unresolved;
+      // the explicit re-check after RoleCache.save() (or the auth listener)
+      // will retry once the role is known.
       return;
     }
     try {
@@ -79,16 +90,20 @@ class _OnboardingNotifier extends ChangeNotifier {
       // Network error — leave current state unchanged so we don't
       // accidentally gate a user who has already completed onboarding.
     }
+    // Role was known and we attempted the lookup → status is now resolved.
+    _resolved = true;
     notifyListeners();
   }
 
   void markComplete() {
     _completed = true;
+    _resolved = true;
     notifyListeners();
   }
 
   void reset() {
     _completed = false;
+    _resolved = false;
     notifyListeners();
   }
 }
@@ -200,6 +215,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc == '/onboarding';
 
       if (!isAuthenticated && !isPublicRoute) return '/login';
+
+      // Brief window during login / session recovery where the session exists
+      // but the role + onboarding status aren't resolved yet. Don't route to
+      // setup/onboarding here — that flashed the role-selection screen for ~0.5s
+      // before bouncing to home. Stay put until resolution notifies the router.
+      if (isAuthenticated && !_onboardingNotifier.resolved) {
+        return null;
+      }
 
       if (isAuthenticated && loc == '/login') {
         final role = RoleCache.role;
@@ -435,6 +458,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/media',
         name: AppRoutes.media,
         builder: (context, state) => const MediaScreen(),
+      ),
+      GoRoute(
+        path: '/my-content',
+        name: AppRoutes.myContent,
+        builder: (context, state) {
+          final scope = state.extra is JobContentKey ? state.extra as JobContentKey : null;
+          return MyContentScreen(scope: scope);
+        },
       ),
       GoRoute(
         path: '/standard-messages',

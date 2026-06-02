@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_provider.dart';
 import 'package:dj_tilbud_app/features/agent/data/datasources/agent_remote_datasource.dart';
 import 'package:dj_tilbud_app/features/agent/data/repositories/agent_repository_impl.dart';
@@ -109,7 +110,7 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
         state = AgentError(message: msg);
         return;
       }
-      final message = e is AppException ? e.message : e.toString();
+      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
       state = AgentError(message: message);
     }
   }
@@ -153,7 +154,7 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
         state = AgentError(message: msg);
         return;
       }
-      final message = e is AppException ? e.message : e.toString();
+      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
       state = AgentError(message: message);
     }
   }
@@ -181,7 +182,7 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
 
       state = AgentDone(text: _accumulatedText);
     } catch (e) {
-      final message = e is AppException ? e.message : e.toString();
+      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
       state = AgentError(message: message);
     }
   }
@@ -217,7 +218,7 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
         state = AgentError(message: msg);
         return;
       }
-      final message = e is AppException ? e.message : e.toString();
+      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
       state = AgentError(message: message);
     }
   }
@@ -259,7 +260,7 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
         state = AgentError(message: msg);
         return;
       }
-      final message = e is AppException ? e.message : e.toString();
+      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
       state = AgentError(message: message);
     }
   }

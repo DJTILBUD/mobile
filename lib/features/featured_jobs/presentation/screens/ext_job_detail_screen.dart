@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/shared/widgets/conversation_card.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/job_content_section.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/sick_disclaimer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
@@ -37,7 +40,7 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
     if (msg.contains('customer_contacted') || msg.contains('customer-contacted')) {
       return 'Du skal markere kunden som kontaktet, inden du kan lukke aftalen.';
     }
-    return err.message;
+    return friendlyErrorMessage(err, fallback: 'Noget gik galt. Prøv igen.');
   }
 
   bool _isWithin5Days(DateTime eventDate) {
@@ -152,6 +155,38 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
     }
   }
 
+  /// Card showing the saxophonist/instrumentalist assigned to this job, so the
+  /// DJ can see their counterpart (mirrors the internal-job view + the web).
+  Widget _instrumentalistCard(ExtJob extJob) {
+    final c = DSTheme.of(context);
+    final imageUrl = ref.watch(userProfileImageProvider(extJob.assignedMusicianId!)).valueOrNull;
+    return _SectionCard(
+      title: 'Instrumentalist på dette job',
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: c.state.success.withValues(alpha: 0.20),
+              backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
+              child: imageUrl == null
+                  ? Icon(LucideIcons.music2, color: c.state.success, size: 20)
+                  : null,
+            ),
+            const SizedBox(width: DSSpacing.s3),
+            Expanded(
+              child: Text(
+                extJob.assignedMusicianName ?? 'Instrumentalist',
+                style: DSTextStyle.labelMd.copyWith(fontWeight: FontWeight.w600, color: c.text.primary),
+              ),
+            ),
+            DSStatusBadge(label: 'Valgt instrumentalist', color: c.state.success),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
       final _c = DSTheme.of(context);
@@ -209,11 +244,22 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
                   'Send faktura',
                   'Bekræft klar',
                   'Spil jobbet',
+                  'Optag content',
                 ],
                 completedSteps: completedSteps,
               ),
             ],
           ),
+          const SizedBox(height: DSSpacing.s4),
+
+          // ── Step 5: content capture (unlocked once ready confirmed) ──
+          if (isConfirmedReady) ...[
+            JobContentSection(extJobId: extJob.id),
+            const SizedBox(height: DSSpacing.s4),
+          ],
+
+          // ── Sygdom / sick-leave disclaimer ───────────────────────────────
+          const SickDisclaimer(role: 'dj'),
           const SizedBox(height: DSSpacing.s4),
 
           // ── Customer contact ─────────────────────────────────────────────
@@ -308,6 +354,17 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
             ],
           ),
           const SizedBox(height: DSSpacing.s4),
+
+          // ── Instrumentalist on this job (only once both are confirmed) ────
+          if (extJob.assignedMusicianId != null &&
+              const {
+                ExtJobStatus.closed,
+                ExtJobStatus.customerContacted,
+                ExtJobStatus.readyForBilling,
+              }.contains(extJob.status)) ...[
+            _instrumentalistCard(extJob),
+            const SizedBox(height: DSSpacing.s4),
+          ],
 
           // ── Chat with instrumentalist ────────────────────────────────────
           ConversationCard(extJobId: extJob.id),
@@ -443,6 +500,38 @@ class _JobInfoCard extends StatelessWidget {
                   const SizedBox(height: DSSpacing.s2),
                   Text(
                     extJob.notes!,
+                    style:
+                        DSTextStyle.bodyMd.copyWith(color: _c.text.secondary),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Special request to the musician
+          if (extJob.musicianSpecialRequest != null &&
+              extJob.musicianSpecialRequest!.isNotEmpty) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(DSSpacing.s4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(LucideIcons.star, size: 14, color: _c.state.warning),
+                      const SizedBox(width: DSSpacing.s1),
+                      Text(
+                        'Særligt ønske til musikeren',
+                        style: DSTextStyle.labelMd.copyWith(
+                            color: _c.state.warning,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: DSSpacing.s2),
+                  Text(
+                    extJob.musicianSpecialRequest!,
                     style:
                         DSTextStyle.bodyMd.copyWith(color: _c.text.secondary),
                   ),

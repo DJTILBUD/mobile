@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/core/utils/musician_price.dart';
 import 'package:dj_tilbud_app/features/agent/presentation/widgets/agent_ai_button.dart';
@@ -83,7 +84,14 @@ class _InstrumentalistOfferFormScreenState
       DSToast.show(context, variant: DSToastVariant.success, title: 'Dit tilbud er sendt!');
       context.pop();
     } else {
-      DSToast.show(context, variant: DSToastVariant.error, title: 'Kunne ikke sende tilbud. Prøv igen.');
+      // Surface the server's reason for meaningful rejections (e.g. job paused,
+      // outside the regional window) — these are Danish from the API. Fall back
+      // to a generic message otherwise.
+      final error = ref.read(createServiceOfferProvider).error;
+      final message = error is AppException && error.message.isNotEmpty
+          ? error.message
+          : 'Kunne ikke sende tilbud. Prøv igen.';
+      DSToast.show(context, variant: DSToastVariant.error, title: message);
     }
   }
 
@@ -232,9 +240,9 @@ class _InstrumentalistOfferFormScreenState
                     ],
                   ],
                   _InfoRow(LucideIcons.flag, job.region),
-                  if (job.city.isNotEmpty) ...[
+                  if (job.placeLabel.isNotEmpty) ...[
                     const SizedBox(height: DSSpacing.s1),
-                    _InfoRow(LucideIcons.mapPin, job.city),
+                    _InfoRow(LucideIcons.mapPin, job.placeLabel),
                   ],
                   if (job.guestsAmount > 0) ...[
                     const SizedBox(height: DSSpacing.s1),
@@ -244,6 +252,23 @@ class _InstrumentalistOfferFormScreenState
                     const SizedBox(height: DSSpacing.s1),
                     _InfoRow(LucideIcons.timer,
                         '${job.requestedMusicianHours!.toStringAsFixed(0)} timers musik ønsket'),
+                  ],
+                  if (job.leadRequest != null && job.leadRequest!.isNotEmpty) ...[
+                    const SizedBox(height: DSSpacing.s3),
+                    const Divider(height: 1),
+                    const SizedBox(height: DSSpacing.s3),
+                    Text(
+                      'Kundens ønske',
+                      style: DSTextStyle.labelSm.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: _c.text.muted,
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    Text(
+                      job.leadRequest!,
+                      style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                    ),
                   ],
                   if (job.additionalInformation != null && job.additionalInformation!.isNotEmpty) ...[
                     const SizedBox(height: DSSpacing.s3),

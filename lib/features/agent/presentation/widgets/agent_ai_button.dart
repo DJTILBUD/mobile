@@ -98,22 +98,20 @@ class AgentAiButton extends ConsumerWidget {
 
   void _showLimitDialog(BuildContext context, AgentUsage usage) {
     final isDailyLimit = usage.isDailyLimitReached && !usage.isMonthlyLimitReached;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isDailyLimit ? 'Daglig grænse nået' : 'Månedlig grænse nået'),
-        content: Text(
-          isDailyLimit
-              ? 'Du har brugt dine ${usage.dailyLimit} AI-udkast for i dag. Prøv igen i morgen.'
-              : 'Du har brugt dine ${usage.monthlyLimit} AI-udkast for denne måned.',
+    showDSDialog<void>(
+      context,
+      title: isDailyLimit ? 'Daglig grænse nået' : 'Månedlig grænse nået',
+      message: isDailyLimit
+          ? 'Du har brugt dine ${usage.dailyLimit} AI-udkast for i dag. Prøv igen i morgen.'
+          : 'Du har brugt dine ${usage.monthlyLimit} AI-udkast for denne måned.',
+      actions: (ctx) => [
+        DSButton(
+          label: 'OK',
+          variant: DSButtonVariant.primary,
+          size: DSButtonSize.sm,
+          onTap: () => Navigator.of(ctx).pop(),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

@@ -406,39 +406,7 @@ class _PriceRow extends StatelessWidget {
 
   String get _price {
     if (musicianPrice != null) return '${_fmt(musicianPrice!)} kr.';
-
-    final noBudget = job.budgetStart == null && job.budgetEnd == null;
-
-    // B-tier fallback: show fixed range when no budget is provided
-    if (djTier == 'B' && noBudget && !job.isExtJob) {
-      return '${_fmt(3500)} – ${_fmt(6500)} kr.';
-    }
-
-    final adjEnd = adjustBudgetForDjView(
-      budget: job.budgetEnd ?? job.budgetStart,
-      requestedSaxophonist: job.requestedSaxophonist,
-      requestedMusicianHours: job.requestedMusicianHours,
-      djTier: djTier,
-      maxBudget: job.budgetEnd,
-      jobCreatedAt: job.createdAt,
-    );
-    if (adjEnd == null) return 'Budget ikke angivet';
-
-    if (job.budgetStart != null && job.budgetStart != job.budgetEnd) {
-      final adjStart = adjustBudgetForDjView(
-        budget: job.budgetStart,
-        requestedSaxophonist: job.requestedSaxophonist,
-        requestedMusicianHours: job.requestedMusicianHours,
-        djTier: djTier,
-        maxBudget: job.budgetEnd,
-        jobCreatedAt: job.createdAt,
-      );
-      if (adjStart != null) {
-        final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
-        return '${_fmt(adjStart.toInt())} – ${_fmt(adjEndClamped.toInt())} kr.';
-      }
-    }
-    return '${_fmt(adjEnd.toInt())} kr.';
+    return djAdjustedBudgetLabel(job, djTier) ?? 'Budget ikke angivet';
   }
 
   static String _fmt(int n) =>

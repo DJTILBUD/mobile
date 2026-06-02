@@ -16,6 +16,7 @@ class DjQuote {
     this.extraHours,
     this.extraHoursPricePerHour,
     this.djNotes,
+    this.djPayoutOverride,
   });
 
   final int id;
@@ -34,6 +35,21 @@ class DjQuote {
   final double? extraHours;
   final int? extraHoursPricePerHour;
   final String? djNotes;
+
+  /// Admin-negotiated payout that REPLACES the standard 75% calculation.
+  /// When set, the DJ must only ever see this number — never the full job price
+  /// or the standard cut — otherwise we leak that the deal was changed.
+  final int? djPayoutOverride;
+
+  /// True when an admin has overridden this DJ's payout.
+  /// Mirrors web app QuoteInfo: `dj_payout_override != null`.
+  bool get hasPayoutOverride => djPayoutOverride != null;
+
+  /// What the DJ is paid. MUST mirror web app QuoteInfo exactly:
+  ///   dj_payout_override ?? round(price_dkk * 0.75)
+  /// Do not add early-setup/extra-hours on top — price_dkk already includes any
+  /// accepted add-ons, and the override is the final agreed amount.
+  int get djPayout => djPayoutOverride ?? (priceDkk * 0.75).round();
 }
 
 enum QuoteStatus {

@@ -658,9 +658,9 @@ class _JobSummary extends StatelessWidget {
           _SummaryRow(LucideIcons.clock, job.timeDisplay),
           const SizedBox(height: DSSpacing.s1),
           _SummaryRow(LucideIcons.flag, job.region),
-          if (job.city.isNotEmpty) ...[
+          if (job.placeLabel.isNotEmpty) ...[
             const SizedBox(height: DSSpacing.s1),
-            _SummaryRow(LucideIcons.mapPin, job.city),
+            _SummaryRow(LucideIcons.mapPin, job.placeLabel),
           ],
           const SizedBox(height: DSSpacing.s1),
           _SummaryRow(LucideIcons.users, '${job.guestsAmount} gæster'),

@@ -133,6 +133,7 @@ class ExtJobModel {
       startTime: startTime,
       endTime: endTime,
       location: location,
+      postalCode: postalCode,
       guestsAmount: guestsAmount,
       eventType: eventType,
       budgetTarget: budgetTarget,
@@ -153,6 +154,7 @@ class ExtJobModel {
           ? DateTime.parse(customerContactPlannedFor!)
           : null,
       songRequestToken: songRequestToken,
+      musicianSpecialRequest: musicianSpecialRequest,
     );
   }
 

@@ -58,33 +58,27 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final navCtx = rootNavigatorKey.currentContext;
       if (navCtx == null) return;
-      await showDialog<void>(
-        context: navCtx,
-        builder: (ctx) {
-          final c = DSTheme.of(ctx);
-          return AlertDialog(
-            backgroundColor: c.bg.surface,
-            title: Text(title,
-                style: DSTextStyle.headingSm.copyWith(color: c.text.primary)),
-            content: Text(message,
-                style:
-                    DSTextStyle.bodyMd.copyWith(color: c.text.secondary)),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Senere'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.of(ctx).pop();
-                  await launchUrl(Uri.parse(url),
-                      mode: LaunchMode.externalApplication);
-                },
-                child: const Text('Opdatér'),
-              ),
-            ],
-          );
-        },
+      await showDSDialog<void>(
+        navCtx,
+        title: title,
+        message: message,
+        actions: (ctx) => [
+          DSButton(
+            label: 'Senere',
+            variant: DSButtonVariant.ghost,
+            size: DSButtonSize.sm,
+            onTap: () => Navigator.of(ctx).pop(),
+          ),
+          DSButton(
+            label: 'Opdatér',
+            variant: DSButtonVariant.primary,
+            size: DSButtonSize.sm,
+            onTap: () async {
+              Navigator.of(ctx).pop();
+              await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+            },
+          ),
+        ],
       );
     });
   }

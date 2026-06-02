@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dj_tilbud_app/core/config/role_cache.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
+import 'package:dj_tilbud_app/app.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:dj_tilbud_app/core/notifications/notifications_service.dart';
@@ -92,9 +94,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     if (!mounted) return;
     if (results[0]) {
       await RoleCache.save(MusicianRole.dj);
+      await initOnboardingStatus();
       if (mounted) context.goNamed(AppRoutes.djHome);
     } else if (results[1]) {
       await RoleCache.save(MusicianRole.instrumentalist);
+      await initOnboardingStatus();
       if (mounted) context.goNamed(AppRoutes.instrumentalistHome);
     }
     // No profile found → show the setup form (normal new-user flow)
@@ -146,6 +150,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           allowPublicDjProfile: _allowPublicDjProfile,
         ));
         await RoleCache.save(MusicianRole.dj);
+        await initOnboardingStatus();
         if (mounted) context.goNamed(AppRoutes.djHome);
       } else {
         await repo.createMusicianProfile(
@@ -163,11 +168,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           email: user.email ?? '',
         );
         await RoleCache.save(MusicianRole.instrumentalist);
+        await initOnboardingStatus();
         if (mounted) context.goNamed(AppRoutes.instrumentalistHome);
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = 'Kunne ikke oprette profil: ${e.toString()}');
+        setState(() => _errorMessage = friendlyErrorMessage(e, fallback: 'Kunne ikke oprette profil. Prøv igen.'));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

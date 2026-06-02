@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/standard_message.dart';
@@ -118,38 +119,32 @@ class StandardMessagesScreen extends ConsumerWidget {
               DSToast.show(context, variant: DSToastVariant.success, title: existing != null ? 'Besked opdateret' : 'Besked tilføjet');
             }
           } catch (e) {
-            if (context.mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Fejl: $e');
+            if (context.mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Beskeden kunne ikke gemmes. Prøv igen.'));
           }
         },
       ),
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, StandardMessage msg) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Slet besked?'),
-        actions: [
-          DSButton(label: 'Annuller', variant: DSButtonVariant.ghost, size: DSButtonSize.sm, onTap: () => Navigator.of(ctx).pop()),
-          DSButton(
-            label: 'Slet',
-            variant: DSButtonVariant.tertiary,
-            size: DSButtonSize.sm,
-            onTap: () async {
-              Navigator.of(ctx).pop();
-              try {
-                await ref.read(profileRepositoryProvider).deleteStandardMessage(msg.id);
-                ref.invalidate(standardMessagesProvider);
-                if (context.mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Besked slettet');
-              } catch (e) {
-                if (context.mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Fejl: $e');
-              }
-            },
-          ),
-        ],
-      ),
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, StandardMessage msg) async {
+    final confirmed = await showDSConfirm(
+      context,
+      title: 'Slet besked?',
+      confirmLabel: 'Slet',
+      destructive: true,
     );
+    if (!confirmed) return;
+    try {
+      await ref.read(profileRepositoryProvider).deleteStandardMessage(msg.id);
+      ref.invalidate(standardMessagesProvider);
+      if (context.mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Besked slettet');
+    } catch (e) {
+      if (context.mounted) {
+        DSToast.show(context,
+            variant: DSToastVariant.error,
+            title: friendlyErrorMessage(e, fallback: 'Beskeden kunne ikke slettes. Prøv igen.'));
+      }
+    }
   }
 }
 

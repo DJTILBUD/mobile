@@ -165,7 +165,9 @@ class _QuestionsPhase extends StatelessWidget {
     final role = isDj ? 'DJ' : 'musiker';
     return ListView(
       controller: scrollController,
-      padding: const EdgeInsets.all(DSSpacing.s4),
+      // Add the keyboard inset so the inputs scroll clear of it.
+      padding: EdgeInsets.fromLTRB(DSSpacing.s4, DSSpacing.s4, DSSpacing.s4,
+          DSSpacing.s4 + MediaQuery.of(context).viewInsets.bottom),
       children: [
         Text(
           'To hurtige spørgsmål, så teksten lyder som dig.',

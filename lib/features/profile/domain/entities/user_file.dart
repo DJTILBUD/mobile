@@ -3,7 +3,8 @@ enum UserFileType {
   common,
   profileVideo,
   commonVideo,
-  thumbnail;
+  thumbnail,
+  jobContent;
 
   static UserFileType fromString(String value) {
     switch (value) {
@@ -17,6 +18,8 @@ enum UserFileType {
         return UserFileType.commonVideo;
       case 'thumbnail':
         return UserFileType.thumbnail;
+      case 'job_content':
+        return UserFileType.jobContent;
       default:
         return UserFileType.common;
     }
@@ -34,6 +37,8 @@ enum UserFileType {
         return 'common_video';
       case UserFileType.thumbnail:
         return 'thumbnail';
+      case UserFileType.jobContent:
+        return 'job_content';
     }
   }
 }

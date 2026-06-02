@@ -13,7 +13,6 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/repositories/jobs_repository.dart';
 import 'package:dj_tilbud_app/features/jobs/data/datasources/jobs_remote_datasource.dart';
-import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/data/repositories/jobs_repository_impl.dart';
 
 final jobsRepositoryProvider = Provider<JobsRepository>((ref) {
@@ -164,62 +163,19 @@ final djFiltersEnabledProvider = StateProvider<bool>((ref) => true);
 final filteredDjJobsProvider = Provider<AsyncValue<List<Job>>>((ref) {
   final jobs = ref.watch(newDjJobsProvider);
   final filtersAsync = ref.watch(djJobFiltersProvider);
-  final profileAsync = ref.watch(djProfileProvider);
   final filtersEnabled = ref.watch(djFiltersEnabledProvider);
-  final quotes = ref.watch(djQuotesProvider).valueOrNull ?? [];
-  final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
-  final unavailableMap = ref.watch(djUnavailableDatesProvider).valueOrNull ?? {};
-  final unavailableDates = Set<String>.from(unavailableMap.keys);
 
+  // The server (GET /api/dj/biddable-jobs) already applied every hard rule —
+  // suppression, quote cap, tier quotas, paused, sax capability, profile-excluded
+  // event types, already-quoted/rejected exclusion, unavailable dates — and the
+  // collision sort. The only thing left to do client-side is the *optional*
+  // DjJobFilters, gated by the instant in-list "Filtre til/fra" toggle.
   return jobs.whenData((jobList) {
-    final profile = profileAsync.valueOrNull;
     final filters = filtersAsync.valueOrNull;
-
-    // If DJ is suppressed, show no jobs (matches web app: !djInfo.is_suppressed)
-    if (profile?.isSuppressed == true) return [];
-
-    final filtered = jobList.where((job) {
-      // Hard constraint: hide jobs on manually-marked unavailable dates
-      if (unavailableDates.isNotEmpty) {
-        final d = job.date;
-        final dateStr =
-            '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-        if (unavailableDates.contains(dateStr)) return false;
-      }
-
-      // Hard constraint: event types excluded on the DJ profile (not a user toggle)
-      if (profile != null && profile.excludedEventTypes.isNotEmpty) {
-        final jobType = job.eventType.trim().toLowerCase();
-        if (profile.excludedEventTypes
-            .any((e) => e.trim().toLowerCase() == jobType)) {
-          return false;
-        }
-      }
-
-      // Hard constraint: don't show saxophonist jobs to DJs who can't play sax
-      if (job.requestedSaxophonist && profile?.canPlayWithSax == false) {
-        return false;
-      }
-
-      // Optional filters from DjJobFilters (user-controlled preferences)
-      if (filtersEnabled && filters != null && filters.hasActiveFilters) {
-        if (_isJobExcludedByFilters(job, filters)) return false;
-      }
-
-      return true;
-    }).toList();
-
-    // Sort: non-colliding jobs first, then newest created_at within each group.
-    // Mirrors unbidJobsCompareFunction from the web app.
-    filtered.sort((a, b) {
-      final aCollides = _jobCollides(a, quotes, extJobs);
-      final bCollides = _jobCollides(b, quotes, extJobs);
-      if (aCollides && !bCollides) return 1;
-      if (!aCollides && bCollides) return -1;
-      return b.createdAt.compareTo(a.createdAt); // newest first
-    });
-
-    return filtered;
+    if (!filtersEnabled || filters == null || !filters.hasActiveFilters) {
+      return jobList;
+    }
+    return jobList.where((job) => !_isJobExcludedByFilters(job, filters)).toList();
   });
 });
 
@@ -253,31 +209,6 @@ bool _isJobExcludedByFilters(Job job, DjJobFilters f) {
   if (f.maxGuests != null && job.guestsAmount > f.maxGuests!) return true;
 
   return false;
-}
-
-bool _sameDate(DateTime a, DateTime b) =>
-    a.year == b.year && a.month == b.month && a.day == b.day;
-
-/// Mirrors collidingQuote() from useCollidingQuote.ts.
-/// Returns true if the job date collides with an existing ext job or
-/// active quote (won = always blocks; 2+ pending = blocks).
-bool _jobCollides(Job job, List<DjQuote> quotes, List<ExtJob> extJobs) {
-  // Ext job assigned on the same date
-  if (extJobs.any((e) => _sameDate(e.date, job.date))) return true;
-
-  // Active quotes on the same date (exclude lost/overwritten and the same job)
-  final onSameDate = quotes.where((q) =>
-      _sameDate(q.job.date, job.date) &&
-      q.status != QuoteStatus.lost &&
-      q.status != QuoteStatus.overwritten &&
-      q.job.id != job.id).toList();
-
-  // A won job on the same date blocks all new bids
-  if (onSameDate.any((q) => q.status == QuoteStatus.won)) return true;
-
-  // 2 or more pending quotes on the same date blocks a third bid
-  final pending = onSameDate.where((q) => q.status == QuoteStatus.pending).length;
-  return pending >= 2;
 }
 
 final pendingDjQuotesProvider = Provider<AsyncValue<List<DjQuote>>>((ref) {

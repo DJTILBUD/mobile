@@ -14,6 +14,8 @@ import 'package:dj_tilbud_app/features/jobs/presentation/screens/song_requests_s
 import 'package:dj_tilbud_app/features/jobs/presentation/screens/edit_quote_bottom_sheet.dart'
     show kEditWindowMinutes, showEditQuoteBottomSheet;
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/job_content_section.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/sick_disclaimer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -54,9 +56,9 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   @override
   Widget build(BuildContext context) {
       final _c = DSTheme.of(context);
-    final earlyAccepted = _quote.earlySetupStatus == 'accepted';
-    final earlyPrice = earlyAccepted ? (_quote.earlySetupPrice ?? 0) : 0;
-    final payout = ((_quote.priceDkk + earlyPrice) * 0.75).toInt();
+    // Mirrors web app QuoteInfo exactly: dj_payout_override ?? round(price_dkk * 0.75).
+    // Never derive a different number — the DJ must see what the web app shows.
+    final payout = _quote.djPayout;
 
     return Scaffold(
       backgroundColor: _c.bg.canvas,
@@ -125,8 +127,6 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
             const SizedBox(height: DSSpacing.s4),
           ],
           _sharedBidSections(payout),
-          const SizedBox(height: DSSpacing.s4),
-          _ServiceOffersSection(jobId: _quote.jobId),
           const SizedBox(height: DSSpacing.s8),
         ],
       );
@@ -234,9 +234,9 @@ class _JobHeroCard extends StatelessWidget {
           _MetaRow(icon: LucideIcons.clock, label: job.timeDisplay),
           const SizedBox(height: DSSpacing.s2),
           _MetaRow(icon: LucideIcons.flag, label: job.region),
-          if (job.city.isNotEmpty) ...[
+          if (job.placeLabel.isNotEmpty) ...[
             const SizedBox(height: DSSpacing.s2),
-            _MetaRow(icon: LucideIcons.mapPin, label: job.city),
+            _MetaRow(icon: LucideIcons.mapPin, label: job.placeLabel),
           ],
           if (job.guestsAmount > 0) ...[
             const SizedBox(height: DSSpacing.s2),
@@ -377,20 +377,24 @@ class _BidSummaryCard extends StatelessWidget {
             ),
           ),
 
-          // Price + payout row
+          // Payout row. When an admin has overridden the payout we mirror the web
+          // app and show ONLY "Din udbetaling" — the full job price is hidden so we
+          // never reveal that the DJ's cut was changed.
           Padding(
             padding: const EdgeInsets.all(DSSpacing.s4),
             child: Row(
               children: [
-                Expanded(
-                  child: _PriceKpi(
-                    label: 'Samlet pris',
-                    value: '${_fmt(quote.priceDkk)} kr.',
-                    icon: LucideIcons.banknote,
-                    highlight: false,
+                if (!quote.hasPayoutOverride) ...[
+                  Expanded(
+                    child: _PriceKpi(
+                      label: 'Samlet pris',
+                      value: '${_fmt(quote.priceDkk)} kr.',
+                      icon: LucideIcons.banknote,
+                      highlight: false,
+                    ),
                   ),
-                ),
-                Container(width: 1, height: 48, color: _c.border.subtle),
+                  Container(width: 1, height: 48, color: _c.border.subtle),
+                ],
                 Expanded(
                   child: _PriceKpi(
                     label: 'Din udbetaling',
@@ -726,18 +730,15 @@ class _WonSectionState extends ConsumerState<_WonSection> {
   Future<void> _handleReadyForBilling(int jobId, DjQuote quote) async {
     // If early setup was offered, ask about it first.
     if (quote.earlySetupStatus == 'offered' && mounted) {
-      final result = await showDialog<bool?>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Tidlig opsætning'),
-          content: const Text(
-              'Valgte kunden tidlig opsætning?'),
-          actions: [
-            DSButton(label: 'Annuller', variant: DSButtonVariant.ghost, size: DSButtonSize.sm, onTap: () => Navigator.pop(ctx)),
-            DSButton(label: 'Nej', variant: DSButtonVariant.ghost, size: DSButtonSize.sm, onTap: () => Navigator.pop(ctx, false)),
-            DSButton(label: 'Ja', variant: DSButtonVariant.tertiary, size: DSButtonSize.sm, onTap: () => Navigator.pop(ctx, true)),
-          ],
-        ),
+      final result = await showDSDialog<bool?>(
+        context,
+        title: 'Tidlig opsætning',
+        message: 'Valgte kunden tidlig opsætning?',
+        actions: (ctx) => [
+          DSButton(label: 'Annuller', variant: DSButtonVariant.ghost, size: DSButtonSize.sm, onTap: () => Navigator.pop(ctx)),
+          DSButton(label: 'Nej', variant: DSButtonVariant.ghost, size: DSButtonSize.sm, onTap: () => Navigator.pop(ctx, false)),
+          DSButton(label: 'Ja', variant: DSButtonVariant.tertiary, size: DSButtonSize.sm, onTap: () => Navigator.pop(ctx, true)),
+        ],
       );
       if (result == null || !mounted) return;
       await ref
@@ -745,19 +746,15 @@ class _WonSectionState extends ConsumerState<_WonSection> {
           .resolve(quote.id, accepted: result);
     } else if (mounted) {
       // Confirm before marking ready for billing.
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Luk aftale og send faktura'),
-          content: const Text(
-              'Er kunden klar til at modtage en faktura? Kunden vil modtage en bekræftelse og en faktura på 50% af det aftalte beløb.'),
-          actions: [
-            DSButton(label: 'Annuller', variant: DSButtonVariant.ghost, size: DSButtonSize.sm, onTap: () => Navigator.pop(ctx, false)),
-            DSButton(label: 'Luk aftale', variant: DSButtonVariant.tertiary, size: DSButtonSize.sm, onTap: () => Navigator.pop(ctx, true)),
-          ],
-        ),
+      final confirmed = await showDSConfirm(
+        context,
+        title: 'Luk aftale og send faktura',
+        message:
+            'Er kunden klar til at modtage en faktura? Kunden vil modtage en bekræftelse og en faktura på 50% af det aftalte beløb.',
+        confirmLabel: 'Luk aftale',
+        destructive: true,
       );
-      if (confirmed != true || !mounted) return;
+      if (!confirmed || !mounted) return;
     }
 
     final success = await ref
@@ -986,11 +983,21 @@ class _WonSectionState extends ConsumerState<_WonSection> {
                     'Send faktura',
                     'Bekræft klar',
                     'Spil jobbet',
+                    'Optag content',
                   ],
                   completedSteps: completedSteps,
                 ),
               ],
             ),
+
+            // ── Step 5: content capture (unlocked once ready confirmed) ──
+            if (isConfirmedReady) ...[
+              const SizedBox(height: DSSpacing.s4),
+              JobContentSection(quoteId: widget.quote.id),
+            ],
+
+            const SizedBox(height: DSSpacing.s4),
+            const SickDisclaimer(role: 'dj'),
           ],
         );
       },
@@ -1478,16 +1485,19 @@ class _ServiceOffersSection extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (offers) {
-        if (offers.isEmpty) return const SizedBox.shrink();
+        // Only show the confirmed (won) instrumentalist, so the DJ and sax see
+        // each other only once both are locked in (matches the ext-job view).
+        final won = offers.where((o) => o.status == ServiceOfferStatus.won).toList();
+        if (won.isEmpty) return const SizedBox.shrink();
         return Column(
           children: [
             const SizedBox(height: 0),
             _Section(
               title: 'Instrumentalist på dette job',
               children: [
-                for (final offer in offers) ...[
+                for (final offer in won) ...[
                   _MusicianOfferRow(offer: offer),
-                  if (offer != offers.last)
+                  if (offer != won.last)
                     Divider(height: DSSpacing.s4, color: _c.border.subtle),
                 ],
                 const SizedBox(height: DSSpacing.s3),

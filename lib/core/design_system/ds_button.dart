@@ -71,7 +71,9 @@ class DSButton extends StatelessWidget {
         ? c.text.muted
         : switch (variant) {
             DSButtonVariant.primary => c.brand.onPrimary,
-            DSButtonVariant.secondary => c.brand.primary,
+            // primaryActive is the "text on tinted bg" token — using `primary`
+            // here renders light-lime text on a light-lime tint (unreadable).
+            DSButtonVariant.secondary => c.brand.primaryActive,
             DSButtonVariant.tertiary => c.text.primary,
             DSButtonVariant.ghost => c.text.secondary,
           };
@@ -83,48 +85,56 @@ class DSButton extends StatelessWidget {
             _ => null,
           };
 
+    final container = AnimatedContainer(
+      duration: DSMotion.fast,
+      height: _height,
+      padding: _padding,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(DSRadius.pill),
+        border: borderColor != null ? Border.all(color: borderColor) : null,
+      ),
+      child: isLoading
+          ? SizedBox(
+              width: _iconSize,
+              height: _iconSize,
+              child: CircularProgressIndicator(strokeWidth: 2, color: fg),
+            )
+          : Row(
+              mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (iconLeft != null) ...[
+                  Icon(iconLeft, size: _iconSize, color: fg),
+                  const SizedBox(width: DSSpacing.s2),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+                if (iconRight != null) ...[
+                  const SizedBox(width: DSSpacing.s2),
+                  Icon(iconRight, size: _iconSize, color: fg),
+                ],
+              ],
+            ),
+    );
+
     return GestureDetector(
       onTap: active ? onTap : null,
-      child: AnimatedContainer(
-        duration: DSMotion.fast,
-        height: _height,
-        padding: _padding,
-        constraints: expand ? const BoxConstraints(minWidth: double.infinity) : null,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(DSRadius.pill),
-          border: borderColor != null ? Border.all(color: borderColor) : null,
-        ),
-        child: isLoading
-            ? SizedBox(
-                width: _iconSize,
-                height: _iconSize,
-                child: CircularProgressIndicator(strokeWidth: 2, color: fg),
-              )
-            : Row(
-                mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (iconLeft != null) ...[
-                    Icon(iconLeft, size: _iconSize, color: fg),
-                    const SizedBox(width: DSSpacing.s2),
-                  ],
-                  Flexible(
-                    child: Text(
-                      label,
-                      style: TextStyle(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                  if (iconRight != null) ...[
-                    const SizedBox(width: DSSpacing.s2),
-                    Icon(iconRight, size: _iconSize, color: fg),
-                  ],
-                ],
-              ),
-      ),
+      // Apply `expand` via an outer SizedBox instead of AnimatedContainer's
+      // `constraints`: animating between bounded (shrink-wrap) and unbounded
+      // (full-width) constraints throws "Cannot interpolate between finite and
+      // unbounded constraints" when a button toggles expand/size mid-life
+      // (e.g. a small "Redigér" swapping to a full-width "Gem" button).
+      child: expand
+          ? SizedBox(width: double.infinity, child: container)
+          : container,
     );
   }
 }
@@ -182,7 +192,7 @@ class DSIconButton extends StatelessWidget {
         ? c.text.muted
         : switch (variant) {
             DSIconButtonVariant.primary => c.brand.onPrimary,
-            DSIconButtonVariant.secondary => c.brand.primary,
+            DSIconButtonVariant.secondary => c.brand.primaryActive,
             DSIconButtonVariant.tertiary => c.text.primary,
             DSIconButtonVariant.ghost => c.text.secondary,
             DSIconButtonVariant.brand => c.brand.onAccent,

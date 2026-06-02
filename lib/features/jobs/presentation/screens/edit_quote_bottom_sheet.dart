@@ -200,8 +200,9 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
               Expanded(
                 child: ListView(
                   controller: scrollCtrl,
-                  padding: const EdgeInsets.fromLTRB(
-                      DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, DSSpacing.s8),
+                  // Add the keyboard inset so lower fields scroll clear of it.
+                  padding: EdgeInsets.fromLTRB(DSSpacing.s4, DSSpacing.s4, DSSpacing.s4,
+                      DSSpacing.s8 + MediaQuery.of(context).viewInsets.bottom),
                   children: [
                     Text(
                       'Redigér tilbud',

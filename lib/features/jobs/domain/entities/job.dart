@@ -25,6 +25,7 @@ class Job {
     this.isExtJob = false,
     this.extJobId,
     this.quoteSendMode,
+    this.isPaused = false,
     this.assignedDjName,
     this.sentAt,
     this.deadlineExtendedUntil,
@@ -65,6 +66,8 @@ class Job {
   final int? extJobId;
   /// 'first_quote_only' → high-season priority (Højsæson-prioritet)
   final String? quoteSendMode;
+  /// True when an admin has paused the job — no one can bid while paused.
+  final bool isPaused;
   final String? assignedDjName;
   /// When the job was sent to the customer for selection. Null for unsent jobs
   /// and for ExtJobs (which don't have this column). Drives the customer
@@ -115,6 +118,7 @@ class Job {
         isExtJob: isExtJob,
         extJobId: extJobId,
         quoteSendMode: quoteSendMode,
+        isPaused: isPaused,
         assignedDjName: assignedDjName,
         sentAt: sentAt,
         deadlineExtendedUntil: deadlineExtendedUntil,
@@ -149,6 +153,16 @@ class Job {
     if (budgetStart == null || budgetEnd == null) return 'Ikke angivet';
     if (budgetStart == budgetEnd) return '${_fmtNum(budgetStart!)} kr.';
     return '${_fmtNum(budgetStart!)} – ${_fmtNum(budgetEnd!)} kr.';
+  }
+
+  /// The event place with its postal code, e.g. "2100 København".
+  /// Mirrors the location shown on the job list card so the postal code is
+  /// visible on detail screens too, not just in the list.
+  String get placeLabel {
+    final pc = postalCode?.trim();
+    if (pc != null && pc.isNotEmpty && city.isNotEmpty) return '$pc $city';
+    if (pc != null && pc.isNotEmpty) return pc;
+    return city;
   }
 
   String get timeDisplay => '${_stripSeconds(timeStart)} - ${_stripSeconds(timeEnd)}';

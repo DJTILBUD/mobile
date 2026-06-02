@@ -9,6 +9,7 @@ export 'ds_switch.dart';
 export 'ds_checkbox.dart';
 export 'ds_radio.dart';
 export 'ds_surface.dart';
+export 'ds_dialog.dart';
 export 'ds_toast.dart';
 export 'ds_segmented_control.dart';
 export 'ds_slider.dart';

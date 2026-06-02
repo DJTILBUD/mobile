@@ -17,6 +17,7 @@ class DjQuoteModel {
     this.extraHours,
     this.extraHoursPricePerHour,
     this.djNotes,
+    this.djPayoutOverride,
   });
 
   final int id;
@@ -33,6 +34,7 @@ class DjQuoteModel {
   final double? extraHours;
   final int? extraHoursPricePerHour;
   final String? djNotes;
+  final int? djPayoutOverride;
 
   factory DjQuoteModel.fromJson(Map<String, dynamic> json) {
     // The job is present when fetched with a `*, job:Jobs(*)` join (e.g. the
@@ -58,6 +60,7 @@ class DjQuoteModel {
       extraHours: (json['extra_hours'] as num?)?.toDouble(),
       extraHoursPricePerHour: (json['extra_hours_price_per_hour'] as num?)?.toInt(),
       djNotes: json['dj_notes'] as String?,
+      djPayoutOverride: (json['dj_payout_override'] as num?)?.toInt(),
     );
   }
 
@@ -77,6 +80,7 @@ class DjQuoteModel {
       extraHours: extraHours,
       extraHoursPricePerHour: extraHoursPricePerHour,
       djNotes: djNotes,
+      djPayoutOverride: djPayoutOverride,
     );
   }
 

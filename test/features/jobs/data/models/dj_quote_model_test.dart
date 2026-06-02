@@ -61,4 +61,42 @@ void main() {
       expect(model.job.city, 'Egeskov Hotel');
     });
   });
+
+  group('DjQuote payout — must mirror web app QuoteInfo exactly', () {
+    // Base row with a 12.000 kr job price (standard payout would be 9.000 kr).
+    Map<String, dynamic> row(Map<String, dynamic> extra) => <String, dynamic>{
+          'id': 1,
+          'job_id': 1,
+          'price_dkk': 12000,
+          'sales_pitch': '',
+          'equipment_description': '',
+          'status': 'won',
+          'created_at': '2026-05-25T09:31:15.901612+00:00',
+          ...extra,
+        };
+
+    test('parses dj_payout_override', () {
+      expect(DjQuoteModel.fromJson(row({'dj_payout_override': 6000})).djPayoutOverride, 6000);
+      expect(DjQuoteModel.fromJson(row({})).djPayoutOverride, isNull);
+    });
+
+    test('uses dj_payout_override when set — NEVER the standard 75%', () {
+      // Admin negotiated a worse deal for the DJ (6.000 < the 9.000 standard).
+      // The DJ must only ever see 6.000 — leaking 9.000 would reveal the change.
+      final q = DjQuoteModel.fromJson(row({'dj_payout_override': 6000})).toEntity();
+      expect(q.hasPayoutOverride, true);
+      expect(q.djPayout, 6000);
+    });
+
+    test('falls back to round(price_dkk * 0.75) when no override', () {
+      final q = DjQuoteModel.fromJson(row({})).toEntity();
+      expect(q.hasPayoutOverride, false);
+      expect(q.djPayout, 9000); // 12000 * 0.75
+    });
+
+    test('rounds the 75% payout like Math.round (half up)', () {
+      final q = DjQuoteModel.fromJson(row({'price_dkk': 5001})).toEntity();
+      expect(q.djPayout, 3751); // 3750.75 -> 3751
+    });
+  });
 }

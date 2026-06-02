@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/utils/musician_price.dart';
+import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/widgets/animated_card.dart';
 import 'package:dj_tilbud_app/core/widgets/skeleton_loading.dart';
@@ -394,9 +396,13 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
     required List<Job> newJobs,
     required List<DjQuote> pendingQuotes,
     required List<CalendarEvent> wonEvents,
+    required String? djTier,
   }) {
     final events = <CalendarEvent>[];
-    if (_showNew) events.addAll(newJobs.map(_jobToEvent));
+    if (_showNew) {
+      events.addAll(newJobs.map((j) =>
+          _jobToEvent(j, budgetDisplay: djAdjustedBudgetLabel(j, djTier))));
+    }
     if (_showSent) events.addAll(pendingQuotes.map(_quoteToEvent));
     if (_showWon) events.addAll(wonEvents);
     return events;
@@ -499,10 +505,12 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
       for (final e in extJobsAsync.valueOrNull ?? <ExtJob>[]) e.id: e
     };
 
+    final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
     final allEvents = _buildEvents(
       newJobs: newJobs,
       pendingQuotes: pending,
       wonEvents: won,
+      djTier: djTier,
     );
     final visibleEvents = _eventsForView(allEvents);
 
@@ -701,7 +709,10 @@ class _InstrumentalistCalendarViewState
     required List<CalendarEvent> wonEvents,
   }) {
     final events = <CalendarEvent>[];
-    if (_showNew) events.addAll(newJobs.map(_jobToEvent));
+    if (_showNew) {
+      events.addAll(newJobs.map((j) =>
+          _jobToEvent(j, budgetDisplay: _musicianBudgetLabel(j))));
+    }
     if (_showSent) events.addAll(sentOffers.map(_offerToEvent));
     if (_showWon) events.addAll(wonEvents);
     return events;
@@ -946,7 +957,15 @@ class _InstrumentalistCalendarViewState
 
 // ── Calendar helper converters ──
 
-CalendarEvent _jobToEvent(Job job) => CalendarEvent(
+/// Musician-facing payout label for a new job on the calendar.
+/// Mirrors the fixed offer price shown on the musician "Nye jobs" list.
+String _musicianBudgetLabel(Job job) {
+  final price =
+      calculateMusicianOfferPrice(job.requestedMusicianHours, job.createdAt);
+  return '${NumberFormat('#,###', 'da_DK').format(price).replaceAll(',', '.')} kr.';
+}
+
+CalendarEvent _jobToEvent(Job job, {String? budgetDisplay}) => CalendarEvent(
       id: job.id,
       date: job.date,
       label: job.eventType,
@@ -957,6 +976,7 @@ CalendarEvent _jobToEvent(Job job) => CalendarEvent(
       location: job.city.isEmpty ? null : job.city,
       region: job.region.isEmpty ? null : job.region,
       guestsAmount: job.guestsAmount,
+      budgetDisplay: budgetDisplay,
       jobId: job.id,
     );
 
@@ -989,6 +1009,74 @@ CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
       jobId: offer.isExtJob ? null : offer.jobId,
       extJobId: offer.isExtJob ? offer.extJobId : null,
     );
+
+// ── Month grouping (won-jobs lists) ──
+
+const _kMonthNamesFull = [
+  'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'December',
+];
+
+/// Builds a list of widgets where the already-sorted [items] are grouped under
+/// month/year headers (e.g. "Januar 2027"). Group order follows the date:
+/// chronological for upcoming, most-recent-first when [descending] is true.
+/// The incoming order is preserved within each month, so any "needs action"
+/// ordering still floats to the top of its month.
+List<Widget> _groupByMonth<T>({
+  required List<T> items,
+  required DateTime Function(T) dateOf,
+  required Widget Function(int index, T item) cardOf,
+  bool descending = false,
+}) {
+  final groups = <int, List<T>>{};
+  for (final item in items) {
+    final d = dateOf(item);
+    final key = d.year * 12 + (d.month - 1);
+    groups.putIfAbsent(key, () => <T>[]).add(item);
+  }
+  final keys = groups.keys.toList()..sort();
+  if (descending) {
+    final reversed = keys.reversed.toList();
+    keys
+      ..clear()
+      ..addAll(reversed);
+  }
+
+  final children = <Widget>[];
+  var index = 0;
+  for (final key in keys) {
+    final year = key ~/ 12;
+    final month = key % 12;
+    children.add(_MonthGroupHeader(label: '${_kMonthNamesFull[month]} $year'));
+    for (final item in groups[key]!) {
+      children.add(cardOf(index, item));
+      index++;
+    }
+  }
+  return children;
+}
+
+class _MonthGroupHeader extends StatelessWidget {
+  const _MonthGroupHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DSTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          DSSpacing.s4, DSSpacing.s3, DSSpacing.s4, DSSpacing.s1),
+      child: Text(
+        label,
+        style: DSTextStyle.labelSm.copyWith(
+          fontWeight: FontWeight.w700,
+          color: c.text.secondary,
+        ),
+      ),
+    );
+  }
+}
 
 // ── Calendar filter chips ──
 
@@ -1140,7 +1228,7 @@ class _DjNewJobsTab extends ConsumerWidget {
     return jobsAsync.when(
       loading: () => const SkeletonListView(),
       error: (error, _) => _ErrorView(
-        message: error.toString(),
+        message: friendlyErrorMessage(error),
         onRetry: () => ref.read(newDjJobsProvider.notifier).refresh(),
       ),
       data: (jobs) {
@@ -1224,7 +1312,7 @@ class _DjQuotesTab extends ConsumerWidget {
     return quotesAsync.when(
       loading: () => const SkeletonListView(),
       error: (error, _) => _ErrorView(
-        message: error.toString(),
+        message: friendlyErrorMessage(error),
         onRetry: () => ref.read(djQuotesProvider.notifier).refresh(),
       ),
       data: (quotes) {
@@ -1293,7 +1381,7 @@ class _DjWonQuotesTabState extends ConsumerState<_DjWonQuotesTab> {
     return quotesAsync.when(
       loading: () => const SkeletonListView(),
       error: (error, _) => _ErrorView(
-        message: error.toString(),
+        message: friendlyErrorMessage(error),
         onRetry: () => ref.read(djQuotesProvider.notifier).refresh(),
       ),
       data: (quotes) {
@@ -1398,19 +1486,22 @@ class _DjWonQuotesTabState extends ConsumerState<_DjWonQuotesTab> {
                   ),
                 )
               else
-                ...displayList.asMap().entries.map(
-                      (e) => AnimatedCard(
-                        index: e.key,
-                        child: QuoteCard(
-                          quote: e.value,
-                          isPlayed: _showPlayed,
-                          onTap: () => context.pushNamed(
-                            AppRoutes.quoteDetail,
-                            extra: e.value,
-                          ),
-                        ),
+                ..._groupByMonth<DjQuote>(
+                  items: displayList,
+                  dateOf: (q) => q.job.date,
+                  descending: _showPlayed,
+                  cardOf: (index, q) => AnimatedCard(
+                    index: index,
+                    child: QuoteCard(
+                      quote: q,
+                      isPlayed: _showPlayed,
+                      onTap: () => context.pushNamed(
+                        AppRoutes.quoteDetail,
+                        extra: q,
                       ),
                     ),
+                  ),
+                ),
             ],
           ),
         );
@@ -1428,7 +1519,7 @@ class _DjExpiredTab extends ConsumerWidget {
     return quotesAsync.when(
       loading: () => const SkeletonListView(),
       error: (error, _) => _ErrorView(
-        message: error.toString(),
+        message: friendlyErrorMessage(error),
         onRetry: () => ref.read(djQuotesProvider.notifier).refresh(),
       ),
       data: (quotes) {
@@ -1487,7 +1578,7 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
     return jobsAsync.when(
       loading: () => const SkeletonListView(),
       error: (error, _) => _ErrorView(
-        message: error.toString(),
+        message: friendlyErrorMessage(error),
         onRetry: () => _refresh(ref),
       ),
       data: (jobs) {
@@ -1570,7 +1661,7 @@ class _InstrumentalistWonOffersTabState
     return offersAsync.when(
       loading: () => const SkeletonListView(),
       error: (error, _) => _ErrorView(
-        message: error.toString(),
+        message: friendlyErrorMessage(error),
         onRetry: () => ref.read(serviceOffersProvider.notifier).refresh(),
       ),
       data: (offers) {
@@ -1677,19 +1768,22 @@ class _InstrumentalistWonOffersTabState
                   ),
                 )
               else
-                ...displayList.asMap().entries.map(
-                      (e) => AnimatedCard(
-                        index: e.key,
-                        child: ServiceOfferCard(
-                          offer: e.value,
-                          isPlayed: _showPlayed,
-                          onTap: () => context.pushNamed(
-                            AppRoutes.serviceOfferDetail,
-                            extra: e.value,
-                          ),
-                        ),
+                ..._groupByMonth<ServiceOffer>(
+                  items: displayList,
+                  dateOf: (o) => o.job.date,
+                  descending: _showPlayed,
+                  cardOf: (index, o) => AnimatedCard(
+                    index: index,
+                    child: ServiceOfferCard(
+                      offer: o,
+                      isPlayed: _showPlayed,
+                      onTap: () => context.pushNamed(
+                        AppRoutes.serviceOfferDetail,
+                        extra: o,
                       ),
                     ),
+                  ),
+                ),
             ],
           ),
         );
@@ -1717,7 +1811,7 @@ class _InstrumentalistOffersTab extends ConsumerWidget {
     return offersAsync.when(
       loading: () => const SkeletonListView(),
       error: (error, _) => _ErrorView(
-        message: error.toString(),
+        message: friendlyErrorMessage(error),
         onRetry: () =>
             ref.read(serviceOffersProvider.notifier).refresh(),
       ),

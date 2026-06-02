@@ -27,6 +27,7 @@ class JobModel {
     this.isExtJob = false,
     this.extJobId,
     this.quoteSendMode,
+    this.isPaused = false,
     this.assignedDjName,
     this.sentAt,
     this.deadlineExtendedUntil,
@@ -65,6 +66,7 @@ class JobModel {
   final bool isExtJob;
   final int? extJobId;
   final String? quoteSendMode;
+  final bool isPaused;
   final String? assignedDjName;
   final String? sentAt;
   final String? deadlineExtendedUntil;
@@ -103,6 +105,7 @@ class JobModel {
       leadPhoneNumber: json['lead_phone_number'] as String?,
       customerNote: json['customer_note'] as String?,
       quoteSendMode: json['quote_send_mode'] as String?,
+      isPaused: json['is_paused'] as bool? ?? false,
       sentAt: json['sent_at'] as String?,
       deadlineExtendedUntil: json['deadline_extended_until'] as String?,
       customerContactPlannedFor: json['customer_contact_planned_for'] as String?,
@@ -149,6 +152,7 @@ class JobModel {
       isExtJob: isExtJob,
       extJobId: extJobId,
       quoteSendMode: quoteSendMode,
+      isPaused: isPaused,
       assignedDjName: assignedDjName,
       sentAt: sentAt != null ? DateTime.parse(sentAt!) : null,
       deadlineExtendedUntil: deadlineExtendedUntil != null

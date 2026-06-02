@@ -14,64 +14,58 @@ Future<void> showSongRequestQrDialog(BuildContext context, String token) {
   final c = DSTheme.of(context);
   final url = '$_publicBaseUrl/song-request/$token';
 
-  return showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: c.bg.surface,
-      title: Text(
-        'QR-kode til sangønsker',
-        style: DSTextStyle.headingSm.copyWith(color: c.text.primary),
-      ),
-      content: SizedBox(
-        width: 280,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(DSSpacing.s3),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(DSRadius.md),
-              ),
-              child: SizedBox(
-                width: 220,
-                height: 220,
-                child: QrImageView(
-                  data: url,
-                  version: QrVersions.auto,
-                  size: 220,
-                  backgroundColor: Colors.white,
-                ),
+  return showDSDialog<void>(
+    context,
+    title: 'QR-kode til sangønsker',
+    content: SizedBox(
+      width: 280,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(DSSpacing.s3),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(DSRadius.md),
+            ),
+            child: SizedBox(
+              width: 220,
+              height: 220,
+              child: QrImageView(
+                data: url,
+                version: QrVersions.auto,
+                size: 220,
+                backgroundColor: Colors.white,
               ),
             ),
-            const SizedBox(height: DSSpacing.s3),
-            Text(
-              'Én fast QR-kode til alle dine jobs. Gæsterne scanner og sender '
-              'ønsker til dit næste kommende arrangement.',
-              textAlign: TextAlign.center,
-              style: DSTextStyle.bodyMd.copyWith(color: c.text.secondary, height: 1.4),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          Text(
+            'Én fast QR-kode til alle dine jobs. Gæsterne scanner og sender '
+            'ønsker til dit næste kommende arrangement.',
+            textAlign: TextAlign.center,
+            style: DSTextStyle.bodyMd.copyWith(color: c.text.secondary, height: 1.4),
+          ),
+        ],
       ),
-      actions: [
-        DSButton(
-          label: 'Kopiér link',
-          variant: DSButtonVariant.secondary,
-          size: DSButtonSize.sm,
-          iconLeft: LucideIcons.copy,
-          onTap: () {
-            Clipboard.setData(ClipboardData(text: url));
-            DSToast.show(context, variant: DSToastVariant.success, title: 'Link kopieret!');
-          },
-        ),
-        DSButton(
-          label: 'Luk',
-          variant: DSButtonVariant.ghost,
-          size: DSButtonSize.sm,
-          onTap: () => Navigator.of(ctx).pop(),
-        ),
-      ],
     ),
+    actions: (ctx) => [
+      DSButton(
+        label: 'Kopiér link',
+        variant: DSButtonVariant.secondary,
+        size: DSButtonSize.sm,
+        iconLeft: LucideIcons.copy,
+        onTap: () {
+          Clipboard.setData(ClipboardData(text: url));
+          DSToast.show(context, variant: DSToastVariant.success, title: 'Link kopieret!');
+        },
+      ),
+      DSButton(
+        label: 'Luk',
+        variant: DSButtonVariant.ghost,
+        size: DSButtonSize.sm,
+        onTap: () => Navigator.of(ctx).pop(),
+      ),
+    ],
   );
 }
