@@ -56,9 +56,24 @@ class JobsRemoteDatasource {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  Future<void> _webApiPatch(String path) async {
+  Future<void> _webApiPatch(String path, {Map<String, dynamic>? body}) async {
     final uri = Uri.parse('$_webAppBaseUrl$path');
     final response = await http.patch(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: body != null ? jsonEncode(body) : null,
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw DatabaseException(_extractMessage(response.body));
+    }
+  }
+
+  Future<void> _webApiDelete(String path) async {
+    final uri = Uri.parse('$_webAppBaseUrl$path');
+    final response = await http.delete(
       uri,
       headers: {
         'Authorization': 'Bearer $_accessToken',
@@ -443,20 +458,26 @@ class JobsRemoteDatasource {
     );
   }
 
-  /// Updates ServiceOffers.customer_contacted = true.
+  /// Marks a musician's service offer as customer-contacted via the web API.
+  ///
+  /// Routed through the web API (NOT a direct Supabase update) so the route's
+  /// validation and side-effects run — notably the cascade that flips a
+  /// `musician_only` ExtJob to `customer_contacted`. Mirrors
+  /// [markExtJobCustomerContacted] / [markJobCustomerContacted].
   Future<void> markServiceOfferCustomerContacted(int offerId) async {
-    await _client
-        .from('ServiceOffers')
-        .update({'customer_contacted': true, 'customer_contact_planned_for': null})
-        .eq('id', offerId);
+    await _webApiPost(
+      '/api/service-offer/$offerId/customer-contacted',
+      {'contactStatus': 'contacted'},
+    );
   }
 
-  /// Sets ServiceOffers.customer_contact_planned_for (YYYY-MM-DD).
+  /// Sets a planned customer-contact date on a service offer via the web API
+  /// (the route validates the date is not in the past).
   Future<void> setServiceOfferPlannedContact(int offerId, String date) async {
-    await _client
-        .from('ServiceOffers')
-        .update({'customer_contact_planned_for': date})
-        .eq('id', offerId);
+    await _webApiPost(
+      '/api/service-offer/$offerId/customer-contacted',
+      {'contactStatus': 'planned', 'plannedContactDate': date},
+    );
   }
 
   /// Marks a regular job as ready for billing via web API (requires elevated
@@ -471,20 +492,24 @@ class JobsRemoteDatasource {
     await _webApiPut('/api/ext-jobs/$extJobId/ready-for-billing');
   }
 
-  /// Resolves the early setup status on a quote ('accepted' or 'rejected').
+  /// Resolves the early setup status on a won quote ('accepted' or 'rejected').
+  ///
+  /// Routed through the web API's early-setup branch (NOT a direct Supabase
+  /// update) so the won-status guard and any price realignment run server-side.
   Future<void> resolveEarlySetup(int quoteId, {required bool accepted}) async {
-    await _client
-        .from('Quotes')
-        .update({'early_setup_status': accepted ? 'accepted' : 'rejected'})
-        .eq('id', quoteId);
+    await _webApiPut(
+      '/api/quotes/$quoteId',
+      body: {'early_setup_status': accepted ? 'accepted' : 'rejected'},
+    );
   }
 
-  /// Confirms the DJ is ready for an internal job quote.
+  /// Confirms the DJ is ready for an internal job quote via the web API.
+  ///
+  /// Routed through the web API (NOT a direct Supabase update) so the route's
+  /// guards run: quote must be `won`, not already confirmed, and within 5 days
+  /// of the event. Mirrors [confirmExtJobDjReady] / [confirmMusicianReady].
   Future<void> confirmDjReady(int quoteId) async {
-    await _client
-        .from('Quotes')
-        .update({'dj_ready_confirmed_at': DateTime.now().toIso8601String()})
-        .eq('id', quoteId);
+    await _webApiPatch('/api/quotes/$quoteId/ready');
   }
 
   /// Confirms the DJ is ready for an ext job via web API (requires elevated access).
@@ -498,19 +523,58 @@ class JobsRemoteDatasource {
   }
 
   /// Adds / updates extra hours on a won DJ quote.
-  Future<void> addExtraHours(int quoteId, {required double extraHours, required int pricePerHour}) async {
-    await _client.from('Quotes').update({
+  ///
+  /// Routed through the web API (NOT a direct Supabase update) because adding
+  /// extra hours must recompute `price_dkk` (= base + extra_hours × rate) and
+  /// realign `dj_payout_override`. That pricing logic lives ONLY in the route
+  /// handler — a direct update would leave `price_dkk` stale, so the DJ's
+  /// displayed total would no longer match the invoice. [newTotalPrice] is the
+  /// expected total (server re-validates it).
+  Future<void> addExtraHours(
+    int quoteId, {
+    required double extraHours,
+    required int pricePerHour,
+    required int newTotalPrice,
+  }) async {
+    await _webApiPatch('/api/quotes/$quoteId/extra-hours', body: {
       'extra_hours': extraHours,
       'extra_hours_price_per_hour': pricePerHour,
-    }).eq('id', quoteId);
+      'new_total_price': newTotalPrice,
+    });
   }
 
   /// Clears extra hours from a won DJ quote.
+  ///
+  /// Routed through the web API so `price_dkk` (and any `dj_payout_override`) is
+  /// restored to the base amount server-side — a direct update would only null
+  /// the extra-hours columns and leave an inflated price behind.
   Future<void> deleteExtraHours(int quoteId) async {
-    await _client.from('Quotes').update({
-      'extra_hours': null,
-      'extra_hours_price_per_hour': null,
-    }).eq('id', quoteId);
+    await _webApiDelete('/api/quotes/$quoteId/extra-hours');
+  }
+
+  /// Adds / updates extra hours on an ext job the DJ is assigned to.
+  ///
+  /// Routed through the web API (NOT a direct Supabase update) because the route
+  /// recomputes `full_amount` (= base + extra_hours × rate) and `honorar`
+  /// (base + extra × DJ share) server-side. A direct update would leave both
+  /// stale, so the DJ's "Dit honorar" would no longer match the invoice.
+  /// [newTotalPrice] is the expected new full_amount; the server re-validates it.
+  Future<void> addExtJobExtraHours(
+    int extJobId, {
+    required double extraHours,
+    required int pricePerHour,
+    required int newTotalPrice,
+  }) async {
+    await _webApiPatch('/api/ext-jobs/$extJobId/extra-hours', body: {
+      'extra_hours': extraHours,
+      'extra_hours_price_per_hour': pricePerHour,
+      'new_total_price': newTotalPrice,
+    });
+  }
+
+  /// Clears extra hours from an ext job (restores base full_amount + honorar).
+  Future<void> deleteExtJobExtraHours(int extJobId) async {
+    await _webApiDelete('/api/ext-jobs/$extJobId/extra-hours');
   }
 
   /// Saves private DJ notes on a quote.
@@ -524,6 +588,12 @@ class JobsRemoteDatasource {
   }
 
   /// Edits a pending DJ quote within the 10-minute edit window.
+  ///
+  /// Routed through the web API (NOT a direct Supabase update) so the route's
+  /// guards run: the quote must still be `pending`, the edit must be inside the
+  /// 10-minute window, and price/sales-pitch/equipment validation applies. That
+  /// logic is the single source of truth in web-app
+  /// `src/app/api/quotes/[id]/route.ts`; a direct update would bypass all of it.
   Future<Map<String, dynamic>> editDjQuote({
     required int quoteId,
     required int priceDkk,
@@ -542,11 +612,13 @@ class JobsRemoteDatasource {
       payload['early_setup_status'] = earlySetupStatus;
       payload['early_setup_price'] = earlySetupPrice;
     }
+    await _webApiPut('/api/quotes/$quoteId', body: payload);
+    // The route returns only {success, message}, so re-read the updated row
+    // (with its job) to satisfy the DjQuote shape callers expect.
     return _client
         .from('Quotes')
-        .update(payload)
-        .eq('id', quoteId)
         .select('*, job:Jobs(*)')
+        .eq('id', quoteId)
         .single();
   }
 
@@ -658,37 +730,33 @@ class JobsRemoteDatasource {
   }
 
   /// Adds / updates extra hours on a won musician service offer.
+  ///
+  /// Routed through the web API (NOT a direct Supabase update) because the
+  /// route recomputes `price_dkk` and `musician_payout_dkk` from the extra
+  /// half-hours using the platform's per-half-hour constants. A direct update
+  /// would only set `extra_hours` and leave the payout/price stale, so the
+  /// musician's displayed amount would no longer match the invoice.
   Future<void> addMusicianExtraHours(int offerId, {required double extraHours}) async {
-    final userId = _client.auth.currentUser!.id;
-    await _client
-        .from('ServiceOffers')
-        .update({'extra_hours': extraHours})
-        .eq('id', offerId)
-        .eq('musician_id', userId);
+    await _webApiPatch('/api/service-offer/$offerId/extra-hours', body: {
+      'extra_hours': extraHours,
+    });
   }
 
+  /// Submits a requested special-request fee on a service offer via the web API.
+  ///
+  /// Routed through the web API (NOT a direct Supabase update) so the route's
+  /// guards run: offer must be `sent`/`won`, fee must be 1–50000, and an
+  /// already-confirmed fee cannot be changed.
   Future<void> setSpecialRequestFee(int offerId, {required int feeDkk}) async {
-    final userId = _client.auth.currentUser!.id;
-    await _client
-        .from('ServiceOffers')
-        .update({
-          'special_request_extra_fee_dkk': feeDkk,
-          'special_request_extra_fee_confirmed': false,
-        })
-        .eq('id', offerId)
-        .eq('musician_id', userId);
+    await _webApiPatch(
+      '/api/service-offer/$offerId/special-request-fee',
+      body: {'fee_dkk': feeDkk},
+    );
   }
 
+  /// Withdraws a pending special-request fee on a service offer via the web API.
   Future<void> removeSpecialRequestFee(int offerId) async {
-    final userId = _client.auth.currentUser!.id;
-    await _client
-        .from('ServiceOffers')
-        .update({
-          'special_request_extra_fee_dkk': 0,
-          'special_request_extra_fee_confirmed': false,
-        })
-        .eq('id', offerId)
-        .eq('musician_id', userId);
+    await _webApiDelete('/api/service-offer/$offerId/special-request-fee');
   }
 
   /// Saves private musician notes on a service offer.

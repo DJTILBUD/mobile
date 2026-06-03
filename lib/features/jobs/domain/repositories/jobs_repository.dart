@@ -99,10 +99,20 @@ abstract class JobsRepository {
   Future<void> confirmMusicianReady(int offerId);
 
   /// Adds or updates extra hours on a won DJ quote (within 2-day post-event window).
-  Future<void> addExtraHours(int quoteId, {required double extraHours, required int pricePerHour});
+  /// [newTotalPrice] is the expected base + extra-hours total; the server re-validates it.
+  Future<void> addExtraHours(int quoteId,
+      {required double extraHours, required int pricePerHour, required int newTotalPrice});
 
   /// Removes extra hours from a won DJ quote.
   Future<void> deleteExtraHours(int quoteId);
+
+  /// Adds or updates extra hours on an ext job the DJ is assigned to.
+  /// [newTotalPrice] is the expected new full_amount; the server re-validates it.
+  Future<void> addExtJobExtraHours(int extJobId,
+      {required double extraHours, required int pricePerHour, required int newTotalPrice});
+
+  /// Removes extra hours from an ext job.
+  Future<void> deleteExtJobExtraHours(int extJobId);
 
   /// Saves private DJ notes on a won quote.
   Future<void> saveDjNotes(int quoteId, String notes);

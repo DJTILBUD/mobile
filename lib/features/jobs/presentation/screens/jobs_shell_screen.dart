@@ -16,6 +16,7 @@ import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_ev
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_grid.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_header.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/date_collision.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
@@ -1255,7 +1256,7 @@ class _DjNewJobsTab extends ConsumerWidget {
             itemCount: jobs.length,
             itemBuilder: (context, index) {
               final job = jobs[index];
-              final colliding = _isDateColliding(job, quotes, extJobs);
+              final colliding = isDateColliding(job, quotes, extJobs);
               return AnimatedCard(
                 index: index,
                 child: JobCard(
@@ -1274,25 +1275,6 @@ class _DjNewJobsTab extends ConsumerWidget {
       },
     );
   }
-}
-
-/// Mirrors `collidingQuote` from the web app.
-bool _isDateColliding(Job job, List<DjQuote> quotes, List<ExtJob> extJobs) {
-  bool sameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
-  if (extJobs.any((e) => sameDay(e.date, job.date))) return true;
-
-  final activeOnDate = quotes.where((q) =>
-      sameDay(q.job.date, job.date) &&
-      q.jobId != job.id &&
-      q.status != QuoteStatus.lost &&
-      q.status != QuoteStatus.overwritten);
-
-  if (activeOnDate.any((q) => q.status == QuoteStatus.won)) return true;
-
-  final pending = activeOnDate.where((q) => q.status == QuoteStatus.pending);
-  return pending.length >= 2;
 }
 
 class _DjQuotesTab extends ConsumerWidget {

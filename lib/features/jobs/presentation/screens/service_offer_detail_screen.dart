@@ -31,6 +31,7 @@ class ServiceOfferDetailScreen extends ConsumerStatefulWidget {
 class _ServiceOfferDetailScreenState
     extends ConsumerState<ServiceOfferDetailScreen> {
   DSColors get _c => DSTheme.of(context);
+  late ServiceOffer _offer;
   late bool _customerContacted;
   late DateTime? _customerContactPlannedFor;
   late DateTime? _musicianReadyConfirmedAt;
@@ -38,6 +39,7 @@ class _ServiceOfferDetailScreenState
   @override
   void initState() {
     super.initState();
+    _offer = widget.offer;
     _customerContacted = widget.offer.customerContacted;
     _customerContactPlannedFor = widget.offer.customerContactPlannedFor;
     _musicianReadyConfirmedAt = widget.offer.musicianReadyConfirmedAt;
@@ -124,15 +126,15 @@ class _ServiceOfferDetailScreenState
 
   // ── Shared: bid summary + sales pitch ──────────────────────────────
   List<Widget> _sharedBidSections() => [
-        _BidSummaryCard(offer: widget.offer),
-        if (widget.offer.salesPitch != null &&
-            widget.offer.salesPitch!.isNotEmpty) ...[
+        _BidSummaryCard(offer: _offer),
+        if (_offer.salesPitch != null &&
+            _offer.salesPitch!.isNotEmpty) ...[
           const SizedBox(height: DSSpacing.s4),
           _Section(
             title: 'Besked til kunden',
             children: [
               Text(
-                widget.offer.salesPitch!,
+                _offer.salesPitch!,
                 style: DSTextStyle.bodyMd
                     .copyWith(color: _c.text.secondary, height: 1.5),
               ),
@@ -144,7 +146,15 @@ class _ServiceOfferDetailScreenState
   @override
   Widget build(BuildContext context) {
       final _c = DSTheme.of(context);
-    final offer = widget.offer;
+    // Keep the local offer in sync with provider refreshes so a server-side
+    // recompute (e.g. saving extra hours, which bumps price_dkk/payout) shows
+    // immediately instead of only after reopening the screen.
+    ref.listen(serviceOffersProvider, (_, next) {
+      final updated =
+          next.valueOrNull?.where((o) => o.id == widget.offer.id).firstOrNull;
+      if (updated != null && mounted) setState(() => _offer = updated);
+    });
+    final offer = _offer;
 
     return Scaffold(
       backgroundColor: _c.bg.canvas,
@@ -230,7 +240,7 @@ class _ServiceOfferDetailScreenState
         // Non-binding call banner — shown until customer is contacted
         if (!_customerContacted) ...[
           _InfoBanner(
-            title: 'Opkaldet er uforpligtende for jer begge',
+            title: 'Opkaldet er uforpligtende for kunden',
             body: offer.job.roleType == 'musician_only'
                 ? 'Er alle detaljer på plads, sender du fakturaen med ét klik — jobbet er 100% bekræftet når kunden betaler første rate.'
                 : 'Er alle detaljer på plads, sørger DJ\'en for fakturaen — jobbet er 100% bekræftet når kunden betaler første rate.',
@@ -1076,7 +1086,16 @@ class _MusicianExtraHoursSectionState
     final ok = await ref
         .read(addMusicianExtraHoursProvider.notifier)
         .add(widget.offer.id, extraHours: hours);
-    if (ok && mounted) setState(() => _editing = false);
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _editing = false);
+      DSToast.show(context,
+          variant: DSToastVariant.success, title: 'Ekstra timer gemt');
+    } else {
+      DSToast.show(context,
+          variant: DSToastVariant.error,
+          title: 'Kunne ikke gemme ekstra timer. Prøv igen.');
+    }
   }
 
   @override

@@ -883,10 +883,12 @@ class AddExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   final JobsRepository _repository;
   final Ref _ref;
 
-  Future<bool> add(int quoteId, {required double extraHours, required int pricePerHour}) async {
+  Future<bool> add(int quoteId,
+      {required double extraHours, required int pricePerHour, required int newTotalPrice}) async {
     state = const AsyncLoading();
     try {
-      await _repository.addExtraHours(quoteId, extraHours: extraHours, pricePerHour: pricePerHour);
+      await _repository.addExtraHours(quoteId,
+          extraHours: extraHours, pricePerHour: pricePerHour, newTotalPrice: newTotalPrice);
       state = const AsyncData(null);
       _ref.read(djQuotesProvider.notifier).silentRefresh();
       return true;
@@ -926,6 +928,60 @@ class DeleteExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
 final deleteExtraHoursProvider = StateNotifierProvider.autoDispose<
     DeleteExtraHoursNotifier, AsyncValue<void>>(
   (ref) => DeleteExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
+);
+
+class AddExtJobExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
+  AddExtJobExtraHoursNotifier(this._repository, this._ref)
+      : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<bool> add(int extJobId,
+      {required double extraHours, required int pricePerHour, required int newTotalPrice}) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.addExtJobExtraHours(extJobId,
+          extraHours: extraHours, pricePerHour: pricePerHour, newTotalPrice: newTotalPrice);
+      state = const AsyncData(null);
+      _ref.invalidate(djExtJobsProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+final addExtJobExtraHoursProvider = StateNotifierProvider.autoDispose<
+    AddExtJobExtraHoursNotifier, AsyncValue<void>>(
+  (ref) => AddExtJobExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
+);
+
+class DeleteExtJobExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
+  DeleteExtJobExtraHoursNotifier(this._repository, this._ref)
+      : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<bool> delete(int extJobId) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.deleteExtJobExtraHours(extJobId);
+      state = const AsyncData(null);
+      _ref.invalidate(djExtJobsProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+final deleteExtJobExtraHoursProvider = StateNotifierProvider.autoDispose<
+    DeleteExtJobExtraHoursNotifier, AsyncValue<void>>(
+  (ref) => DeleteExtJobExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
 class EditDjQuoteNotifier extends StateNotifier<AsyncValue<DjQuote?>> {

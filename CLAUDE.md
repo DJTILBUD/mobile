@@ -4,6 +4,28 @@ Flutter app for musicians: browse jobs, submit offers, manage profile, use the A
 
 This is also a **master's thesis** on evaluating LLM interaction quality as actionable feedback when building an AI-assisted app. Every AI/agent design decision must serve both product goals and research observability.
 
+## THE WEB-APP IS THE SOURCE OF TRUTH — READ THIS FIRST
+
+The **web-app is the canonical, most-tested, proven-correct implementation** of every shared business rule (quote/offer flow, status transitions, pricing, cancellation, closing jobs, notifications, content). It serves live users and is where we *know* the logic works. The mobile app must **never re-derive, reinterpret, or "clean up" that logic** — when a behaviour exists in the web-app, copy it **exactly**. A mobile version that diverges is a bug, even when it looks reasonable. This has caused real mistakes before; do not repeat them.
+
+**Before implementing any shared behaviour on mobile, go read the web-app's implementation first** — the route handler in `web-app/src/app/api/`, or the relevant `web-app/src/` service — and match it line-for-line in intent. `webapp-reference/` is a snapshot for orientation; the **live `web-app/` is the real source of truth**.
+
+**Quick rule lookup:** `web-app/documentation/business-rules.md` is a code-cited index of every shared business rule (commission, quote caps, the status machine, cancellation, invoicing, extra-hours window, etc.) with the exact file each is enforced in. Start there to find the canonical rule, then read the cited code.
+
+### Target architecture: mobile talks to the DB *through* the web-app
+
+```
+web-app  →  DB              (direct — web-app owns the DB and the logic)
+mobile   →  web-app API  →  DB   (preferred for every write / business-logic op)
+```
+
+The goal is **one shared, tested path to the DB** so the rules can never drift between platforms. The web-app exposes HTTP endpoints under `web-app/src/app/api/`; mobile calls them via `_webApiPost` / `_webApiPut` (see `createServiceOffer` and the ext-job datasource methods for the pattern).
+
+**Rules:**
+- For any **write that carries business logic** (creating quotes/offers, status changes, closing jobs, recording content, firing notifications), **call the web-app endpoint** — do NOT write to Supabase directly from Flutter. A direct insert/update bypasses logic that lives only in the route handler, and often silently no-ops under RLS or leaves rows in a wrong state (see the `Quotes` and `Jobs.status` notes in "Things Claude must NOT do").
+- If the web-app does **not** yet expose an endpoint for what you need, the fix is to **add the endpoint in the web-app and call it from mobile** — never reimplement the logic in Dart. **Confirm with the user before adding a new shared endpoint.**
+- Direct Supabase **reads** for simple, logic-free fetches and Realtime subscriptions are fine. This rule is about **writes and business logic**, not every query.
+
 ## ALWAYS READ THESE FOUR FOLDERS FIRST
 
 Before building or changing anything, read the relevant folder(s) below. They are the memory of the system.
@@ -24,7 +46,7 @@ Before building or changing anything, read the relevant folder(s) below. They ar
 | Backend | Supabase (shared with all other apps) |
 | Auth | Supabase Auth |
 | Realtime | Supabase Realtime |
-| Storage | Supabase Storage |
+| Storage | **AWS S3** for user media (images/videos/thumbnails, via presigned PUT) — NOT Supabase Storage. See "DJ content capture" below. |
 | Push notifications | Firebase Cloud Messaging (FCM) |
 | AI agent | Anthropic Claude API via Supabase Edge Function |
 | State management | Riverpod 2.0+ with code generation |
@@ -36,9 +58,15 @@ Before building or changing anything, read the relevant folder(s) below. They ar
 flutter run                        # local (default — always use this)
 flutter run --dart-define=ENV=dev  # staging
 flutter run --dart-define=ENV=prod # production
+
+flutter analyze                    # static analysis — run before declaring done
+flutter test                       # unit/widget tests — run before declaring done
+dart run build_runner build --delete-conflicting-outputs  # regen Riverpod/codegen after editing annotated providers
 ```
 
 Env files: `.env.local` (default), `.env.dev`, `.env.prod`, `.env.example` (only one in git).
+
+The "typecheck + tests" done-bar for this app = `flutter analyze` + `flutter test` (this folder already has a fuller "Definition of done" checklist at the bottom).
 
 ## The 4 success dimensions
 
@@ -135,6 +163,10 @@ Step 5 of the DJ job process: short clips (max 15s, 9:16) recorded per job. `quo
 - A thumbnail is generated on upload via `video_thumbnail` and uploaded as a separate `thumbnail` row, so web + admin (and the in-app list) show a real preview.
 - Notification types `content_record_reminder` / `content_upload_reminder` are DJ-only and routed exactly like `ready_reminder` in `notifications_service.dart`.
 
+## Date-collision guard (no double-booking a date)
+
+A DJ may not bid on a date where they already have a won quote (or 2 pending quotes, or a confirmed external job). The rule mirrors the web `collidingQuote` helper and now lives in **`lib/features/jobs/domain/date_collision.dart`** (`isDateColliding` → bool for the job list; `dateCollisionMessage` → Danish reason for the form banner). Used in two places: the job list (`jobs_shell_screen.dart` dims the card + nulls `onTap`) **and** the DJ quote form (`dj_quote_form_screen.dart` shows a `_CollisionBanner` + disables submit). The form must guard independently because it's reachable via **push deep-link**, bypassing the list. This is a client mirror only — the **authoritative** enforcement is server-side in the web `POST /api/jobs/[job_id]/quotes` route (returns 409, surfaced via the submit-error toast). Keep all three (web helper, mobile helper, both screens) in sync.
+
 ## Things Claude must NOT do
 
 - Do NOT call the Anthropic API directly from Flutter — always use an Edge Function
@@ -150,7 +182,7 @@ Step 5 of the DJ job process: short clips (max 15s, 9:16) recorded per job. `quo
 - Do NOT generate AI offer text without the musician's actual profile context
 - Do NOT create a widget longer than ~150 lines without splitting it
 - Do NOT create Supabase migrations here — migrations live in `web-app/supabase/migrations/` only
-- Do NOT submit **DJ quotes** with a direct `Quotes` insert — POST to the web API `/api/jobs/{job_id}/quotes` (via `_webApiPost`, like `createServiceOffer` does). The "3 pending quotes → job goes `sent`" transition (plus `first_quote_only` send, suppression and tier-quota checks) lives ONLY in that route handler — **there is no DB trigger**. A direct insert leaves the job stuck in `open`. The route returns the **bare** quote row (no `job` join), so `DjQuoteModel.fromJson` tolerates a missing `job` key. (`editDjQuote` may stay a direct Supabase update — editing a pending quote doesn't change the pending count.)
+- Do NOT submit **DJ quotes** with a direct `Quotes` insert — POST to the web API `/api/jobs/{job_id}/quotes` (via `_webApiPost`, like `createServiceOffer` does). The "3 pending quotes → job goes `sent`" transition (plus `first_quote_only` send, suppression and tier-quota checks) lives ONLY in that route handler — **there is no DB trigger**. A direct insert leaves the job stuck in `open`. The route returns the **bare** quote row (no `job` join), so `DjQuoteModel.fromJson` tolerates a missing `job` key. **`editDjQuote` also routes through the web API** (`PUT /api/quotes/{id}`) so the 10-minute edit window, the pending-status guard and the price/pitch/equipment validation are enforced — a direct update bypassed all of it. That route returns only `{success, message}`, so `editDjQuote` re-reads the row afterwards to return the `DjQuote` shape callers expect.
 - Do NOT update **`Jobs.status` / `ExtJobs.status`** (e.g. `customer_contacted`, `ready_for_billing`, planned contact) with a direct Supabase update. RLS on `Jobs` only lets the **customer (by `lead_email`)** update — a DJ's direct update matches **0 rows, returns no error**, so it looks like success but silently does nothing (status "resets" on reload). Use the elevated web API routes via `_webApiPut`: `/api/jobs/{id}/customer-contact`, `/api/jobs/{id}/ready-for-billing` (and the `/api/ext-jobs/{id}/...` equivalents). The ext-job datasource methods already do this — match that pattern.
 
 ## Definition of done

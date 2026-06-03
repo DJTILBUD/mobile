@@ -37,6 +37,8 @@ class ExtJobModel {
     this.musicianSpecialRequest,
     this.songRequestToken,
     this.postalCode,
+    this.extraHours,
+    this.extraHoursPricePerHour,
   });
 
   final int id;
@@ -72,6 +74,8 @@ class ExtJobModel {
   final String? musicianSpecialRequest;
   final String? songRequestToken;
   final String? postalCode;
+  final double? extraHours;
+  final int? extraHoursPricePerHour;
 
   factory ExtJobModel.fromJson(Map<String, dynamic> json) {
     // PostgreSQL time fields come as "HH:MM:SS", display as "HH:MM"
@@ -118,6 +122,8 @@ class ExtJobModel {
       musicianSpecialRequest: json['musician_special_request'] as String?,
       songRequestToken: json['song_request_token'] as String?,
       postalCode: json['postal_code'] as String?,
+      extraHours: (json['extra_hours'] as num?)?.toDouble(),
+      extraHoursPricePerHour: (json['extra_hours_price_per_hour'] as num?)?.toInt(),
     );
   }
 
@@ -155,6 +161,8 @@ class ExtJobModel {
           : null,
       songRequestToken: songRequestToken,
       musicianSpecialRequest: musicianSpecialRequest,
+      extraHours: extraHours,
+      extraHoursPricePerHour: extraHoursPricePerHour,
     );
   }
 

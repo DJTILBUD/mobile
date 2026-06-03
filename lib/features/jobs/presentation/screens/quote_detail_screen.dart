@@ -10,6 +10,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/utils/extra_hours_options.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/screens/song_requests_screen.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/screens/edit_quote_bottom_sheet.dart'
     show kEditWindowMinutes, showEditQuoteBottomSheet;
@@ -56,6 +57,14 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   @override
   Widget build(BuildContext context) {
       final _c = DSTheme.of(context);
+    // Keep the local quote in sync with provider refreshes. Sections render from
+    // `_quote`, so without this a server-side recompute (e.g. saving extra hours,
+    // which bumps price_dkk/payout) wouldn't show until the screen was reopened.
+    ref.listen(djQuotesProvider, (_, next) {
+      final updated =
+          next.valueOrNull?.where((q) => q.id == widget.quote.id).firstOrNull;
+      if (updated != null && mounted) setState(() => _quote = updated);
+    });
     // Mirrors web app QuoteInfo exactly: dj_payout_override ?? round(price_dkk * 0.75).
     // Never derive a different number — the DJ must see what the web app shows.
     final payout = _quote.djPayout;
@@ -345,9 +354,53 @@ class _BidSummaryCard extends StatelessWidget {
   static String _fmt(int n) =>
       NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
 
+  // Extra-hours count à la da-DK: whole → "1", fractional → "0,5" / "1,5".
+  static String _fmtHours(double h) =>
+      h == h.truncateToDouble() ? h.toInt().toString() : h.toString().replaceAll('.', ',');
+
+  // Payout inclusion / suffix lines, mirroring web QuoteInfo exactly.
+  List<String> _payoutNotes() {
+    final notes = <String>[];
+    if (quote.hasPayoutOverride) {
+      final incl = <String>[];
+      if (quote.hasExtraHours) {
+        incl.add('ekstra timer: ${_fmt(quote.extraHoursPayoutAddon)} kr');
+      }
+      if (quote.isEarlySetupAccepted) {
+        incl.add((quote.earlySetupPrice ?? 0) > 0
+            ? 'tidlig opsætning: ${_fmt(quote.earlySetupPayoutAddon)} kr'
+            : 'tidlig opsætning: gratis');
+      }
+      if (incl.isNotEmpty) notes.add('(inkluderet ${incl.join(' og ')})');
+    } else {
+      if (quote.isEarlySetupAccepted) {
+        notes.add((quote.earlySetupPrice ?? 0) > 0
+            ? '(inkluderet tidlig opsætning +${_fmt(quote.earlySetupPayoutAddon)} kr)'
+            : '(inkluderet tidlig opsætning, gratis)');
+      }
+      if (quote.hasExtraHours) {
+        notes.add('(inkluderer ekstra timer +${_fmt(quote.extraHoursPayoutAddon)} kr)');
+      }
+    }
+    return notes;
+  }
+
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
+    Widget label(String t) => Text(t,
+        style: DSTextStyle.labelSm.copyWith(
+            color: _c.text.muted, fontWeight: FontWeight.w600));
+    Widget bigValue(String t, {required bool highlight}) => Text(t,
+        style: DSTextStyle.headingMd.copyWith(
+            color: highlight ? _c.brand.primaryActive : _c.text.primary,
+            fontWeight: FontWeight.w800));
+    Widget muted(String t) => Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Text(t,
+              style: DSTextStyle.labelSm.copyWith(color: _c.text.secondary)),
+        );
+
     return Container(
       decoration: BoxDecoration(
         color: _c.bg.surface,
@@ -377,37 +430,43 @@ class _BidSummaryCard extends StatelessWidget {
             ),
           ),
 
-          // Payout row. When an admin has overridden the payout we mirror the web
-          // app and show ONLY "Din udbetaling" — the full job price is hidden so we
-          // never reveal that the DJ's cut was changed.
           Padding(
             padding: const EdgeInsets.all(DSSpacing.s4),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Total job price — hidden when an admin overrode the payout, so
+                // we never reveal the DJ's cut was changed (mirrors web QuoteInfo).
                 if (!quote.hasPayoutOverride) ...[
-                  Expanded(
-                    child: _PriceKpi(
-                      label: 'Samlet pris',
-                      value: '${_fmt(quote.priceDkk)} kr.',
-                      icon: LucideIcons.banknote,
-                      highlight: false,
-                    ),
-                  ),
-                  Container(width: 1, height: 48, color: _c.border.subtle),
+                  label('Samlet pris på jobbet'),
+                  const SizedBox(height: 2),
+                  bigValue('${_fmt(quote.priceDkk)} kr.', highlight: false),
+                  if (quote.showPriceBreakdown) ...[
+                    const SizedBox(height: DSSpacing.s2),
+                    muted('Oprindeligt tilbud: ${_fmt(quote.originalOffer)} kr.'),
+                    if (quote.hasExtraHours)
+                      muted('Ekstra timer: ${_fmtHours(quote.extraHours!)} '
+                          '${quote.extraHours == 1 ? 'time' : 'timer'} × '
+                          '${_fmt(quote.extraHoursPricePerHour!)} kr/time = '
+                          '${_fmt(quote.extraHoursTotal)} kr.'),
+                    if (quote.isEarlySetupAccepted)
+                      muted('Tidlig opsætning: ${(quote.earlySetupPrice ?? 0) > 0 ? '+${_fmt(quote.earlySetupPrice!)} kr.' : 'gratis'}'),
+                  ],
+                  const SizedBox(height: DSSpacing.s4),
+                  Divider(height: 1, color: _c.border.subtle),
+                  const SizedBox(height: DSSpacing.s3),
                 ],
-                Expanded(
-                  child: _PriceKpi(
-                    label: 'Din udbetaling',
-                    value: '${_fmt(payout)} kr.',
-                    icon: LucideIcons.wallet,
-                    highlight: true,
-                  ),
-                ),
+
+                // DJ payout
+                label('Du bliver betalt'),
+                const SizedBox(height: 2),
+                bigValue('${_fmt(payout)} kr.', highlight: true),
+                for (final note in _payoutNotes()) muted(note),
               ],
             ),
           ),
 
-          // Early setup row
+          // Early setup status row
           if (quote.earlySetupStatus != null) ...[
             const Divider(height: 1),
             Padding(
@@ -419,50 +478,6 @@ class _BidSummaryCard extends StatelessWidget {
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _PriceKpi extends StatelessWidget {
-  const _PriceKpi({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.highlight,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final bool highlight;
-
-  @override
-  Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
-    final valueColor = highlight ? _c.brand.primaryActive : _c.text.primary;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 13, color: _c.text.muted),
-              const SizedBox(width: 4),
-              Text(label,
-                  style: DSTextStyle.labelSm.copyWith(color: _c.text.muted)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: DSTextStyle.headingMd.copyWith(
-              color: valueColor,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
         ],
       ),
     );
@@ -1177,8 +1192,8 @@ class _ExtraHoursSection extends ConsumerStatefulWidget {
 
 class _ExtraHoursSectionState extends ConsumerState<_ExtraHoursSection> {
   DSColors get _c => DSTheme.of(context);
-  final _hoursController = TextEditingController();
   final _priceController = TextEditingController();
+  double? _selectedHours;
   bool _editing = false;
 
   // Window: event date (00:00) through end of event date + 2 days (23:59:59)
@@ -1212,45 +1227,64 @@ class _ExtraHoursSectionState extends ConsumerState<_ExtraHoursSection> {
         _priceController.text = djProfile.pricePerExtraHour.toString();
       }
     }
-    if (widget.quote.extraHours != null) {
-      final hours = widget.quote.extraHours!;
-      _hoursController.text = hours == hours.truncateToDouble()
-          ? hours.toInt().toString()
-          : hours.toString();
-    }
+    _selectedHours = extraHoursSelectedValue(widget.quote.extraHours);
   }
 
   @override
   void dispose() {
-    _hoursController.dispose();
     _priceController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
-    final hours = double.tryParse(_hoursController.text.replaceAll(',', '.'));
+    final hours = _selectedHours;
     final price = int.tryParse(_priceController.text);
     if (hours == null || hours <= 0 || price == null || price <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Angiv gyldigt timetal og pris')),
-      );
+      DSToast.show(context,
+          variant: DSToastVariant.error, title: 'Angiv gyldigt timetal og pris');
       return;
     }
+    // Compute the expected new total the same way the web API does: strip any
+    // existing extra-hours from price_dkk to get the base, then add the new
+    // extra-hours. The server re-validates this (rejects on mismatch).
+    final existingExtra =
+        (widget.quote.extraHours ?? 0) * (widget.quote.extraHoursPricePerHour ?? 0);
+    final basePrice = widget.quote.priceDkk - existingExtra;
+    final newTotalPrice = (basePrice + hours * price).round();
+
     final ok = await ref.read(addExtraHoursProvider.notifier).add(
           widget.quote.id,
           extraHours: hours,
           pricePerHour: price,
+          newTotalPrice: newTotalPrice,
         );
-    if (ok && mounted) setState(() => _editing = false);
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _editing = false);
+      DSToast.show(context,
+          variant: DSToastVariant.success, title: 'Ekstra timer gemt');
+    } else {
+      DSToast.show(context,
+          variant: DSToastVariant.error,
+          title: 'Kunne ikke gemme ekstra timer. Prøv igen.');
+    }
   }
 
   Future<void> _delete() async {
-    await ref.read(deleteExtraHoursProvider.notifier).delete(widget.quote.id);
-    if (mounted) {
+    final ok =
+        await ref.read(deleteExtraHoursProvider.notifier).delete(widget.quote.id);
+    if (!mounted) return;
+    if (ok) {
       setState(() {
         _editing = false;
-        _hoursController.clear();
+        _selectedHours = null;
       });
+      DSToast.show(context,
+          variant: DSToastVariant.success, title: 'Ekstra timer fjernet');
+    } else {
+      DSToast.show(context,
+          variant: DSToastVariant.error,
+          title: 'Kunne ikke fjerne ekstra timer. Prøv igen.');
     }
   }
 
@@ -1318,13 +1352,12 @@ class _ExtraHoursSectionState extends ConsumerState<_ExtraHoursSection> {
             ),
           ] else if (_windowOpen && (!hasHours || _editing)) ...[
             // Input form
-            DSInput(
+            DSDropdown<double>(
               label: 'Antal timer',
-              controller: _hoursController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d,.]')),
-              ],
+              hint: 'Vælg antal timer...',
+              value: _selectedHours,
+              items: extraHoursOptions,
+              onChanged: (v) => setState(() => _selectedHours = v),
             ),
             const SizedBox(height: DSSpacing.s3),
             DSInput(

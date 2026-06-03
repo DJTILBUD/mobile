@@ -30,6 +30,8 @@ class ExtJob {
     this.customerContactPlannedFor,
     this.songRequestToken,
     this.musicianSpecialRequest,
+    this.extraHours,
+    this.extraHoursPricePerHour,
   });
 
   final int id;
@@ -64,6 +66,14 @@ class ExtJob {
   /// Free-text special request from the customer directed at the musician.
   /// Distinct from [notes] (general job notes). Never holds internal/admin notes.
   final String? musicianSpecialRequest;
+
+  /// Extra hours the DJ registered after the event (post-event window only).
+  final double? extraHours;
+
+  /// Customer-facing price per extra hour, in DKK. Combined with [extraHours]
+  /// this is folded into [fullAmount] and (× DJ share) into [honorar]
+  /// server-side. Used here to recompute the expected total before saving.
+  final int? extraHoursPricePerHour;
 
   static String _fmtNum(double v) {
     final s = v.toInt().toString();

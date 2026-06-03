@@ -11,6 +11,7 @@ import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/core/utils/equipment_description.dart';
 import 'package:dj_tilbud_app/features/agent/presentation/widgets/agent_ai_button.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_provider.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/date_collision.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/standard_message.dart';
@@ -161,6 +162,18 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     }
     if (!_formKey.currentState!.validate() || !equipmentValid) return;
 
+    // Date-collision guard (server also enforces this; this avoids a wasted
+    // round-trip and an unclear failure when reached via deep-link).
+    final collisionMessage = dateCollisionMessage(
+      widget.job,
+      ref.read(djQuotesProvider).valueOrNull ?? [],
+      ref.read(djExtJobsProvider).valueOrNull ?? [],
+    );
+    if (collisionMessage != null) {
+      DSToast.show(context, variant: DSToastVariant.error, title: collisionMessage);
+      return;
+    }
+
     final djTier = ref.read(djProfileProvider).valueOrNull?.tier;
     final adjustedBudget = _adjustedBudgetEnd(djTier);
     final priceOverBudget = adjustedBudget != null && _price > adjustedBudget * 1.1;
@@ -287,7 +300,15 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     final adjustedBudget = _adjustedBudgetEnd(djTier);
     final priceOverBudget = adjustedBudget != null && _price > 0 && _price > adjustedBudget * 1.1;
     final withinFourHours = isWithinFirstFourHours(job.createdAt);
-    final isBlocked = priceOverBudget && withinFourHours;
+
+    // Date-collision guard (mirrors web `collidingQuote`; server enforces it too).
+    // This screen is reachable via push deep-link, bypassing the job list's own
+    // collision check, so it must guard independently.
+    final quotes = ref.watch(djQuotesProvider).valueOrNull ?? [];
+    final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
+    final collisionMessage = dateCollisionMessage(job, quotes, extJobs);
+
+    final isBlocked = (priceOverBudget && withinFourHours) || collisionMessage != null;
 
     return PopScope(
       canPop: !_isDirty,
@@ -357,6 +378,11 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
           children: [
             _JobSummary(job: job, dateStr: dateStr, budgetDisplay: _adjustedBudgetDisplay(djTier)),
             const SizedBox(height: DSSpacing.s6),
+
+            if (collisionMessage != null) ...[
+              _CollisionBanner(message: collisionMessage),
+              const SizedBox(height: DSSpacing.s6),
+            ],
 
             DSInput(
               label: 'Din pris',
@@ -528,6 +554,45 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
         ),
       ),
       ), // PopScope
+    );
+  }
+}
+
+class _CollisionBanner extends StatelessWidget {
+  const _CollisionBanner({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(DSSpacing.s3),
+      decoration: BoxDecoration(
+        color: _c.state.error.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _c.state.error.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(LucideIcons.calendarX, size: 18, color: _c.state.error),
+          const SizedBox(width: DSSpacing.s2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Konflikt med eksisterende booking',
+                    style: DSTextStyle.labelSm.copyWith(
+                        color: _c.state.error, fontWeight: FontWeight.w700)),
+                const SizedBox(height: DSSpacing.s1),
+                Text(message,
+                    style: DSTextStyle.bodySm
+                        .copyWith(color: _c.text.secondary, height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

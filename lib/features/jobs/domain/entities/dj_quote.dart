@@ -1,4 +1,5 @@
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/dj_fee.dart';
 
 class DjQuote {
   const DjQuote({
@@ -45,11 +46,45 @@ class DjQuote {
   /// Mirrors web app QuoteInfo: `dj_payout_override != null`.
   bool get hasPayoutOverride => djPayoutOverride != null;
 
-  /// What the DJ is paid. MUST mirror web app QuoteInfo exactly:
-  ///   dj_payout_override ?? round(price_dkk * 0.75)
-  /// Do not add early-setup/extra-hours on top — price_dkk already includes any
-  /// accepted add-ons, and the override is the final agreed amount.
-  int get djPayout => djPayoutOverride ?? (priceDkk * 0.75).round();
+  /// The DJ's share of the customer price (1 - platform fee). Date-based,
+  /// keyed off the JOB's created_at — 0.80 before 2025-10-15, 0.75 on/after —
+  /// exactly like web QuoteInfo's `getFeeForJob(job.created_at)`. A fixed 0.75
+  /// here would under-pay pre-2025-10-15 jobs vs what the web shows.
+  double get _payoutShare => djPayoutShareForJob(job.createdAt);
+
+  /// What the DJ is paid. Mirrors web QuoteInfo exactly:
+  ///   dj_payout_override ?? round(price_dkk * (1 - fee))
+  /// price_dkk already includes any accepted add-ons, and the override (when
+  /// set) is the final agreed amount — never add add-ons on top of either.
+  int get djPayout => djPayoutOverride ?? (priceDkk * _payoutShare).round();
+
+  // ── Price breakdown — mirrors web QuoteInfo.tsx line-for-line ──────────────
+
+  /// Customer accepted the early-setup add-on.
+  bool get isEarlySetupAccepted => earlySetupStatus == 'accepted';
+
+  /// Customer-facing extra-hours total (count × rate); 0 unless both are set.
+  /// Rates are whole DKK and hours are 0.25 steps, so this is integer in
+  /// practice (matches web's `extra_hours * rate`).
+  int get extraHoursTotal {
+    final count = extraHours ?? 0;
+    final rate = extraHoursPricePerHour ?? 0;
+    return (count > 0 && rate > 0) ? (count * rate).round() : 0;
+  }
+
+  bool get hasExtraHours => extraHoursTotal > 0;
+
+  /// Base offer before accepted add-ons (early setup + extra hours).
+  /// Web: `price_dkk - (isEarlySetupAccepted ? earlySetupPrice : 0) - extraHoursTotal`.
+  int get originalOffer =>
+      priceDkk - (isEarlySetupAccepted ? (earlySetupPrice ?? 0) : 0) - extraHoursTotal;
+
+  /// Show the price breakdown when there are extra hours or accepted early setup.
+  bool get showPriceBreakdown => hasExtraHours || isEarlySetupAccepted;
+
+  /// DJ's share of each add-on, for the "Du bliver betalt" inclusions.
+  int get extraHoursPayoutAddon => (extraHoursTotal * _payoutShare).round();
+  int get earlySetupPayoutAddon => ((earlySetupPrice ?? 0) * _payoutShare).round();
 }
 
 enum QuoteStatus {

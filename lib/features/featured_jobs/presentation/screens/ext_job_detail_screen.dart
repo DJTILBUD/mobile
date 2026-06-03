@@ -9,6 +9,8 @@ import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/shared/widgets/conversation_card.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/utils/extra_hours_options.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/job_content_section.dart';
@@ -198,6 +200,13 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
               orElse: () => widget.extJob,
             ) ??
         widget.extJob;
+    // True only when the current user is the assigned DJ — djExtJobsProvider
+    // queries by assigned_dj_id, so a musician viewing this screen never matches.
+    // Gates the (DJ-only) extra-hours section.
+    final isAssignedDj = ref.watch(djExtJobsProvider).valueOrNull?.any(
+              (e) => e.id == widget.extJob.id,
+            ) ??
+        false;
     final billingLoading =
         ref.watch(markExtJobReadyForBillingProvider) is AsyncLoading;
     final readyLoading = ref.watch(confirmExtJobDjReadyProvider) is AsyncLoading;
@@ -354,6 +363,12 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
             ],
           ),
           const SizedBox(height: DSSpacing.s4),
+
+          // ── Extra hours (DJ-only, post-event window) ─────────────────────
+          if (isAssignedDj) ...[
+            _ExtJobExtraHoursSection(extJob: extJob),
+            const SizedBox(height: DSSpacing.s4),
+          ],
 
           // ── Instrumentalist on this job (only once both are confirmed) ────
           if (extJob.assignedMusicianId != null &&
@@ -793,6 +808,325 @@ class _ExtJobSongRequestsRow extends ConsumerWidget {
             const SizedBox(width: DSSpacing.s2),
             Icon(LucideIcons.chevronRight, size: 16, color: c.text.muted),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Ext Job Extra Hours Section ────────────────────────────────────────────
+//
+// Mirrors the web ext-dj "Ekstra timer" flow (AddExtExtraHours.tsx): the DJ
+// registers post-event extra hours + a customer price-per-hour. Saving is
+// routed through /api/ext-jobs/{id}/extra-hours, which recomputes `full_amount`
+// AND `honorar` server-side — so without this the ext-job invoice would diverge
+// from the DJ's "Dit honorar" exactly like the internal-quote bug. We never
+// display `full_amount`; only the extra cost and the DJ's payout adjustment
+// (the same two numbers the web shows).
+
+class _ExtJobExtraHoursSection extends ConsumerStatefulWidget {
+  const _ExtJobExtraHoursSection({required this.extJob});
+
+  final ExtJob extJob;
+
+  @override
+  ConsumerState<_ExtJobExtraHoursSection> createState() =>
+      _ExtJobExtraHoursSectionState();
+}
+
+class _ExtJobExtraHoursSectionState
+    extends ConsumerState<_ExtJobExtraHoursSection> {
+  DSColors get _c => DSTheme.of(context);
+  final _priceController = TextEditingController();
+  double? _selectedHours;
+  bool _editing = false;
+
+  // Window: event date (00:00) through end of event date + 2 days (23:59:59).
+  bool get _windowOpen {
+    final eventDate = widget.extJob.date;
+    final windowStart = DateTime(eventDate.year, eventDate.month, eventDate.day);
+    final windowEnd = DateTime(
+        eventDate.year, eventDate.month, eventDate.day + 2, 23, 59, 59);
+    final now = DateTime.now();
+    return now.isAfter(windowStart) && now.isBefore(windowEnd);
+  }
+
+  // DJ payout share, mirroring web getFeeForJob: 20% fee (0.80 share) for jobs
+  // created before 2025-10-15 UTC, 25% fee (0.75 share) after. Display-only
+  // estimate — the authoritative honorar is computed server-side.
+  double get _djPayoutShare {
+    final feeChange = DateTime.utc(2025, 10, 15);
+    return widget.extJob.createdAt.toUtc().isBefore(feeChange) ? 0.80 : 0.75;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _prefill();
+  }
+
+  void _prefill() {
+    if (widget.extJob.extraHoursPricePerHour != null) {
+      _priceController.text = widget.extJob.extraHoursPricePerHour.toString();
+    } else {
+      final djProfile = ref.read(djProfileProvider).valueOrNull;
+      if (djProfile != null && djProfile.pricePerExtraHour > 0) {
+        _priceController.text = djProfile.pricePerExtraHour.toString();
+      }
+    }
+    _selectedHours = extraHoursSelectedValue(widget.extJob.extraHours);
+  }
+
+  @override
+  void dispose() {
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final hours = _selectedHours;
+    final price = int.tryParse(_priceController.text);
+    if (hours == null || hours <= 0 || price == null || price <= 0) {
+      DSToast.show(context,
+          variant: DSToastVariant.error, title: 'Angiv gyldigt timetal og pris');
+      return;
+    }
+    final fullAmount = widget.extJob.fullAmount;
+    if (fullAmount == null || fullAmount <= 0) {
+      DSToast.show(context,
+          variant: DSToastVariant.error,
+          title: 'Honorar mangler på jobbet. Kontakt support.');
+      return;
+    }
+    // Match the server: strip any existing extra-hours from full_amount to get
+    // the base, then add the new extra-hours. Server re-validates this.
+    final existingExtra = (widget.extJob.extraHours ?? 0) *
+        (widget.extJob.extraHoursPricePerHour ?? 0);
+    final newTotalPrice = (fullAmount - existingExtra + hours * price).round();
+
+    final ok = await ref.read(addExtJobExtraHoursProvider.notifier).add(
+          widget.extJob.id,
+          extraHours: hours,
+          pricePerHour: price,
+          newTotalPrice: newTotalPrice,
+        );
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _editing = false);
+      DSToast.show(context,
+          variant: DSToastVariant.success, title: 'Ekstra timer gemt');
+    } else {
+      DSToast.show(context,
+          variant: DSToastVariant.error,
+          title: 'Kunne ikke gemme ekstra timer. Prøv igen.');
+    }
+  }
+
+  Future<void> _delete() async {
+    final ok = await ref
+        .read(deleteExtJobExtraHoursProvider.notifier)
+        .delete(widget.extJob.id);
+    if (!mounted) return;
+    if (ok) {
+      setState(() {
+        _editing = false;
+        _selectedHours = null;
+      });
+      DSToast.show(context,
+          variant: DSToastVariant.success, title: 'Ekstra timer fjernet');
+    } else {
+      DSToast.show(context,
+          variant: DSToastVariant.error,
+          title: 'Kunne ikke fjerne ekstra timer. Prøv igen.');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasHours = widget.extJob.extraHours != null;
+    // Window closed + no hours → nothing to show.
+    if (!_windowOpen && !hasHours) return const SizedBox.shrink();
+
+    return _SectionCard(
+      title: 'Ekstra timer',
+      children: [
+        if (!_windowOpen && hasHours) ...[
+          _ExtJobExtraHoursSummary(
+            hours: widget.extJob.extraHours!,
+            pricePerHour: widget.extJob.extraHoursPricePerHour!,
+            payoutShare: _djPayoutShare,
+          ),
+        ] else if (_windowOpen && hasHours && !_editing) ...[
+          _ExtJobExtraHoursSummary(
+            hours: widget.extJob.extraHours!,
+            pricePerHour: widget.extJob.extraHoursPricePerHour!,
+            payoutShare: _djPayoutShare,
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          Row(
+            children: [
+              Expanded(
+                child: DSButton(
+                  label: 'Rediger',
+                  variant: DSButtonVariant.secondary,
+                  onTap: () => setState(() => _editing = true),
+                ),
+              ),
+              const SizedBox(width: DSSpacing.s2),
+              Expanded(child: _ExtJobDeleteButton(onTap: _delete)),
+            ],
+          ),
+        ] else if (_windowOpen && (!hasHours || _editing)) ...[
+          Text(
+            'Spillede du flere timer end aftalt? Registrér dem her — vi '
+            'fakturerer kunden, og din betaling justeres tilsvarende.',
+            style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          DSDropdown<double>(
+            label: 'Antal timer',
+            hint: 'Vælg antal timer...',
+            value: _selectedHours,
+            items: extraHoursOptions,
+            onChanged: (v) => setState(() => _selectedHours = v),
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          DSInput(
+            label: 'Pris pr. time (DKK)',
+            controller: _priceController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          Consumer(
+            builder: (context, ref, _) {
+              final isLoading =
+                  ref.watch(addExtJobExtraHoursProvider) is AsyncLoading;
+              return Row(
+                children: [
+                  if (_editing) ...[
+                    Expanded(
+                      child: DSButton(
+                        label: 'Annuller',
+                        variant: DSButtonVariant.secondary,
+                        onTap: () => setState(() => _editing = false),
+                      ),
+                    ),
+                    const SizedBox(width: DSSpacing.s2),
+                  ],
+                  Expanded(
+                    child: DSButton(
+                      label: isLoading ? 'Gemmer...' : 'Gem ekstra timer',
+                      variant: DSButtonVariant.primary,
+                      onTap: isLoading ? null : _save,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ExtJobExtraHoursSummary extends StatelessWidget {
+  const _ExtJobExtraHoursSummary({
+    required this.hours,
+    required this.pricePerHour,
+    required this.payoutShare,
+  });
+
+  final double hours;
+  final int pricePerHour;
+  final double payoutShare;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DSTheme.of(context);
+    final hoursLabel =
+        hours == hours.truncateToDouble() ? '${hours.toInt()} timer' : '$hours timer';
+    final extraCost = (hours * pricePerHour).round();
+    final payoutDelta = (extraCost * payoutShare).round();
+    return Column(
+      children: [
+        _ExtJobSummaryRow(label: 'Timer', value: hoursLabel),
+        _ExtJobSummaryRow(label: 'Pris pr. time', value: '$pricePerHour kr.'),
+        _ExtJobSummaryRow(label: 'Ekstra omkostning', value: '+$extraCost kr.'),
+        Divider(height: 16, color: c.border.subtle),
+        _ExtJobSummaryRow(
+          label: 'Justering af din betaling',
+          value: '+$payoutDelta kr.',
+          bold: true,
+          valueColor: c.state.success,
+        ),
+      ],
+    );
+  }
+}
+
+class _ExtJobSummaryRow extends StatelessWidget {
+  const _ExtJobSummaryRow({
+    required this.label,
+    required this.value,
+    this.bold = false,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final bool bold;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DSTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: DSTextStyle.labelMd.copyWith(color: c.text.muted)),
+          Text(
+            value,
+            style: DSTextStyle.labelMd.copyWith(
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+              color: valueColor ?? c.text.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExtJobDeleteButton extends ConsumerWidget {
+  const _ExtJobDeleteButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = DSTheme.of(context);
+    final isLoading =
+        ref.watch(deleteExtJobExtraHoursProvider) is AsyncLoading;
+    return GestureDetector(
+      onTap: isLoading ? null : onTap,
+      child: Container(
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: c.state.danger.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(DSRadius.md),
+          border: Border.all(color: c.state.danger.withValues(alpha: 0.50)),
+        ),
+        child: Text(
+          isLoading ? 'Sletter...' : 'Slet',
+          style: DSTextStyle.labelLg.copyWith(
+            fontWeight: FontWeight.w600,
+            color: c.state.danger,
+          ),
         ),
       ),
     );

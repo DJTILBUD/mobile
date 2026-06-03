@@ -296,9 +296,11 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
-  Future<void> addExtraHours(int quoteId, {required double extraHours, required int pricePerHour}) async {
+  Future<void> addExtraHours(int quoteId,
+      {required double extraHours, required int pricePerHour, required int newTotalPrice}) async {
     try {
-      await _datasource.addExtraHours(quoteId, extraHours: extraHours, pricePerHour: pricePerHour);
+      await _datasource.addExtraHours(quoteId,
+          extraHours: extraHours, pricePerHour: pricePerHour, newTotalPrice: newTotalPrice);
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -308,6 +310,26 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<void> deleteExtraHours(int quoteId) async {
     try {
       await _datasource.deleteExtraHours(quoteId);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> addExtJobExtraHours(int extJobId,
+      {required double extraHours, required int pricePerHour, required int newTotalPrice}) async {
+    try {
+      await _datasource.addExtJobExtraHours(extJobId,
+          extraHours: extraHours, pricePerHour: pricePerHour, newTotalPrice: newTotalPrice);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> deleteExtJobExtraHours(int extJobId) async {
+    try {
+      await _datasource.deleteExtJobExtraHours(extJobId);
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
