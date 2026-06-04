@@ -13,6 +13,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  id-token: write
 
 jobs:
   fix:
@@ -34,13 +35,15 @@ jobs:
           dart run build_runner build --delete-conflicting-outputs || true
 
       - name: Claude — triage, fix, test, draft PR
+        id: claude
+        continue-on-error: true
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: >-
-            --model claude-sonnet-4-6
-            --max-turns 40
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(flutter *),Bash(dart *),Bash(git checkout -b *),Bash(git add *),Bash(git commit *),Bash(git push -u origin bug-bot/*),Bash(git push origin bug-bot/*),Bash(gh pr create *),Bash(gh issue comment *)"
+            --model claude-opus-4-8
+            --max-turns 60
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(flutter *),Bash(dart *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git branch*),Bash(git checkout -b *),Bash(git add *),Bash(git commit *),Bash(git push -u origin bug-bot/*),Bash(git push origin bug-bot/*),Bash(gh issue view*),Bash(gh issue comment *),Bash(gh pr create *),Bash(gh pr view*)"
             --disallowedTools "Bash(git push * main*),Bash(git push origin main*),Bash(git push --force*),Bash(git merge *),Bash(gh pr merge *),Bash(curl *),Bash(wget *),WebFetch,Read(.env*),Read(**/.env*),Read(**/*.pem),Read(**/*.key)"
           prompt: |
             You are an automated bug-fixing agent for the DJ Tilbud **mobile** app (Flutter, Riverpod, go_router).
@@ -60,6 +63,7 @@ jobs:
             </bug-report>
 
             ## What to do
+            **Triage first:** if this report is vague or you would have to guess (no concrete screen/file/field, no clear expected-vs-actual), your VERY FIRST action is `gh issue comment` asking for the specifics, then STOP without investigating. Otherwise:
             1. Read `CLAUDE.md` and the relevant sub-docs under `architecture/`, `design-system/`, `ai-agent/`.
             2. **Source-of-truth limit:** this CI checkout contains ONLY the mobile repo. If a correct fix
                requires mirroring web-app business logic (quotes/offers/status/pricing) that you cannot see
@@ -76,6 +80,15 @@ jobs:
                and the checks you ran. Then post a short issue comment linking the PR.
 
             ## Hard rules
+            - **Work within your turn budget.** Locate the cause quickly with Grep/Glob/Read. If you are not confident you can fix it correctly, or the report is too vague to fix safely, STOP and post a `gh issue comment` stating exactly what you need (which file/area, repro steps, expected vs actual). Do NOT keep investigating until you run out of turns - a precise question back is a good, expected outcome.
             - NEVER push to `main`, NEVER merge, NEVER force-push. Draft PR for human review only.
             - NEVER read, print, or commit secrets or `.env*` files.
             - Keep the change minimal; Riverpod only, `context.goNamed` only, no direct Anthropic calls.
+
+      - name: Comment if the fix did not complete
+        if: steps.claude.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" \
+            --body "Bug bot ran but could not complete an automated fix within its limits. This one likely needs more detail or a human. To help it next time, add the exact screen/component, steps to reproduce, and expected vs actual, then re-add the bug-bot label to retry."

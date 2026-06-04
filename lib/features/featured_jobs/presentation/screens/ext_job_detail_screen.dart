@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/shared/widgets/conversation_card.dart';
+import 'package:dj_tilbud_app/shared/widgets/chat_bubble_fab.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
@@ -240,7 +241,9 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
       ),
-      body: ListView(
+      body: Stack(
+        children: [
+          ListView(
         padding: const EdgeInsets.all(DSSpacing.s4),
         children: [
           // ── Process tracker ──────────────────────────────────────────────
@@ -396,7 +399,24 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
           // ── Job info card ────────────────────────────────────────────────
           _JobInfoCard(extJob: extJob),
 
-          const SizedBox(height: DSSpacing.s8),
+          // Extra clearance so the floating chat bubble never covers the last card.
+          const SizedBox(height: 96),
+            ],
+          ),
+          // Floating "Beskeder" bubble (mirrors the web app + the musician
+          // won-offer view). Self-hides when no conversation exists for this
+          // ext job.
+          Positioned.fill(
+            child: SafeArea(
+              child: Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(DSSpacing.s4),
+                  child: ChatBubbleFab(extJobId: extJob.id),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

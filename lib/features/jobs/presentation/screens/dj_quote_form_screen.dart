@@ -568,14 +568,14 @@ class _CollisionBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(DSSpacing.s3),
       decoration: BoxDecoration(
-        color: _c.state.error.withValues(alpha: 0.12),
+        color: _c.state.danger.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _c.state.error.withValues(alpha: 0.55)),
+        border: Border.all(color: _c.state.danger.withValues(alpha: 0.55)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(LucideIcons.calendarX, size: 18, color: _c.state.error),
+          Icon(LucideIcons.calendarX, size: 18, color: _c.state.danger),
           const SizedBox(width: DSSpacing.s2),
           Expanded(
             child: Column(
@@ -583,7 +583,7 @@ class _CollisionBanner extends StatelessWidget {
               children: [
                 Text('Konflikt med eksisterende booking',
                     style: DSTextStyle.labelSm.copyWith(
-                        color: _c.state.error, fontWeight: FontWeight.w700)),
+                        color: _c.state.danger, fontWeight: FontWeight.w700)),
                 const SizedBox(height: DSSpacing.s1),
                 Text(message,
                     style: DSTextStyle.bodySm

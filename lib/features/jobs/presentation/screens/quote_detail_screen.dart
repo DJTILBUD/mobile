@@ -23,6 +23,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/shared/widgets/conversation_card.dart';
+import 'package:dj_tilbud_app/shared/widgets/chat_bubble_fab.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
 
 class QuoteDetailScreen extends ConsumerStatefulWidget {
@@ -88,7 +89,25 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
         surfaceTintColor: _c.bg.surface,
       ),
       body: _quote.status == QuoteStatus.won
-          ? _wonBody(payout)
+          ? Stack(
+              children: [
+                _wonBody(payout),
+                // Floating "Beskeder" bubble (mirrors the web app + the
+                // musician won-offer view). Self-hides when no conversation
+                // exists yet for this job.
+                Positioned.fill(
+                  child: SafeArea(
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: const EdgeInsets.all(DSSpacing.s4),
+                        child: ChatBubbleFab(jobId: _quote.jobId),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
           : _pendingBody(payout),
     );
   }
@@ -159,7 +178,8 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
           _sharedBidSections(payout),
           const SizedBox(height: DSSpacing.s4),
           _JobHeroCard(quote: _quote),
-          const SizedBox(height: DSSpacing.s8),
+          // Extra clearance so the floating chat bubble never covers the last card.
+          const SizedBox(height: 96),
         ],
       );
 }

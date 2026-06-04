@@ -8,7 +8,7 @@ This is also a **master's thesis** on evaluating LLM interaction quality as acti
 
 The **web-app is the canonical, most-tested, proven-correct implementation** of every shared business rule (quote/offer flow, status transitions, pricing, cancellation, closing jobs, notifications, content). It serves live users and is where we *know* the logic works. The mobile app must **never re-derive, reinterpret, or "clean up" that logic** — when a behaviour exists in the web-app, copy it **exactly**. A mobile version that diverges is a bug, even when it looks reasonable. This has caused real mistakes before; do not repeat them.
 
-**Before implementing any shared behaviour on mobile, go read the web-app's implementation first** — the route handler in `web-app/src/app/api/`, or the relevant `web-app/src/` service — and match it line-for-line in intent. `webapp-reference/` is a snapshot for orientation; the **live `web-app/` is the real source of truth**.
+**Before implementing any shared behaviour on mobile, go read the web-app's implementation first** — the route handler in `web-app/src/app/api/`, or the relevant `web-app/src/` service — and match it line-for-line in intent. The **live `web-app/` is the real source of truth** (there is no `webapp-reference/` snapshot folder; read the live `web-app/` code).
 
 **Quick rule lookup:** `web-app/documentation/business-rules.md` is a code-cited index of every shared business rule (commission, quote caps, the status machine, cancellation, invoicing, extra-hours window, etc.) with the exact file each is enforced in. Start there to find the canonical rule, then read the cited code.
 
@@ -26,7 +26,7 @@ The goal is **one shared, tested path to the DB** so the rules can never drift b
 - If the web-app does **not** yet expose an endpoint for what you need, the fix is to **add the endpoint in the web-app and call it from mobile** — never reimplement the logic in Dart. **Confirm with the user before adding a new shared endpoint.**
 - Direct Supabase **reads** for simple, logic-free fetches and Realtime subscriptions are fine. This rule is about **writes and business logic**, not every query.
 
-## ALWAYS READ THESE FOUR FOLDERS FIRST
+## ALWAYS READ THESE THREE FOLDERS FIRST
 
 Before building or changing anything, read the relevant folder(s) below. They are the memory of the system.
 
@@ -34,7 +34,6 @@ Before building or changing anything, read the relevant folder(s) below. They ar
 |---|---|
 | `architecture/` | How the app is built — three-layer rule, Riverpod patterns, routing, error handling, naming |
 | `design-system/` | UI components, Figma MCP connection, theme, shared widgets, icon and font conventions |
-| `webapp-reference/` | The existing DJTilbud web platform — domain knowledge, data structures, feature logic |
 | `ai-agent/` | How the AI pitch agent works — interaction rules, model settings, logging, thesis observability |
 
 ## Tech stack

@@ -44,9 +44,9 @@ double? adjustBudgetForDjView({
 
   if (requestedSaxophonist && requestedMusicianHours != null && budget > 7000) {
     if (requestedMusicianHours == 0.5) {
-      adjusted -= 3500;
+      adjusted -= 3900;
     } else if (requestedMusicianHours == 1) {
-      adjusted -= 4000;
+      adjusted -= 4200;
     } else if (requestedMusicianHours >= 1.5) {
       adjusted -= 5000;
     }
