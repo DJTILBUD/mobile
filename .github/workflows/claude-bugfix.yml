@@ -25,6 +25,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Read-only checkout of the source-of-truth repos so the bot can mirror
+      # shared business logic instead of stopping (see bug-bot-setup.md → Cross-repo).
+      # These are REFERENCE ONLY — gitignored + never edited/committed.
+      - name: Checkout web-app (read-only source of truth)
+        uses: actions/checkout@v4
+        with:
+          repository: DJTILBUD/web-app
+          token: ${{ secrets.CROSS_REPO_RO_TOKEN }}
+          path: web-app-ref
+          persist-credentials: false
+          sparse-checkout: |
+            src
+            data
+            documentation
+      - name: Checkout admin (read-only source of truth)
+        uses: actions/checkout@v4
+        with:
+          repository: DJTILBUD/admin
+          token: ${{ secrets.CROSS_REPO_RO_TOKEN }}
+          path: admin-ref
+          persist-credentials: false
+          sparse-checkout: |
+            app
+
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.29.2
@@ -66,10 +90,16 @@ jobs:
             ## What to do
             **Triage first:** if this report is vague or you would have to guess (no concrete screen/file/field, no clear expected-vs-actual), your VERY FIRST action is `gh issue comment` asking for the specifics, then STOP without investigating. Otherwise:
             1. Read `CLAUDE.md` and the relevant sub-docs under `architecture/`, `design-system/`, `ai-agent/`.
-            2. **Source-of-truth limit:** this CI checkout contains ONLY the mobile repo. If a correct fix
-               requires mirroring web-app business logic (quotes/offers/status/pricing) that you cannot see
-               here, do NOT guess or re-derive it — `gh issue comment` saying the fix needs the web-app rule
-               (and which one), then STOP without a PR.
+            2. **Source of truth (read-only refs):** the canonical repos are checked out read-only at
+               `web-app-ref/` (web-app — source of truth for ALL shared business logic: quotes/offers/status/
+               pricing/feed-visibility; DB schema at `web-app-ref/data/schema.sql`) and `admin-ref/` (the CRM/
+               admin app — e.g. archive/cancel/inactive actions live in `admin-ref/app/api`). **Before
+               concluding a fix needs a rule you can't see, GREP THESE REFS** (e.g. `web-app-ref/src/app/api`,
+               `web-app-ref/src/hooks`, `web-app-ref/src/domain`, `web-app-ref/documentation/business-rules.md`,
+               `admin-ref/app`). Mirror the canonical rule EXACTLY — never re-derive it. Only `gh issue comment`
+               + STOP if the rule genuinely is not present in these refs. **These refs are REFERENCE ONLY: never
+               edit, `git add`, or commit anything under `web-app-ref/` or `admin-ref/` — your fix goes in the
+               mobile repo only.**
             3. Locate the cause. If you cannot confidently reproduce/locate it or the report is too vague,
                `gh issue comment` what you need and STOP (no PR).
             4. Make the smallest correct fix on a NEW branch `bug-bot/issue-${{ github.event.issue.number }}`,

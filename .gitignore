@@ -50,3 +50,8 @@ app.*.map.json
 
 # Claude context reference folder — local only, not committed
 webapp-reference/
+
+# Read-only source-of-truth repos checked out by the bug-bot CI workflow
+# (claude-bugfix.yml). Reference only — never committed.
+web-app-ref/
+admin-ref/
