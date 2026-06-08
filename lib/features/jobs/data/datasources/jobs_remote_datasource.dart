@@ -164,8 +164,13 @@ class JobsRemoteDatasource {
   }
 
   /// Fetches jobs available for an instrumentalist to bid on.
-  /// Mirrors web app useAvailableJobsForMusicians exactly:
+  /// Mirrors web app useAvailableJobsForMusicians:
   /// - Wide status filter (open/sent/re_sent/reopened/another_round/closed/customer_contacted)
+  /// - archived = false (a CRM-archived job keeps its status, so the status
+  ///   filter alone does not hide it — archiving must "hide from all active
+  ///   lists" per the admin archive route, and the canonical customer query
+  ///   `useViewableCustomerJobs` likewise filters `.eq("archived", false)`).
+  ///   Without this, archived saxophone jobs leaked into "Nye jobs".
   /// - requested_saxophonist = true, filtered to musician's regions
   /// - Excludes if this musician already has any offer (will be in their lanes)
   /// - Excludes if any musician has a WON offer
@@ -191,6 +196,7 @@ class JobsRemoteDatasource {
         .select()
         .eq('requested_saxophonist', true)
         .eq('is_paused', false)
+        .eq('archived', false)
         .inFilter('status', [
           'open',
           'sent',
@@ -209,6 +215,7 @@ class JobsRemoteDatasource {
           .select()
           .eq('requested_saxophonist', true)
           .eq('is_paused', false)
+          .eq('archived', false)
           .eq('status', 'ready_for_billing')
           .eq('sax_round_active', true)
           .order('created_at', ascending: false);
