@@ -65,7 +65,19 @@ dart run build_runner build --delete-conflicting-outputs  # regen Riverpod/codeg
 
 Env files: `.env.local` (default), `.env.dev`, `.env.prod`, `.env.example` (only one in git).
 
-The "typecheck + tests" done-bar for this app = `flutter analyze` + `flutter test` (this folder already has a fuller "Definition of done" checklist at the bottom).
+The "typecheck + tests" done-bar for this app = `flutter analyze` + `flutter test` (this folder already has a fuller "Definition of done" checklist at the bottom). Note: `build_runner` is **not** a dependency here — generated files are committed, so `dart run build_runner build` fails with "Could not find package build_runner" and is a no-op; don't treat that as a blocker.
+
+## Releasing (Android + iOS) — verified manual process
+
+There is **no fastlane / CI / changelog**; releases are built locally and uploaded by hand. Both stores require the build number to strictly increase.
+
+1. **Bump version** in `pubspec.yaml` `version: X.Y.Z+N` (semantic version `+` build number — `versionName`/`versionCode` derive from it). Patch bump + increment build for a bugfix (e.g. `1.0.10+34 → 1.0.11+35`).
+2. **Done-bar:** `flutter analyze --no-fatal-infos --no-fatal-warnings` (the `_c` underscore lints are a pre-existing baseline — only errors block) + `flutter test`.
+3. **Android:** `flutter build appbundle --release` → `build/app/outputs/bundle/release/app-release.aab`. Signed via `android/key.properties` → keystore at `/Users/victorbrorson/djtilbud-release.jks` (machine-local, gitignored, NOT in repo — a fresh clone cannot sign without it). App id `com.djtilbud.app`. Upload to Play Console.
+4. **iOS:** `flutter build ipa --release` → `build/ios/ipa/dj_tilbud_app.ipa`. Signing is **Automatic** with `DEVELOPMENT_TEAM = 87QC252TJH`; even with only Apple *Development* certs in the keychain, automatic signing produced a store-method IPA from CLI (no Apple *Distribution* cert / Xcode Organizer step needed). Upload via **Transporter** (drag the `.ipa`) or `xcrun altool --upload-app`. Bundle id `com.djtilbud.app`, min iOS 16.6.
+5. The "Launch image is the default placeholder" warning is pre-existing and non-blocking.
+
+Claude cannot do the store uploads (needs store credentials + it's the irreversible outward-facing step) — hand the signed artifacts + release notes to the user.
 
 ## The 4 success dimensions
 
@@ -111,13 +123,33 @@ Notification routing lives in `core/notifications/notifications_service.dart`. T
 | `chat_message` | musician | `/instrumentalist/chat` → `conversationDetail` |
 | `ready_reminder` | dj | `/dj/home` or `/dj/featured` → quote or extJobDetail |
 | `ready_reminder` | musician | `/instrumentalist/home` → `serviceOfferDetail` |
+| `extra_hours_reminder` | dj | same routing as `ready_reminder` (quote or extJobDetail) |
+| `extra_hours_reminder` | musician | `/instrumentalist/home` → `serviceOfferDetail` |
+| `contact_customer_reminder` | dj/musician | same routing as `ready_reminder` (deep-links into the job) |
+| `send_invoice_reminder` | dj/musician | same routing as `ready_reminder` (deep-links into the job) |
+| `chat_unused_reminder` | dj/musician | same routing as `chat_message` (chat tab → `conversationDetail`) |
 | `admin_message` | dj | `/dj/profile` → `adminMessages` |
 | `admin_message` | musician | `/instrumentalist/profile` → `adminMessages` |
 | `custom_notification` | any | no navigation (dismisses) |
 
 **Foreground notifications:** system banners are suppressed. `inAppNotificationProvider` (StateProvider) holds the current `RemoteMessage?` and drives an in-app banner instead.
 
+**Campaign funnel labeling (`second_wave`).** The out-of-region "second wave" musician campaign (and the internal sax variant) is *sent* with `data.type` = `new_ext_job`/`new_job` (so tap-routing + opt-out are unchanged) but *logged* by the sender under `second_wave_ext_job_sent` / `second_wave_job_sent`. So receive/tap logging MUST run `data['type']` through `NotificationsService.campaignAwareLogType(data, event)` (used in `logReceivedToSupabase`, the `navigateTo` tapped insert, and `main.dart`'s background path) — otherwise the campaign's opens log under the plain type and the funnel reads "sent N, opened 0" even though delivery works. Use `notification_type like 'second_wave_%'` (group by `event`) to measure it.
+
+**`received` logging is iOS-blind.** The background isolate (`_firebaseBackgroundHandler` → `notify-log-received`) only runs on iOS when the APNs payload carries `content-available`, which `sendFcmPush` does NOT set. So `received` events are essentially never logged for backgrounded iOS pushes; `tapped` (via `onMessageOpenedApp`) always logs. Treat **tapped/sent as the open-rate metric**, not received.
+
 **Token registration:** upserted to `DeviceTokens` on app start and after login. Deleted on logout. On iOS, waits for APNs token before registering.
+
+**Gotcha — `_upsertToken` deletes the user's OTHER tokens.** After upserting, `NotificationsService._upsertToken` runs `delete().eq('user_id', userId).neq('token', token)` to clear stale rotated tokens. This means registering a device under user X wipes every other device token X has. Harmless for a normal single-device login, but it's why **impersonation must never register a token** (see below).
+
+## Super-owner impersonation (debug builds only)
+
+To view a production user's app for debugging, the `kDebugMode`-only floating dev tool (`core/widgets/dev_env_banner.dart` — the same bottom-right FAB that switches DB env) has an **"Impersonate"** action that logs in AS any existing user **without a browser or cookie**:
+
+1. POST the target email to the web-app admin endpoint `POST /api/admin/magic/token` (gated by `ADMIN_API_KEY`, read from `EnvConfig.adminApiKey` / `.env.*`). It returns a one-time magic-link **token hash** (`generateLink({type:'magiclink'}).properties.hashed_token`).
+2. Establish the session on-device via `supabase.auth.verifyOTP(type: OtpType.magiclink, tokenHash: ...)` (`AuthRemoteDatasource.verifyMagicTokenHash` → `AuthRepositoryImpl.signInWithMagicTokenHash`, which reuses the same `_detectRole` as password login).
+
+**Critical: `NotificationsService.setImpersonating(true)` is set BEFORE `verifyOTP`** so the resulting `signedIn` event skips `registerToken()`. Without this the impersonated (real prod) user's actual phone token would be deleted by the `_upsertToken` cleanup above, silently killing their push. The flag is **persisted** (SharedPreferences, loaded in `main()` before the auth listener subscribes) so a relaunch mid-impersonation still skips registration; `registerToken`/`_upsertToken`/`removeToken` all hard-return when it's set. After establishing the session the FAB calls `RestartWidget.restartApp` so the router cold-resolves into the impersonated user's home; the panel then shows "Logget ind som <email>" + a "Log ud" button (`signOut` clears the flag). The **notification-settings toggle** (`notification_settings_screen.dart`, `_toggle`) also bails when `isImpersonating` — it does `UPDATE DeviceTokens.disabled_notification_types WHERE user_id = <current>`, which would hit the real user's device rows. Rule of thumb: **any new code that writes `DeviceTokens` for the current user must guard on `NotificationsService.isImpersonating`.** Points the app at prod, so writes are real — view only. To enable: set `ADMIN_API_KEY` in the mobile `.env.<env>` to match **that env's deployed web-app** key (e.g. the Vercel prod value for `.env.prod`).
 
 ## Job-content fields shown to musicians (what they may/may not see)
 
@@ -165,6 +197,10 @@ Step 5 of the DJ job process: short clips (max 15s, 9:16) recorded per job. `quo
 ## Date-collision guard (no double-booking a date)
 
 A DJ may not bid on a date where they already have a won quote (or 2 pending quotes, or a confirmed external job). The rule mirrors the web `collidingQuote` helper and now lives in **`lib/features/jobs/domain/date_collision.dart`** (`isDateColliding` → bool for the job list; `dateCollisionMessage` → Danish reason for the form banner). Used in two places: the job list (`jobs_shell_screen.dart` dims the card + nulls `onTap`) **and** the DJ quote form (`dj_quote_form_screen.dart` shows a `_CollisionBanner` + disables submit). The form must guard independently because it's reachable via **push deep-link**, bypassing the list. This is a client mirror only — the **authoritative** enforcement is server-side in the web `POST /api/jobs/[job_id]/quotes` route (returns 409, surfaced via the submit-error toast). Keep all three (web helper, mobile helper, both screens) in sync.
+
+## "Nye jobs" empty state (filters too strict vs genuinely none)
+
+`_DjNewJobsTab` (`jobs_shell_screen.dart`) shows a smart empty state when the visible list is empty: if `newDjJobsProvider` (the **unfiltered** server list) still has jobs, the DJ's own `DjJobFilters` are hiding them → "Ingen jobs matcher dine filtre" with a **Justér filtre** CTA (→ `AppRoutes.djJobFilters`, `extra: djId` from `djProfileProvider`) + a one-tap **Slå filtre fra** (`djFiltersEnabledProvider.state = false`). If the raw list is also empty, it's genuinely none → softer "Vi giver dig besked" copy. The reusable `EmptyJobsView` now takes optional `title`/`actionLabel`/`onAction`/`secondaryLabel`/`onSecondary`. Web mirror: `web-app/src/app/dj/page.tsx` `NewJobsEmptyState`, driven by `useUnbidJobsFromMyRegions(false)` (unfiltered) vs the filtered list.
 
 ## Things Claude must NOT do
 

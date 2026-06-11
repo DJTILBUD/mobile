@@ -35,7 +35,13 @@ class EnvConfig {
   static String get supabaseUrl => dotenv.get('SUPABASE_URL');
   static String get supabaseAnonKey => dotenv.get('SUPABASE_ANON_KEY');
   static String get webAppUrl => dotenv.get('WEB_APP_URL');
-  static String get notifyLogSecret => dotenv.get('NOTIFY_LOG_SECRET', fallback: '');
+  static String get notifyLogSecret =>
+      dotenv.get('NOTIFY_LOG_SECRET', fallback: '');
+
+  /// Shared web-app `ADMIN_API_KEY`, used ONLY by the debug-only "impersonate"
+  /// screen to call `/api/admin/magic/token`. Empty unless set in `.env.*`;
+  /// the impersonate flow is compiled in for `kDebugMode` builds only.
+  static String get adminApiKey => dotenv.get('ADMIN_API_KEY', fallback: '');
 
   static bool get isLocal => env == 'local';
   static bool get isDev => env == 'dev';

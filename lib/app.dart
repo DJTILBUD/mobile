@@ -80,11 +80,12 @@ class _OnboardingNotifier extends ChangeNotifier {
     }
     try {
       final table = RoleCache.role == MusicianRole.dj ? 'DjInfos' : 'Musicians';
-      final data = await supabase
-          .from(table)
-          .select('onboarding_completed_at')
-          .eq('id', session.user.id)
-          .maybeSingle();
+      final data =
+          await supabase
+              .from(table)
+              .select('onboarding_completed_at')
+              .eq('id', session.user.id)
+              .maybeSingle();
       _completed = data?['onboarding_completed_at'] != null;
     } catch (_) {
       // Network error — leave current state unchanged so we don't
@@ -208,7 +209,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isAuthenticated = supabase.auth.currentSession != null;
       final loc = state.matchedLocation;
-      final isPublicRoute = loc == '/login' ||
+      final isPublicRoute =
+          loc == '/login' ||
           loc == '/forgot-password' ||
           loc == '/design-system' ||
           loc == '/profile-setup' ||
@@ -238,12 +240,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Gate the entire authenticated app behind onboarding completion
-      if (isAuthenticated && !isPublicRoute && !_onboardingNotifier.onboardingCompleted) {
+      if (isAuthenticated &&
+          !isPublicRoute &&
+          !_onboardingNotifier.onboardingCompleted) {
         return '/onboarding';
       }
 
       // Once onboarding is confirmed complete, leave the onboarding screen.
-      if (isAuthenticated && loc == '/onboarding' && _onboardingNotifier.onboardingCompleted) {
+      if (isAuthenticated &&
+          loc == '/onboarding' &&
+          _onboardingNotifier.onboardingCompleted) {
         return _defaultHomePath();
       }
 
@@ -279,72 +285,95 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // ── DJ shell (4 bottom tabs) ──
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => MainShell(
-          role: MusicianRole.dj,
-          navigationShell: navigationShell,
-        ),
+        builder:
+            (context, state, navigationShell) => MainShell(
+              role: MusicianRole.dj,
+              navigationShell: navigationShell,
+            ),
         branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/dj/home',
-              name: AppRoutes.djHome,
-              builder: (context, state) =>
-                  const JobsShellScreen(role: MusicianRole.dj),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/dj/featured',
-              name: AppRoutes.featuredJobs,
-              builder: (context, state) => const FeaturedJobsScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/dj/chat',
-              name: '${AppRoutes.chat}-dj',
-              builder: (context, state) => const ChatScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/dj/profile',
-              name: '${AppRoutes.profile}-dj',
-              builder: (context, state) => const ProfileScreen(role: MusicianRole.dj),
-            ),
-          ]),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/dj/home',
+                name: AppRoutes.djHome,
+                builder:
+                    (context, state) =>
+                        const JobsShellScreen(role: MusicianRole.dj),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/dj/featured',
+                name: AppRoutes.featuredJobs,
+                builder: (context, state) => const FeaturedJobsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/dj/chat',
+                name: '${AppRoutes.chat}-dj',
+                builder: (context, state) => const ChatScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/dj/profile',
+                name: '${AppRoutes.profile}-dj',
+                builder:
+                    (context, state) =>
+                        const ProfileScreen(role: MusicianRole.dj),
+              ),
+            ],
+          ),
         ],
       ),
 
       // ── Instrumentalist shell (3 bottom tabs) ──
       StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) => MainShell(
-          role: MusicianRole.instrumentalist,
-          navigationShell: navigationShell,
-        ),
+        builder:
+            (context, state, navigationShell) => MainShell(
+              role: MusicianRole.instrumentalist,
+              navigationShell: navigationShell,
+            ),
         branches: [
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/instrumentalist/home',
-              name: AppRoutes.instrumentalistHome,
-              builder: (context, state) =>
-                  const JobsShellScreen(role: MusicianRole.instrumentalist),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/instrumentalist/chat',
-              name: '${AppRoutes.chat}-instrumentalist',
-              builder: (context, state) => const ChatScreen(),
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/instrumentalist/profile',
-              name: '${AppRoutes.profile}-instrumentalist',
-              builder: (context, state) => const ProfileScreen(role: MusicianRole.instrumentalist),
-            ),
-          ]),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/instrumentalist/home',
+                name: AppRoutes.instrumentalistHome,
+                builder:
+                    (context, state) => const JobsShellScreen(
+                      role: MusicianRole.instrumentalist,
+                    ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/instrumentalist/chat',
+                name: '${AppRoutes.chat}-instrumentalist',
+                builder: (context, state) => const ChatScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/instrumentalist/profile',
+                name: '${AppRoutes.profile}-instrumentalist',
+                builder:
+                    (context, state) =>
+                        const ProfileScreen(role: MusicianRole.instrumentalist),
+              ),
+            ],
+          ),
         ],
       ),
 
@@ -357,7 +386,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (job is! Job) {
             return const _MissingRouteDataScreen(label: 'job-detaljer');
           }
-          AnalyticsService.logJobViewed(job.id, job.eventType, jobStatus: job.status.name);
+          AnalyticsService.logJobViewed(
+            job.id,
+            job.eventType,
+            jobStatus: job.status.name,
+          );
           return JobDetailScreen(job: job);
         },
       ),
@@ -369,7 +402,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (job is! Job) {
             return const _MissingRouteDataScreen(label: 'tilbudsformular');
           }
-          AnalyticsService.logOfferFormOpened(job.id, job.eventType, role: 'dj');
+          AnalyticsService.logOfferFormOpened(
+            job.id,
+            job.eventType,
+            role: 'dj',
+          );
           return DjQuoteFormScreen(job: job);
         },
       ),
@@ -381,7 +418,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (job is! Job) {
             return const _MissingRouteDataScreen(label: 'jobtilbudsformular');
           }
-          AnalyticsService.logOfferFormOpened(job.id, job.eventType, role: 'musician');
+          AnalyticsService.logOfferFormOpened(
+            job.id,
+            job.eventType,
+            role: 'musician',
+          );
           return InstrumentalistOfferFormScreen(job: job);
         },
       ),
@@ -402,7 +443,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final offer = state.extra;
           if (offer is! ServiceOffer) {
-            return const _MissingRouteDataScreen(label: 'service offer detaljer');
+            return const _MissingRouteDataScreen(
+              label: 'service offer detaljer',
+            );
           }
           return ServiceOfferDetailScreen(offer: offer);
         },
@@ -463,7 +506,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/my-content',
         name: AppRoutes.myContent,
         builder: (context, state) {
-          final scope = state.extra is JobContentKey ? state.extra as JobContentKey : null;
+          final scope =
+              state.extra is JobContentKey
+                  ? state.extra as JobContentKey
+                  : null;
           return MyContentScreen(scope: scope);
         },
       ),
@@ -505,14 +551,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/dj/calendar',
         name: AppRoutes.djCalendar,
-        builder: (context, state) =>
-            const CalendarScreen(role: MusicianRole.dj),
+        builder:
+            (context, state) => const CalendarScreen(role: MusicianRole.dj),
       ),
       GoRoute(
         path: '/instrumentalist/calendar',
         name: AppRoutes.instrumentalistCalendar,
-        builder: (context, state) =>
-            const CalendarScreen(role: MusicianRole.instrumentalist),
+        builder:
+            (context, state) =>
+                const CalendarScreen(role: MusicianRole.instrumentalist),
       ),
       GoRoute(
         path: '/admin-messages',
@@ -533,7 +580,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/faq',
         name: AppRoutes.faq,
-        builder: (context, state) => FaqScreen(role: state.extra as MusicianRole),
+        builder:
+            (context, state) => FaqScreen(role: state.extra as MusicianRole),
       ),
       GoRoute(
         path: '/notification-settings',
@@ -541,7 +589,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final role = state.extra;
           if (role is! MusicianRole) {
-            return const _MissingRouteDataScreen(label: 'notifikationsindstillinger');
+            return const _MissingRouteDataScreen(
+              label: 'notifikationsindstillinger',
+            );
           }
           return NotificationSettingsScreen(role: role);
         },
@@ -555,7 +605,8 @@ class _KeyboardDismissBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(suppressKeyboardDismissBarProvider)) return const SizedBox.shrink();
+    if (ref.watch(suppressKeyboardDismissBarProvider))
+      return const SizedBox.shrink();
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     if (keyboardHeight == 0) return const SizedBox.shrink();
 
@@ -568,7 +619,10 @@ class _KeyboardDismissBar extends ConsumerWidget {
         color: Colors.transparent,
         child: Container(
           color: c.bg.surface,
-          padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4, vertical: 6),
+          padding: const EdgeInsets.symmetric(
+            horizontal: DSSpacing.s4,
+            vertical: 6,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -576,7 +630,9 @@ class _KeyboardDismissBar extends ConsumerWidget {
                 onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DSSpacing.s2, vertical: 4),
+                    horizontal: DSSpacing.s2,
+                    vertical: 4,
+                  ),
                   child: Text(
                     'Luk',
                     style: DSTextStyle.labelMd.copyWith(
@@ -624,11 +680,14 @@ class _AppState extends ConsumerState<App> {
         if (type == 'quote_won') {
           ref.invalidate(firstWinEligibleProvider(MusicianRole.dj));
         } else if (type == 'offer_won') {
-          ref.invalidate(firstWinEligibleProvider(MusicianRole.instrumentalist));
+          ref.invalidate(
+            firstWinEligibleProvider(MusicianRole.instrumentalist),
+          );
         }
         if (type == 'chat_message') {
           final convId = int.tryParse(
-              message.data['conversation_id']?.toString() ?? '');
+            message.data['conversation_id']?.toString() ?? '',
+          );
           final activeConvId = ref.read(activeConversationIdProvider);
           if (convId != null && convId == activeConvId) return;
         }
@@ -655,13 +714,11 @@ class _AppState extends ConsumerState<App> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('da'),
-        Locale('en'),
-      ],
+      supportedLocales: const [Locale('da'), Locale('en')],
       locale: const Locale('da'),
       builder: (context, child) {
-        final isDark = themeMode == ThemeMode.dark ||
+        final isDark =
+            themeMode == ThemeMode.dark ||
             (themeMode == ThemeMode.system &&
                 MediaQuery.platformBrightnessOf(context) == Brightness.dark);
         return DSTheme(

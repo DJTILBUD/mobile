@@ -26,6 +26,7 @@ class MyContentScreen extends ConsumerStatefulWidget {
 
 class _MyContentScreenState extends ConsumerState<MyContentScreen> {
   bool _busy = false;
+  double? _progress; // 0..1 upload progress, null when not uploading
 
   Future<void> _pickAndUpload() async {
     final scope = widget.scope;
@@ -36,27 +37,80 @@ class _MyContentScreenState extends ConsumerState<MyContentScreen> {
     final picked = await ImagePicker().pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
 
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _progress = 0;
+    });
     try {
       final error = await validateContentVideo(picked.path);
       if (error != null) {
-        if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: error);
+        if (mounted)
+          DSToast.show(context, variant: DSToastVariant.error, title: error);
         return;
       }
-      await ref.read(jobContentDatasourceProvider).uploadJobContent(
+      await ref
+          .read(jobContentDatasourceProvider)
+          .uploadJobContent(
             userId: userId,
             filePath: picked.path,
             quoteId: scope.quoteId,
             extJobId: scope.extJobId,
+            onProgress: (p) {
+              if (mounted) setState(() => _progress = p);
+            },
           );
       ref.invalidate(myJobContentProvider);
       ref.invalidate(jobContentProvider(scope));
-      if (mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Video uploadet 🎉');
+      if (mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.success,
+          title: 'Video uploadet 🎉',
+        );
     } catch (_) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Upload fejlede');
+      if (mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: 'Upload fejlede',
+        );
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _progress = null;
+        });
+      }
     }
+  }
+
+  /// Determinate upload progress shown in place of the pick button while busy.
+  /// Once the bytes are sent (100%) the thumbnail + record steps still run, so
+  /// we switch the label to "finishing".
+  Widget _uploadProgress() {
+    final c = DSTheme.of(context);
+    final p = _progress;
+    final pct = p == null ? null : (p * 100).round();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(DSRadius.sm),
+          child: LinearProgressIndicator(
+            value: p,
+            minHeight: 8,
+            backgroundColor: c.bg.canvas,
+            color: c.brand.primary,
+          ),
+        ),
+        const SizedBox(height: DSSpacing.s2),
+        Text(
+          pct == null || pct >= 100 ? 'Færdiggør…' : 'Uploader… $pct%',
+          style: DSTextStyle.labelSm.copyWith(color: c.text.muted),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
   }
 
   /// One job's section: a header (job label + clip count) and a horizontal
@@ -69,10 +123,16 @@ class _MyContentScreenState extends ConsumerState<MyContentScreen> {
       children: [
         Text(
           first.jobLabel,
-          style: DSTextStyle.labelLg.copyWith(color: c.text.primary, fontWeight: FontWeight.w600),
+          style: DSTextStyle.labelLg.copyWith(
+            color: c.text.primary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 2),
-        Text('${clips.length} klip', style: DSTextStyle.labelSm.copyWith(color: c.text.muted)),
+        Text(
+          '${clips.length} klip',
+          style: DSTextStyle.labelSm.copyWith(color: c.text.muted),
+        ),
         const SizedBox(height: DSSpacing.s2),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -106,11 +166,18 @@ class _MyContentScreenState extends ConsumerState<MyContentScreen> {
                         CachedNetworkImage(
                           imageUrl: clip.thumbnailUrl!,
                           fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(color: Colors.black),
+                          errorWidget:
+                              (_, __, ___) => Container(color: Colors.black),
                         )
                       else
                         Container(color: Colors.black),
-                      const Center(child: Icon(LucideIcons.playCircle, size: 26, color: Colors.white)),
+                      const Center(
+                        child: Icon(
+                          LucideIcons.playCircle,
+                          size: 26,
+                          color: Colors.white,
+                        ),
+                      ),
                       Positioned(
                         top: 4,
                         right: 4,
@@ -118,8 +185,15 @@ class _MyContentScreenState extends ConsumerState<MyContentScreen> {
                           onTap: () => _delete(clip.file.id),
                           child: Container(
                             padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                            child: const Icon(LucideIcons.trash2, size: 13, color: Colors.white),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              LucideIcons.trash2,
+                              size: 13,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -161,7 +235,12 @@ class _MyContentScreenState extends ConsumerState<MyContentScreen> {
       await ref.read(jobContentDatasourceProvider).deleteJobContent(id);
       ref.invalidate(myJobContentProvider);
     } catch (_) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: 'Kunne ikke slette');
+      if (mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: 'Kunne ikke slette',
+        );
     }
   }
 
@@ -173,7 +252,10 @@ class _MyContentScreenState extends ConsumerState<MyContentScreen> {
     return Scaffold(
       backgroundColor: c.bg.canvas,
       appBar: AppBar(
-        title: Text('Mit content', style: DSTextStyle.headingSm.copyWith(color: c.text.primary)),
+        title: Text(
+          'Mit content',
+          style: DSTextStyle.headingSm.copyWith(color: c.text.primary),
+        ),
         backgroundColor: c.bg.surface,
         surfaceTintColor: c.bg.surface,
       ),
@@ -188,27 +270,41 @@ class _MyContentScreenState extends ConsumerState<MyContentScreen> {
           const SizedBox(height: DSSpacing.s2),
           Text(
             'Krav: maks. $kContentVideoMaxSeconds sekunder · lodret 9:16 format.',
-            style: DSTextStyle.labelMd.copyWith(color: c.text.primary, fontWeight: FontWeight.w600),
+            style: DSTextStyle.labelMd.copyWith(
+              color: c.text.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: DSSpacing.s2),
           InkWell(
-            onTap: () => launchUrl(Uri.parse(_examplesUrl), mode: LaunchMode.externalApplication),
+            onTap:
+                () => launchUrl(
+                  Uri.parse(_examplesUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(LucideIcons.externalLink, size: 14, color: c.state.info),
                 const SizedBox(width: DSSpacing.s1),
                 Flexible(
-                  child: Text('Se hvordan du gør det og eksempler på god content',
-                      style: DSTextStyle.labelMd.copyWith(
-                          color: c.state.info, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+                  child: Text(
+                    'Se hvordan du gør det og eksempler på god content',
+                    style: DSTextStyle.labelMd.copyWith(
+                      color: c.state.info,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 2),
-          Text('Se eksemplerne, før du optager.',
-              style: DSTextStyle.labelSm.copyWith(color: c.text.muted)),
+          Text(
+            'Se eksemplerne, før du optager.',
+            style: DSTextStyle.labelSm.copyWith(color: c.text.muted),
+          ),
           const SizedBox(height: DSSpacing.s4),
           if (widget.scope != null) ...[
             Container(
@@ -221,33 +317,49 @@ class _MyContentScreenState extends ConsumerState<MyContentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('DU UPLOADER TIL',
-                      style: DSTextStyle.labelSm.copyWith(color: c.brand.primary)),
+                  Text(
+                    'DU UPLOADER TIL',
+                    style: DSTextStyle.labelSm.copyWith(color: c.brand.primary),
+                  ),
                   const SizedBox(height: 2),
                   Text(
-                    ref.watch(scopedJobSummaryProvider(widget.scope!)).valueOrNull?.label ?? 'dette job',
+                    ref
+                            .watch(scopedJobSummaryProvider(widget.scope!))
+                            .valueOrNull
+                            ?.label ??
+                        'dette job',
                     style: DSTextStyle.labelLg.copyWith(color: c.text.primary),
                   ),
                   const SizedBox(height: DSSpacing.s1),
-                  Text('Maks. $kContentVideoMaxSeconds sekunder · lodret 9:16 format.',
-                      style: DSTextStyle.labelSm.copyWith(color: c.text.muted)),
-                  const SizedBox(height: DSSpacing.s3),
-                  DSButton(
-                    label: 'Vælg video',
-                    variant: DSButtonVariant.primary,
-                    expand: true,
-                    isLoading: _busy,
-                    onTap: _busy ? null : _pickAndUpload,
+                  Text(
+                    'Maks. $kContentVideoMaxSeconds sekunder · lodret 9:16 format.',
+                    style: DSTextStyle.labelSm.copyWith(color: c.text.muted),
                   ),
+                  const SizedBox(height: DSSpacing.s3),
+                  if (_busy)
+                    _uploadProgress()
+                  else
+                    DSButton(
+                      label: 'Vælg video',
+                      variant: DSButtonVariant.primary,
+                      expand: true,
+                      onTap: _pickAndUpload,
+                    ),
                 ],
               ),
             ),
             const SizedBox(height: DSSpacing.s6),
           ],
           clipsAsync.when(
-            loading: () => Center(child: CircularProgressIndicator(color: c.brand.primary)),
-            error: (e, _) => Text('Kunne ikke hente content: $e',
-                style: DSTextStyle.labelMd.copyWith(color: c.state.danger)),
+            loading:
+                () => Center(
+                  child: CircularProgressIndicator(color: c.brand.primary),
+                ),
+            error:
+                (e, _) => Text(
+                  'Kunne ikke hente content: $e',
+                  style: DSTextStyle.labelMd.copyWith(color: c.state.danger),
+                ),
             data: (clips) {
               if (clips.isEmpty) {
                 return Text(

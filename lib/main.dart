@@ -30,9 +30,10 @@ Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
 Future<void> _logBackgroundReceivedToSupabase(Map<String, dynamic> data) async {
   try {
     // Load env without SharedPreferences — not available in background isolate.
-    final env = kReleaseMode
-        ? 'prod'
-        : const String.fromEnvironment('ENV', defaultValue: 'local');
+    final env =
+        kReleaseMode
+            ? 'prod'
+            : const String.fromEnvironment('ENV', defaultValue: 'local');
     await dotenv.load(fileName: '.env.$env');
 
     final supabaseUrl = dotenv.get('SUPABASE_URL', fallback: '');
@@ -47,7 +48,10 @@ Future<void> _logBackgroundReceivedToSupabase(Map<String, dynamic> data) async {
       headers: {'Content-Type': 'application/json', 'x-log-secret': logSecret},
       body: jsonEncode({
         'token': token,
-        'notification_type': data['type'] ?? 'unknown',
+        'notification_type': NotificationsService.campaignAwareLogType(
+          data,
+          'received',
+        ),
         'role': data['role'],
         'reference_id': NotificationsService.extractReferenceId(data),
       }),
@@ -59,6 +63,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EnvConfig.load();
   await RoleCache.load();
+  // Load the impersonation flag before the auth listener subscribes, so a
+  // recovered impersonated session never registers a device token.
+  await NotificationsService.loadImpersonationFlag();
   await initSupabase();
   await initializeDateFormatting('da_DK');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);

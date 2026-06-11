@@ -1,7 +1,7 @@
 name: dj_tilbud_app
 description: "DJTilbud - Musician mobile app"
 publish_to: 'none'
-version: 1.0.10+34
+version: 1.0.13+37
 
 environment:
   sdk: ^3.7.2
@@ -31,7 +31,6 @@ dependencies:
   shared_preferences: ^2.3.0
   video_player: ^2.9.2
   video_thumbnail: ^0.5.3
-  video_compress: ^3.1.4
   chewie: ^1.8.5
   lucide_icons: ^0.257.0
   url_launcher: ^6.3.1

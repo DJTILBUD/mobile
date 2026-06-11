@@ -16,6 +16,11 @@ abstract class AuthRepository {
     required String password,
   });
 
+  /// Debug-only (super-owner impersonation): establishes a session from an
+  /// admin-issued magic-link token hash and returns the detected [MusicianRole].
+  /// Throws [AppException] subtypes on failure.
+  Future<MusicianRole> signInWithMagicTokenHash(String tokenHash);
+
   /// Signs the current user out.
   Future<void> signOut();
 

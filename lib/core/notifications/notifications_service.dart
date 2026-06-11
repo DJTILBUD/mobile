@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
@@ -17,6 +18,40 @@ import 'package:dj_tilbud_app/features/jobs/data/models/service_offer_model.dart
 /// Call [setupNavigationHandlers] once the router is ready.
 class NotificationsService {
   static final _messaging = FirebaseMessaging.instance;
+
+  // ── Impersonation guard (super-owner debug login) ──
+  //
+  // While impersonating a production user, the app must NEVER touch the
+  // `DeviceTokens` table. Registering this device under the impersonated user
+  // would not only add our token — `_upsertToken`'s cleanup step then DELETES
+  // every other token for that user, i.e. their REAL phone's token, silently
+  // killing their push notifications. So we hard-skip all token writes.
+  //
+  // The flag is persisted so a relaunch mid-impersonation (which fires an
+  // `initialSession` → `registerToken()`) still skips registration.
+  static const _impersonationKey = 'djtilbud_impersonating';
+  static bool _impersonating = false;
+
+  static bool get isImpersonating => _impersonating;
+
+  /// Load the persisted impersonation flag. Call once at startup BEFORE the
+  /// auth listener is wired (so a recovered session doesn't register a token).
+  static Future<void> loadImpersonationFlag() async {
+    final prefs = await SharedPreferences.getInstance();
+    _impersonating = prefs.getBool(_impersonationKey) ?? false;
+  }
+
+  /// Enter/leave impersonation. Set to `true` BEFORE establishing the
+  /// impersonated session; set to `false` on logout.
+  static Future<void> setImpersonating(bool value) async {
+    _impersonating = value;
+    final prefs = await SharedPreferences.getInstance();
+    if (value) {
+      await prefs.setBool(_impersonationKey, true);
+    } else {
+      await prefs.remove(_impersonationKey);
+    }
+  }
 
   static Future<void> initialize() async {
     final settings = await _messaging.requestPermission(
@@ -51,6 +86,8 @@ class NotificationsService {
 
   /// Call this after a successful login to register the token for the current user.
   static Future<void> registerToken() async {
+    // Never register while impersonating — see the impersonation guard note.
+    if (_impersonating) return;
     try {
       // On iOS, APNs token may not be ready immediately after app start.
       // If it isn't, return early — onTokenRefresh (wired in initialize())
@@ -67,18 +104,17 @@ class NotificationsService {
   }
 
   static Future<void> _upsertToken(String token) async {
+    // Guard the onTokenRefresh path too — see the impersonation guard note.
+    if (_impersonating) return;
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
 
-    await supabase.from('DeviceTokens').upsert(
-      {
-        'user_id': userId,
-        'token': token,
-        'platform': Platform.isIOS ? 'ios' : 'android',
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      onConflict: 'user_id, token',
-    );
+    await supabase.from('DeviceTokens').upsert({
+      'user_id': userId,
+      'token': token,
+      'platform': Platform.isIOS ? 'ios' : 'android',
+      'updated_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'user_id, token');
 
     // Remove stale tokens for this user — iOS FCM tokens rotate on reinstall
     // or APNs refresh, which would otherwise accumulate duplicate rows.
@@ -91,6 +127,9 @@ class NotificationsService {
 
   /// Deletes the current device token on logout.
   static Future<void> removeToken() async {
+    // While impersonating we never registered a token, and the row that exists
+    // for this user is their REAL device — don't delete it. See guard note.
+    if (_impersonating) return;
     final String? token;
     try {
       token = await _messaging.getToken();
@@ -129,6 +168,9 @@ class NotificationsService {
       case 'new_job':
       case 'another_round':
       case 'ready_reminder':
+      case 'extra_hours_reminder':
+      case 'contact_customer_reminder':
+      case 'send_invoice_reminder':
       case 'content_record_reminder':
       case 'content_upload_reminder':
       case 'content_accepted':
@@ -146,12 +188,30 @@ class NotificationsService {
       case 'offer_lost':
         return data['offer_id'] as String?;
       case 'chat_message':
+      case 'chat_unused_reminder':
         return data['conversation_id'] as String?;
       case 'admin_message':
         return data['message_id'] as String?;
       default:
         return null;
     }
+  }
+
+  /// Audit-log type for the funnel, carrying campaign + stage.
+  ///
+  /// Campaign pushes (e.g. the out-of-region "second wave") keep the generic
+  /// `data.type` (`new_ext_job` / `new_job`) so tap-routing is unchanged, but
+  /// the sender logs them under `second_wave_ext_job_sent` / `second_wave_job_sent`.
+  /// Without this, the received/tapped events would log as the plain type and the
+  /// campaign's opens would be invisible (sent under one name, opens under another).
+  /// Mirrors the sender's naming so sent/received/tapped line up by prefix.
+  static String campaignAwareLogType(Map<String, dynamic> data, String event) {
+    final type = data['type'] as String?;
+    if (data['campaign'] == 'second_wave') {
+      if (type == 'new_ext_job') return 'second_wave_ext_job_$event';
+      if (type == 'new_job') return 'second_wave_job_$event';
+    }
+    return type ?? 'unknown';
   }
 
   /// Logs a foreground received event to NotificationLogs (requires auth session).
@@ -161,7 +221,7 @@ class NotificationsService {
     try {
       await supabase.from('NotificationLogs').insert({
         'user_id': userId,
-        'notification_type': data['type'] ?? 'unknown',
+        'notification_type': campaignAwareLogType(data, 'received'),
         'role': data['role'],
         'reference_id': extractReferenceId(data),
         'event': 'received',
@@ -171,20 +231,27 @@ class NotificationsService {
 
   /// Public entry-point used by the in-app notification banner on tap.
   static Future<void> navigateTo(
-      Map<String, dynamic> data, GoRouter router) async {
+    Map<String, dynamic> data,
+    GoRouter router,
+  ) async {
     final type = data['type'] as String?;
     final role = data['role'] as String?;
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
 
     AnalyticsService.logNotificationTapped(type ?? 'unknown', role: role);
-    unawaited(supabase.from('NotificationLogs').insert({
-      'user_id': userId,
-      'notification_type': type ?? 'unknown',
-      'role': role,
-      'reference_id': extractReferenceId(data),
-      'event': 'tapped',
-    }).catchError((_) {}));
+    unawaited(
+      supabase
+          .from('NotificationLogs')
+          .insert({
+            'user_id': userId,
+            'notification_type': campaignAwareLogType(data, 'tapped'),
+            'role': role,
+            'reference_id': extractReferenceId(data),
+            'event': 'tapped',
+          })
+          .catchError((_) {}),
+    );
 
     // Helper: go to shell tab then push detail synchronously (no async gap between
     // them) so the shell stays underneath and the back button works — exactly
@@ -194,13 +261,11 @@ class NotificationsService {
         case 'new_job':
         case 'another_round':
           final jobId = _parseInt(data['job_id']);
-          final homeTab = role == 'musician' ? '/instrumentalist/home' : '/dj/home';
+          final homeTab =
+              role == 'musician' ? '/instrumentalist/home' : '/dj/home';
           if (jobId != null) {
-            final json = await supabase
-                .from('Jobs')
-                .select()
-                .eq('id', jobId)
-                .single();
+            final json =
+                await supabase.from('Jobs').select().eq('id', jobId).single();
             final job = JobModel.fromJson(json).toEntity();
             router.go(homeTab);
             if (role == 'musician') {
@@ -216,11 +281,12 @@ class NotificationsService {
         case 'quote_lost':
           final quoteId = _parseInt(data['quote_id']);
           if (quoteId != null) {
-            final json = await supabase
-                .from('Quotes')
-                .select('*, job:Jobs(*)')
-                .eq('id', quoteId)
-                .single();
+            final json =
+                await supabase
+                    .from('Quotes')
+                    .select('*, job:Jobs(*)')
+                    .eq('id', quoteId)
+                    .single();
             final quote = DjQuoteModel.fromJson(json).toEntity();
             router.go('/dj/home');
             router.pushNamed(AppRoutes.quoteDetail, extra: quote);
@@ -232,12 +298,14 @@ class NotificationsService {
         case 'offer_lost':
           final offerId = _parseInt(data['offer_id']);
           if (offerId != null) {
-            final json = await supabase
-                .from('ServiceOffers')
-                .select(
-                    '*, job:Jobs!ServiceOffers_job_id_fkey(*), ext_job:ExtJobs!ServiceOffers_ext_job_id_fkey(*)')
-                .eq('id', offerId)
-                .single();
+            final json =
+                await supabase
+                    .from('ServiceOffers')
+                    .select(
+                      '*, job:Jobs!ServiceOffers_job_id_fkey(*), ext_job:ExtJobs!ServiceOffers_ext_job_id_fkey(*)',
+                    )
+                    .eq('id', offerId)
+                    .single();
             final offer = ServiceOfferModel.fromJson(json).toEntity();
             router.go('/instrumentalist/home');
             router.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
@@ -245,18 +313,29 @@ class NotificationsService {
             router.go('/instrumentalist/home');
           }
 
+        // The "unused chat" reminder deep-links to the conversation, same as a
+        // new chat message.
         case 'chat_message':
+        case 'chat_unused_reminder':
           final convId = _parseInt(data['conversation_id']);
-          final chatTab = role == 'musician' ? '/instrumentalist/chat' : '/dj/chat';
+          final chatTab =
+              role == 'musician' ? '/instrumentalist/chat' : '/dj/chat';
           if (convId != null) {
-            final json = await supabase.from('Conversations').select('''
+            final json =
+                await supabase
+                    .from('Conversations')
+                    .select('''
               *,
               job:Jobs!Conversations_job_id_fkey(id, event_type, date),
               ext_job:ExtJobs!Conversations_ext_job_id_fkey(id, event_type, date, assigned_dj_name),
               dj:DjInfos!Conversations_dj_id_fkey(id, full_name),
               musician:Musicians!Conversations_musician_id_fkey(id, full_name, instrument)
-            ''').eq('id', convId).single();
-            final conversation = ConversationModel.fromJson(json).toEntity(userId);
+            ''')
+                    .eq('id', convId)
+                    .single();
+            final conversation = ConversationModel.fromJson(
+              json,
+            ).toEntity(userId);
             router.go(chatTab);
             router.pushNamed(AppRoutes.conversationDetail, extra: conversation);
           } else {
@@ -266,11 +345,12 @@ class NotificationsService {
         case 'new_ext_job':
           final extJobId = _parseInt(data['ext_job_id']);
           if (extJobId != null) {
-            final json = await supabase
-                .from('ExtJobs')
-                .select()
-                .eq('id', extJobId)
-                .single();
+            final json =
+                await supabase
+                    .from('ExtJobs')
+                    .select()
+                    .eq('id', extJobId)
+                    .single();
             final extJob = ExtJobModel.fromJson(json).toEntity();
             router.go('/instrumentalist/home');
             router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
@@ -280,13 +360,15 @@ class NotificationsService {
 
         case 'ext_job_assigned':
           final extJobId = _parseInt(data['ext_job_id']);
-          final featuredTab = role == 'musician' ? '/instrumentalist/home' : '/dj/featured';
+          final featuredTab =
+              role == 'musician' ? '/instrumentalist/home' : '/dj/featured';
           if (extJobId != null) {
-            final json = await supabase
-                .from('ExtJobs')
-                .select()
-                .eq('id', extJobId)
-                .single();
+            final json =
+                await supabase
+                    .from('ExtJobs')
+                    .select()
+                    .eq('id', extJobId)
+                    .single();
             final extJob = ExtJobModel.fromJson(json).toEntity();
             router.go(featuredTab);
             router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
@@ -299,21 +381,23 @@ class NotificationsService {
           final extJobId = _parseInt(data['ext_job_id']);
           final songJobId = _parseInt(data['job_id']);
           if (extJobId != null) {
-            final json = await supabase
-                .from('ExtJobs')
-                .select()
-                .eq('id', extJobId)
-                .single();
+            final json =
+                await supabase
+                    .from('ExtJobs')
+                    .select()
+                    .eq('id', extJobId)
+                    .single();
             final extJob = ExtJobModel.fromJson(json).toEntity();
             router.go('/dj/featured');
             router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
           } else if (songJobId != null) {
-            final quoteJson = await supabase
-                .from('Quotes')
-                .select('*, job:Jobs(*)')
-                .eq('job_id', songJobId)
-                .eq('dj_id', userId)
-                .maybeSingle();
+            final quoteJson =
+                await supabase
+                    .from('Quotes')
+                    .select('*, job:Jobs(*)')
+                    .eq('job_id', songJobId)
+                    .eq('dj_id', userId)
+                    .maybeSingle();
             if (quoteJson != null) {
               final quote = DjQuoteModel.fromJson(quoteJson).toEntity();
               router.go('/dj/home');
@@ -344,30 +428,40 @@ class NotificationsService {
           break;
 
         // Content reminders are DJ-only and deep-link to the same job views as
-        // the ready reminder.
+        // the ready reminder. The day-after "log extra hours" reminder routes
+        // the same way (DJ → quote/ext-job detail, musician → offer detail),
+        // landing the user on the screen that holds the extra-hours control.
+        // Process nudges (contact the customer / send the invoice) deep-link into
+        // the job exactly like the ready reminder — DJ → quote/ext-job detail,
+        // musician → offer detail.
         case 'content_record_reminder':
         case 'content_upload_reminder':
+        case 'extra_hours_reminder':
+        case 'contact_customer_reminder':
+        case 'send_invoice_reminder':
         case 'ready_reminder':
           final jobId = _parseInt(data['job_id']);
           final isExtJob = data['is_ext_job'] == 'true';
           if (jobId != null) {
             if (role == 'dj') {
               if (isExtJob) {
-                final json = await supabase
-                    .from('ExtJobs')
-                    .select()
-                    .eq('id', jobId)
-                    .single();
+                final json =
+                    await supabase
+                        .from('ExtJobs')
+                        .select()
+                        .eq('id', jobId)
+                        .single();
                 final extJob = ExtJobModel.fromJson(json).toEntity();
                 router.go('/dj/featured');
                 router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
               } else {
-                final quoteJson = await supabase
-                    .from('Quotes')
-                    .select('*, job:Jobs(*)')
-                    .eq('job_id', jobId)
-                    .eq('dj_id', userId)
-                    .maybeSingle();
+                final quoteJson =
+                    await supabase
+                        .from('Quotes')
+                        .select('*, job:Jobs(*)')
+                        .eq('job_id', jobId)
+                        .eq('dj_id', userId)
+                        .maybeSingle();
                 if (quoteJson != null) {
                   final quote = DjQuoteModel.fromJson(quoteJson).toEntity();
                   router.go('/dj/home');
@@ -378,13 +472,15 @@ class NotificationsService {
               }
             } else {
               final column = isExtJob ? 'ext_job_id' : 'job_id';
-              final offerJson = await supabase
-                  .from('ServiceOffers')
-                  .select(
-                      '*, job:Jobs!ServiceOffers_job_id_fkey(*), ext_job:ExtJobs!ServiceOffers_ext_job_id_fkey(*)')
-                  .eq(column, jobId)
-                  .eq('musician_id', userId)
-                  .maybeSingle();
+              final offerJson =
+                  await supabase
+                      .from('ServiceOffers')
+                      .select(
+                        '*, job:Jobs!ServiceOffers_job_id_fkey(*), ext_job:ExtJobs!ServiceOffers_ext_job_id_fkey(*)',
+                      )
+                      .eq(column, jobId)
+                      .eq('musician_id', userId)
+                      .maybeSingle();
               if (offerJson != null) {
                 final offer = ServiceOfferModel.fromJson(offerJson).toEntity();
                 router.go('/instrumentalist/home');
@@ -395,7 +491,8 @@ class NotificationsService {
             }
           } else {
             router.go(
-                role == 'musician' ? '/instrumentalist/home' : '/dj/home');
+              role == 'musician' ? '/instrumentalist/home' : '/dj/home',
+            );
           }
       }
     } catch (e) {

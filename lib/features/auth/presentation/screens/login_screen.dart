@@ -45,8 +45,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       final start = (0.07 * i).clamp(0.0, 0.5);
       return CurvedAnimation(
         parent: _entranceController,
-        curve: Interval(start, (start + 0.5).clamp(0.0, 1.0),
-            curve: Curves.easeOutCubic),
+        curve: Interval(
+          start,
+          (start + 0.5).clamp(0.0, 1.0),
+          curve: Curves.easeOutCubic,
+        ),
       );
     });
     _entranceController.forward();
@@ -84,10 +87,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
 
     try {
-      final role = await ref.read(authRepositoryProvider).signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      final role = await ref
+          .read(authRepositoryProvider)
+          .signIn(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
 
       await RoleCache.save(role);
       await initOnboardingStatus();
@@ -117,7 +122,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       body: SafeArea(
@@ -125,8 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s6),
             physics: const BouncingScrollPhysics(),
-            keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior.onDrag,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
@@ -175,29 +179,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     AnimatedSize(
                       duration: DSMotion.normal,
                       curve: Curves.easeOut,
-                      child: _errorMessage == null
-                          ? const SizedBox(width: double.infinity)
-                          : Padding(
-                              padding: const EdgeInsets.only(
-                                  bottom: DSSpacing.s4),
-                              child: Container(
-                                padding: const EdgeInsets.all(DSSpacing.s3),
-                                decoration: BoxDecoration(
-                                  color: _c.state.danger
-                                      .withValues(alpha: 0.15),
-                                  borderRadius:
-                                      BorderRadius.circular(DSRadius.sm),
-                                  border:
-                                      Border.all(color: _c.state.danger),
+                      child:
+                          _errorMessage == null
+                              ? const SizedBox(width: double.infinity)
+                              : Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: DSSpacing.s4,
                                 ),
-                                child: Text(
-                                  _errorMessage!,
-                                  style: DSTextStyle.bodyMd
-                                      .copyWith(color: _c.state.danger),
-                                  textAlign: TextAlign.center,
+                                child: Container(
+                                  padding: const EdgeInsets.all(DSSpacing.s3),
+                                  decoration: BoxDecoration(
+                                    color: _c.state.danger.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      DSRadius.sm,
+                                    ),
+                                    border: Border.all(color: _c.state.danger),
+                                  ),
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: DSTextStyle.bodyMd.copyWith(
+                                      color: _c.state.danger,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ),
-                            ),
                     ),
 
                     _appear(
@@ -255,8 +263,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         children: [
                           Center(
                             child: GestureDetector(
-                              onTap: () => context
-                                  .pushNamed(AppRoutes.forgotPassword),
+                              onTap:
+                                  () => context.pushNamed(
+                                    AppRoutes.forgotPassword,
+                                  ),
                               child: Text(
                                 'Glemt adgangskode?',
                                 style: DSTextStyle.bodyMd.copyWith(
@@ -270,11 +280,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           const SizedBox(height: DSSpacing.s2),
                           Center(
                             child: GestureDetector(
-                              onTap: () => launchUrl(
-                                Uri.parse(
-                                    'https://djtilbud.dk/privacy-policy/'),
-                                mode: LaunchMode.externalApplication,
-                              ),
+                              onTap:
+                                  () => launchUrl(
+                                    Uri.parse(
+                                      'https://djtilbud.dk/privacy-policy/',
+                                    ),
+                                    mode: LaunchMode.externalApplication,
+                                  ),
                               child: Text(
                                 'Privatlivspolitik',
                                 style: DSTextStyle.bodySm.copyWith(

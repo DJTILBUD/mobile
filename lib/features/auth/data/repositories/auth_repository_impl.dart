@@ -47,6 +47,29 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<MusicianRole> signInWithMagicTokenHash(String tokenHash) async {
+    final sb.AuthResponse response;
+    try {
+      response = await _datasource.verifyMagicTokenHash(tokenHash);
+    } on sb.AuthException catch (e) {
+      throw _mapAuthException(e);
+    }
+
+    final userId = response.user?.id;
+    if (userId == null) {
+      throw const AuthException('Impersonation fejlede. Prøv igen.');
+    }
+
+    final role = await _detectRole(userId);
+    if (role == null) {
+      // Keep the session — same semantics as password sign-in.
+      throw const NeedsProfileSetupException();
+    }
+
+    return role;
+  }
+
+  @override
   Future<void> signOut() => _datasource.signOut();
 
   @override

@@ -1,8 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:video_compress/video_compress.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:dj_tilbud_app/core/config/env_config.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
@@ -40,15 +40,28 @@ class MyJobContentClip {
   final ContentReviewStatus status;
 
   String get jobLabel {
-    final ref = jobId != null ? '${isExtJob ? "Udvalgt " : ""}Job #$jobId' : 'Ukendt job';
-    final rest = [eventType, leadName, date].where((s) => s != null && s.isNotEmpty).join(' · ');
+    final ref =
+        jobId != null
+            ? '${isExtJob ? "Udvalgt " : ""}Job #$jobId'
+            : 'Ukendt job';
+    final rest = [
+      eventType,
+      leadName,
+      date,
+    ].where((s) => s != null && s.isNotEmpty).join(' · ');
     return rest.isEmpty ? ref : '$ref — $rest';
   }
 }
 
 /// A short label for the job a scoped upload targets.
 class JobSummary {
-  const JobSummary({required this.isExtJob, this.jobId, this.eventType, this.date, this.leadName});
+  const JobSummary({
+    required this.isExtJob,
+    this.jobId,
+    this.eventType,
+    this.date,
+    this.leadName,
+  });
   final bool isExtJob;
   final int? jobId;
   final String? eventType;
@@ -56,8 +69,15 @@ class JobSummary {
   final String? leadName;
 
   String get label {
-    final ref = jobId != null ? '${isExtJob ? "Udvalgt " : ""}Job #$jobId' : 'dette job';
-    final rest = [eventType, leadName, date].where((s) => s != null && s.isNotEmpty).join(' · ');
+    final ref =
+        jobId != null
+            ? '${isExtJob ? "Udvalgt " : ""}Job #$jobId'
+            : 'dette job';
+    final rest = [
+      eventType,
+      leadName,
+      date,
+    ].where((s) => s != null && s.isNotEmpty).join(' · ');
     return rest.isEmpty ? ref : '$ref — $rest';
   }
 }
@@ -86,19 +106,28 @@ class JobContentRemoteDatasource {
   }
 
   /// Lists the content clips uploaded for one job (newest first), with thumbnails.
-  Future<List<JobContentClip>> fetchJobContent({int? quoteId, int? extJobId}) async {
+  Future<List<JobContentClip>> fetchJobContent({
+    int? quoteId,
+    int? extJobId,
+  }) async {
     var query = _client.from('UserFiles').select().eq('type', 'job_content');
-    query = quoteId != null ? query.eq('quote_id', quoteId) : query.eq('ext_job_id', extJobId as Object);
+    query =
+        quoteId != null
+            ? query.eq('quote_id', quoteId)
+            : query.eq('ext_job_id', extJobId as Object);
     final rows = await query.order('created_at', ascending: false);
 
-    final videos = (rows as List)
-        .map((r) => UserFile(
-              id: r['id'] as int,
-              url: r['url'] as String,
-              type: UserFileType.fromString(r['type'] as String),
-              createdAt: DateTime.parse(r['created_at'] as String),
-            ))
-        .toList();
+    final videos =
+        (rows as List)
+            .map(
+              (r) => UserFile(
+                id: r['id'] as int,
+                url: r['url'] as String,
+                type: UserFileType.fromString(r['type'] as String),
+                createdAt: DateTime.parse(r['created_at'] as String),
+              ),
+            )
+            .toList();
     if (videos.isEmpty) return [];
 
     final thumbRows = await _client
@@ -108,7 +137,8 @@ class JobContentRemoteDatasource {
         .inFilter('thumbnail_video_id', videos.map((v) => v.id).toList());
     final thumbByVideoId = {
       for (final t in (thumbRows as List))
-        if (t['thumbnail_video_id'] != null) t['thumbnail_video_id'] as int: t['url'] as String,
+        if (t['thumbnail_video_id'] != null)
+          t['thumbnail_video_id'] as int: t['url'] as String,
     };
 
     return videos
@@ -144,7 +174,8 @@ class JobContentRemoteDatasource {
         .inFilter('thumbnail_video_id', videoIds);
     final thumbByVideoId = {
       for (final t in (thumbRows as List))
-        if (t['thumbnail_video_id'] != null) t['thumbnail_video_id'] as int: t['url'] as String,
+        if (t['thumbnail_video_id'] != null)
+          t['thumbnail_video_id'] as int: t['url'] as String,
     };
 
     return list.map((r) {
@@ -165,9 +196,10 @@ class JobContentRemoteDatasource {
         eventType: job?['event_type'] as String?,
         date: job?['date'] as String?,
         leadName: job?['lead_name'] as String?,
-        status: r['verified_at'] != null
-            ? ContentReviewStatus.approved
-            : r['rejected_at'] != null
+        status:
+            r['verified_at'] != null
+                ? ContentReviewStatus.approved
+                : r['rejected_at'] != null
                 ? ContentReviewStatus.rejected
                 : ContentReviewStatus.pending,
       );
@@ -178,11 +210,12 @@ class JobContentRemoteDatasource {
   /// upload targets, so the content screen can state which job it's for.
   Future<JobSummary> fetchJobSummary({int? quoteId, int? extJobId}) async {
     if (quoteId != null) {
-      final row = await _client
-          .from('Quotes')
-          .select('job_id, Jobs(id, event_type, date, lead_name)')
-          .eq('id', quoteId)
-          .maybeSingle();
+      final row =
+          await _client
+              .from('Quotes')
+              .select('job_id, Jobs(id, event_type, date, lead_name)')
+              .eq('id', quoteId)
+              .maybeSingle();
       final job = row?['Jobs'] as Map<String, dynamic>?;
       return JobSummary(
         isExtJob: false,
@@ -192,11 +225,12 @@ class JobContentRemoteDatasource {
         leadName: job?['lead_name'] as String?,
       );
     }
-    final row = await _client
-        .from('ExtJobs')
-        .select('id, event_type, date, lead_name')
-        .eq('id', extJobId as Object)
-        .maybeSingle();
+    final row =
+        await _client
+            .from('ExtJobs')
+            .select('id, event_type, date, lead_name')
+            .eq('id', extJobId as Object)
+            .maybeSingle();
     return JobSummary(
       isExtJob: true,
       jobId: row?['id'] as int?,
@@ -206,35 +240,70 @@ class JobContentRemoteDatasource {
     );
   }
 
-  /// Compresses a clip before upload to keep mobile uploads fast (iPhone clips
-  /// are large/high-bitrate). Best-effort — falls back to the original on any
-  /// failure. Aspect ratio is preserved, so the 9:16 rule still holds.
-  Future<String> _compressForUpload(String path) async {
-    try {
-      final info = await VideoCompress.compressVideo(
-        path,
-        quality: VideoQuality.MediumQuality,
-        deleteOrigin: false,
-        includeAudio: true,
-      );
-      return info?.path ?? path;
-    } catch (_) {
-      return path;
-    }
+  /// Maps a video file extension to its MIME content type. Falls back to mp4.
+  static String _videoContentType(String ext) => switch (ext.toLowerCase()) {
+    'mov' => 'video/quicktime',
+    'm4v' => 'video/x-m4v',
+    'avi' => 'video/x-msvideo',
+    'webm' => 'video/webm',
+    _ => 'video/mp4',
+  };
+
+  /// PUTs [file] to [url] streaming straight from disk, reporting upload
+  /// progress as a 0..1 fraction via [onProgress]. Streaming (instead of
+  /// `readAsBytes`) lets us surface real upload progress and applies socket
+  /// backpressure, so large original-quality clips don't balloon memory.
+  Future<http.StreamedResponse> _putWithProgress(
+    Uri url,
+    File file,
+    String contentType,
+    void Function(double progress)? onProgress,
+  ) async {
+    final total = await file.length();
+    var sent = 0;
+    final request =
+        http.StreamedRequest('PUT', url)
+          ..headers['Content-Type'] = contentType
+          ..contentLength = total;
+
+    final body = file.openRead().transform(
+      StreamTransformer<List<int>, List<int>>.fromHandlers(
+        handleData: (chunk, sink) {
+          sent += chunk.length;
+          if (total > 0) onProgress?.call((sent / total).clamp(0.0, 1.0));
+          sink.add(chunk);
+        },
+      ),
+    );
+
+    // Start sending first (subscribes to the body), then feed it with
+    // backpressure and close the request stream when the file is drained.
+    final response = request.send();
+    unawaited(request.sink.addStream(body).then((_) => request.sink.close()));
+    return response;
   }
 
   /// Uploads a (pre-validated) clip to S3 and records it against the job.
+  ///
+  /// The clip is uploaded **untouched, in its original quality** — these clips
+  /// are meant for social media, so we must not re-encode/compress them. The
+  /// 15s / 9:16 rule is enforced client-side before upload (`validateContentVideo`).
   Future<void> uploadJobContent({
     required String userId,
     required String filePath,
     int? quoteId,
     int? extJobId,
+    void Function(double progress)? onProgress,
   }) async {
-    final uploadPath = await _compressForUpload(filePath);
-    final file = File(uploadPath);
-    // Normalise the S3 object name to .mp4 (compressed output is always mp4).
-    final fileName = '${filePath.split('/').last.split('.').first}.mp4';
-    const contentType = 'video/mp4';
+    final file = File(filePath);
+    // Preserve the original file's name + format (no re-encode) so quality is
+    // untouched and the S3 object carries the correct extension/content type.
+    final originalName = filePath.split('/').last;
+    final ext =
+        originalName.contains('.') ? originalName.split('.').last : 'mp4';
+    final fileName =
+        originalName.contains('.') ? originalName : '$originalName.mp4';
+    final contentType = _videoContentType(ext);
 
     final signedUrlUri = Uri.parse(
       '$_webAppBaseUrl/api/files/signed-url'
@@ -247,24 +316,34 @@ class JobContentRemoteDatasource {
     if (signedUrlRes.statusCode < 200 || signedUrlRes.statusCode >= 300) {
       throw Exception('Could not get signed URL (${signedUrlRes.statusCode})');
     }
-    final signedUrl = (jsonDecode(signedUrlRes.body) as Map<String, dynamic>)['url'] as String;
+    final signedUrl =
+        (jsonDecode(signedUrlRes.body) as Map<String, dynamic>)['url']
+            as String;
     final fileUrl = signedUrl.split('?').first;
 
-    final uploadRes = await http.put(
+    final uploadRes = await _putWithProgress(
       Uri.parse(signedUrl),
-      headers: {'Content-Type': contentType},
-      body: await file.readAsBytes(),
+      file,
+      contentType,
+      onProgress,
     );
     if (uploadRes.statusCode < 200 || uploadRes.statusCode >= 300) {
       throw Exception('S3 upload failed (${uploadRes.statusCode})');
     }
 
     // Best-effort thumbnail so web + admin show a preview (not just a placeholder).
-    final thumbnailUrl = await _uploadThumbnail(userId: userId, videoPath: uploadPath, baseName: fileName);
+    final thumbnailUrl = await _uploadThumbnail(
+      userId: userId,
+      videoPath: filePath,
+      baseName: fileName,
+    );
 
     final recordRes = await http.post(
       Uri.parse('$_webAppBaseUrl/api/files/job-content'),
-      headers: {'Content-Type': 'application/json', 'Authorization': _accessToken},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': _accessToken,
+      },
       body: jsonEncode({
         'videoUrl': fileUrl,
         if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
@@ -273,7 +352,9 @@ class JobContentRemoteDatasource {
       }),
     );
     if (recordRes.statusCode < 200 || recordRes.statusCode >= 300) {
-      throw Exception('Could not save content (${recordRes.statusCode}): ${recordRes.body}');
+      throw Exception(
+        'Could not save content (${recordRes.statusCode}): ${recordRes.body}',
+      );
     }
   }
 
@@ -303,15 +384,19 @@ class JobContentRemoteDatasource {
         '&userId=${Uri.encodeComponent(userId)}',
       );
       final signedUrlRes = await http.get(signedUrlUri);
-      if (signedUrlRes.statusCode < 200 || signedUrlRes.statusCode >= 300) return null;
-      final signedUrl = (jsonDecode(signedUrlRes.body) as Map<String, dynamic>)['url'] as String;
+      if (signedUrlRes.statusCode < 200 || signedUrlRes.statusCode >= 300)
+        return null;
+      final signedUrl =
+          (jsonDecode(signedUrlRes.body) as Map<String, dynamic>)['url']
+              as String;
 
       final uploadRes = await http.put(
         Uri.parse(signedUrl),
         headers: {'Content-Type': thumbContentType},
         body: bytes,
       );
-      if (uploadRes.statusCode < 200 || uploadRes.statusCode >= 300) return null;
+      if (uploadRes.statusCode < 200 || uploadRes.statusCode >= 300)
+        return null;
 
       return signedUrl.split('?').first;
     } catch (_) {
@@ -322,7 +407,10 @@ class JobContentRemoteDatasource {
   Future<void> deleteJobContent(int fileId) async {
     final res = await http.delete(
       Uri.parse('$_webAppBaseUrl/api/files'),
-      headers: {'Content-Type': 'application/json', 'Authorization': _accessToken},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': _accessToken,
+      },
       body: jsonEncode({'id': fileId}),
     );
     if (res.statusCode < 200 || res.statusCode >= 300) {
