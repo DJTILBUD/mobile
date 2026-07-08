@@ -21,6 +21,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/date_collision.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
@@ -175,6 +176,7 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
             backgroundColor: _c.bg.surface,
             surfaceTintColor: _c.bg.surface,
             actions: [
+              const _MusicianFilterTogglePill(),
               _ModeTogglePill(
                 isCalendarMode: true,
                 onToggle: () {
@@ -209,7 +211,10 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
           backgroundColor: _c.bg.surface,
           surfaceTintColor: _c.bg.surface,
           actions: [
-            if (isDj) const _FilterTogglePill(),
+            if (isDj)
+              const _FilterTogglePill()
+            else
+              const _MusicianFilterTogglePill(),
             _ModeTogglePill(
               isCalendarMode: false,
               onToggle: () {
@@ -356,6 +361,61 @@ class _FilterTogglePill extends ConsumerWidget {
           final newEnabled = !enabled;
           ref.read(djFiltersEnabledProvider.notifier).state = newEnabled;
           AnalyticsService.logDjFiltersToggled(enabled: newEnabled);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(
+            horizontal: DSSpacing.s3,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: enabled ? color.withValues(alpha: 0.12) : _c.bg.inputBg,
+            borderRadius: BorderRadius.circular(DSRadius.pill),
+            border: Border.all(
+              color: enabled ? color : _c.border.subtle,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 150),
+                style: DSTextStyle.labelSm.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: enabled ? color : _c.text.secondary,
+                ),
+                child: Text(enabled ? 'Filtre til' : 'Filtre fra'),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                enabled ? LucideIcons.check : LucideIcons.x,
+                size: 12,
+                color: enabled ? color : _c.text.secondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Filter on/off pill for the saxophonist feed — mirrors [_FilterTogglePill]
+/// but drives the musician's MusicianJobFilters (region + sax type) toggle.
+class _MusicianFilterTogglePill extends ConsumerWidget {
+  const _MusicianFilterTogglePill();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
+    final enabled = ref.watch(musicianFiltersEnabledProvider);
+    final color = _c.state.success;
+    return Padding(
+      padding: const EdgeInsets.only(right: 4, top: 14, bottom: 14),
+      child: GestureDetector(
+        onTap: () {
+          ref.read(musicianFiltersEnabledProvider.notifier).state = !enabled;
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
@@ -878,7 +938,7 @@ class _InstrumentalistCalendarViewState
   @override
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
-    final newJobsAsync = ref.watch(combinedInstrumentalistJobsProvider);
+    final newJobsAsync = ref.watch(filteredInstrumentalistJobsProvider);
     final sentAsync = ref.watch(sentServiceOffersProvider);
     final wonEventsAsync = ref.watch(
       calendarEventsProvider(MusicianRole.instrumentalist),
@@ -1757,8 +1817,7 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final _c = DSTheme.of(context);
-    final jobsAsync = ref.watch(combinedInstrumentalistJobsProvider);
-    final sentOffers = ref.watch(sentServiceOffersProvider).valueOrNull ?? [];
+    final jobsAsync = ref.watch(filteredInstrumentalistJobsProvider);
     final wonOffers = ref.watch(wonServiceOffersProvider).valueOrNull ?? [];
 
     return jobsAsync.when(
@@ -1770,18 +1829,60 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
           ),
       data: (jobs) {
         if (jobs.isEmpty) {
+          // The visible list is empty. If the *unfiltered* list still has jobs,
+          // the musician's own filters (region + Lounge/Party) are hiding them →
+          // nudge them to loosen. Otherwise there are genuinely no jobs right now.
+          final rawJobs =
+              ref.watch(combinedInstrumentalistJobsProvider).valueOrNull ??
+              const [];
+          final filtersHiding = rawJobs.isNotEmpty;
+          final musician = ref.watch(musicianProfileProvider).valueOrNull;
+          final musicianId = musician?.id;
+
+          // A newly-registered musician is suppressed by default until an admin
+          // reviews and activates their profile. The server returns no jobs for
+          // them, so reassure them their profile arrived and is under review
+          // (rather than the generic "no jobs" copy, which reads like something
+          // is wrong). Mirrors the DJ tier-C branch in _DjNewJobsTab.
+          final empty =
+              (musician?.isSuppressed ?? false)
+                  ? const EmptyJobsView(
+                    icon: LucideIcons.clock,
+                    title: 'Vi har modtaget din profil',
+                    message:
+                        'Vi har registreret, at du har gjort din profil færdig. Vi gennemgår den og åbner for jobs til dig, så snart vi har bekræftet, at alt ser godt ud.',
+                  )
+                  : filtersHiding
+                  ? EmptyJobsView(
+                    icon: LucideIcons.slidersHorizontal,
+                    title: 'Ingen jobs matcher dine filtre',
+                    message:
+                        'Dine filtre skjuler ${rawJobs.length} ${rawJobs.length == 1 ? 'job' : 'jobs'} lige nu. Udvid dem for at se flere.',
+                    actionLabel: 'Justér filtre',
+                    onAction:
+                        musicianId == null
+                            ? null
+                            : () => context.pushNamed(
+                              AppRoutes.musicianJobFilters,
+                              extra: musicianId,
+                            ),
+                    secondaryLabel: 'Slå filtre fra',
+                    onSecondary:
+                        () =>
+                            ref
+                                .read(musicianFiltersEnabledProvider.notifier)
+                                .state = false,
+                  )
+                  : const EmptyJobsView(
+                    icon: LucideIcons.searchX,
+                    title: 'Ingen nye jobs lige nu',
+                    message: 'Ingen nye jobs i dine regioner lige nu.',
+                  );
+
           return RefreshIndicator(
             color: _c.brand.primary,
             onRefresh: () => _refresh(ref),
-            child: ListView(
-              children: const [
-                SizedBox(height: 80),
-                EmptyJobsView(
-                  message: 'Ingen nye jobs i dine regioner lige nu.',
-                  icon: LucideIcons.searchX,
-                ),
-              ],
-            ),
+            child: ListView(children: [const SizedBox(height: 80), empty]),
           );
         }
         return RefreshIndicator(
@@ -1792,11 +1893,7 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
             itemCount: jobs.length,
             itemBuilder: (context, index) {
               final job = jobs[index];
-              final hasConflict = _musicianHasDateConflict(
-                job,
-                sentOffers,
-                wonOffers,
-              );
+              final hasConflict = _musicianHasDateConflict(job, wonOffers);
               return AnimatedCard(
                 index: index,
                 child: JobCard(
@@ -1822,15 +1919,20 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
   }
 }
 
-bool _musicianHasDateConflict(
-  Job job,
-  List<ServiceOffer> sent,
-  List<ServiceOffer> won,
-) {
-  bool sameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-  return sent.any((o) => sameDay(o.job.date, job.date)) ||
-      won.any((o) => sameDay(o.job.date, job.date));
+// A feed job conflicts only when it time-conflicts with a WON booking (same date, gap < 3h) — open
+// offers do not block, and a short sax gig ≥ 3h clear stays biddable. Mirrors the DB rule.
+bool _musicianHasDateConflict(Job job, List<ServiceOffer> won) {
+  final targetDate = saxDateKey(job.date);
+  return won.any(
+    (o) => saxBookingsConflict(
+      dateA: targetDate,
+      startA: job.timeStart,
+      endA: job.timeEnd,
+      dateB: saxDateKey(o.job.date),
+      startB: o.job.timeStart,
+      endB: o.job.timeEnd,
+    ),
+  );
 }
 
 // ── Instrumentalist Won Offers Tab (with played-jobs toggle) ──

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
 import 'package:dj_tilbud_app/core/config/env_config.dart';
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
 
@@ -202,9 +203,13 @@ class JobsRemoteDatasource {
     final musicianInfo =
         await _client
             .from('Musicians')
-            .select('regions, instrument')
+            .select('regions, instrument, is_suppressed')
             .eq('id', userId)
             .single();
+    // Suppressed (e.g. newly-registered, not yet activated by an admin) musicians
+    // see no jobs — the jobs list shows a "profile under review" message instead.
+    // Mirrors web useAvailableJobsForMusicians/useExtJobsForMusicians + DJ tier-C.
+    if (musicianInfo['is_suppressed'] as bool? ?? false) return [];
     final regions = (musicianInfo['regions'] as List<dynamic>).cast<String>();
     final instrument = musicianInfo['instrument'] as String? ?? 'saxophone';
 
@@ -310,9 +315,12 @@ class JobsRemoteDatasource {
     final musicianInfo =
         await _client
             .from('Musicians')
-            .select('instrument, regions')
+            .select('instrument, regions, is_suppressed')
             .eq('id', userId)
             .single();
+    // See fetchNewInstrumentalistJobs — suppressed musicians see no ext jobs
+    // either (web useExtJobsForMusicians returns null for is_suppressed).
+    if (musicianInfo['is_suppressed'] as bool? ?? false) return [];
     final instrument = musicianInfo['instrument'] as String? ?? 'saxophone';
     final regions = (musicianInfo['regions'] as List<dynamic>).cast<String>();
 
@@ -685,38 +693,71 @@ class JobsRemoteDatasource {
         .single();
   }
 
-  /// Returns true if the musician already has an active (sent or won) offer
-  /// on the same calendar date as [date].
-  Future<bool> hasDateConflict(String userId, DateTime date) async {
-    final dateStr = date.toIso8601String().substring(0, 10);
+  /// Returns true if the musician already has a WON offer whose booking time-conflicts with the
+  /// target booking (same date, gap < 3h). Only WON offers block a new offer — a musician may hold
+  /// multiple open (`sent`) offers on one date; the loser is resolved when one is won. Mirrors the
+  /// web `useHasDateConflict` hook and the DB trigger. See [saxBookingsConflict].
+  Future<bool> hasDateConflict(
+    String userId, {
+    required DateTime date,
+    String? startTime,
+    String? endTime,
+  }) async {
+    final targetDate = saxDateKey(date);
 
-    // Check internal jobs
+    // Check internal jobs (won only, with the time window).
     final internalRows = await _client
         .from('ServiceOffers')
-        .select('id, job:Jobs(date)')
+        .select(
+          'id, job:Jobs(date, musician_start_time, requested_musician_hours)',
+        )
         .eq('musician_id', userId)
-        .inFilter('status', ['sent', 'won']);
+        .eq('status', 'won');
 
     for (final row in internalRows) {
       final job = row['job'] as Map<String, dynamic>?;
       if (job == null) continue;
-      final jobDate = (job['date'] as String?)?.substring(0, 10);
-      if (jobDate == dateStr) return true;
+      if (saxBookingsConflict(
+        dateA: targetDate,
+        startA: startTime,
+        endA: endTime,
+        dateB: job['date'] as String?,
+        startB: job['musician_start_time'] as String?,
+        endB: saxEndTime(
+          job['musician_start_time'] as String?,
+          job['requested_musician_hours'] as num?,
+        ),
+      )) {
+        return true;
+      }
     }
 
-    // Check external jobs
+    // Check external jobs (won only, with the time window).
     final extRows = await _client
         .from('ServiceOffers')
-        .select('id, ext_job:ExtJobs(date)')
+        .select(
+          'id, ext_job:ExtJobs(date, musician_start_time, requested_musician_hours)',
+        )
         .eq('musician_id', userId)
-        .inFilter('status', ['sent', 'won'])
+        .eq('status', 'won')
         .not('ext_job_id', 'is', null);
 
     for (final row in extRows) {
       final extJob = row['ext_job'] as Map<String, dynamic>?;
       if (extJob == null) continue;
-      final jobDate = (extJob['date'] as String?)?.substring(0, 10);
-      if (jobDate == dateStr) return true;
+      if (saxBookingsConflict(
+        dateA: targetDate,
+        startA: startTime,
+        endA: endTime,
+        dateB: extJob['date'] as String?,
+        startB: extJob['musician_start_time'] as String?,
+        endB: saxEndTime(
+          extJob['musician_start_time'] as String?,
+          extJob['requested_musician_hours'] as num?,
+        ),
+      )) {
+        return true;
+      }
     }
 
     return false;

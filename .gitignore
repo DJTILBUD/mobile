@@ -55,3 +55,14 @@ webapp-reference/
 # (claude-bugfix.yml). Reference only — never committed.
 web-app-ref/
 admin-ref/
+
+# fastlane — NEVER commit store credentials (keys to the store accounts)
+/fastlane/play-service-account.json
+/fastlane/AuthKey.p8
+/fastlane/*.p8
+/fastlane/.env
+# fastlane run artifacts
+/fastlane/report.xml
+/fastlane/Preview.html
+/fastlane/test_output/
+vendor/bundle/

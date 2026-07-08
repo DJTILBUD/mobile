@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_job_filters.dart';
+import 'package:dj_tilbud_app/features/profile/domain/entities/musician_job_filters.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/payment_info.dart';
@@ -16,6 +17,7 @@ import 'package:dj_tilbud_app/features/profile/data/models/payment_info_model.da
 import 'package:dj_tilbud_app/features/profile/data/models/review_model.dart';
 import 'package:dj_tilbud_app/features/profile/data/models/user_file_model.dart';
 import 'package:dj_tilbud_app/features/profile/data/models/dj_job_filters_model.dart';
+import 'package:dj_tilbud_app/features/profile/data/models/musician_job_filters_model.dart';
 import 'package:dj_tilbud_app/features/profile/data/models/standard_message_model.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
@@ -207,6 +209,28 @@ class ProfileRepositoryImpl implements ProfileRepository {
     try {
       await _datasource.saveDjJobFilters(
         DjJobFiltersModel.fromEntity(filters).toJson(),
+      );
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<MusicianJobFilters?> fetchMusicianJobFilters(String userId) async {
+    try {
+      final data = await _datasource.fetchMusicianJobFilters(userId);
+      if (data == null) return null;
+      return MusicianJobFiltersModel.fromJson(data).toEntity();
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> saveMusicianJobFilters(MusicianJobFilters filters) async {
+    try {
+      await _datasource.saveMusicianJobFilters(
+        MusicianJobFiltersModel.fromEntity(filters).toJson(),
       );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);

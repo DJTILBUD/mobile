@@ -87,8 +87,10 @@ class ConversationModel {
   /// Returns true if this conversation should be shown to [currentUserId].
   /// Mirrors web app's isConversationChatEnabledForUser.
   bool isChatEnabled(String currentUserId) {
-    // The DJTILBUD support channel always renders (its counterpart is the admin team).
-    if (type == 'support') return true;
+    // The DJTILBUD support channel belongs to one user (userId); require ownership so an admin JWT
+    // (broad support read via RLS) can't open someone else's support thread by id. The admin Support
+    // tab surfaces other users' threads via a separate admin-only endpoint, not this path.
+    if (type == 'support') return userId == currentUserId;
     final isCurrentUserDj = currentUserId == djId;
     if (isCurrentUserDj) return musicianName != null;
     // For musicians: accept if DJ has a DjInfos record OR ext job has an assigned name

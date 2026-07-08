@@ -279,6 +279,17 @@ class ProfileScreen extends ConsumerWidget {
                 }
               },
             ),
+          if (role == MusicianRole.instrumentalist)
+            _MenuItem(
+              icon: LucideIcons.sliders,
+              label: 'Job-filtre',
+              onTap: () {
+                final id = ref.read(musicianProfileProvider).valueOrNull?.id;
+                if (id != null) {
+                  context.pushNamed(AppRoutes.musicianJobFilters, extra: id);
+                }
+              },
+            ),
           if (role == MusicianRole.dj)
             _MenuItem(
               icon: LucideIcons.qrCode,

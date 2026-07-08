@@ -16,6 +16,7 @@ import 'package:dj_tilbud_app/features/chat/presentation/providers/chat_provider
 import 'package:dj_tilbud_app/features/chat/presentation/providers/typing_provider.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/reactions_provider.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/job_links_provider.dart';
+import 'package:dj_tilbud_app/features/chat/presentation/widgets/chat_message_input.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/job_link.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/dj_quote_model.dart';
@@ -194,6 +195,19 @@ class _ConversationDetailScreenState
         .toggle(messageId: m.id, emoji: emoji, userId: _currentUserId);
   }
 
+  void _copyMessage(ChatMessage m) {
+    Clipboard.setData(ClipboardData(text: m.message));
+    HapticFeedback.selectionClick();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Besked kopieret'),
+        duration: Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _dismissReactionBar() {
     _reactionBar?.remove();
     _reactionBar = null;
@@ -295,6 +309,23 @@ class _ConversationDetailScreenState
                             ),
                           ),
                         ),
+                        if (m.message.isNotEmpty)
+                          GestureDetector(
+                            onTap: () {
+                              _dismissReactionBar();
+                              _copyMessage(m);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              child: Icon(
+                                Icons.copy,
+                                size: 22,
+                                color: _c.text.secondary,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -842,7 +873,7 @@ class _ConversationDetailScreenState
                 ),
               ),
 
-            _MessageInput(
+            ChatMessageInput(
               controller: _textController,
               focusNode: _focusNode,
               isSending: _isSending,
@@ -983,7 +1014,6 @@ class _MessageList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _c = DSTheme.of(context);
     // Group messages by calendar date
     final groups = <({DateTime date, List<ChatMessage> messages})>[];
     DateTime? currentDate;
@@ -1831,7 +1861,6 @@ class _FormattedText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _c = DSTheme.of(context);
     final paragraphs = text.split(RegExp(r'\n\n+'));
     final blocks = <Widget>[];
 
@@ -2006,72 +2035,3 @@ class _MentionPicker extends StatelessWidget {
 }
 
 // ─── Message input ────────────────────────────────────────────────────────────
-
-class _MessageInput extends StatelessWidget {
-  const _MessageInput({
-    required this.controller,
-    required this.focusNode,
-    required this.isSending,
-    required this.onSend,
-    required this.onAttach,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool isSending;
-  final VoidCallback onSend;
-  final VoidCallback onAttach;
-
-  @override
-  Widget build(BuildContext context) {
-    final _c = DSTheme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: _c.bg.surface,
-        border: Border(top: BorderSide(color: _c.border.subtle)),
-      ),
-      padding: const EdgeInsets.fromLTRB(
-        DSSpacing.s3,
-        DSSpacing.s2,
-        DSSpacing.s2,
-        DSSpacing.s2,
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // Attach an image
-            IconButton(
-              icon: Icon(LucideIcons.image, color: _c.text.secondary),
-              tooltip: 'Vedhæft billede',
-              onPressed: isSending ? null : onAttach,
-            ),
-            // Input — DSInput with no label, multi-line
-            Expanded(
-              child: DSInput(
-                controller: controller,
-                focusNode: focusNode,
-                hint: 'Skriv en besked...',
-                maxLines: 5,
-                minLines: 1,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => onSend(),
-                keyboardType: TextInputType.multiline,
-              ),
-            ),
-            const SizedBox(width: DSSpacing.s2),
-
-            // Send button
-            DSIconButton(
-              icon: LucideIcons.send,
-              variant: DSIconButtonVariant.primary,
-              isLoading: isSending,
-              onTap: isSending ? null : onSend,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

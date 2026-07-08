@@ -22,9 +22,11 @@ abstract class AppRoutes {
   static const payment = 'payment';
   static const extJobDetail = 'ext-job-detail';
   static const conversationDetail = 'conversation-detail';
+  static const adminSupportThread = 'admin-support-thread';
   static const djCalendar = 'dj-calendar';
   static const instrumentalistCalendar = 'instrumentalist-calendar';
   static const djJobFilters = 'dj-job-filters';
+  static const musicianJobFilters = 'musician-job-filters';
   static const profilePreview = 'profile-preview';
   static const adminMessages = 'admin-messages';
   static const feedback = 'feedback';

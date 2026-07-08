@@ -451,6 +451,8 @@ class _JobHeroCard extends StatelessWidget {
         (job.leadRequest != null && job.leadRequest!.isNotEmpty) ||
         (job.additionalInformation != null &&
             job.additionalInformation!.isNotEmpty) ||
+        (job.musicianSpecialRequest != null &&
+            job.musicianSpecialRequest!.isNotEmpty) ||
         (job.customerNote != null && job.customerNote!.isNotEmpty);
 
     return Container(
@@ -617,6 +619,35 @@ class _JobHeroCard extends StatelessWidget {
             const SizedBox(height: DSSpacing.s1),
             Text(
               job.additionalInformation!,
+              style: DSTextStyle.bodyMd.copyWith(
+                color: _c.text.secondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: DSSpacing.s3),
+          ],
+
+          // Special request to the musician — mirrors the ext-job / job detail
+          // screens (star + "Særligt ønske til musikeren"). Previously missing
+          // here, so a sax could not see the request on the post-bid screen.
+          if (job.musicianSpecialRequest != null &&
+              job.musicianSpecialRequest!.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(LucideIcons.star, size: 14, color: _c.state.warning),
+                const SizedBox(width: DSSpacing.s1),
+                Text(
+                  'Særligt ønske til musikeren',
+                  style: DSTextStyle.labelSm.copyWith(
+                    color: _c.state.warning,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: DSSpacing.s1),
+            Text(
+              job.musicianSpecialRequest!,
               style: DSTextStyle.bodyMd.copyWith(
                 color: _c.text.secondary,
                 height: 1.5,
@@ -1097,17 +1128,26 @@ class _MusicianExtraHoursSectionState
     super.dispose();
   }
 
+  // Window: event date (00:00) through end of event date + 2 days (23:59:59).
+  // Mirrors the server (service-offer/[offerId]/extra-hours: eventDate <= today
+  // <= eventDate + 2) and the DJ screens (quote/ext-job detail). Never before
+  // the event, never after the cutoff.
   bool _isWithinExtraHoursWindow(DateTime eventDate) {
-    final todayMidnight = DateTime.now();
-    final eventMidnight = DateTime(
+    final windowStart = DateTime(
       eventDate.year,
       eventDate.month,
       eventDate.day,
     );
-    // Show on event day and any day after — never before the event
-    return !eventMidnight.isAfter(
-      DateTime(todayMidnight.year, todayMidnight.month, todayMidnight.day),
+    final windowEnd = DateTime(
+      eventDate.year,
+      eventDate.month,
+      eventDate.day + 2,
+      23,
+      59,
+      59,
     );
+    final now = DateTime.now();
+    return now.isAfter(windowStart) && now.isBefore(windowEnd);
   }
 
   Future<void> _save() async {

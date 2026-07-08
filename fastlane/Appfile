@@ -1,0 +1,3 @@
+# iOS bundle id + Android package name (both are com.djtilbud.app for this app).
+app_identifier("com.djtilbud.app") # iOS
+package_name("com.djtilbud.app")   # Android

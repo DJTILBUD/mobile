@@ -13,6 +13,7 @@ class MusicianProfile {
     this.djSaxCollaboration,
     this.venuesAndEvents,
     this.onboardingCompletedAt,
+    this.isSuppressed = false,
   });
 
   final String id;
@@ -28,4 +29,8 @@ class MusicianProfile {
   final String? djSaxCollaboration;
   final List<String>? venuesAndEvents;
   final DateTime? onboardingCompletedAt;
+
+  /// A newly-registered musician is suppressed by default until an admin
+  /// reviews and activates their profile (mirrors the DJ tier-C gate).
+  final bool isSuppressed;
 }

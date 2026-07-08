@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_provider.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_job_filters.dart';
+import 'package:dj_tilbud_app/features/profile/domain/entities/musician_job_filters.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/repositories/profile_repository.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
@@ -38,21 +39,29 @@ final musicianProfileProvider = FutureProvider<MusicianProfile>((ref) {
 // ── Payment Info ──
 
 final djPaymentInfoProvider = FutureProvider<PaymentInfo?>((ref) {
-  return ref.watch(profileRepositoryProvider).fetchPaymentInfo(userId: _userId, isDj: true);
+  return ref
+      .watch(profileRepositoryProvider)
+      .fetchPaymentInfo(userId: _userId, isDj: true);
 });
 
 final musicianPaymentInfoProvider = FutureProvider<PaymentInfo?>((ref) {
-  return ref.watch(profileRepositoryProvider).fetchPaymentInfo(userId: _userId, isDj: false);
+  return ref
+      .watch(profileRepositoryProvider)
+      .fetchPaymentInfo(userId: _userId, isDj: false);
 });
 
 // ── Reviews ──
 
 final djReviewsProvider = FutureProvider<List<Review>>((ref) {
-  return ref.watch(profileRepositoryProvider).fetchReviews(userId: _userId, isDj: true);
+  return ref
+      .watch(profileRepositoryProvider)
+      .fetchReviews(userId: _userId, isDj: true);
 });
 
 final musicianReviewsProvider = FutureProvider<List<Review>>((ref) {
-  return ref.watch(profileRepositoryProvider).fetchReviews(userId: _userId, isDj: false);
+  return ref
+      .watch(profileRepositoryProvider)
+      .fetchReviews(userId: _userId, isDj: false);
 });
 
 // ── User Files ──
@@ -69,7 +78,7 @@ final djJobFiltersProvider = FutureProvider<DjJobFilters?>((ref) {
 
 class SaveDjJobFiltersNotifier extends StateNotifier<AsyncValue<void>> {
   SaveDjJobFiltersNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final ProfileRepository _repository;
   final Ref _ref;
@@ -89,8 +98,43 @@ class SaveDjJobFiltersNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final saveDjJobFiltersProvider = StateNotifierProvider.autoDispose<
-    SaveDjJobFiltersNotifier, AsyncValue<void>>(
-  (ref) => SaveDjJobFiltersNotifier(ref.watch(profileRepositoryProvider), ref),
+  SaveDjJobFiltersNotifier,
+  AsyncValue<void>
+>((ref) => SaveDjJobFiltersNotifier(ref.watch(profileRepositoryProvider), ref));
+
+// ── Musician Job Filters ──
+
+final musicianJobFiltersProvider = FutureProvider<MusicianJobFilters?>((ref) {
+  return ref.watch(profileRepositoryProvider).fetchMusicianJobFilters(_userId);
+});
+
+class SaveMusicianJobFiltersNotifier extends StateNotifier<AsyncValue<void>> {
+  SaveMusicianJobFiltersNotifier(this._repository, this._ref)
+    : super(const AsyncData(null));
+
+  final ProfileRepository _repository;
+  final Ref _ref;
+
+  Future<bool> save(MusicianJobFilters filters) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.saveMusicianJobFilters(filters);
+      state = const AsyncData(null);
+      _ref.invalidate(musicianJobFiltersProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+final saveMusicianJobFiltersProvider = StateNotifierProvider.autoDispose<
+  SaveMusicianJobFiltersNotifier,
+  AsyncValue<void>
+>(
+  (ref) =>
+      SaveMusicianJobFiltersNotifier(ref.watch(profileRepositoryProvider), ref),
 );
 
 // ── Standard Messages ──
@@ -101,12 +145,13 @@ final standardMessagesProvider = FutureProvider<List<StandardMessage>>((ref) {
 
 // ── Admin Messages ──
 
-final adminMessagesProvider =
-    FutureProvider.family<List<AdminMessage>, bool>((ref, isDj) {
-  return ref.watch(profileRepositoryProvider).fetchAdminMessages(
-        userId: _userId,
-        isDj: isDj,
-      );
+final adminMessagesProvider = FutureProvider.family<List<AdminMessage>, bool>((
+  ref,
+  isDj,
+) {
+  return ref
+      .watch(profileRepositoryProvider)
+      .fetchAdminMessages(userId: _userId, isDj: isDj);
 });
 
 final unreadAdminMessageCountProvider = Provider.family<int, bool>((ref, isDj) {
@@ -115,8 +160,7 @@ final unreadAdminMessageCountProvider = Provider.family<int, bool>((ref, isDj) {
 });
 
 class MarkAdminMessageReadNotifier extends StateNotifier<AsyncValue<void>> {
-  MarkAdminMessageReadNotifier(this._repository)
-      : super(const AsyncData(null));
+  MarkAdminMessageReadNotifier(this._repository) : super(const AsyncData(null));
 
   final ProfileRepository _repository;
 
@@ -137,14 +181,16 @@ class MarkAdminMessageReadNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final markAdminMessageReadProvider = StateNotifierProvider.autoDispose<
-    MarkAdminMessageReadNotifier, AsyncValue<void>>(
-  (ref) => MarkAdminMessageReadNotifier(ref.watch(profileRepositoryProvider)),
-);
+  MarkAdminMessageReadNotifier,
+  AsyncValue<void>
+>((ref) => MarkAdminMessageReadNotifier(ref.watch(profileRepositoryProvider)));
 
 // ── iCal Token ──
 
-final icalTokenProvider =
-    FutureProvider.family<String?, bool>((ref, isDj) async {
+final icalTokenProvider = FutureProvider.family<String?, bool>((
+  ref,
+  isDj,
+) async {
   return ref
       .watch(profileRepositoryProvider)
       .fetchIcalToken(userId: _userId, isDj: isDj);
@@ -152,7 +198,7 @@ final icalTokenProvider =
 
 class GenerateIcalTokenNotifier extends StateNotifier<AsyncValue<String?>> {
   GenerateIcalTokenNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final ProfileRepository _repository;
   final Ref _ref;
@@ -161,7 +207,9 @@ class GenerateIcalTokenNotifier extends StateNotifier<AsyncValue<String?>> {
     state = const AsyncLoading();
     try {
       final token = await _repository.generateIcalToken(
-          userId: _userId, isDj: isDj);
+        userId: _userId,
+        isDj: isDj,
+      );
       state = AsyncData(token);
       _ref.invalidate(icalTokenProvider(isDj));
       return token;
@@ -173,7 +221,8 @@ class GenerateIcalTokenNotifier extends StateNotifier<AsyncValue<String?>> {
 }
 
 final generateIcalTokenProvider = StateNotifierProvider.autoDispose<
-    GenerateIcalTokenNotifier, AsyncValue<String?>>(
-  (ref) => GenerateIcalTokenNotifier(
-      ref.watch(profileRepositoryProvider), ref),
+  GenerateIcalTokenNotifier,
+  AsyncValue<String?>
+>(
+  (ref) => GenerateIcalTokenNotifier(ref.watch(profileRepositoryProvider), ref),
 );

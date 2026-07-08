@@ -1,0 +1,148 @@
+# DJ Tilbud — local mobile release automation. Run from the mobile/ folder:
+#
+#   fastlane release_both      # THE release command: bump ONCE, ship BOTH stores (same version)
+#   fastlane android release   # re-ship CURRENT version to Google Play only (NO bump)
+#   fastlane ios release       # re-ship CURRENT version to the App Store only (NO bump)
+#
+# IMPORTANT — keeping Android + iOS in lockstep:
+#   Only `release_both` bumps the version, and it bumps ONCE then ships both, so the two
+#   stores always get the SAME number. The single-platform lanes do NOT bump — they exist
+#   only to RETRY one platform at the current version after a failure. Do NOT run
+#   `android release` / `ios release` to start a new release: doing that per-platform is
+#   exactly what let iOS's version race ahead of Android.
+#
+# Everything runs on YOUR machine: Android signs via android/key.properties and the local
+# keystore, iOS uses automatic signing — nothing new leaves the Mac and no signing secrets
+# are committed. `release_both` bumps pubspec.yaml X.Y.Z+N -> X.Y.(Z+1)+(N+1) (both stores
+# reject a build number that isn't strictly higher, and the App Store also needs a higher
+# version name once released). Release notes come from fastlane/metadata. Setup: fastlane/SETUP.md.
+
+# Absolute paths so `sh` / upload actions don't depend on the working directory.
+FLUTTER_ROOT = File.expand_path("..", __dir__)
+AAB_PATH = File.join(FLUTTER_ROOT, "build/app/outputs/bundle/release/app-release.aab")
+IPA_PATH = File.join(FLUTTER_ROOT, "build/ios/ipa/dj_tilbud_app.ipa")
+PUBSPEC = File.join(FLUTTER_ROOT, "pubspec.yaml")
+
+# Google Play track. "production" matches your current manual flow; switch to
+# "internal" or "beta" to ship to testers first, then promote in the console.
+PLAY_TRACK = "production"
+
+# Reads `version: X.Y.Z+N` from pubspec.yaml -> ["X.Y.Z", "N"] (version name + build number).
+def pubspec_version
+  line = File.read(PUBSPEC).lines.find { |l| l.strip.start_with?("version:") }
+  UI.user_error!("Could not find `version:` in pubspec.yaml") unless line
+  name, build = line.split("version:").last.strip.split("+")
+  [name.strip, build.to_s.strip]
+end
+
+# Bumps pubspec.yaml `version: X.Y.Z+N` -> `X.Y.(Z+1)+(N+1)` and returns the new string.
+# Both the patch and the build number climb, matching the repo's release convention
+# (e.g. 1.0.22+47 -> 1.0.23+48): the build number must strictly increase for every
+# store upload, and the App Store also needs a higher version name once released.
+def bump_pubspec
+  content = File.read(PUBSPEC)
+  m = content.match(/^version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)\s*$/)
+  UI.user_error!("Could not parse `version: X.Y.Z+N` from pubspec.yaml") unless m
+  new_version = "#{m[1]}.#{m[2]}.#{m[3].to_i + 1}+#{m[4].to_i + 1}"
+  File.write(PUBSPEC, content.sub(/^version:\s*\d+\.\d+\.\d+\+\d+\s*$/, "version: #{new_version}"))
+  UI.success("Bumped pubspec.yaml -> #{new_version}")
+  new_version
+end
+
+# --- Shared build+upload bodies (plain methods so release_both can reuse them) ---
+
+def do_android_release
+  # Build the signed app bundle — identical to your manual `flutter build appbundle --release`.
+  sh("cd #{FLUTTER_ROOT} && flutter build appbundle --release")
+
+  # Upload to Google Play as a DRAFT (not live): the build + release notes land in the
+  # console, and YOU click "Rollout to production" to go live. Release notes come from
+  # fastlane/metadata/android/<locale>/changelogs/default.txt.
+  # -> To auto-publish instead (live immediately), set release_status: "completed".
+  upload_to_play_store(
+    track: PLAY_TRACK,
+    release_status: "draft",
+    aab: AAB_PATH,
+    json_key: File.expand_path("play-service-account.json", __dir__),
+    skip_upload_apk: true,
+    skip_upload_metadata: true,   # don't touch store listing text
+    skip_upload_images: true,
+    skip_upload_screenshots: true
+  )
+end
+
+def do_ios_release
+  version_name, build_number = pubspec_version
+
+  # Build the store IPA — identical to your manual `flutter build ipa --release` (automatic signing).
+  sh("cd #{FLUTTER_ROOT} && flutter build ipa --release")
+
+  # Authenticate with an App Store Connect API key — no Apple ID / 2FA prompts.
+  # ASC_KEY_ID + ASC_ISSUER_ID come from fastlane/.env; the key is fastlane/AuthKey.p8.
+  api_key = app_store_connect_api_key(
+    key_id: ENV.fetch("ASC_KEY_ID"),
+    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+    key_filepath: File.expand_path("AuthKey.p8", __dir__),
+    in_house: false
+  )
+
+  # Upload the binary -> TestFlight and WAIT for processing, so the build is (a) testable
+  # in TestFlight now and (b) attachable to the App Store version below. distribute_external:false
+  # = internal testers only (no Beta App Review). "What to Test" from metadata/testflight_changelog.txt.
+  upload_to_testflight(
+    api_key: api_key,
+    ipa: IPA_PATH,
+    distribute_external: false,
+    skip_submission: true,
+    skip_waiting_for_build_processing: false,
+    changelog: File.read(File.expand_path("metadata/testflight_changelog.txt", __dir__)).strip
+  )
+
+  # Stage the App Store version: create/prepare version #{version_name}, attach the build,
+  # and set "What's New" from metadata/ios/<locale>/release_notes.txt. submit_for_review:false
+  # leaves it in "Prepare for Submission" — you check TestFlight, then click "Submit for Review".
+  upload_to_app_store(
+    api_key: api_key,
+    app_version: version_name,
+    build_number: build_number,
+    metadata_path: File.expand_path("metadata/ios", __dir__),
+    skip_binary_upload: true,          # binary already uploaded above
+    skip_screenshots: true,
+    submit_for_review: false,          # stage only; you click Submit in the console
+    run_precheck_before_submit: false,
+    precheck_include_in_app_purchases: false,
+    force: true                        # skip the interactive HTML metadata preview
+  )
+end
+
+# --- Lanes ---
+
+# === PRIMARY release command ===
+# Bumps the version ONCE, then ships BOTH stores from that single version, so Android
+# and iOS can never drift apart. Use this for every normal release.
+desc "Release BOTH stores: bump the version once, then build+upload Android + iOS on the same version"
+lane :release_both do
+  new_version = bump_pubspec
+  UI.important("Releasing #{new_version} to BOTH Android + iOS")
+  do_android_release
+  do_ios_release
+end
+
+# === Single-platform lanes — NO version bump ===
+# These ship whatever version is currently in pubspec.yaml. Use them ONLY to re-run one
+# platform (e.g. after a failure) at the current version, so the two stores stay on the
+# same number. Do NOT use them to start a NEW release — that's what release_both is for
+# (running them per-platform for a new release is exactly what let iOS drift ahead).
+platform :android do
+  desc "Re-ship the CURRENT pubspec version to Google Play (NO bump — use release_both for a new release)"
+  lane :release do
+    do_android_release
+  end
+end
+
+platform :ios do
+  desc "Re-ship the CURRENT pubspec version to the App Store (NO bump — use release_both for a new release)"
+  lane :release do
+    do_ios_release
+  end
+end

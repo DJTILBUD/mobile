@@ -10,6 +10,8 @@ import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/core/utils/musician_price.dart';
 import 'package:dj_tilbud_app/features/agent/presentation/widgets/agent_ai_button.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/profile/domain/self_billing_complete.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
@@ -156,6 +158,46 @@ class _InstrumentalistOfferFormScreenState
     }
   }
 
+  /// The musician's other still-relevant offers (sent or won) on the SAME calendar date as the job
+  /// being offered on, excluding this job. Each is paired with whether it time-conflicts with this
+  /// booking (gap < 3h) — a conflict means only one of the two can ultimately be won. Drives the
+  /// multi-offer notice so the sax can see what they already hold that day and understand the
+  /// auto-lost / don't-double-book rules. Business rule lives in [saxBookingsConflict]; this only
+  /// filters + labels already-fetched offers for display.
+  List<_SameDateOffer> _sameDateOffers(List<ServiceOffer> offers) {
+    final job = widget.job;
+    final jobDateKey = saxDateKey(job.date);
+    final jobStart = job.musicianStartTime;
+    final jobEnd = saxEndTime(
+      job.musicianStartTime,
+      job.requestedMusicianHours,
+    );
+    final result = <_SameDateOffer>[];
+    for (final o in offers) {
+      if (o.status != ServiceOfferStatus.sent &&
+          o.status != ServiceOfferStatus.won) {
+        continue;
+      }
+      // Exclude any offer already on the very job we're bidding on.
+      final sameJob =
+          job.isExtJob
+              ? (o.extJobId != null && o.extJobId == job.extJobId)
+              : (o.jobId != null && o.jobId == job.id);
+      if (sameJob) continue;
+      if (saxDateKey(o.job.date) != jobDateKey) continue;
+      final conflicts = saxBookingsConflict(
+        dateA: jobDateKey,
+        startA: jobStart,
+        endA: jobEnd,
+        dateB: saxDateKey(o.job.date),
+        startB: o.job.musicianStartTime,
+        endB: saxEndTime(o.job.musicianStartTime, o.job.requestedMusicianHours),
+      );
+      result.add(_SameDateOffer(offer: o, conflicts: conflicts));
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
@@ -163,9 +205,24 @@ class _InstrumentalistOfferFormScreenState
     final dateStr = DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);
     final createState = ref.watch(createServiceOfferProvider);
     final isLoading = createState is AsyncLoading;
-    final conflictAsync = ref.watch(dateConflictProvider(job.date));
+    final conflictAsync = ref.watch(
+      dateConflictProvider(
+        SaxConflictQuery(
+          date: job.date,
+          startTime: job.musicianStartTime,
+          endTime: saxEndTime(
+            job.musicianStartTime,
+            job.requestedMusicianHours,
+          ),
+        ),
+      ),
+    );
     final hasConflict = conflictAsync.valueOrNull == true;
     final hasActiveOffer = job.hasActiveOffer;
+    // Other sent/won offers the sax already holds on this date (drives the multi-offer notice).
+    final sameDateOffers = _sameDateOffers(
+      ref.watch(serviceOffersProvider).valueOrNull ?? const <ServiceOffer>[],
+    );
     final musicianPayout = calculateMusicianOfferPrice(
       job.requestedMusicianHours,
       job.createdAt,
@@ -274,7 +331,7 @@ class _InstrumentalistOfferFormScreenState
                       const SizedBox(width: DSSpacing.s2),
                       Expanded(
                         child: Text(
-                          'Du har allerede et aktivt tilbud på denne dato. Du kan kun afgive ét tilbud pr. dag.',
+                          'Du har allerede vundet et job på et overlappende tidspunkt denne dag. Du kan kun spille to jobs samme dag, hvis der er mindst 3 timer imellem dem.',
                           style: DSTextStyle.labelMd.copyWith(
                             color: _c.state.danger,
                           ),
@@ -285,6 +342,18 @@ class _InstrumentalistOfferFormScreenState
                 ),
                 const SizedBox(height: DSSpacing.s4),
               ],
+
+              // Multi-offer notice — the sax already holds another offer this date. The feature
+              // deliberately allows several same-day offers, so this INFORMS (does not block):
+              // shows what they already bid on, the auto-lost rule for wins < 3h apart, and that
+              // avoiding a real double-booking is their own responsibility.
+              if (!hasActiveOffer &&
+                  !hasConflict &&
+                  sameDateOffers.isNotEmpty) ...[
+                _MultiOfferNotice(others: sameDateOffers),
+                const SizedBox(height: DSSpacing.s4),
+              ],
+
               // Job summary
               DSSurface(
                 child: Column(
@@ -533,6 +602,164 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             text,
             style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One of the musician's existing same-date offers, plus whether it time-conflicts (gap < 3h) with
+/// the booking currently being offered on.
+class _SameDateOffer {
+  const _SameDateOffer({required this.offer, required this.conflicts});
+
+  final ServiceOffer offer;
+  final bool conflicts;
+}
+
+/// Explains the "several offers on one date" feature on the offer form: lists what the sax already
+/// holds this day, and spells out the two outcomes (auto-lost when wins are < 3h apart; own
+/// responsibility not to double-book when both can be won). Informational only — never blocks.
+class _MultiOfferNotice extends StatelessWidget {
+  const _MultiOfferNotice({required this.others});
+
+  final List<_SameDateOffer> others;
+
+  String _timeLabel(ServiceOffer o) {
+    final start = o.job.musicianStartTime;
+    if (start == null || start.isEmpty) return '';
+    final end = saxEndTime(
+      o.job.musicianStartTime,
+      o.job.requestedMusicianHours,
+    );
+    return end != null ? 'kl. $start–$end' : 'kl. $start';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DSSpacing.s4),
+      decoration: BoxDecoration(
+        color: _c.state.warning.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(DSRadius.md),
+        border: Border.all(color: _c.state.warning.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                LucideIcons.calendarClock,
+                size: 16,
+                color: _c.state.warning,
+              ),
+              const SizedBox(width: DSSpacing.s2),
+              Expanded(
+                child: Text(
+                  others.length == 1
+                      ? 'Du har allerede et tilbud på denne dato'
+                      : 'Du har allerede ${others.length} tilbud på denne dato',
+                  style: DSTextStyle.headingSm.copyWith(
+                    color: _c.text.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DSSpacing.s2),
+          Text(
+            'Det er helt fint at have flere tilbud samme dag. Her er hvad du allerede har budt på:',
+            style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary),
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          for (final o in others)
+            Padding(
+              padding: const EdgeInsets.only(bottom: DSSpacing.s2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(LucideIcons.music, size: 14, color: _c.text.muted),
+                  const SizedBox(width: DSSpacing.s2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          [
+                            eventTypeLabel(o.offer.job.eventType),
+                            if (_timeLabel(o.offer).isNotEmpty)
+                              _timeLabel(o.offer),
+                            if (o.offer.status == ServiceOfferStatus.won)
+                              '(vundet)',
+                          ].join(' · '),
+                          style: DSTextStyle.labelMd.copyWith(
+                            color: _c.text.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          o.conflicts
+                              ? 'For tæt på dette job (under 3 timer imellem). Kun ét af dem kan vindes.'
+                              : 'Mindst 3 timer imellem. Begge kan vindes.',
+                          style: DSTextStyle.bodySm.copyWith(
+                            color:
+                                o.conflicts
+                                    ? _c.state.danger
+                                    : _c.state.success,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: DSSpacing.s1),
+          const Divider(height: 1),
+          const SizedBox(height: DSSpacing.s3),
+          const _RuleLine(
+            'Vinder du to jobs med under 3 timer imellem, sætter vi automatisk det ene tilbud til “tabt”. Du kan ikke vindes til begge.',
+          ),
+          const SizedBox(height: DSSpacing.s2),
+          const _RuleLine(
+            'Er der mindst 3 timer imellem, kan du vinde begge. Så er det dit eget ansvar at nå frem og spille begge, så du ikke dobbeltbooker dig selv.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RuleLine extends StatelessWidget {
+  const _RuleLine(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Icon(LucideIcons.info, size: 13, color: _c.text.muted),
+        ),
+        const SizedBox(width: DSSpacing.s2),
+        Expanded(
+          child: Text(
+            text,
+            style: DSTextStyle.bodySm.copyWith(
+              color: _c.text.secondary,
+              height: 1.4,
+            ),
           ),
         ),
       ],

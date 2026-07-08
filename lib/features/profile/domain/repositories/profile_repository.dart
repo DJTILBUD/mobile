@@ -1,4 +1,5 @@
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_job_filters.dart';
+import 'package:dj_tilbud_app/features/profile/domain/entities/musician_job_filters.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/payment_info.dart';
@@ -70,6 +71,9 @@ abstract class ProfileRepository {
   // DJ job filters
   Future<DjJobFilters?> fetchDjJobFilters(String userId);
   Future<void> saveDjJobFilters(DjJobFilters filters);
+
+  Future<MusicianJobFilters?> fetchMusicianJobFilters(String userId);
+  Future<void> saveMusicianJobFilters(MusicianJobFilters filters);
 
   // Admin messages
   Future<List<AdminMessage>> fetchAdminMessages({

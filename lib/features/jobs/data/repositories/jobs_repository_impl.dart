@@ -373,9 +373,19 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
-  Future<bool> hasDateConflict(String userId, DateTime date) async {
+  Future<bool> hasDateConflict(
+    String userId, {
+    required DateTime date,
+    String? startTime,
+    String? endTime,
+  }) async {
     try {
-      return await _datasource.hasDateConflict(userId, date);
+      return await _datasource.hasDateConflict(
+        userId,
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
+      );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }

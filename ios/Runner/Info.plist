@@ -62,5 +62,12 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Export compliance: declares the app uses only EXEMPT encryption (standard
+	     HTTPS/TLS provided by the OS), so App Store Connect stops asking "Missing
+	     Compliance" on every build and skips the France encryption declaration.
+	     Set to <true/> only if the app uses non-exempt encryption needing an
+	     export license (rare). -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

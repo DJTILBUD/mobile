@@ -6,6 +6,8 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/conversation.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/chat_provider.dart';
+import 'package:dj_tilbud_app/features/chat/presentation/providers/admin_support_provider.dart';
+import 'package:dj_tilbud_app/features/chat/data/datasources/admin_support_datasource.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class ChatScreen extends ConsumerWidget {
@@ -14,46 +16,253 @@ class ChatScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final _c = DSTheme.of(context);
+    // Admin users get a second "Support" tab (the in-app admin inbox). Non-admins never see it.
+    final isAdmin = ref.watch(isAdminProvider).valueOrNull ?? false;
+
+    if (!isAdmin) {
+      return Scaffold(
+        backgroundColor: _c.bg.surface,
+        appBar: AppBar(
+          title: const Text('Beskeder'),
+          backgroundColor: _c.bg.surface,
+          surfaceTintColor: _c.bg.surface,
+        ),
+        body: const _MyConversationsTab(),
+      );
+    }
+
+    final unread = ref.watch(adminSupportUnreadCountProvider);
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: _c.bg.surface,
+        appBar: AppBar(
+          title: const Text('Beskeder'),
+          backgroundColor: _c.bg.surface,
+          surfaceTintColor: _c.bg.surface,
+          bottom: TabBar(
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Support'),
+                    if (unread > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _c.brand.primaryActive,
+                          borderRadius: BorderRadius.circular(DSRadius.pill),
+                        ),
+                        child: Text(
+                          '$unread',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Tab(text: 'Beskeder'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [_AdminSupportTab(), _MyConversationsTab()],
+        ),
+      ),
+    );
+  }
+}
+
+class _MyConversationsTab extends ConsumerWidget {
+  const _MyConversationsTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
     final conversationsAsync = ref.watch(conversationsProvider);
 
-    return Scaffold(
-      backgroundColor: _c.bg.surface,
-      appBar: AppBar(
-        title: const Text('Beskeder'),
-        backgroundColor: _c.bg.surface,
-        surfaceTintColor: _c.bg.surface,
-      ),
-      body: conversationsAsync.when(
-        loading: () => const _ConversationListSkeleton(),
-        error:
-            (e, _) => _ErrorView(
-              onRetry: () => ref.read(conversationsProvider.notifier).refresh(),
-            ),
-        data:
-            (conversations) =>
-                conversations.isEmpty
-                    ? const _EmptyConversationsView()
-                    : RefreshIndicator(
-                      onRefresh:
-                          () =>
-                              ref
-                                  .read(conversationsProvider.notifier)
-                                  .refresh(),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: conversations.length,
-                        separatorBuilder:
-                            (_, __) => Divider(
-                              height: 1,
-                              color: _c.border.subtle,
-                              indent: 72,
-                            ),
-                        itemBuilder:
-                            (context, i) => _ConversationTile(
-                              conversation: conversations[i],
-                            ),
-                      ),
+    return conversationsAsync.when(
+      loading: () => const _ConversationListSkeleton(),
+      error:
+          (e, _) => _ErrorView(
+            onRetry: () => ref.read(conversationsProvider.notifier).refresh(),
+          ),
+      data:
+          (conversations) =>
+              conversations.isEmpty
+                  ? const _EmptyConversationsView()
+                  : RefreshIndicator(
+                    onRefresh:
+                        () =>
+                            ref.read(conversationsProvider.notifier).refresh(),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: conversations.length,
+                      separatorBuilder:
+                          (_, __) => Divider(
+                            height: 1,
+                            color: _c.border.subtle,
+                            indent: 72,
+                          ),
+                      itemBuilder:
+                          (context, i) =>
+                              _ConversationTile(conversation: conversations[i]),
                     ),
+                  ),
+    );
+  }
+}
+
+class _AdminSupportTab extends ConsumerWidget {
+  const _AdminSupportTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
+    final threadsAsync = ref.watch(adminSupportThreadsProvider);
+
+    return threadsAsync.when(
+      loading: () => const _ConversationListSkeleton(),
+      error:
+          (e, _) => _ErrorView(
+            onRetry:
+                () => ref.read(adminSupportThreadsProvider.notifier).refresh(),
+          ),
+      data:
+          (threads) =>
+              threads.isEmpty
+                  ? Center(
+                    child: Text(
+                      'Ingen support-samtaler',
+                      style: DSTextStyle.bodyMd.copyWith(color: _c.text.muted),
+                    ),
+                  )
+                  : RefreshIndicator(
+                    onRefresh:
+                        () =>
+                            ref
+                                .read(adminSupportThreadsProvider.notifier)
+                                .refresh(),
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: threads.length,
+                      separatorBuilder:
+                          (_, __) => Divider(
+                            height: 1,
+                            color: _c.border.subtle,
+                            indent: 72,
+                          ),
+                      itemBuilder:
+                          (context, i) => _AdminThreadTile(thread: threads[i]),
+                    ),
+                  ),
+    );
+  }
+}
+
+class _AdminThreadTile extends StatelessWidget {
+  const _AdminThreadTile({required this.thread});
+
+  final AdminSupportThread thread;
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    final hasUnread = thread.hasUnread;
+
+    return InkWell(
+      onTap:
+          () => context.pushNamed(AppRoutes.adminSupportThread, extra: thread),
+      child: Container(
+        color: hasUnread ? _c.brand.primary.withValues(alpha: 0.06) : null,
+        padding: const EdgeInsets.symmetric(
+          horizontal: DSSpacing.s4,
+          vertical: DSSpacing.s3,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _ConversationAvatar(
+              name: thread.userName,
+              imageUrl: thread.userAvatarUrl,
+            ),
+            const SizedBox(width: DSSpacing.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    thread.userName,
+                    style: DSTextStyle.headingSm.copyWith(
+                      fontSize: 15,
+                      color: _c.text.primary,
+                      fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  if (thread.lastMessage != null)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            thread.lastMessage!,
+                            style: DSTextStyle.labelMd.copyWith(
+                              color:
+                                  hasUnread ? _c.text.primary : _c.text.muted,
+                              fontWeight:
+                                  hasUnread ? FontWeight.w700 : FontWeight.w400,
+                              fontStyle:
+                                  thread.lastMessageIsSystem
+                                      ? FontStyle.italic
+                                      : FontStyle.normal,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (hasUnread) ...[
+                          const SizedBox(width: DSSpacing.s2),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _c.brand.primaryActive,
+                              borderRadius: BorderRadius.circular(
+                                DSRadius.pill,
+                              ),
+                            ),
+                            child: Text(
+                              '${thread.unreadCount}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

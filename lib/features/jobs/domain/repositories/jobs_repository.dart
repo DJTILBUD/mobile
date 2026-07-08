@@ -130,8 +130,14 @@ abstract class JobsRepository {
   /// Saves private DJ notes on a won quote.
   Future<void> saveDjNotes(int quoteId, String notes);
 
-  /// Returns true if the musician already has an active service offer on [date].
-  Future<bool> hasDateConflict(String userId, DateTime date);
+  /// Returns true if the musician already has a WON offer that time-conflicts with the target
+  /// booking (same date, gap < 3h). Open offers do not block; see [saxBookingsConflict].
+  Future<bool> hasDateConflict(
+    String userId, {
+    required DateTime date,
+    String? startTime,
+    String? endTime,
+  });
 
   /// Fetches service offers for a given internal job (for DJ view).
   Future<List<ServiceOffer>> fetchServiceOffersForJob(int jobId);

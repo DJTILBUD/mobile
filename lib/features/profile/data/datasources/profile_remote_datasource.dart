@@ -126,6 +126,23 @@ class ProfileRemoteDatasource {
     await _client.from('DjJobFilters').upsert(data, onConflict: 'dj_id');
   }
 
+  // ── Musician Job Filters ──
+
+  Future<Map<String, dynamic>?> fetchMusicianJobFilters(String userId) async {
+    final rows = await _client
+        .from('MusicianJobFilters')
+        .select()
+        .eq('musician_id', userId);
+    if (rows.isEmpty) return null;
+    return rows.first;
+  }
+
+  Future<void> saveMusicianJobFilters(Map<String, dynamic> data) async {
+    await _client
+        .from('MusicianJobFilters')
+        .upsert(data, onConflict: 'musician_id');
+  }
+
   // ── Reviews ──
 
   Future<List<Map<String, dynamic>>> fetchReviews({

@@ -20,6 +20,11 @@ plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.7.0" apply false
     id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    // Firebase: processes android/app/google-services.json at build time so the native
+    // Analytics SDK gets its config (google_app_id, measurement id, ...). Without it,
+    // Android Firebase Analytics logs "Missing google_app_id" and collects NOTHING —
+    // which is why only iOS stats show (iOS reads GoogleService-Info.plist natively).
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 include(":app")

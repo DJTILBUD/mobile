@@ -15,6 +15,7 @@ class MusicianProfileModel {
     this.djSaxCollaboration,
     this.venuesAndEvents,
     this.onboardingCompletedAt,
+    this.isSuppressed = false,
   });
 
   final String id;
@@ -30,6 +31,7 @@ class MusicianProfileModel {
   final String? djSaxCollaboration;
   final List<String>? venuesAndEvents;
   final DateTime? onboardingCompletedAt;
+  final bool isSuppressed;
 
   factory MusicianProfileModel.fromJson(Map<String, dynamic> json) {
     return MusicianProfileModel(
@@ -44,10 +46,13 @@ class MusicianProfileModel {
       experienceYears: (json['experience_years'] as num?)?.toInt(),
       genres: (json['genres'] as List<dynamic>?)?.cast<String>(),
       djSaxCollaboration: json['dj_sax_collaboration'] as String?,
-      venuesAndEvents: (json['venues_and_events'] as List<dynamic>?)?.cast<String>(),
-      onboardingCompletedAt: json['onboarding_completed_at'] != null
-          ? DateTime.tryParse(json['onboarding_completed_at'] as String)
-          : null,
+      venuesAndEvents:
+          (json['venues_and_events'] as List<dynamic>?)?.cast<String>(),
+      onboardingCompletedAt:
+          json['onboarding_completed_at'] != null
+              ? DateTime.tryParse(json['onboarding_completed_at'] as String)
+              : null,
+      isSuppressed: json['is_suppressed'] as bool? ?? false,
     );
   }
 
@@ -83,6 +88,7 @@ class MusicianProfileModel {
       djSaxCollaboration: djSaxCollaboration,
       venuesAndEvents: venuesAndEvents,
       onboardingCompletedAt: onboardingCompletedAt,
+      isSuppressed: isSuppressed,
     );
   }
 }

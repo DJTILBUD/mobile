@@ -21,6 +21,8 @@ import 'package:dj_tilbud_app/features/auth/presentation/screens/profile_setup_s
 import 'package:dj_tilbud_app/features/chat/domain/entities/conversation.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/screens/chat_screen.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/screens/conversation_detail_screen.dart';
+import 'package:dj_tilbud_app/features/chat/data/datasources/admin_support_datasource.dart';
+import 'package:dj_tilbud_app/features/chat/presentation/screens/admin_support_thread_screen.dart';
 import 'package:dj_tilbud_app/features/featured_jobs/presentation/screens/featured_jobs_screen.dart';
 import 'package:dj_tilbud_app/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
@@ -43,6 +45,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/job_content_p
 import 'package:dj_tilbud_app/features/profile/presentation/screens/standard_messages_screen.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/screens/calendar_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/dj_job_filters_screen.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/screens/musician_job_filters_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/payment_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/profile_preview_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/admin_messages_screen.dart';
@@ -481,6 +484,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           return ConversationDetailScreen(conversation: conversation);
         },
       ),
+      GoRoute(
+        path: '/admin-support-thread',
+        name: AppRoutes.adminSupportThread,
+        builder: (context, state) {
+          final thread = state.extra;
+          if (thread is! AdminSupportThread) {
+            return const _MissingRouteDataScreen(label: 'support-samtale');
+          }
+          return AdminSupportThreadScreen(thread: thread);
+        },
+      ),
 
       // ── Profile sub-screens ──
       GoRoute(
@@ -546,6 +560,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             return const _MissingRouteDataScreen(label: 'jobfiltre');
           }
           return DjJobFiltersScreen(djId: djId);
+        },
+      ),
+      GoRoute(
+        path: '/instrumentalist/job-filters',
+        name: AppRoutes.musicianJobFilters,
+        builder: (context, state) {
+          final musicianId = state.extra;
+          if (musicianId is! String) {
+            return const _MissingRouteDataScreen(label: 'jobfiltre');
+          }
+          return MusicianJobFiltersScreen(musicianId: musicianId);
         },
       ),
       GoRoute(

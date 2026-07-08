@@ -4,7 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_job_filters.dart';
+import 'package:dj_tilbud_app/features/profile/domain/entities/musician_job_filters.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
@@ -341,18 +343,27 @@ final combinedInstrumentalistJobsProvider = Provider<AsyncValue<List<Job>>>((
   if (regular is AsyncError) return regular;
   if (ext is AsyncError) return ext;
 
-  // Dates on which the musician has already won a job → date conflict
-  final wonDates =
+  // Bookings the musician has already WON. A feed job is "occupied" (date conflict) only when it
+  // time-conflicts with a won booking (same date, gap < 3h) — not merely the same calendar day, so
+  // a short sax gig ≥ 3h clear stays biddable. Mirrors the DB rule (see saxBookingsConflict).
+  final wonBookings =
       ref
           .watch(wonServiceOffersProvider)
           .valueOrNull
-          ?.map((o) => o.job.date)
-          .toSet() ??
-      const <DateTime>{};
+          ?.map((o) => o.job)
+          .toList() ??
+      const [];
 
-  bool isOccupied(Job j) => wonDates.any(
-    (d) =>
-        d.year == j.date.year && d.month == j.date.month && d.day == j.date.day,
+  // Sax window = musicianStartTime + requestedMusicianHours (NOT the DJ timeStart/timeEnd).
+  bool isOccupied(Job j) => wonBookings.any(
+    (won) => saxBookingsConflict(
+      dateA: saxDateKey(j.date),
+      startA: j.musicianStartTime,
+      endA: saxEndTime(j.musicianStartTime, j.requestedMusicianHours),
+      dateB: saxDateKey(won.date),
+      startB: won.musicianStartTime,
+      endB: saxEndTime(won.musicianStartTime, won.requestedMusicianHours),
+    ),
   );
 
   // Tier 0 = eligible (shown first)
@@ -377,6 +388,44 @@ final combinedInstrumentalistJobsProvider = Provider<AsyncValue<List<Job>>>((
 
   return AsyncData(combined);
 });
+
+/// Whether the musician's optional job filter preferences (MusicianJobFilters)
+/// should be applied to the feed. Mirrors `djFiltersEnabledProvider`.
+final musicianFiltersEnabledProvider = StateProvider<bool>((ref) => true);
+
+/// The instrumentalist feed after applying the saved MusicianJobFilters
+/// (region + sax type), gated by the instant in-list "Filtre til/fra" toggle.
+/// Mirrors `filteredDjJobsProvider` on the DJ side.
+final filteredInstrumentalistJobsProvider = Provider<AsyncValue<List<Job>>>((
+  ref,
+) {
+  final jobs = ref.watch(combinedInstrumentalistJobsProvider);
+  final filtersAsync = ref.watch(musicianJobFiltersProvider);
+  final filtersEnabled = ref.watch(musicianFiltersEnabledProvider);
+
+  return jobs.whenData((jobList) {
+    final filters = filtersAsync.valueOrNull;
+    if (!filtersEnabled || filters == null || !filters.hasActiveFilters) {
+      return jobList;
+    }
+    return jobList
+        .where((job) => !_isJobExcludedByMusicianFilters(job, filters))
+        .toList();
+  });
+});
+
+bool _isJobExcludedByMusicianFilters(Job job, MusicianJobFilters f) {
+  if (f.excludedRegions.contains(job.region)) return true;
+
+  final saxType = job.saxType?.trim().toLowerCase();
+  if (saxType != null &&
+      saxType.isNotEmpty &&
+      f.excludedSaxTypes.any((e) => e.trim().toLowerCase() == saxType)) {
+    return true;
+  }
+
+  return false;
+}
 
 // ─── Instrumentalist: service offers ─────────────────────────────────────────
 
@@ -1166,15 +1215,19 @@ final saveDjNotesProvider =
 
 // ─── Date conflict check ──────────────────────────────────────────────────────
 
-/// Returns true if the current musician already has a sent/won offer on [date].
-final dateConflictProvider = FutureProvider.autoDispose.family<bool, DateTime>((
-  ref,
-  date,
-) async {
-  return ref
-      .watch(jobsRepositoryProvider)
-      .hasDateConflict(_currentUserId, date);
-});
+/// Returns true if the current musician already has a WON offer that time-conflicts with the target
+/// booking (same date, gap < 3h). Open offers do NOT block. See [saxBookingsConflict].
+final dateConflictProvider = FutureProvider.autoDispose
+    .family<bool, SaxConflictQuery>((ref, query) async {
+      return ref
+          .watch(jobsRepositoryProvider)
+          .hasDateConflict(
+            _currentUserId,
+            date: query.date,
+            startTime: query.startTime,
+            endTime: query.endTime,
+          );
+    });
 
 // ─── Service offers for a job (DJ view) ─────────────────────────────────────
 

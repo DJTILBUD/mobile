@@ -52,6 +52,7 @@ class LinkableJob {
     required this.id,
     this.eventType,
     this.date,
+    this.visibleToRecipient,
   });
 
   final String ref;
@@ -60,12 +61,17 @@ class LinkableJob {
   final String? eventType;
   final String? date;
 
+  /// Admin support picker only: whether the DJ/musician in the thread can see
+  /// this job. null = not computed (the musician-facing picker never sets it).
+  final bool? visibleToRecipient;
+
   factory LinkableJob.fromJson(Map<String, dynamic> json) => LinkableJob(
     ref: json['ref'] as String,
     kind: json['kind'] as String,
     id: json['id'] as int,
     eventType: json['eventType'] as String?,
     date: json['date'] as String?,
+    visibleToRecipient: json['visibleToRecipient'] as bool?,
   );
 }
 

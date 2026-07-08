@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
+import 'package:dj_tilbud_app/core/config/role_cache.dart';
+import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/chat/data/models/conversation_model.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/dj_quote_model.dart';
@@ -189,6 +191,7 @@ class NotificationsService {
         return data['offer_id'] as String?;
       case 'chat_message':
       case 'chat_unused_reminder':
+      case 'support_admin':
         return data['conversation_id'] as String?;
       case 'admin_message':
         return data['message_id'] as String?;
@@ -343,7 +346,22 @@ class NotificationsService {
             router.go(chatTab);
           }
 
+        case 'support_admin':
+          // An admin support reply: open the chat screen (the admin Support tab lives there). Uses
+          // the admin's own role shell. Deep-linking to the exact thread is a follow-up (would need
+          // the thread entity, not just the conversation id).
+          router.go(
+            RoleCache.role == MusicianRole.instrumentalist
+                ? '/instrumentalist/chat'
+                : '/dj/chat',
+          );
+
         case 'new_ext_job':
+          // A NEW (biddable) ext job → put the musician in the OFFER stage, exactly like the browse
+          // feed: map the ExtJob to a Job (toJobEntity sets isExtJob + extJobId) and open the offer
+          // form. Do NOT open ExtJobDetailScreen — that is the WON/assigned fulfillment view (customer
+          // contact, "kontakt kunden"), which is both wrong for an un-won job and leaks the customer's
+          // details. The won view is only for ext_job_assigned (below).
           final extJobId = _parseInt(data['ext_job_id']);
           if (extJobId != null) {
             final json =
@@ -352,9 +370,9 @@ class NotificationsService {
                     .select()
                     .eq('id', extJobId)
                     .single();
-            final extJob = ExtJobModel.fromJson(json).toEntity();
+            final job = ExtJobModel.fromJson(json).toJobEntity();
             router.go('/instrumentalist/home');
-            router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
+            router.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
           } else {
             router.go('/instrumentalist/home');
           }
@@ -415,10 +433,17 @@ class NotificationsService {
           break;
 
         case 'admin_message':
+          final isMusician = role == 'musician';
           final profileTab =
-              role == 'musician' ? '/instrumentalist/profile' : '/dj/profile';
+              isMusician ? '/instrumentalist/profile' : '/dj/profile';
           router.go(profileTab);
-          router.pushNamed(AppRoutes.adminMessages, extra: role);
+          // The adminMessages route requires a MusicianRole enum as `extra`;
+          // passing the raw `role` String fell through to the "Mangler data"
+          // screen (the bug that broke tapping this notification).
+          router.pushNamed(
+            AppRoutes.adminMessages,
+            extra: isMusician ? MusicianRole.instrumentalist : MusicianRole.dj,
+          );
           break;
 
         // Content accepted/rejected (DJ-only) → open the content library.

@@ -17,7 +17,7 @@ class AdminMessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final messagesAsync = ref.watch(adminMessagesProvider(_isDj));
 
     return Scaffold(
@@ -27,43 +27,84 @@ class AdminMessagesScreen extends ConsumerWidget {
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
       ),
-      body: messagesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text('Fejl: $e', style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger)),
-        ),
-        data: (messages) {
-          if (messages.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(LucideIcons.inbox, size: 48, color: _c.text.muted),
-                  const SizedBox(height: DSSpacing.s3),
-                  Text(
-                    'Ingen beskeder endnu',
-                    style: DSTextStyle.headingSm.copyWith(color: _c.text.primary),
-                  ),
-                  const SizedBox(height: DSSpacing.s1),
-                  Text(
-                    'Når admin sender dig en besked, vil den dukke op her.',
-                    style: DSTextStyle.labelMd.copyWith(color: _c.text.muted),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: DSSpacing.s3),
-            itemCount: messages.length,
-            itemBuilder: (context, index) => _MessageCard(
-              message: messages[index],
-              isDj: _isDj,
-              onRead: () => ref.invalidate(adminMessagesProvider(_isDj)),
-            ),
-          );
+      body: RefreshIndicator(
+        // Pull-to-refresh (works from any state — loading/error/empty are made
+        // scrollable below). Lets the user reload if the list is stale/empty,
+        // e.g. right after tapping an admin-message push.
+        onRefresh: () async {
+          ref.invalidate(adminMessagesProvider(_isDj));
+          await ref.read(adminMessagesProvider(_isDj).future);
         },
+        child: messagesAsync.when(
+          loading:
+              () =>
+                  const _CenteredScrollable(child: CircularProgressIndicator()),
+          error:
+              (e, _) => _CenteredScrollable(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.wifiOff, size: 48, color: _c.text.muted),
+                    const SizedBox(height: DSSpacing.s3),
+                    Text(
+                      'Kunne ikke hente beskeder',
+                      style: DSTextStyle.headingSm.copyWith(
+                        color: _c.text.primary,
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    Text(
+                      'Træk ned for at prøve igen.',
+                      style: DSTextStyle.labelMd.copyWith(color: _c.text.muted),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: DSSpacing.s3),
+                    DSButton(
+                      label: 'Prøv igen',
+                      variant: DSButtonVariant.secondary,
+                      size: DSButtonSize.sm,
+                      onTap: () => ref.invalidate(adminMessagesProvider(_isDj)),
+                    ),
+                  ],
+                ),
+              ),
+          data: (messages) {
+            if (messages.isEmpty) {
+              return _CenteredScrollable(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(LucideIcons.inbox, size: 48, color: _c.text.muted),
+                    const SizedBox(height: DSSpacing.s3),
+                    Text(
+                      'Ingen beskeder endnu',
+                      style: DSTextStyle.headingSm.copyWith(
+                        color: _c.text.primary,
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    Text(
+                      'Når admin sender dig en besked, vil den dukke op her.',
+                      style: DSTextStyle.labelMd.copyWith(color: _c.text.muted),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }
+            return ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: DSSpacing.s3),
+              itemCount: messages.length,
+              itemBuilder:
+                  (context, index) => _MessageCard(
+                    message: messages[index],
+                    isDj: _isDj,
+                    onRead: () => ref.invalidate(adminMessagesProvider(_isDj)),
+                  ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -91,7 +132,9 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
     setState(() => _expanded = !_expanded);
     if (!widget.message.isRead) {
       final userId = supabase.auth.currentUser?.id ?? '';
-      ref.read(markAdminMessageReadProvider.notifier).mark(
+      ref
+          .read(markAdminMessageReadProvider.notifier)
+          .mark(
             messageId: widget.message.id,
             userId: userId,
             isDj: widget.isDj,
@@ -102,9 +145,12 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final msg = widget.message;
-    final dateStr = DateFormat('d. MMM yyyy', 'da_DK').format(msg.createdAt.toLocal());
+    final dateStr = DateFormat(
+      'd. MMM yyyy',
+      'da_DK',
+    ).format(msg.createdAt.toLocal());
 
     return GestureDetector(
       onTap: _toggle,
@@ -134,7 +180,10 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                     Container(
                       width: 8,
                       height: 8,
-                      margin: const EdgeInsets.only(top: 5, right: DSSpacing.s2),
+                      margin: const EdgeInsets.only(
+                        top: 5,
+                        right: DSSpacing.s2,
+                      ),
                       decoration: BoxDecoration(
                         color: _c.brand.primaryActive,
                         shape: BoxShape.circle,
@@ -145,18 +194,15 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                       msg.header,
                       style: DSTextStyle.headingSm.copyWith(
                         fontSize: 15,
-                        fontWeight: msg.isRead
-                            ? FontWeight.w500
-                            : FontWeight.w700,
+                        fontWeight:
+                            msg.isRead ? FontWeight.w500 : FontWeight.w700,
                         color: _c.text.primary,
                       ),
                     ),
                   ),
                   const SizedBox(width: DSSpacing.s2),
                   Icon(
-                    _expanded
-                        ? LucideIcons.chevronUp
-                        : LucideIcons.chevronDown,
+                    _expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
                     size: 18,
                     color: _c.text.muted,
                   ),
@@ -187,6 +233,28 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
   }
 }
 
+// ─── Centered content that still scrolls (so pull-to-refresh works) ──────────
+
+class _CenteredScrollable extends StatelessWidget {
+  const _CenteredScrollable({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder:
+          (context, constraints) => SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(child: child),
+            ),
+          ),
+    );
+  }
+}
+
 // ─── Formatted text (bold + bullets + paragraphs) ────────────────────────────
 
 class _FormattedText extends StatelessWidget {
@@ -204,10 +272,12 @@ class _FormattedText extends StatelessWidget {
       if (match.start > cursor) {
         spans.add(TextSpan(text: raw.substring(cursor, match.start)));
       }
-      spans.add(TextSpan(
-        text: match.group(1),
-        style: const TextStyle(fontWeight: FontWeight.w700),
-      ));
+      spans.add(
+        TextSpan(
+          text: match.group(1),
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      );
       cursor = match.end;
     }
     if (cursor < raw.length) spans.add(TextSpan(text: raw.substring(cursor)));
@@ -233,14 +303,11 @@ class _FormattedText extends StatelessWidget {
         ],
       );
     }
-    return RichText(
-      text: TextSpan(style: baseStyle, children: inlineSpans),
-    );
+    return RichText(text: TextSpan(style: baseStyle, children: inlineSpans));
   }
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
     final paragraphs = text.split(RegExp(r'\n\n+'));
     final blocks = <Widget>[];
 
