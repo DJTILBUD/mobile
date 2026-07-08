@@ -65,11 +65,17 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Surface denied tools in the run log (helps debug "ran but opened no PR").
+          show_full_output: true
+          # Deny rules win over allow rules, so the allow-list is generous on the git/gh PR path
+          # while the deny-list hard-blocks main/force/merge. The old list was too narrow (only
+          # `git push -u origin bug-bot/*`), causing mid-run permission denials. (The read-only
+          # web-app-ref/admin-ref checkouts are gitignored, so a broad `git add*` can't stage them.)
           claude_args: >-
             --model claude-opus-4-8
             --max-turns 60
-            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(flutter *),Bash(dart *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git branch*),Bash(git checkout -b *),Bash(git add *),Bash(git commit *),Bash(git push -u origin bug-bot/*),Bash(git push origin bug-bot/*),Bash(gh issue view*),Bash(gh issue comment *),Bash(gh pr create *),Bash(gh pr view*)"
-            --disallowedTools "Bash(git push * main*),Bash(git push origin main*),Bash(git push --force*),Bash(git merge *),Bash(gh pr merge *),Bash(curl *),Bash(wget *),WebFetch,Read(.env*),Read(**/.env*),Read(**/*.pem),Read(**/*.key)"
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(flutter *),Bash(dart *),Bash(git status*),Bash(git diff*),Bash(git log*),Bash(git branch*),Bash(git rev-parse*),Bash(git fetch*),Bash(git remote*),Bash(git show*),Bash(git restore*),Bash(git stash*),Bash(git checkout*),Bash(git add*),Bash(git commit*),Bash(git push*),Bash(gh issue view*),Bash(gh issue comment*),Bash(gh issue list*),Bash(gh pr create*),Bash(gh pr view*),Bash(gh pr list*)"
+            --disallowedTools "Bash(git push * main*),Bash(git push origin main*),Bash(git push --force*),Bash(git push -f*),Bash(git merge *),Bash(gh pr merge *),Bash(curl *),Bash(wget *),WebFetch,Read(.env*),Read(**/.env*),Read(**/*.pem),Read(**/*.key)"
           prompt: |
             You are an automated bug-fixing agent for the DJ Tilbud **mobile** app (Flutter, Riverpod, go_router).
 
@@ -104,6 +110,11 @@ jobs:
                `gh issue comment` what you need and STOP (no PR).
             4. Make the smallest correct fix on a NEW branch `bug-bot/issue-${{ github.event.issue.number }}`,
                respecting the three-layer architecture (no Supabase in domain, no business logic in build()).
+               "Smallest" means no UNRELATED changes — it does NOT mean one file. A correct fix often spans a
+               few files (e.g. a widget plus its provider/datasource, or both ext-job rendering paths); make the
+               COMPLETE fix in those cases. Only stop-and-comment when the report is too vague to locate the
+               cause, the canonical rule isn't in the refs, or you cannot verify the fix — never just because it
+               touches several files.
             5. Verify with this repo's done-bar: `flutter analyze` AND `flutter test`. If tests fail and you
                cannot make them pass soundly, `gh issue comment` the failure and STOP (no PR).
             6. Only if sound and verified: commit, push, open a **DRAFT** PR with `gh pr create --draft --base main`
@@ -116,10 +127,24 @@ jobs:
             - NEVER read, print, or commit secrets or `.env*` files.
             - Keep the change minimal; Riverpod only, `context.goNamed` only, no direct Anthropic calls.
 
-      - name: Comment if the fix did not complete
-        if: steps.claude.outcome == 'failure'
+      # Deterministic backstop: the Claude step can finish "successfully" yet open no PR (it gave up
+      # cleanly, hit tool denials, or chose to comment). `if: outcome == 'failure'` missed that case,
+      # leaving the issue silent. This always runs and keys off the real signal: does a PR from the
+      # bug-bot branch now exist? If not, leave a status comment.
+      - name: Ensure the issue gets feedback (PR opened, else comment)
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
         run: |
-          gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" \
-            --body "Bug bot ran but could not complete an automated fix within its limits. This one likely needs more detail or a human. To help it next time, add the exact screen/component, steps to reproduce, and expected vs actual, then re-add the bug-bot label to retry."
+          branch="bug-bot/issue-${ISSUE}"
+          pr_count=$(gh pr list --repo "$REPO" --head "$branch" --state all --json number --jq 'length' 2>/dev/null || echo 0)
+          if [ "${pr_count:-0}" -gt 0 ]; then
+            echo "PR exists for $branch — bug bot completed. Nothing to do."
+            exit 0
+          fi
+          echo "No PR for $branch (claude step outcome: ${CLAUDE_OUTCOME}). Posting status comment."
+          gh issue comment "$ISSUE" --repo "$REPO" \
+            --body "Bug bot ran but did not open a fix PR (it likely needs more detail, hit a limit, or the fix wasn't safe to make automatically). To retry: add the exact screen/component, steps to reproduce, and expected vs actual, then re-add the \`bug-bot\` label. If it's a known-tricky area, a human may need to take it."

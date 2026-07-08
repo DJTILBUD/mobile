@@ -102,12 +102,12 @@ class NewDjJobsNotifier extends _RealtimeNotifier<List<Job>> {
 
 final newDjJobsProvider =
     StateNotifierProvider<NewDjJobsNotifier, AsyncValue<List<Job>>>(
-  (ref) => NewDjJobsNotifier(
-    ref.watch(supabaseClientProvider),
-    ref.watch(jobsRepositoryProvider),
-    _currentUserId,
-  ),
-);
+      (ref) => NewDjJobsNotifier(
+        ref.watch(supabaseClientProvider),
+        ref.watch(jobsRepositoryProvider),
+        _currentUserId,
+      ),
+    );
 
 // ─── DJ: quotes ───────────────────────────────────────────────────────────────
 
@@ -140,15 +140,17 @@ class DjQuotesNotifier extends _RealtimeNotifier<List<DjQuote>> {
 
 final djQuotesProvider =
     StateNotifierProvider<DjQuotesNotifier, AsyncValue<List<DjQuote>>>(
-  (ref) => DjQuotesNotifier(
-    ref.watch(supabaseClientProvider),
-    ref.watch(jobsRepositoryProvider),
-    _currentUserId,
-  ),
-);
+      (ref) => DjQuotesNotifier(
+        ref.watch(supabaseClientProvider),
+        ref.watch(jobsRepositoryProvider),
+        _currentUserId,
+      ),
+    );
 
 final djExtJobsProvider = FutureProvider<List<ExtJob>>((ref) async {
-  final list = await ref.watch(jobsRepositoryProvider).fetchDjExtJobs(_currentUserId);
+  final list = await ref
+      .watch(jobsRepositoryProvider)
+      .fetchDjExtJobs(_currentUserId);
   list.sort((a, b) => a.date.compareTo(b.date));
   return list;
 });
@@ -175,7 +177,9 @@ final filteredDjJobsProvider = Provider<AsyncValue<List<Job>>>((ref) {
     if (!filtersEnabled || filters == null || !filters.hasActiveFilters) {
       return jobList;
     }
-    return jobList.where((job) => !_isJobExcludedByFilters(job, filters)).toList();
+    return jobList
+        .where((job) => !_isJobExcludedByFilters(job, filters))
+        .toList();
   });
 });
 
@@ -192,7 +196,9 @@ bool _isJobExcludedByFilters(Job job, DjJobFilters f) {
 
   // Genre: exclude if ANY of the job's genres is in the excluded list
   // (matches web app: job.genres.some(...) not .every(...))
-  if (f.excludedGenres.isNotEmpty && job.genres != null && job.genres!.isNotEmpty) {
+  if (f.excludedGenres.isNotEmpty &&
+      job.genres != null &&
+      job.genres!.isNotEmpty) {
     if (job.genres!.any((g) => f.excludedGenres.contains(g))) return true;
   }
 
@@ -203,8 +209,14 @@ bool _isJobExcludedByFilters(Job job, DjJobFilters f) {
     if (!f.allowedWeekdays!.contains(jsWeekday)) return true;
   }
 
-  if (f.minBudget != null && job.budgetEnd != null && job.budgetEnd! < f.minBudget!) return true;
-  if (f.maxBudget != null && job.budgetStart != null && job.budgetStart! > f.maxBudget!) return true;
+  if (f.minBudget != null &&
+      job.budgetEnd != null &&
+      job.budgetEnd! < f.minBudget!)
+    return true;
+  if (f.maxBudget != null &&
+      job.budgetStart != null &&
+      job.budgetStart! > f.maxBudget!)
+    return true;
   if (f.minGuests != null && job.guestsAmount < f.minGuests!) return true;
   if (f.maxGuests != null && job.guestsAmount > f.maxGuests!) return true;
 
@@ -229,6 +241,7 @@ final wonDjQuotesProvider = Provider<AsyncValue<List<DjQuote>>>((ref) {
         if (q.pendingAction == JobActionType.contactCustomerPlanned) return 1;
         return 2;
       }
+
       final tierDiff = actionTier(a).compareTo(actionTier(b));
       if (tierDiff != 0) return tierDiff;
       return a.job.date.compareTo(b.job.date);
@@ -239,11 +252,14 @@ final wonDjQuotesProvider = Provider<AsyncValue<List<DjQuote>>>((ref) {
 
 final expiredDjQuotesProvider = Provider<AsyncValue<List<DjQuote>>>((ref) {
   return ref.watch(djQuotesProvider).whenData((quotes) {
-    final list = quotes
-        .where((q) =>
-            q.status == QuoteStatus.lost ||
-            q.status == QuoteStatus.overwritten)
-        .toList();
+    final list =
+        quotes
+            .where(
+              (q) =>
+                  q.status == QuoteStatus.lost ||
+                  q.status == QuoteStatus.overwritten,
+            )
+            .toList();
     list.sort((a, b) => a.job.date.compareTo(b.job.date));
     return list;
   });
@@ -292,7 +308,9 @@ class NewInstrumentalistJobsNotifier extends _RealtimeNotifier<List<Job>> {
 }
 
 final newInstrumentalistJobsProvider = StateNotifierProvider<
-    NewInstrumentalistJobsNotifier, AsyncValue<List<Job>>>(
+  NewInstrumentalistJobsNotifier,
+  AsyncValue<List<Job>>
+>(
   (ref) => NewInstrumentalistJobsNotifier(
     ref.watch(supabaseClientProvider),
     ref.watch(jobsRepositoryProvider),
@@ -311,8 +329,9 @@ final instrumentalistExtJobsProvider = FutureProvider<List<Job>>((ref) {
 /// → optaget/taken (another musician has an active offer — can't bid)
 /// → dato-konflikt (musician already has a won job on the same date — can't bid).
 /// Mirrors web app priority logic.
-final combinedInstrumentalistJobsProvider =
-    Provider<AsyncValue<List<Job>>>((ref) {
+final combinedInstrumentalistJobsProvider = Provider<AsyncValue<List<Job>>>((
+  ref,
+) {
   final regular = ref.watch(newInstrumentalistJobsProvider);
   final ext = ref.watch(instrumentalistExtJobsProvider);
 
@@ -323,13 +342,17 @@ final combinedInstrumentalistJobsProvider =
   if (ext is AsyncError) return ext;
 
   // Dates on which the musician has already won a job → date conflict
-  final wonDates = ref.watch(wonServiceOffersProvider)
-      .valueOrNull
-      ?.map((o) => o.job.date)
-      .toSet() ?? const <DateTime>{};
+  final wonDates =
+      ref
+          .watch(wonServiceOffersProvider)
+          .valueOrNull
+          ?.map((o) => o.job.date)
+          .toSet() ??
+      const <DateTime>{};
 
   bool isOccupied(Job j) => wonDates.any(
-    (d) => d.year == j.date.year && d.month == j.date.month && d.day == j.date.day,
+    (d) =>
+        d.year == j.date.year && d.month == j.date.month && d.day == j.date.day,
   );
 
   // Tier 0 = eligible (shown first)
@@ -341,17 +364,16 @@ final combinedInstrumentalistJobsProvider =
     return 0;
   }
 
-  final combined = <Job>[
-    ...regular.valueOrNull ?? [],
-    ...ext.valueOrNull ?? [],
-  ]
-    .map((j) => isOccupied(j) ? j.withDateConflict() : j)
-    .toList()
-    ..sort((a, b) {
-        final tierDiff = tier(a).compareTo(tier(b));
-        if (tierDiff != 0) return tierDiff;
-        return b.createdAt.compareTo(a.createdAt); // newest first within tier
-      });
+  final combined =
+      <Job>[
+          ...regular.valueOrNull ?? [],
+          ...ext.valueOrNull ?? [],
+        ].map((j) => isOccupied(j) ? j.withDateConflict() : j).toList()
+        ..sort((a, b) {
+          final tierDiff = tier(a).compareTo(tier(b));
+          if (tierDiff != 0) return tierDiff;
+          return b.createdAt.compareTo(a.createdAt); // newest first within tier
+        });
 
   return AsyncData(combined);
 });
@@ -367,8 +389,7 @@ class ServiceOffersNotifier extends _RealtimeNotifier<List<ServiceOffer>> {
   final String _userId;
 
   @override
-  Future<List<ServiceOffer>> fetch() =>
-      _repository.fetchServiceOffers(_userId);
+  Future<List<ServiceOffer>> fetch() => _repository.fetchServiceOffers(_userId);
 
   @override
   void subscribeToRealtime() {
@@ -386,8 +407,10 @@ class ServiceOffersNotifier extends _RealtimeNotifier<List<ServiceOffer>> {
   }
 }
 
-final serviceOffersProvider =
-    StateNotifierProvider<ServiceOffersNotifier, AsyncValue<List<ServiceOffer>>>(
+final serviceOffersProvider = StateNotifierProvider<
+  ServiceOffersNotifier,
+  AsyncValue<List<ServiceOffer>>
+>(
   (ref) => ServiceOffersNotifier(
     ref.watch(supabaseClientProvider),
     ref.watch(jobsRepositoryProvider),
@@ -395,17 +418,23 @@ final serviceOffersProvider =
   ),
 );
 
-final sentServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((ref) {
+final sentServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((
+  ref,
+) {
   return ref.watch(serviceOffersProvider).whenData((offers) {
-    final list = offers.where((o) => o.status == ServiceOfferStatus.sent).toList();
+    final list =
+        offers.where((o) => o.status == ServiceOfferStatus.sent).toList();
     list.sort((a, b) => a.job.date.compareTo(b.job.date));
     return list;
   });
 });
 
-final wonServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((ref) {
+final wonServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((
+  ref,
+) {
   return ref.watch(serviceOffersProvider).whenData((offers) {
-    final list = offers.where((o) => o.status == ServiceOfferStatus.won).toList();
+    final list =
+        offers.where((o) => o.status == ServiceOfferStatus.won).toList();
     list.sort((a, b) {
       // Tier 0: red actions first, tier 1: planned contact, tier 2: no action
       int actionTier(ServiceOffer o) {
@@ -413,6 +442,7 @@ final wonServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((ref) 
         if (o.pendingAction == JobActionType.contactCustomerPlanned) return 1;
         return 2;
       }
+
       final tierDiff = actionTier(a).compareTo(actionTier(b));
       if (tierDiff != 0) return tierDiff;
       return a.job.date.compareTo(b.job.date);
@@ -421,10 +451,12 @@ final wonServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((ref) 
   });
 });
 
-final expiredServiceOffersProvider =
-    Provider<AsyncValue<List<ServiceOffer>>>((ref) {
+final expiredServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((
+  ref,
+) {
   return ref.watch(serviceOffersProvider).whenData((offers) {
-    final list = offers.where((o) => o.status == ServiceOfferStatus.lost).toList();
+    final list =
+        offers.where((o) => o.status == ServiceOfferStatus.lost).toList();
     list.sort((a, b) => a.job.date.compareTo(b.job.date));
     return list;
   });
@@ -439,24 +471,40 @@ final jobDetailProvider = FutureProvider.family<Job, int>((ref, jobId) {
 // ─── Invoice status providers ─────────────────────────────────────────────────
 
 /// first_invoice_paid for a regular job (DJ quote or instrumentalist offer).
-final invoiceStatusByJobIdProvider =
-    FutureProvider.autoDispose.family<bool?, int>((ref, jobId) {
-  return ref.watch(jobsRepositoryProvider).fetchInvoiceStatus(jobId: jobId);
-});
+final invoiceStatusByJobIdProvider = FutureProvider.autoDispose
+    .family<bool?, int>((ref, jobId) {
+      return ref.watch(jobsRepositoryProvider).fetchInvoiceStatus(jobId: jobId);
+    });
 
 /// first_invoice_paid for an ext job (instrumentalist offer on ext job).
-final invoiceStatusByExtJobIdProvider =
-    FutureProvider.autoDispose.family<bool?, int>((ref, extJobId) {
-  return ref
-      .watch(jobsRepositoryProvider)
-      .fetchInvoiceStatus(extJobId: extJobId);
-});
+final invoiceStatusByExtJobIdProvider = FutureProvider.autoDispose
+    .family<bool?, int>((ref, extJobId) {
+      return ref
+          .watch(jobsRepositoryProvider)
+          .fetchInvoiceStatus(extJobId: extJobId);
+    });
+
+// ─── Event address providers ──────────────────────────────────────────────────
+// The precise event address (JobMetadata.event_address) for a WON job/offer.
+// Only the winning DJ/musician can read it; returns null otherwise.
+
+final eventAddressByJobIdProvider = FutureProvider.autoDispose
+    .family<String?, int>((ref, jobId) {
+      return ref.watch(jobsRepositoryProvider).fetchEventAddress(jobId: jobId);
+    });
+
+final eventAddressByExtJobIdProvider = FutureProvider.autoDispose
+    .family<String?, int>((ref, extJobId) {
+      return ref
+          .watch(jobsRepositoryProvider)
+          .fetchEventAddress(extJobId: extJobId);
+    });
 
 // ─── Mutation notifiers ───────────────────────────────────────────────────────
 
 class CreateDjQuoteNotifier extends StateNotifier<AsyncValue<DjQuote?>> {
   CreateDjQuoteNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -491,14 +539,14 @@ class CreateDjQuoteNotifier extends StateNotifier<AsyncValue<DjQuote?>> {
   }
 }
 
-final createDjQuoteProvider =
-    StateNotifierProvider.autoDispose<CreateDjQuoteNotifier, AsyncValue<DjQuote?>>(
-  (ref) => CreateDjQuoteNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+final createDjQuoteProvider = StateNotifierProvider.autoDispose<
+  CreateDjQuoteNotifier,
+  AsyncValue<DjQuote?>
+>((ref) => CreateDjQuoteNotifier(ref.watch(jobsRepositoryProvider), ref));
 
 class RejectDjJobNotifier extends StateNotifier<AsyncValue<void>> {
   RejectDjJobNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -507,7 +555,10 @@ class RejectDjJobNotifier extends StateNotifier<AsyncValue<void>> {
     state = const AsyncLoading();
     try {
       await _repository.rejectDjJob(
-          userId: _currentUserId, jobId: jobId, reasons: reasons);
+        userId: _currentUserId,
+        jobId: jobId,
+        reasons: reasons,
+      );
       state = const AsyncData(null);
       _ref.read(newDjJobsProvider.notifier).silentRefresh();
       return true;
@@ -520,13 +571,13 @@ class RejectDjJobNotifier extends StateNotifier<AsyncValue<void>> {
 
 final rejectDjJobProvider =
     StateNotifierProvider.autoDispose<RejectDjJobNotifier, AsyncValue<void>>(
-  (ref) => RejectDjJobNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+      (ref) => RejectDjJobNotifier(ref.watch(jobsRepositoryProvider), ref),
+    );
 
 class CreateServiceOfferNotifier
     extends StateNotifier<AsyncValue<ServiceOffer?>> {
   CreateServiceOfferNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -563,16 +614,15 @@ class CreateServiceOfferNotifier
 }
 
 final createServiceOfferProvider = StateNotifierProvider.autoDispose<
-    CreateServiceOfferNotifier, AsyncValue<ServiceOffer?>>(
-  (ref) =>
-      CreateServiceOfferNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+  CreateServiceOfferNotifier,
+  AsyncValue<ServiceOffer?>
+>((ref) => CreateServiceOfferNotifier(ref.watch(jobsRepositoryProvider), ref));
 
 // ─── Contact customer notifiers ───────────────────────────────────────────────
 
 class MarkJobContactedNotifier extends StateNotifier<AsyncValue<void>> {
   MarkJobContactedNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -598,12 +648,12 @@ class MarkJobContactedNotifier extends StateNotifier<AsyncValue<void>> {
 // when it tries to set `state` or invalidate dependent providers.
 final markJobContactedProvider =
     StateNotifierProvider<MarkJobContactedNotifier, AsyncValue<void>>(
-  (ref) => MarkJobContactedNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+      (ref) => MarkJobContactedNotifier(ref.watch(jobsRepositoryProvider), ref),
+    );
 
 class MarkExtJobContactedNotifier extends StateNotifier<AsyncValue<void>> {
   MarkExtJobContactedNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -622,15 +672,15 @@ class MarkExtJobContactedNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final markExtJobContactedProvider =
-    StateNotifierProvider<MarkExtJobContactedNotifier, AsyncValue<void>>(
-  (ref) =>
-      MarkExtJobContactedNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+final markExtJobContactedProvider = StateNotifierProvider<
+  MarkExtJobContactedNotifier,
+  AsyncValue<void>
+>((ref) => MarkExtJobContactedNotifier(ref.watch(jobsRepositoryProvider), ref));
 
-class MarkServiceOfferContactedNotifier extends StateNotifier<AsyncValue<void>> {
+class MarkServiceOfferContactedNotifier
+    extends StateNotifier<AsyncValue<void>> {
   MarkServiceOfferContactedNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -649,17 +699,19 @@ class MarkServiceOfferContactedNotifier extends StateNotifier<AsyncValue<void>> 
   }
 }
 
-final markServiceOfferContactedProvider = StateNotifierProvider<
-    MarkServiceOfferContactedNotifier, AsyncValue<void>>(
-  (ref) => MarkServiceOfferContactedNotifier(
-      ref.watch(jobsRepositoryProvider), ref),
-);
+final markServiceOfferContactedProvider =
+    StateNotifierProvider<MarkServiceOfferContactedNotifier, AsyncValue<void>>(
+      (ref) => MarkServiceOfferContactedNotifier(
+        ref.watch(jobsRepositoryProvider),
+        ref,
+      ),
+    );
 
 // ─── Planned contact notifiers ────────────────────────────────────────────────
 
 class SetJobPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
   SetJobPlannedContactNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -681,12 +733,13 @@ class SetJobPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
 
 final setJobPlannedContactProvider =
     StateNotifierProvider<SetJobPlannedContactNotifier, AsyncValue<void>>(
-  (ref) => SetJobPlannedContactNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+      (ref) =>
+          SetJobPlannedContactNotifier(ref.watch(jobsRepositoryProvider), ref),
+    );
 
 class SetExtJobPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
   SetExtJobPlannedContactNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -707,13 +760,16 @@ class SetExtJobPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
 
 final setExtJobPlannedContactProvider =
     StateNotifierProvider<SetExtJobPlannedContactNotifier, AsyncValue<void>>(
-  (ref) =>
-      SetExtJobPlannedContactNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+      (ref) => SetExtJobPlannedContactNotifier(
+        ref.watch(jobsRepositoryProvider),
+        ref,
+      ),
+    );
 
-class SetServiceOfferPlannedContactNotifier extends StateNotifier<AsyncValue<void>> {
+class SetServiceOfferPlannedContactNotifier
+    extends StateNotifier<AsyncValue<void>> {
   SetServiceOfferPlannedContactNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -732,17 +788,21 @@ class SetServiceOfferPlannedContactNotifier extends StateNotifier<AsyncValue<voi
   }
 }
 
-final setServiceOfferPlannedContactProvider =
-    StateNotifierProvider<SetServiceOfferPlannedContactNotifier, AsyncValue<void>>(
+final setServiceOfferPlannedContactProvider = StateNotifierProvider<
+  SetServiceOfferPlannedContactNotifier,
+  AsyncValue<void>
+>(
   (ref) => SetServiceOfferPlannedContactNotifier(
-      ref.watch(jobsRepositoryProvider), ref),
+    ref.watch(jobsRepositoryProvider),
+    ref,
+  ),
 );
 
 // ─── Ready for billing notifiers ──────────────────────────────────────────────
 
 class MarkJobReadyForBillingNotifier extends StateNotifier<AsyncValue<void>> {
   MarkJobReadyForBillingNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -763,14 +823,17 @@ class MarkJobReadyForBillingNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final markJobReadyForBillingProvider = StateNotifierProvider.autoDispose<
-    MarkJobReadyForBillingNotifier, AsyncValue<void>>(
+  MarkJobReadyForBillingNotifier,
+  AsyncValue<void>
+>(
   (ref) =>
       MarkJobReadyForBillingNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
-class MarkExtJobReadyForBillingNotifier extends StateNotifier<AsyncValue<void>> {
+class MarkExtJobReadyForBillingNotifier
+    extends StateNotifier<AsyncValue<void>> {
   MarkExtJobReadyForBillingNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -790,16 +853,17 @@ class MarkExtJobReadyForBillingNotifier extends StateNotifier<AsyncValue<void>> 
 }
 
 final markExtJobReadyForBillingProvider = StateNotifierProvider.autoDispose<
-    MarkExtJobReadyForBillingNotifier, AsyncValue<void>>(
-  (ref) => MarkExtJobReadyForBillingNotifier(
-      ref.watch(jobsRepositoryProvider), ref),
+  MarkExtJobReadyForBillingNotifier,
+  AsyncValue<void>
+>(
+  (ref) =>
+      MarkExtJobReadyForBillingNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
 // ─── Jeg er klar notifiers ────────────────────────────────────────────────────
 
 class ResolveEarlySetupNotifier extends StateNotifier<AsyncValue<void>> {
-  ResolveEarlySetupNotifier(this._repository)
-      : super(const AsyncData(null));
+  ResolveEarlySetupNotifier(this._repository) : super(const AsyncData(null));
 
   final JobsRepository _repository;
 
@@ -816,14 +880,14 @@ class ResolveEarlySetupNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final resolveEarlySetupProvider = StateNotifierProvider<
-    ResolveEarlySetupNotifier, AsyncValue<void>>(
-  (ref) => ResolveEarlySetupNotifier(ref.watch(jobsRepositoryProvider)),
-);
+final resolveEarlySetupProvider =
+    StateNotifierProvider<ResolveEarlySetupNotifier, AsyncValue<void>>(
+      (ref) => ResolveEarlySetupNotifier(ref.watch(jobsRepositoryProvider)),
+    );
 
 class ConfirmDjReadyNotifier extends StateNotifier<AsyncValue<void>> {
   ConfirmDjReadyNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -842,14 +906,14 @@ class ConfirmDjReadyNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final confirmDjReadyProvider = StateNotifierProvider.autoDispose<
-    ConfirmDjReadyNotifier, AsyncValue<void>>(
-  (ref) => ConfirmDjReadyNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+final confirmDjReadyProvider =
+    StateNotifierProvider.autoDispose<ConfirmDjReadyNotifier, AsyncValue<void>>(
+      (ref) => ConfirmDjReadyNotifier(ref.watch(jobsRepositoryProvider), ref),
+    );
 
 class ConfirmExtJobDjReadyNotifier extends StateNotifier<AsyncValue<void>> {
   ConfirmExtJobDjReadyNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -869,26 +933,35 @@ class ConfirmExtJobDjReadyNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final confirmExtJobDjReadyProvider = StateNotifierProvider.autoDispose<
-    ConfirmExtJobDjReadyNotifier, AsyncValue<void>>(
-  (ref) =>
-      ConfirmExtJobDjReadyNotifier(ref.watch(jobsRepositoryProvider), ref),
+  ConfirmExtJobDjReadyNotifier,
+  AsyncValue<void>
+>(
+  (ref) => ConfirmExtJobDjReadyNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
 // ─── Extra hours notifiers ────────────────────────────────────────────────────
 
 class AddExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   AddExtraHoursNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
 
-  Future<bool> add(int quoteId,
-      {required double extraHours, required int pricePerHour, required int newTotalPrice}) async {
+  Future<bool> add(
+    int quoteId, {
+    required double extraHours,
+    required int pricePerHour,
+    required int newTotalPrice,
+  }) async {
     state = const AsyncLoading();
     try {
-      await _repository.addExtraHours(quoteId,
-          extraHours: extraHours, pricePerHour: pricePerHour, newTotalPrice: newTotalPrice);
+      await _repository.addExtraHours(
+        quoteId,
+        extraHours: extraHours,
+        pricePerHour: pricePerHour,
+        newTotalPrice: newTotalPrice,
+      );
       state = const AsyncData(null);
       _ref.read(djQuotesProvider.notifier).silentRefresh();
       return true;
@@ -899,14 +972,14 @@ class AddExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final addExtraHoursProvider = StateNotifierProvider.autoDispose<
-    AddExtraHoursNotifier, AsyncValue<void>>(
-  (ref) => AddExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+final addExtraHoursProvider =
+    StateNotifierProvider.autoDispose<AddExtraHoursNotifier, AsyncValue<void>>(
+      (ref) => AddExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
+    );
 
 class DeleteExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   DeleteExtraHoursNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -926,23 +999,31 @@ class DeleteExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final deleteExtraHoursProvider = StateNotifierProvider.autoDispose<
-    DeleteExtraHoursNotifier, AsyncValue<void>>(
-  (ref) => DeleteExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+  DeleteExtraHoursNotifier,
+  AsyncValue<void>
+>((ref) => DeleteExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref));
 
 class AddExtJobExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   AddExtJobExtraHoursNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
 
-  Future<bool> add(int extJobId,
-      {required double extraHours, required int pricePerHour, required int newTotalPrice}) async {
+  Future<bool> add(
+    int extJobId, {
+    required double extraHours,
+    required int pricePerHour,
+    required int newTotalPrice,
+  }) async {
     state = const AsyncLoading();
     try {
-      await _repository.addExtJobExtraHours(extJobId,
-          extraHours: extraHours, pricePerHour: pricePerHour, newTotalPrice: newTotalPrice);
+      await _repository.addExtJobExtraHours(
+        extJobId,
+        extraHours: extraHours,
+        pricePerHour: pricePerHour,
+        newTotalPrice: newTotalPrice,
+      );
       state = const AsyncData(null);
       _ref.invalidate(djExtJobsProvider);
       return true;
@@ -954,13 +1035,13 @@ class AddExtJobExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final addExtJobExtraHoursProvider = StateNotifierProvider.autoDispose<
-    AddExtJobExtraHoursNotifier, AsyncValue<void>>(
-  (ref) => AddExtJobExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+  AddExtJobExtraHoursNotifier,
+  AsyncValue<void>
+>((ref) => AddExtJobExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref));
 
 class DeleteExtJobExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   DeleteExtJobExtraHoursNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -980,13 +1061,16 @@ class DeleteExtJobExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final deleteExtJobExtraHoursProvider = StateNotifierProvider.autoDispose<
-    DeleteExtJobExtraHoursNotifier, AsyncValue<void>>(
-  (ref) => DeleteExtJobExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
+  DeleteExtJobExtraHoursNotifier,
+  AsyncValue<void>
+>(
+  (ref) =>
+      DeleteExtJobExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
 class EditDjQuoteNotifier extends StateNotifier<AsyncValue<DjQuote?>> {
   EditDjQuoteNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -1020,13 +1104,13 @@ class EditDjQuoteNotifier extends StateNotifier<AsyncValue<DjQuote?>> {
 }
 
 final editDjQuoteProvider = StateNotifierProvider.autoDispose<
-    EditDjQuoteNotifier, AsyncValue<DjQuote?>>(
-  (ref) => EditDjQuoteNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+  EditDjQuoteNotifier,
+  AsyncValue<DjQuote?>
+>((ref) => EditDjQuoteNotifier(ref.watch(jobsRepositoryProvider), ref));
 
 class ConfirmMusicianReadyNotifier extends StateNotifier<AsyncValue<void>> {
   ConfirmMusicianReadyNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -1046,16 +1130,17 @@ class ConfirmMusicianReadyNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final confirmMusicianReadyProvider = StateNotifierProvider.autoDispose<
-    ConfirmMusicianReadyNotifier, AsyncValue<void>>(
-  (ref) =>
-      ConfirmMusicianReadyNotifier(ref.watch(jobsRepositoryProvider), ref),
+  ConfirmMusicianReadyNotifier,
+  AsyncValue<void>
+>(
+  (ref) => ConfirmMusicianReadyNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
 // ─── Save DJ Notes ────────────────────────────────────────────────────────────
 
 class SaveDjNotesNotifier extends StateNotifier<AsyncValue<void>> {
   SaveDjNotesNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -1074,55 +1159,64 @@ class SaveDjNotesNotifier extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final saveDjNotesProvider = StateNotifierProvider.autoDispose<
-    SaveDjNotesNotifier, AsyncValue<void>>(
-  (ref) => SaveDjNotesNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+final saveDjNotesProvider =
+    StateNotifierProvider.autoDispose<SaveDjNotesNotifier, AsyncValue<void>>(
+      (ref) => SaveDjNotesNotifier(ref.watch(jobsRepositoryProvider), ref),
+    );
 
 // ─── Date conflict check ──────────────────────────────────────────────────────
 
 /// Returns true if the current musician already has a sent/won offer on [date].
-final dateConflictProvider =
-    FutureProvider.autoDispose.family<bool, DateTime>((ref, date) async {
-  return ref.watch(jobsRepositoryProvider).hasDateConflict(_currentUserId, date);
+final dateConflictProvider = FutureProvider.autoDispose.family<bool, DateTime>((
+  ref,
+  date,
+) async {
+  return ref
+      .watch(jobsRepositoryProvider)
+      .hasDateConflict(_currentUserId, date);
 });
 
 // ─── Service offers for a job (DJ view) ─────────────────────────────────────
 
-final serviceOffersForJobProvider =
-    FutureProvider.autoDispose.family<List<ServiceOffer>, int>((ref, jobId) {
-  return ref.watch(jobsRepositoryProvider).fetchServiceOffersForJob(jobId);
-});
+final serviceOffersForJobProvider = FutureProvider.autoDispose
+    .family<List<ServiceOffer>, int>((ref, jobId) {
+      return ref.watch(jobsRepositoryProvider).fetchServiceOffersForJob(jobId);
+    });
 
 // ─── Song requests for a job (DJ view) ───────────────────────────────────────
 
-final songRequestsForJobProvider =
-    FutureProvider.autoDispose.family<List<SongRequest>, int>((ref, jobId) {
-  return ref.watch(jobsRepositoryProvider).fetchSongRequestsForJob(jobId);
-});
+final songRequestsForJobProvider = FutureProvider.autoDispose
+    .family<List<SongRequest>, int>((ref, jobId) {
+      return ref.watch(jobsRepositoryProvider).fetchSongRequestsForJob(jobId);
+    });
 
-final songRequestsForExtJobProvider =
-    FutureProvider.autoDispose.family<List<SongRequest>, int>((ref, extJobId) {
-  return ref.watch(jobsRepositoryProvider).fetchSongRequestsForExtJob(extJobId);
-});
+final songRequestsForExtJobProvider = FutureProvider.autoDispose
+    .family<List<SongRequest>, int>((ref, extJobId) {
+      return ref
+          .watch(jobsRepositoryProvider)
+          .fetchSongRequestsForExtJob(extJobId);
+    });
 
 // ─── Won DJ info for a job (Musician view) ───────────────────────────────────
 
 final wonDjInfoForJobProvider = FutureProvider.autoDispose
-    .family<({String djId, String fullName, String? phone})?, int>((ref, jobId) {
-  return ref.watch(jobsRepositoryProvider).fetchWonDjInfoForJob(jobId);
-});
+    .family<({String djId, String fullName, String? phone})?, int>((
+      ref,
+      jobId,
+    ) {
+      return ref.watch(jobsRepositoryProvider).fetchWonDjInfoForJob(jobId);
+    });
 
 final userProfileImageProvider = FutureProvider.autoDispose
     .family<String?, String>((ref, userId) {
-  return ref.watch(jobsRepositoryProvider).fetchProfileImageUrl(userId);
-});
+      return ref.watch(jobsRepositoryProvider).fetchProfileImageUrl(userId);
+    });
 
 // ─── Musician extra hours ─────────────────────────────────────────────────────
 
 class AddMusicianExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   AddMusicianExtraHoursNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -1142,7 +1236,9 @@ class AddMusicianExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final addMusicianExtraHoursProvider = StateNotifierProvider.autoDispose<
-    AddMusicianExtraHoursNotifier, AsyncValue<void>>(
+  AddMusicianExtraHoursNotifier,
+  AsyncValue<void>
+>(
   (ref) =>
       AddMusicianExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
@@ -1167,12 +1263,13 @@ class SetSpecialRequestFeeNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final setSpecialRequestFeeProvider = StateNotifierProvider.autoDispose<
-    SetSpecialRequestFeeNotifier, AsyncValue<void>>(
-  (ref) => SetSpecialRequestFeeNotifier(ref.watch(jobsRepositoryProvider)),
-);
+  SetSpecialRequestFeeNotifier,
+  AsyncValue<void>
+>((ref) => SetSpecialRequestFeeNotifier(ref.watch(jobsRepositoryProvider)));
 
 class RemoveSpecialRequestFeeNotifier extends StateNotifier<AsyncValue<void>> {
-  RemoveSpecialRequestFeeNotifier(this._repository) : super(const AsyncData(null));
+  RemoveSpecialRequestFeeNotifier(this._repository)
+    : super(const AsyncData(null));
   final JobsRepository _repository;
 
   Future<bool> remove(int offerId) async {
@@ -1189,15 +1286,15 @@ class RemoveSpecialRequestFeeNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final removeSpecialRequestFeeProvider = StateNotifierProvider.autoDispose<
-    RemoveSpecialRequestFeeNotifier, AsyncValue<void>>(
-  (ref) => RemoveSpecialRequestFeeNotifier(ref.watch(jobsRepositoryProvider)),
-);
+  RemoveSpecialRequestFeeNotifier,
+  AsyncValue<void>
+>((ref) => RemoveSpecialRequestFeeNotifier(ref.watch(jobsRepositoryProvider)));
 
 // ─── Musician notes ───────────────────────────────────────────────────────────
 
 class SaveMusicianNotesNotifier extends StateNotifier<AsyncValue<void>> {
   SaveMusicianNotesNotifier(this._repository, this._ref)
-      : super(const AsyncData(null));
+    : super(const AsyncData(null));
 
   final JobsRepository _repository;
   final Ref _ref;
@@ -1217,9 +1314,9 @@ class SaveMusicianNotesNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final saveMusicianNotesProvider = StateNotifierProvider.autoDispose<
-    SaveMusicianNotesNotifier, AsyncValue<void>>(
-  (ref) => SaveMusicianNotesNotifier(ref.watch(jobsRepositoryProvider), ref),
-);
+  SaveMusicianNotesNotifier,
+  AsyncValue<void>
+>((ref) => SaveMusicianNotesNotifier(ref.watch(jobsRepositoryProvider), ref));
 
 // ─── Action counts ────────────────────────────────────────────────────────────
 
@@ -1238,9 +1335,11 @@ final djExtJobActionCountProvider = Provider<int>((ref) {
 });
 
 /// Combined count — kept for backwards compat if needed elsewhere.
-final djWonActionCountProvider = Provider<int>((ref) =>
-    ref.watch(djQuoteActionCountProvider) +
-    ref.watch(djExtJobActionCountProvider));
+final djWonActionCountProvider = Provider<int>(
+  (ref) =>
+      ref.watch(djQuoteActionCountProvider) +
+      ref.watch(djExtJobActionCountProvider),
+);
 
 /// Number of won musician service offers that need an action.
 /// Used for the red badge on the "Jobs accepteret" tab and the Jobs nav item.

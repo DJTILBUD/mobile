@@ -79,6 +79,11 @@ abstract class JobsRepository {
   /// Pass exactly one of [jobId] or [extJobId].
   Future<bool?> fetchInvoiceStatus({int? jobId, int? extJobId});
 
+  /// The customer's precise event address (provided after booking), readable
+  /// only by the winning DJ/musician. Returns null when none/unauthorized.
+  /// Pass exactly one of [jobId] or [extJobId].
+  Future<String?> fetchEventAddress({int? jobId, int? extJobId});
+
   /// Marks a regular job as ready for billing (DJ flow, step 2).
   Future<void> markJobReadyForBilling(int jobId);
 
@@ -100,16 +105,24 @@ abstract class JobsRepository {
 
   /// Adds or updates extra hours on a won DJ quote (within 2-day post-event window).
   /// [newTotalPrice] is the expected base + extra-hours total; the server re-validates it.
-  Future<void> addExtraHours(int quoteId,
-      {required double extraHours, required int pricePerHour, required int newTotalPrice});
+  Future<void> addExtraHours(
+    int quoteId, {
+    required double extraHours,
+    required int pricePerHour,
+    required int newTotalPrice,
+  });
 
   /// Removes extra hours from a won DJ quote.
   Future<void> deleteExtraHours(int quoteId);
 
   /// Adds or updates extra hours on an ext job the DJ is assigned to.
   /// [newTotalPrice] is the expected new full_amount; the server re-validates it.
-  Future<void> addExtJobExtraHours(int extJobId,
-      {required double extraHours, required int pricePerHour, required int newTotalPrice});
+  Future<void> addExtJobExtraHours(
+    int extJobId, {
+    required double extraHours,
+    required int pricePerHour,
+    required int newTotalPrice,
+  });
 
   /// Removes extra hours from an ext job.
   Future<void> deleteExtJobExtraHours(int extJobId);
@@ -131,7 +144,9 @@ abstract class JobsRepository {
 
   /// Fetches the won DJ's name, phone, and user ID for an internal job (for musician view).
   /// Returns null if no won quote exists yet.
-  Future<({String djId, String fullName, String? phone})?> fetchWonDjInfoForJob(int jobId);
+  Future<({String djId, String fullName, String? phone})?> fetchWonDjInfoForJob(
+    int jobId,
+  );
 
   /// Fetches the profile image URL for any user from UserFiles.
   /// Returns null if no profile image has been uploaded.

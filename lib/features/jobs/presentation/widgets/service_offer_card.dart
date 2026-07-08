@@ -8,7 +8,12 @@ import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 
 class ServiceOfferCard extends StatelessWidget {
-  const ServiceOfferCard({super.key, required this.offer, this.onTap, this.isPlayed = false});
+  const ServiceOfferCard({
+    super.key,
+    required this.offer,
+    this.onTap,
+    this.isPlayed = false,
+  });
 
   final ServiceOffer offer;
   final VoidCallback? onTap;
@@ -31,7 +36,9 @@ class ServiceOfferCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(
-            horizontal: DSSpacing.s4, vertical: DSSpacing.s2),
+          horizontal: DSSpacing.s4,
+          vertical: DSSpacing.s2,
+        ),
         decoration: BoxDecoration(
           color: c.bg.surface,
           borderRadius: BorderRadius.circular(DSRadius.lg),
@@ -61,7 +68,11 @@ class ServiceOfferCard extends StatelessWidget {
                       // Header: event type + meta + date block
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
-                            DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          0,
+                        ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -71,8 +82,9 @@ class ServiceOfferCard extends StatelessWidget {
                                 children: [
                                   Text(
                                     eventTypeLabel(job.eventType),
-                                    style: DSTextStyle.headingMd
-                                        .copyWith(color: c.text.primary),
+                                    style: DSTextStyle.headingMd.copyWith(
+                                      color: c.text.primary,
+                                    ),
                                   ),
                                   const SizedBox(height: 3),
                                   JobIdBadge(
@@ -97,39 +109,52 @@ class ServiceOfferCard extends StatelessWidget {
                       // Bid row
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
-                            DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          0,
+                        ),
                         child: _BidRow(offer: offer, c: c),
                       ),
 
                       // Bottom: countdown (sent+job-sent) / action chip (won) / status badge
-                      Builder(builder: (_) {
-                        final deadline = _deadline(offer);
-                        final showCountdown =
-                            offer.status == ServiceOfferStatus.sent &&
-                                deadline != null;
-                        final showActionChip =
-                            offer.status == ServiceOfferStatus.won &&
-                                offer.pendingAction != null;
-                        Widget child;
-                        if (showCountdown) {
-                          child = _CountdownRow(deadline: deadline, c: c);
-                        } else if (showActionChip) {
-                          child = _ActionChip(action: offer.pendingAction!, c: c);
-                        } else if (offer.status == ServiceOfferStatus.sent &&
-                            !offer.isExtJob) {
-                          // Internal job, offer submitted, job not yet sent
-                          // to customer. ExtJobs don't have a customer-send
-                          // step — fall through to the status row.
-                          child = _AwaitingSendRow(c: c);
-                        } else {
-                          child = _StatusRow(offer: offer, c: c);
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(DSSpacing.s4,
-                              DSSpacing.s3, DSSpacing.s4, DSSpacing.s3),
-                          child: child,
-                        );
-                      }),
+                      Builder(
+                        builder: (_) {
+                          final deadline = _deadline(offer);
+                          final showCountdown =
+                              offer.status == ServiceOfferStatus.sent &&
+                              deadline != null;
+                          final showActionChip =
+                              offer.status == ServiceOfferStatus.won &&
+                              offer.pendingAction != null;
+                          Widget child;
+                          if (showCountdown) {
+                            child = _CountdownRow(deadline: deadline, c: c);
+                          } else if (showActionChip) {
+                            child = _ActionChip(
+                              action: offer.pendingAction!,
+                              c: c,
+                            );
+                          } else if (offer.status == ServiceOfferStatus.sent &&
+                              !offer.isExtJob) {
+                            // Internal job, offer submitted, job not yet sent
+                            // to customer. ExtJobs don't have a customer-send
+                            // step — fall through to the status row.
+                            child = _AwaitingSendRow(c: c);
+                          } else {
+                            child = _StatusRow(offer: offer, c: c);
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              DSSpacing.s4,
+                              DSSpacing.s3,
+                              DSSpacing.s4,
+                              DSSpacing.s3,
+                            ),
+                            child: child,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -145,11 +170,7 @@ class ServiceOfferCard extends StatelessWidget {
 // ─── Date Block ──────────────────────────────────────────────────────────────
 
 class _DateBlock extends StatelessWidget {
-  const _DateBlock({
-    required this.date,
-    required this.bg,
-    required this.fg,
-  });
+  const _DateBlock({required this.date, required this.bg, required this.fg});
 
   final DateTime date;
   final Color bg;
@@ -157,12 +178,13 @@ class _DateBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final day = date.day.toString();
-    final month = DateFormat('MMM', 'da_DK')
-        .format(date)
-        .replaceAll('.', '')
-        .toUpperCase();
+    final month =
+        DateFormat(
+          'MMM',
+          'da_DK',
+        ).format(date).replaceAll('.', '').toUpperCase();
     final year = date.year.toString();
 
     return Container(
@@ -221,19 +243,49 @@ class _MetaList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _MetaItem(icon: LucideIcons.mapPin, label: job.region, c: c),
         const SizedBox(height: 3),
-        _MetaItem(icon: LucideIcons.clock, label: job.timeDisplay, c: c),
+        // Time mirrors the open job card (job_card.dart, musician view): a musician_only job shows
+        // the saxofonist start (the event time is often unset -> "00:00 - 00:00"), otherwise the
+        // DJ time is labelled and the saxofonist start shown separately.
+        if (job.roleType == 'musician_only') ...[
+          _MetaItem(
+            icon:
+                job.musicianStartTime != null
+                    ? LucideIcons.music
+                    : LucideIcons.clock,
+            label:
+                job.musicianStartTime != null
+                    ? 'Saxofonist: ${job.musicianStartTime}'
+                    : job.timeDisplay,
+            c: c,
+          ),
+        ] else ...[
+          _MetaItem(
+            icon: LucideIcons.clock,
+            label: 'DJ: ${job.timeDisplay}',
+            c: c,
+          ),
+          if (job.musicianStartTime != null) ...[
+            const SizedBox(height: 3),
+            _MetaItem(
+              icon: LucideIcons.music,
+              label: 'Saxofonist: ${job.musicianStartTime}',
+              c: c,
+            ),
+          ],
+        ],
         if (job.guestsAmount > 0) ...[
           const SizedBox(height: 3),
           _MetaItem(
-              icon: LucideIcons.users,
-              label: '${job.guestsAmount} gæster',
-              c: c),
+            icon: LucideIcons.users,
+            label: '${job.guestsAmount} gæster',
+            c: c,
+          ),
         ],
       ],
     );
@@ -249,7 +301,7 @@ class _MetaItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 13, color: c.text.muted),
@@ -279,11 +331,13 @@ class _BidRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final payout = offer.musicianPayoutDkk ?? offer.priceDkk;
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DSSpacing.s3, vertical: DSSpacing.s2),
+        horizontal: DSSpacing.s3,
+        vertical: DSSpacing.s2,
+      ),
       decoration: BoxDecoration(
         color: c.brand.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(DSRadius.sm),
@@ -346,10 +400,11 @@ class _CountdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
-    final color = _isExpired
-        ? c.state.danger
-        : _isUrgent
+    final _c = DSTheme.of(context);
+    final color =
+        _isExpired
+            ? c.state.danger
+            : _isUrgent
             ? c.state.warning
             : c.text.secondary;
 
@@ -409,7 +464,7 @@ class _StatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final (label, color) = switch (offer.status) {
       ServiceOfferStatus.sent => ('Afventer', c.state.warning),
       ServiceOfferStatus.won => ('Vundet', c.state.success),
@@ -430,33 +485,33 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final (label, color, icon) = switch (action) {
       JobActionType.contactCustomer => (
-          'Kontakt kunden nu',
-          c.state.danger,
-          LucideIcons.phone,
-        ),
+        'Kontakt kunden nu',
+        c.state.danger,
+        LucideIcons.phone,
+      ),
       JobActionType.contactCustomerPlanned => (
-          'Kontakt kunden planlagt',
-          c.state.warning,
-          LucideIcons.calendarClock,
-        ),
+        'Kontakt kunden planlagt',
+        c.state.warning,
+        LucideIcons.calendarClock,
+      ),
       JobActionType.readyForBilling => (
-          'Luk aftale og send faktura',
-          c.state.danger,
-          LucideIcons.fileCheck,
-        ),
+        'Luk aftale og send faktura',
+        c.state.danger,
+        LucideIcons.fileCheck,
+      ),
       JobActionType.moveToReady => (
-          'Luk aftale og send faktura',
-          c.state.danger,
-          LucideIcons.fileCheck,
-        ),
+        'Luk aftale og send faktura',
+        c.state.danger,
+        LucideIcons.fileCheck,
+      ),
       JobActionType.confirmReady => (
-          'Bekræft klar!',
-          c.state.danger,
-          LucideIcons.checkCircle,
-        ),
+        'Bekræft klar!',
+        c.state.danger,
+        LucideIcons.checkCircle,
+      ),
     };
 
     return Row(

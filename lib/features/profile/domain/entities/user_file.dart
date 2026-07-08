@@ -4,7 +4,8 @@ enum UserFileType {
   profileVideo,
   commonVideo,
   thumbnail,
-  jobContent;
+  jobContent,
+  djMix;
 
   static UserFileType fromString(String value) {
     switch (value) {
@@ -20,6 +21,8 @@ enum UserFileType {
         return UserFileType.thumbnail;
       case 'job_content':
         return UserFileType.jobContent;
+      case 'dj_mix':
+        return UserFileType.djMix;
       default:
         return UserFileType.common;
     }
@@ -39,6 +42,8 @@ enum UserFileType {
         return 'thumbnail';
       case UserFileType.jobContent:
         return 'job_content';
+      case UserFileType.djMix:
+        return 'dj_mix';
     }
   }
 }
@@ -50,6 +55,7 @@ class UserFile {
     required this.type,
     required this.createdAt,
     this.thumbnailVideoId,
+    this.description,
   });
 
   final int id;
@@ -59,4 +65,7 @@ class UserFile {
 
   /// For thumbnail files: the ID of the video this thumbnail belongs to.
   final int? thumbnailVideoId;
+
+  /// Optional caption/title. Used by dj_mix rows (the mix label).
+  final String? description;
 }

@@ -313,9 +313,10 @@ class NotificationsService {
             router.go('/instrumentalist/home');
           }
 
-        // The "unused chat" reminder deep-links to the conversation, same as a
-        // new chat message.
+        // The "unused chat" reminder and emoji-reaction pushes deep-link to the
+        // conversation, same as a new chat message.
         case 'chat_message':
+        case 'chat_reaction':
         case 'chat_unused_reminder':
           final convId = _parseInt(data['conversation_id']);
           final chatTab =

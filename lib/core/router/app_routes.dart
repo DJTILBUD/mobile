@@ -1,5 +1,6 @@
 abstract class AppRoutes {
   static const login = 'login';
+  static const signup = 'signup';
   static const profileSetup = 'profile-setup';
   static const forgotPassword = 'forgot-password';
   static const djHome = 'dj-home';
@@ -28,6 +29,7 @@ abstract class AppRoutes {
   static const adminMessages = 'admin-messages';
   static const feedback = 'feedback';
   static const faq = 'faq';
+  static const terms = 'terms';
   static const notificationSettings = 'notification-settings';
   static const onboarding = 'onboarding';
 }

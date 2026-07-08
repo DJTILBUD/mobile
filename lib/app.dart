@@ -15,6 +15,7 @@ import 'package:dj_tilbud_app/core/theme/theme_provider.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/first_win/presentation/providers/first_win_provider.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/screens/login_screen.dart';
+import 'package:dj_tilbud_app/features/auth/presentation/screens/signup_screen.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/screens/profile_setup_screen.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/conversation.dart';
@@ -47,6 +48,7 @@ import 'package:dj_tilbud_app/features/profile/presentation/screens/profile_prev
 import 'package:dj_tilbud_app/features/profile/presentation/screens/admin_messages_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/feedback_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/faq_screen.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/screens/terms_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/notification_settings_screen.dart';
 import 'package:dj_tilbud_app/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:dj_tilbud_app/core/widgets/dev_env_banner.dart';
@@ -211,6 +213,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       final isPublicRoute =
           loc == '/login' ||
+          loc == '/signup' ||
           loc == '/forgot-password' ||
           loc == '/design-system' ||
           loc == '/profile-setup' ||
@@ -261,6 +264,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         name: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/signup',
+        name: AppRoutes.signup,
+        builder: (context, state) => const SignupScreen(),
       ),
       GoRoute(
         path: '/forgot-password',
@@ -582,6 +590,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.faq,
         builder:
             (context, state) => FaqScreen(role: state.extra as MusicianRole),
+      ),
+      GoRoute(
+        path: '/terms',
+        name: AppRoutes.terms,
+        builder: (context, state) {
+          final role = state.extra;
+          if (role is! MusicianRole) {
+            return const _MissingRouteDataScreen(label: 'handelsbetingelser');
+          }
+          return TermsScreen(role: role);
+        },
       ),
       GoRoute(
         path: '/notification-settings',

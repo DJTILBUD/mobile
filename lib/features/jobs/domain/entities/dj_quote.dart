@@ -77,14 +77,59 @@ class DjQuote {
   /// Base offer before accepted add-ons (early setup + extra hours).
   /// Web: `price_dkk - (isEarlySetupAccepted ? earlySetupPrice : 0) - extraHoursTotal`.
   int get originalOffer =>
-      priceDkk - (isEarlySetupAccepted ? (earlySetupPrice ?? 0) : 0) - extraHoursTotal;
+      priceDkk -
+      (isEarlySetupAccepted ? (earlySetupPrice ?? 0) : 0) -
+      extraHoursTotal;
 
   /// Show the price breakdown when there are extra hours or accepted early setup.
   bool get showPriceBreakdown => hasExtraHours || isEarlySetupAccepted;
 
   /// DJ's share of each add-on, for the "Du bliver betalt" inclusions.
   int get extraHoursPayoutAddon => (extraHoursTotal * _payoutShare).round();
-  int get earlySetupPayoutAddon => ((earlySetupPrice ?? 0) * _payoutShare).round();
+  int get earlySetupPayoutAddon =>
+      ((earlySetupPrice ?? 0) * _payoutShare).round();
+
+  /// Platform commission percentage label shown to the DJ ("20" / "25" / "28,5").
+  String get feePercent => formatFeePercent(djFeeForJob(job.createdAt));
+
+  /// The platform's commission in DKK. Derived as price - standard payout so the
+  /// displayed "total - kommission = lønudbetaling" always reconciles exactly.
+  /// PRIVACY: only ever shown when there is NO payout override (mirrors web).
+  int get commissionDkk => priceDkk - (priceDkk * _payoutShare).round();
+
+  /// DISPLAY-ONLY exact (unrounded) payout for the 2-decimal won-quote breakdown.
+  /// The canonical [djPayout] stays integer (mirrors web + the real paid amount);
+  /// this exists only so the shown customer-price/payout/commission reconcile to
+  /// the øre. With an override the payout is the agreed whole amount.
+  double get djPayoutExact =>
+      djPayoutOverride?.toDouble() ?? (priceDkk * _payoutShare);
+
+  /// DISPLAY-ONLY exact commission (price − exact payout). Only shown when there
+  /// is no override (same privacy rule as [commissionDkk]).
+  double get commissionExact => priceDkk - (priceDkk * _payoutShare);
+
+  // ── Override payout breakdown (payout-side only) ──────────────────────────
+  // When an admin overrode the payout we still explain HOW the payout is built
+  // up, but only from the DJ's own numbers — never the customer price or the
+  // commission. The base is derived as payout - add-ons so the rows always sum
+  // exactly to the payout regardless of how the override was negotiated.
+
+  /// DJ's share of accepted early setup, shown in the override breakdown (0 if none).
+  int get overrideEarlySetupAddon =>
+      (isEarlySetupAccepted && earlySetupPayoutAddon > 0)
+          ? earlySetupPayoutAddon
+          : 0;
+
+  /// DJ's share of extra hours, shown in the override breakdown (0 if none).
+  int get overrideExtraHoursAddon => hasExtraHours ? extraHoursPayoutAddon : 0;
+
+  /// True when the override payout has add-ons worth itemising.
+  bool get overrideHasAddons =>
+      overrideEarlySetupAddon > 0 || overrideExtraHoursAddon > 0;
+
+  /// Base agreed honorar before add-ons (payout - the add-ons we itemise).
+  int get overrideBasePayout =>
+      djPayout - overrideEarlySetupAddon - overrideExtraHoursAddon;
 }
 
 enum QuoteStatus {

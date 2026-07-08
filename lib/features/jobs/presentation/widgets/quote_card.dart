@@ -8,7 +8,12 @@ import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 
 class QuoteCard extends StatelessWidget {
-  const QuoteCard({super.key, required this.quote, this.onTap, this.isPlayed = false});
+  const QuoteCard({
+    super.key,
+    required this.quote,
+    this.onTap,
+    this.isPlayed = false,
+  });
 
   final DjQuote quote;
   final VoidCallback? onTap;
@@ -35,7 +40,9 @@ class QuoteCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(
-            horizontal: DSSpacing.s4, vertical: DSSpacing.s2),
+          horizontal: DSSpacing.s4,
+          vertical: DSSpacing.s2,
+        ),
         decoration: BoxDecoration(
           color: c.bg.surface,
           borderRadius: BorderRadius.circular(DSRadius.lg),
@@ -65,7 +72,11 @@ class QuoteCard extends StatelessWidget {
                       // Header: event type + date block
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
-                            DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          0,
+                        ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -75,8 +86,9 @@ class QuoteCard extends StatelessWidget {
                                 children: [
                                   Text(
                                     eventTypeLabel(job.eventType),
-                                    style: DSTextStyle.headingMd
-                                        .copyWith(color: c.text.primary),
+                                    style: DSTextStyle.headingMd.copyWith(
+                                      color: c.text.primary,
+                                    ),
                                   ),
                                   const SizedBox(height: 3),
                                   JobIdBadge(id: job.id),
@@ -98,35 +110,49 @@ class QuoteCard extends StatelessWidget {
                       // Bid amount row
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
-                            DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          0,
+                        ),
                         child: _BidRow(quote: quote, c: c),
                       ),
 
                       // Bottom row: countdown (pending+sent) / action chip (won) / status badge
-                      Builder(builder: (_) {
-                        final deadline = _deadline(quote);
-                        final showCountdown =
-                            quote.status == QuoteStatus.pending &&
-                                deadline != null;
-                        final showActionChip = quote.status == QuoteStatus.won &&
-                            quote.pendingAction != null;
-                        Widget child;
-                        if (showCountdown) {
-                          child = _CountdownRow(deadline: deadline, c: c);
-                        } else if (showActionChip) {
-                          child = _ActionChip(action: quote.pendingAction!, c: c);
-                        } else if (quote.status == QuoteStatus.pending) {
-                          // Quote submitted, but job not yet sent to customer.
-                          child = _AwaitingSendRow(c: c);
-                        } else {
-                          child = _StatusRow(quote: quote, c: c);
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.fromLTRB(DSSpacing.s4,
-                              DSSpacing.s3, DSSpacing.s4, DSSpacing.s3),
-                          child: child,
-                        );
-                      }),
+                      Builder(
+                        builder: (_) {
+                          final deadline = _deadline(quote);
+                          final showCountdown =
+                              quote.status == QuoteStatus.pending &&
+                              deadline != null;
+                          final showActionChip =
+                              quote.status == QuoteStatus.won &&
+                              quote.pendingAction != null;
+                          Widget child;
+                          if (showCountdown) {
+                            child = _CountdownRow(deadline: deadline, c: c);
+                          } else if (showActionChip) {
+                            child = _ActionChip(
+                              action: quote.pendingAction!,
+                              c: c,
+                            );
+                          } else if (quote.status == QuoteStatus.pending) {
+                            // Quote submitted, but job not yet sent to customer.
+                            child = _AwaitingSendRow(c: c);
+                          } else {
+                            child = _StatusRow(quote: quote, c: c);
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              DSSpacing.s4,
+                              DSSpacing.s3,
+                              DSSpacing.s4,
+                              DSSpacing.s3,
+                            ),
+                            child: child,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -142,11 +168,7 @@ class QuoteCard extends StatelessWidget {
 // ─── Date Block ──────────────────────────────────────────────────────────────
 
 class _DateBlock extends StatelessWidget {
-  const _DateBlock({
-    required this.date,
-    required this.bg,
-    required this.fg,
-  });
+  const _DateBlock({required this.date, required this.bg, required this.fg});
 
   final DateTime date;
   final Color bg;
@@ -154,12 +176,13 @@ class _DateBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final day = date.day.toString();
-    final month = DateFormat('MMM', 'da_DK')
-        .format(date)
-        .replaceAll('.', '')
-        .toUpperCase();
+    final month =
+        DateFormat(
+          'MMM',
+          'da_DK',
+        ).format(date).replaceAll('.', '').toUpperCase();
     final year = date.year.toString();
 
     return Container(
@@ -218,7 +241,7 @@ class _MetaList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -228,9 +251,10 @@ class _MetaList extends StatelessWidget {
         if (job.guestsAmount > 0) ...[
           const SizedBox(height: 3),
           _MetaItem(
-              icon: LucideIcons.users,
-              label: '${job.guestsAmount} gæster',
-              c: c),
+            icon: LucideIcons.users,
+            label: '${job.guestsAmount} gæster',
+            c: c,
+          ),
         ],
       ],
     );
@@ -246,7 +270,7 @@ class _MetaItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 13, color: c.text.muted),
@@ -276,12 +300,14 @@ class _BidRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
-    // Mirrors web app: dj_payout_override ?? round(price_dkk * 0.75).
+    final _c = DSTheme.of(context);
+    // Mirrors web app: dj_payout_override ?? round(price_dkk * (1 - fee)).
     final payout = quote.djPayout;
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DSSpacing.s3, vertical: DSSpacing.s2),
+        horizontal: DSSpacing.s3,
+        vertical: DSSpacing.s2,
+      ),
       decoration: BoxDecoration(
         color: c.brand.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(DSRadius.sm),
@@ -309,12 +335,13 @@ class _BidRow extends StatelessWidget {
                   ),
                 Text(
                   'Udbetaling: ${_fmt(payout)} kr.',
-                  style: quote.hasPayoutOverride
-                      ? DSTextStyle.headingSm.copyWith(
-                          color: c.text.primary,
-                          fontWeight: FontWeight.w700,
-                        )
-                      : DSTextStyle.bodySm.copyWith(color: c.text.muted),
+                  style:
+                      quote.hasPayoutOverride
+                          ? DSTextStyle.headingSm.copyWith(
+                            color: c.text.primary,
+                            fontWeight: FontWeight.w700,
+                          )
+                          : DSTextStyle.bodySm.copyWith(color: c.text.muted),
                 ),
               ],
             ),
@@ -358,16 +385,15 @@ class _CountdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
-    final color = _isExpired
-        ? c.state.danger
-        : _isUrgent
+    final _c = DSTheme.of(context);
+    final color =
+        _isExpired
+            ? c.state.danger
+            : _isUrgent
             ? c.state.warning
             : c.text.secondary;
 
-    final icon = _isExpired
-        ? LucideIcons.timerOff
-        : LucideIcons.hourglass;
+    final icon = _isExpired ? LucideIcons.timerOff : LucideIcons.hourglass;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -423,7 +449,7 @@ class _StatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final (label, color) = switch (quote.status) {
       QuoteStatus.won => ('Vundet', c.state.success),
       QuoteStatus.lost => ('Tabt', c.text.muted),
@@ -445,33 +471,33 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final (label, color, icon) = switch (action) {
       JobActionType.contactCustomer => (
-          'Kontakt kunden nu',
-          c.state.danger,
-          LucideIcons.phone,
-        ),
+        'Kontakt kunden nu',
+        c.state.danger,
+        LucideIcons.phone,
+      ),
       JobActionType.contactCustomerPlanned => (
-          'Kontakt kunden planlagt',
-          c.state.warning,
-          LucideIcons.calendarClock,
-        ),
+        'Kontakt kunden planlagt',
+        c.state.warning,
+        LucideIcons.calendarClock,
+      ),
       JobActionType.moveToReady => (
-          'Luk aftale og send faktura',
-          c.state.danger,
-          LucideIcons.fileCheck,
-        ),
+        'Luk aftale og send faktura',
+        c.state.danger,
+        LucideIcons.fileCheck,
+      ),
       JobActionType.confirmReady => (
-          'Bekræft klar!',
-          c.state.danger,
-          LucideIcons.checkCircle,
-        ),
+        'Bekræft klar!',
+        c.state.danger,
+        LucideIcons.checkCircle,
+      ),
       JobActionType.readyForBilling => (
-          'Send faktura',
-          c.state.danger,
-          LucideIcons.fileText,
-        ),
+        'Send faktura',
+        c.state.danger,
+        LucideIcons.fileText,
+      ),
     };
 
     return Row(

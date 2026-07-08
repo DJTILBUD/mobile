@@ -1,4 +1,5 @@
 import 'package:dj_tilbud_app/features/profile/domain/entities/payment_info.dart';
+import 'package:dj_tilbud_app/features/profile/domain/self_billing_complete.dart';
 
 class PaymentInfoModel {
   const PaymentInfoModel({
@@ -8,6 +9,9 @@ class PaymentInfoModel {
     this.accountNumber,
     this.street,
     this.cityPostalCode,
+    this.businessType,
+    this.cvr,
+    this.billingEmail,
   });
 
   final String payment;
@@ -16,6 +20,9 @@ class PaymentInfoModel {
   final String? accountNumber;
   final String? street;
   final String? cityPostalCode;
+  final String? businessType;
+  final String? cvr;
+  final String? billingEmail;
 
   factory PaymentInfoModel.fromJson(Map<String, dynamic> json) {
     return PaymentInfoModel(
@@ -25,6 +32,9 @@ class PaymentInfoModel {
       accountNumber: json['account_number'] as String?,
       street: json['street'] as String?,
       cityPostalCode: json['city_postal_code'] as String?,
+      businessType: json['business_type'] as String?,
+      cvr: json['cvr'] as String?,
+      billingEmail: json['billing_email'] as String?,
     );
   }
 
@@ -36,6 +46,9 @@ class PaymentInfoModel {
       'account_number': accountNumber,
       'street': street,
       'city_postal_code': cityPostalCode,
+      'business_type': businessType,
+      'cvr': cvr,
+      'billing_email': billingEmail,
     };
   }
 
@@ -47,6 +60,9 @@ class PaymentInfoModel {
       accountNumber: accountNumber,
       street: street,
       cityPostalCode: cityPostalCode,
+      businessType: BusinessEntityType.fromString(businessType),
+      cvr: cvr,
+      billingEmail: billingEmail,
     );
   }
 }

@@ -19,6 +19,16 @@ class AuthRemoteDatasource {
     return _auth.signInWithPassword(email: email, password: password);
   }
 
+  /// Creates a brand-new account. With email confirmation disabled (the project
+  /// default) the returned [AuthResponse] carries an active session; otherwise
+  /// `session` is null and the user must verify via the emailed link first.
+  Future<AuthResponse> signUpWithPassword({
+    required String email,
+    required String password,
+  }) {
+    return _auth.signUp(email: email, password: password);
+  }
+
   /// Debug-only (super-owner impersonation): establishes a session from an
   /// admin-issued magic-link token hash. The caller MUST set
   /// [NotificationsService.setImpersonating] to `true` before calling this, so

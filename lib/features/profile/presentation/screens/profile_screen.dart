@@ -14,6 +14,7 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_reminder_provider.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/widgets/song_request_qr_dialog.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -22,72 +23,91 @@ class ProfileScreen extends ConsumerWidget {
 
   final MusicianRole role;
 
-  void _openCoach(BuildContext context, WidgetRef ref, Map<String, dynamic> userContext) {
+  void _openCoach(
+    BuildContext context,
+    WidgetRef ref,
+    Map<String, dynamic> userContext,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ProviderScope(
-        overrides: [
-          agentSessionProvider.overrideWith(
-            (ref) => AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
+      builder:
+          (_) => ProviderScope(
+            overrides: [
+              agentSessionProvider.overrideWith(
+                (ref) =>
+                    AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
+              ),
+            ],
+            child: ProfileCoachBottomSheet(
+              userContext: userContext,
+              userRole: role == MusicianRole.dj ? 'dj' : 'musician',
+              isDj: role == MusicianRole.dj,
+              onEditProfile: () {
+                Navigator.of(context).pop();
+                context.pushNamed(AppRoutes.editProfile, extra: role);
+              },
+              onGoToReviews: () {
+                Navigator.of(context).pop();
+                context.pushNamed(AppRoutes.reviews, extra: role);
+              },
+              onGoToMedia: () {
+                Navigator.of(context).pop();
+                context.pushNamed(AppRoutes.media);
+              },
+              onBioAccepted: (_) {
+                Navigator.of(context).pop();
+                context.pushNamed(AppRoutes.editProfile, extra: role);
+              },
+            ),
           ),
-        ],
-        child: ProfileCoachBottomSheet(
-          userContext: userContext,
-          userRole: role == MusicianRole.dj ? 'dj' : 'musician',
-          isDj: role == MusicianRole.dj,
-          onEditProfile: () {
-            Navigator.of(context).pop();
-            context.pushNamed(AppRoutes.editProfile, extra: role);
-          },
-          onGoToReviews: () {
-            Navigator.of(context).pop();
-            context.pushNamed(AppRoutes.reviews, extra: role);
-          },
-          onGoToMedia: () {
-            Navigator.of(context).pop();
-            context.pushNamed(AppRoutes.media);
-          },
-          onBioAccepted: (_) {
-            Navigator.of(context).pop();
-            context.pushNamed(AppRoutes.editProfile, extra: role);
-          },
-        ),
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-      final _c = DSTheme.of(context);
-    final nameAsync = role == MusicianRole.dj
-        ? ref.watch(djProfileProvider.select((p) => p.whenData((d) => d.fullName)))
-        : ref.watch(musicianProfileProvider.select((p) => p.whenData((d) => d.fullName)));
+    final _c = DSTheme.of(context);
+    final nameAsync =
+        role == MusicianRole.dj
+            ? ref.watch(
+              djProfileProvider.select((p) => p.whenData((d) => d.fullName)),
+            )
+            : ref.watch(
+              musicianProfileProvider.select(
+                (p) => p.whenData((d) => d.fullName),
+              ),
+            );
 
     final displayName = nameAsync.valueOrNull ?? '';
 
     // Full profile + reviews + files for coach context — loaded silently, don't block UI
-    final profileAsync = role == MusicianRole.dj
-        ? ref.watch(djProfileProvider)
-        : ref.watch(musicianProfileProvider);
+    final profileAsync =
+        role == MusicianRole.dj
+            ? ref.watch(djProfileProvider)
+            : ref.watch(musicianProfileProvider);
 
-    final reviewsAsync = role == MusicianRole.dj
-        ? ref.watch(djReviewsProvider)
-        : ref.watch(musicianReviewsProvider);
+    final reviewsAsync =
+        role == MusicianRole.dj
+            ? ref.watch(djReviewsProvider)
+            : ref.watch(musicianReviewsProvider);
 
     final filesAsync = ref.watch(userFilesProvider);
 
     final coachContext = profileAsync.whenData((p) {
-      final base = role == MusicianRole.dj
-          ? djToUserContext(p as DjProfile)
-          : musicianToUserContext(p as MusicianProfile);
+      final base =
+          role == MusicianRole.dj
+              ? djToUserContext(p as DjProfile)
+              : musicianToUserContext(p as MusicianProfile);
       final files = filesAsync.valueOrNull ?? [];
-      final videoCount = files
-          .where((f) =>
-              f.type == UserFileType.profileVideo ||
-              f.type == UserFileType.commonVideo)
-          .length;
+      final videoCount =
+          files
+              .where(
+                (f) =>
+                    f.type == UserFileType.profileVideo ||
+                    f.type == UserFileType.commonVideo,
+              )
+              .length;
       return <String, dynamic>{
         ...base,
         'reviewCount': reviewsAsync.valueOrNull?.length ?? 0,
@@ -103,7 +123,10 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
-        title: Text('Profil', style: DSTextStyle.headingSm.copyWith(color: _c.text.primary)),
+        title: Text(
+          'Profil',
+          style: DSTextStyle.headingSm.copyWith(color: _c.text.primary),
+        ),
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
         actions: [
@@ -117,38 +140,43 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: coachContext.valueOrNull != null
-          ? FloatingActionButton.extended(
-              onPressed: () =>
-                  _openCoach(context, ref, coachContext.valueOrNull!),
-              backgroundColor: _c.brand.primary,
-              foregroundColor: _c.brand.onPrimary,
-              elevation: 2,
-              icon: const Icon(LucideIcons.sparkles, size: 18),
-              label: Text(
-                'Profilcoach',
-                style: DSTextStyle.labelMd.copyWith(fontWeight: FontWeight.w600),
-              ),
-            )
-          : null,
+      floatingActionButton:
+          coachContext.valueOrNull != null
+              ? FloatingActionButton.extended(
+                onPressed:
+                    () => _openCoach(context, ref, coachContext.valueOrNull!),
+                backgroundColor: _c.brand.primary,
+                foregroundColor: _c.brand.onPrimary,
+                elevation: 2,
+                icon: const Icon(LucideIcons.sparkles, size: 18),
+                label: Text(
+                  'Profilcoach',
+                  style: DSTextStyle.labelMd.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+              : null,
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: DSSpacing.s4),
         children: [
           // User header — tappable → profile preview
           GestureDetector(
-            onTap: () => context.pushNamed(AppRoutes.profilePreview, extra: role),
+            onTap:
+                () => context.pushNamed(AppRoutes.profilePreview, extra: role),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s6),
               child: Row(
                 children: [
                   DSAvatar(
                     size: 56,
-                    imageUrl: ref
-                        .watch(userFilesProvider)
-                        .valueOrNull
-                        ?.where((f) => f.type == UserFileType.profile)
-                        .firstOrNull
-                        ?.url,
+                    imageUrl:
+                        ref
+                            .watch(userFilesProvider)
+                            .valueOrNull
+                            ?.where((f) => f.type == UserFileType.profile)
+                            .firstOrNull
+                            ?.url,
                   ),
                   const SizedBox(width: DSSpacing.s3),
                   Expanded(
@@ -187,7 +215,11 @@ class ProfileScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Icon(LucideIcons.chevronRight, size: 18, color: _c.text.muted),
+                  Icon(
+                    LucideIcons.chevronRight,
+                    size: 18,
+                    color: _c.text.muted,
+                  ),
                 ],
               ),
             ),
@@ -209,7 +241,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
           _MenuItem(
             icon: LucideIcons.film,
-            label: 'Billeder & videoer',
+            label: 'Medier & Mixes',
             onTap: () => context.pushNamed(AppRoutes.media),
           ),
           _MenuItem(
@@ -225,11 +257,16 @@ class ProfileScreen extends ConsumerWidget {
           _MenuItem(
             icon: LucideIcons.calendarDays,
             label: 'Kalender',
-            onTap: () => context.pushNamed(
-              role == MusicianRole.dj
-                  ? AppRoutes.djCalendar
-                  : AppRoutes.instrumentalistCalendar,
-            ),
+            reminderText:
+                ref.watch(calendarReminderProvider)
+                    ? 'Husk at angive dine optaget-datoer'
+                    : null,
+            onTap:
+                () => context.pushNamed(
+                  role == MusicianRole.dj
+                      ? AppRoutes.djCalendar
+                      : AppRoutes.instrumentalistCalendar,
+                ),
           ),
           if (role == MusicianRole.dj)
             _MenuItem(
@@ -247,7 +284,8 @@ class ProfileScreen extends ConsumerWidget {
               icon: LucideIcons.qrCode,
               label: 'QR-kode til sangønsker',
               onTap: () {
-                final token = ref.read(djProfileProvider).valueOrNull?.songRequestToken;
+                final token =
+                    ref.read(djProfileProvider).valueOrNull?.songRequestToken;
                 if (token != null) {
                   showSongRequestQrDialog(context, token);
                 } else {
@@ -269,13 +307,20 @@ class ProfileScreen extends ConsumerWidget {
           _MenuItem(
             icon: LucideIcons.bell,
             label: 'Notifikationer',
-            onTap: () => context.pushNamed(AppRoutes.notificationSettings, extra: role),
+            onTap:
+                () => context.pushNamed(
+                  AppRoutes.notificationSettings,
+                  extra: role,
+                ),
           ),
           _MenuItem(
             icon: LucideIcons.mailOpen,
             label: 'Beskeder fra DJTilbud',
-            badgeCount: ref.watch(unreadAdminMessageCountProvider(role == MusicianRole.dj)),
-            onTap: () => context.pushNamed(AppRoutes.adminMessages, extra: role),
+            badgeCount: ref.watch(
+              unreadAdminMessageCountProvider(role == MusicianRole.dj),
+            ),
+            onTap:
+                () => context.pushNamed(AppRoutes.adminMessages, extra: role),
           ),
           _MenuItem(
             icon: LucideIcons.bookOpen,
@@ -285,10 +330,16 @@ class ProfileScreen extends ConsumerWidget {
           _MenuItem(
             icon: LucideIcons.shield,
             label: 'Privatlivspolitik',
-            onTap: () => launchUrl(
-              Uri.parse('https://djtilbud.dk/privacy-policy/'),
-              mode: LaunchMode.externalApplication,
-            ),
+            onTap:
+                () => launchUrl(
+                  Uri.parse('https://djtilbud.dk/privacy-policy/'),
+                  mode: LaunchMode.externalApplication,
+                ),
+          ),
+          _MenuItem(
+            icon: LucideIcons.fileText,
+            label: 'Handelsbetingelser',
+            onTap: () => context.pushNamed(AppRoutes.terms, extra: role),
           ),
 
           const SizedBox(height: DSSpacing.s4),
@@ -318,6 +369,7 @@ class _MenuItem extends StatelessWidget {
     required this.onTap,
     this.color,
     this.badgeCount = 0,
+    this.reminderText,
   });
 
   final IconData icon;
@@ -325,6 +377,7 @@ class _MenuItem extends StatelessWidget {
   final VoidCallback onTap;
   final Color? color;
   final int badgeCount;
+  final String? reminderText;
 
   @override
   Widget build(BuildContext context) {
@@ -332,35 +385,74 @@ class _MenuItem extends StatelessWidget {
     final c = color ?? _c.text.primary;
     return ListTile(
       leading: Icon(icon, color: c, size: 22),
-      title: Text(
-        label,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: c,
-        ),
-      ),
-      trailing: badgeCount > 0
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: _c.brand.primaryActive,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '$badgeCount',
+      title:
+          reminderText == null
+              ? Text(
+                label,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: _c.brand.onPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: c,
+                ),
+              )
+              : Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: c,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: DSSpacing.s2),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _c.state.danger,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+      subtitle:
+          reminderText == null
+              ? null
+              : Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  reminderText!,
+                  style: DSTextStyle.labelSm.copyWith(color: _c.state.danger),
                 ),
               ),
-            )
-          : color == null
+      trailing:
+          badgeCount > 0
+              ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _c.brand.primaryActive,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _c.brand.onPrimary,
+                  ),
+                ),
+              )
+              : color == null
               ? Icon(LucideIcons.chevronRight, color: _c.text.muted, size: 20)
               : null,
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: DSSpacing.s6, vertical: 2),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: DSSpacing.s6,
+        vertical: 2,
+      ),
     );
   }
 }

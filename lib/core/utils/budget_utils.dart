@@ -1,13 +1,17 @@
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 
-// Jobs created before this date pay the legacy 20% fee; on/after pay 25%.
+// Fee brackets by job creation date: 20% before 2025-10-15, 25% until
+// 2026-07-06, 28.5% on/after.
 final _feeChangeDate = DateTime.utc(2025, 10, 15);
+final _secondFeeChangeDate = DateTime.utc(2026, 7, 6);
 
-/// Returns the platform fee fraction (0.20 or 0.25) for a job based on its
+/// Returns the platform fee fraction (0.20, 0.25 or 0.285) for a job based on its
 /// creation date. Mirrors `getFeeForJob` from the web app.
 double getFeeForJob(DateTime jobCreatedAt) {
-  return jobCreatedAt.isBefore(_feeChangeDate) ? 0.20 : 0.25;
+  if (jobCreatedAt.isBefore(_feeChangeDate)) return 0.20;
+  if (jobCreatedAt.isBefore(_secondFeeChangeDate)) return 0.25;
+  return 0.285;
 }
 
 const _bTierBudgetDeduction = 500;
@@ -43,12 +47,16 @@ double? adjustBudgetForDjView({
   var adjusted = budget;
 
   if (requestedSaxophonist && requestedMusicianHours != null && budget > 7000) {
+    // Sax cost deducted from the DJ-facing budget, keyed on the job's created_at.
+    final newSaxPricing =
+        jobCreatedAt == null ||
+        !jobCreatedAt.toUtc().isBefore(DateTime.utc(2026, 7, 6));
     if (requestedMusicianHours == 0.5) {
-      adjusted -= 3900;
+      adjusted -= newSaxPricing ? 4090 : 3900;
     } else if (requestedMusicianHours == 1) {
-      adjusted -= 4200;
+      adjusted -= newSaxPricing ? 4350 : 4200;
     } else if (requestedMusicianHours >= 1.5) {
-      adjusted -= 5000;
+      adjusted -= newSaxPricing ? 5190 : 5000;
     }
   }
 

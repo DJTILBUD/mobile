@@ -25,7 +25,7 @@ const _djFaqData = [
     ),
     _FaqItem(
       'Kan jeg spille flere timer på aftenen?',
-      'Ja, hvis kunden køber ekstra timer på aftenen, skal du meddele det til DJTILBUD. Det vil sige, at kunden ikke skal betale på selve aftenen. Vi fakturerer kunden for meromkostningen efter festen er slut, og vi udbetaler 80% af denne til dig. Du kan selv bestemme, hvad du tager per ekstra time på din profil.',
+      'Ja, hvis kunden køber ekstra timer på aftenen, skal du meddele det til DJTILBUD. Det vil sige, at kunden ikke skal betale på selve aftenen. Vi fakturerer kunden for meromkostningen efter festen er slut, og vi udbetaler 71,5% af denne til dig. Du kan selv bestemme, hvad du tager per ekstra time på din profil.',
     ),
     _FaqItem(
       'Hvornår skal jeg stille udstyret op?',
@@ -43,7 +43,7 @@ const _djFaqData = [
     ),
     _FaqItem(
       'Hvor meget tager I af den samlede pris?',
-      'DJTILBUD tager 25% af jobbets totalpris i kommission. Du tjener 75% af totalprisen på jobbet. Du bestemmer også selv, hvor meget du vil tage dig betalt for jobbet.',
+      'DJTILBUD tager 28,5% af jobbets totalpris i kommission. Du tjener 71,5% af totalprisen på jobbet. Du bestemmer også selv, hvor meget du vil tage dig betalt for jobbet.',
     ),
     _FaqItem(
       'Må jeg få betalingen kontant?',
@@ -81,17 +81,13 @@ const _djFaqData = [
     ),
     _FaqItem(
       'Hvornår ved jeg, om jeg har vundet jobbet?',
-      'Du får besked på email og en push-notifikation, når du har vundet et job — derefter skal du kontakte kunden hurtigst muligt.',
+      'Du får besked på email og en push-notifikation, når du har vundet et job, derefter skal du kontakte kunden hurtigst muligt.',
     ),
   ]),
   _FaqCategory('Når du har vundet et job', [
     _FaqItem(
       'Skal jeg kontakte kunden, når jeg har vundet?',
-      'Ja, du skal tage kontakt til kunden, når du har vundet et job. Vi anbefaler, at du ringer til vedkommende — og hvis vedkommende ikke tager telefonen, skriver du en SMS.',
-    ),
-    _FaqItem(
-      'Hvordan skal jeg kontakte kunden?',
-      'Vi anbefaler altid, at du ringer til kunden. Tager kunden ikke telefonen, send en SMS, hvor du opfordrer til et telefonopkald. Hvis kunden ikke vender tilbage på din SMS, ring til dem igen og send en email.\n\nHvis du har fulgt op 3-4 gange inden for en uge uden svar, så tag fat i Arthur på arthur@djtilbud.dk.',
+      'Ja, du skal tage kontakt til kunden, når du har vundet jobbet. Vi foretrækker at du ringer til vedkommende - og hvis kunden ikke tager telefonen, så skriver du en SMS. Hvis du har nogle spørgsmål til kommunikation med kunder skal du skrive til os på messenger.\n\nSåfremt du ikke får svar på hverken SMS eller telefonopkald, så send en mail. Ring gerne 3-4 over et par dage. Hvis ikke du får svar, så kontakt os på messenger - så hjælper vi.\n\nHvis det er en haster eller en krisesituation så ring først på 60 55 08 22 og 6014 8698, hvis første nummer ikke svarer.',
     ),
   ]),
 ];
@@ -110,11 +106,11 @@ const _instrumentalistFaqData = [
     ),
     _FaqItem(
       'Kan jeg spille flere timer på aftenen?',
-      'Ja, hvis kunden ønsker ekstra spilletid, skal du straks give DJTILBUD besked. Kunden betaler ikke på selve aftenen — vi fakturerer meromkostningen bagefter og udbetaler din andel til dig.',
+      'Ja, hvis kunden ønsker ekstra spilletid, skal du straks give DJTILBUD besked. Kunden betaler ikke på selve aftenen, vi fakturerer meromkostningen bagefter og udbetaler din andel til dig.',
     ),
     _FaqItem(
       'Hvad hvis jeg spiller alene uden DJ?',
-      'Nogle jobs er mærket "Kun saxofonist" — her spiller du solo uden en DJ. I disse tilfælde bør du afklare med kunden, om der er et lydanlæg til stede, eller om du selv skal sørge for forstærkning.',
+      'Nogle jobs er mærket "Kun saxofonist", her spiller du solo uden en DJ. I disse tilfælde bør du afklare med kunden, om der er et lydanlæg til stede, eller om du selv skal sørge for forstærkning.',
     ),
     _FaqItem(
       'Hvilke vilkår gælder for kunden?',
@@ -136,7 +132,7 @@ const _instrumentalistFaqData = [
     ),
     _FaqItem(
       'Er der et gebyr for at være på DJTILBUD?',
-      'Nej, vores model er "no cure, no pay" — du betaler ingenting, medmindre du vinder et job og spiller det.',
+      'Nej, vores model er "no cure, no pay", du betaler ingenting, medmindre du vinder et job og spiller det.',
     ),
     _FaqItem(
       'Får jeg kørselspenge?',
@@ -150,15 +146,15 @@ const _instrumentalistFaqData = [
   _FaqCategory('Budprocessen på DJTILBUD', [
     _FaqItem(
       'Kan jeg lade være med at byde på et job?',
-      'Ja, du bestemmer selv, hvilke jobs du vil byde på. Vi opfordrer dig til at byde aktivt — og kontakter dig, hvis du over længere tid ikke har afgivet nogen bud.',
+      'Ja, du bestemmer selv, hvilke jobs du vil byde på. Vi opfordrer dig til at byde aktivt, og kontakter dig, hvis du over længere tid ikke har afgivet nogen bud.',
     ),
     _FaqItem(
       'Hvad er min pris på et job?',
-      'Prisen er fastsat af systemet og beregnes automatisk ud fra det antal spilletimer, kunden har ønsket. Du sætter ikke prisen selv — den vises direkte på jobkortet, inden du byder.',
+      'Prisen er fastsat af systemet og beregnes automatisk ud fra det antal spilletimer, kunden har ønsket. Du sætter ikke prisen selv, den vises direkte på jobkortet, inden du byder.',
     ),
     _FaqItem(
       'Hvordan fungerer budprocessen?',
-      'Når der oprettes et job med saxofonist i din region, modtager du en push-notifikation. Du kan derefter sende et tilbud ved at skrive en personlig besked til kunden.\n\nVigtig forskel fra DJs: kun én saxofonist kan byde på hvert job. Så snart én saxofonist har afgivet et tilbud, er jobbet markeret som "Optaget" for alle andre — det gælder om at reagere hurtigt.',
+      'Når der oprettes et job med saxofonist i din region, modtager du en push-notifikation. Du kan derefter sende et tilbud ved at skrive en personlig besked til kunden.\n\nVigtig forskel fra DJs: kun én saxofonist kan byde på hvert job. Så snart én saxofonist har afgivet et tilbud, er jobbet markeret som "Optaget" for alle andre, det gælder om at reagere hurtigt.',
     ),
     _FaqItem(
       'Hvad skal jeg skrive i mit tilbud?',
@@ -168,15 +164,15 @@ const _instrumentalistFaqData = [
       'Hvornår ved jeg, om jeg har vundet jobbet?',
       'Du får besked via email og push-notifikation, når du har vundet et job. Herefter skal du kontakte kunden hurtigst muligt.',
     ),
+    _FaqItem(
+      'Hvad er kundens særlige ønske, og kan jeg aftale en ekstra pris for det?',
+      'Kunden kan tilføje et særligt ønske til musikeren, når de booker, f.eks. en bestemt sang eller et ekstra indslag. Du kan se ønsket direkte på jobbet under "Særligt ønske til musikeren", allerede inden du byder.\n\nGrundprisen er fast og beregnes ud fra antallet af spilletimer, den kan du ikke ændre. Men hvis I aftaler, at det særlige ønske koster ekstra, kan du selv forhandle beløbet med kunden og registrere det på jobbet. Vi gennemgår og bekræfter beløbet, før det lægges til den samlede pris. Kunden betaler det fulde tillæg, og du får 77% af det.',
+    ),
   ]),
   _FaqCategory('Når du har vundet et job', [
     _FaqItem(
       'Skal jeg kontakte kunden, når jeg har vundet?',
-      'Ja, du skal kontakte kunden, så snart du har vundet jobbet. Vi anbefaler, at du ringer — og sender en SMS, hvis de ikke tager telefonen.',
-    ),
-    _FaqItem(
-      'Hvordan skal jeg kontakte kunden?',
-      'Ring til kunden. Svar de ikke, send en SMS og opfordr til et opkald. Ingen svar efter 3-4 forsøg inden for en uge? Skriv til arthur@djtilbud.dk.',
+      'Ja, du skal tage kontakt til kunden, når du har vundet jobbet. Vi foretrækker at du ringer til vedkommende - og hvis kunden ikke tager telefonen, så skriver du en SMS. Hvis du har nogle spørgsmål til kommunikation med kunder skal du skrive til os på messenger.\n\nSåfremt du ikke får svar på hverken SMS eller telefonopkald, så send en mail. Ring gerne 3-4 over et par dage. Hvis ikke du får svar, så kontakt os på messenger - så hjælper vi.\n\nHvis det er en haster eller en krisesituation så ring først på 60 55 08 22 og 6014 8698, hvis første nummer ikke svarer.',
     ),
   ]),
 ];
@@ -190,7 +186,7 @@ class FaqScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final faqData =
         role == MusicianRole.dj ? _djFaqData : _instrumentalistFaqData;
 
@@ -203,7 +199,11 @@ class FaqScreen extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
-            DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, DSSpacing.s8),
+          DSSpacing.s4,
+          DSSpacing.s4,
+          DSSpacing.s4,
+          DSSpacing.s8,
+        ),
         children: [
           // Header card
           Container(
@@ -217,21 +217,28 @@ class FaqScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Icon(LucideIcons.bookOpen,
-                    size: 40, color: _c.brand.primaryActive),
+                Icon(
+                  LucideIcons.bookOpen,
+                  size: 40,
+                  color: _c.brand.primaryActive,
+                ),
                 const SizedBox(height: DSSpacing.s3),
                 Text(
                   'Ofte stillede spørgsmål',
                   style: DSTextStyle.headingMd.copyWith(
-                      fontWeight: FontWeight.w700, color: _c.text.primary),
+                    fontWeight: FontWeight.w700,
+                    color: _c.text.primary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: DSSpacing.s2),
                 Text(
                   'Herunder finder du svar på de mest stillede spørgsmål. '
                   'Kan du ikke finde svar, skriv til arthur@djtilbud.dk',
-                  style: DSTextStyle.labelMd
-                      .copyWith(color: _c.text.secondary, height: 1.5),
+                  style: DSTextStyle.labelMd.copyWith(
+                    color: _c.text.secondary,
+                    height: 1.5,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -244,9 +251,10 @@ class FaqScreen extends StatelessWidget {
             Text(
               category.category,
               style: DSTextStyle.headingSm.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: _c.text.primary),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: _c.text.primary,
+              ),
             ),
             const SizedBox(height: DSSpacing.s2),
             ...category.items.map((item) => _FaqTile(item: item)),
@@ -268,19 +276,20 @@ class FaqScreen extends StatelessWidget {
                 Text(
                   'Har du stadig spørgsmål?',
                   style: DSTextStyle.headingSm.copyWith(
-                      fontWeight: FontWeight.w700, color: _c.text.primary),
+                    fontWeight: FontWeight.w700,
+                    color: _c.text.primary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: DSSpacing.s2),
                 Text(
                   'Vi sidder klar til at hjælpe.',
-                  style:
-                      DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                  style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: DSSpacing.s4),
                 DSButton(
-                  label: 'Kontakt os — arthur@djtilbud.dk',
+                  label: 'Kontakt os: arthur@djtilbud.dk',
                   variant: DSButtonVariant.primary,
                   onTap: () {
                     // URL launcher can be wired up when the package is available
@@ -308,7 +317,7 @@ class _FaqTileState extends State<_FaqTile> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
       child: Container(
@@ -330,8 +339,9 @@ class _FaqTileState extends State<_FaqTile> {
                     child: Text(
                       widget.item.question,
                       style: DSTextStyle.labelLg.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: _c.text.primary),
+                        fontWeight: FontWeight.w600,
+                        color: _c.text.primary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: DSSpacing.s2),
@@ -341,7 +351,9 @@ class _FaqTileState extends State<_FaqTile> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: _c.brand.primaryActive, width: 1.5),
+                        color: _c.brand.primaryActive,
+                        width: 1.5,
+                      ),
                     ),
                     child: Icon(
                       _expanded ? LucideIcons.minus : LucideIcons.plus,
@@ -355,8 +367,10 @@ class _FaqTileState extends State<_FaqTile> {
                 const SizedBox(height: DSSpacing.s3),
                 Text(
                   widget.item.answer,
-                  style: DSTextStyle.labelMd
-                      .copyWith(color: _c.text.secondary, height: 1.6),
+                  style: DSTextStyle.labelMd.copyWith(
+                    color: _c.text.secondary,
+                    height: 1.6,
+                  ),
                 ),
               ],
             ],

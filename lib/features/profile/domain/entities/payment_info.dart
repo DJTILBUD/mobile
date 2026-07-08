@@ -1,3 +1,5 @@
+import 'package:dj_tilbud_app/features/profile/domain/self_billing_complete.dart';
+
 enum PaymentType {
   invoice,
   bIncome;
@@ -31,6 +33,9 @@ class PaymentInfo {
     this.accountNumber,
     this.street,
     this.cityPostalCode,
+    this.businessType,
+    this.cvr,
+    this.billingEmail,
   });
 
   final PaymentType payment;
@@ -39,4 +44,16 @@ class PaymentInfo {
   final String? accountNumber;
   final String? street;
   final String? cityPostalCode;
+
+  // Self-billing fields (see self_billing_complete.dart).
+  final BusinessEntityType? businessType;
+  final String? cvr;
+  final String? billingEmail;
+
+  SelfBillingInfo toSelfBillingInfo() => SelfBillingInfo(
+    businessType: businessType,
+    cpr: cpr,
+    cvr: cvr,
+    billingEmail: billingEmail,
+  );
 }

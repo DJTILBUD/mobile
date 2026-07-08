@@ -15,12 +15,25 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/empty_jobs_view
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 
+/// Statuses for which an assigned ext job is shown under "Udvalgte jobs".
+/// Mirrors the web app's `VISIBLE_STATUSES` in `dj/udvalgte-jobs/page.tsx`.
+/// `djExtJobsProvider` intentionally also returns `sent` ext jobs (the
+/// date-collision guard treats a `sent` ext job as a confirmed booking), so
+/// this screen must filter them out — an assigned-but-still-`sent` ext job is
+/// not yet a real booking and must not appear here.
+const _kVisibleExtJobStatuses = <ExtJobStatus>{
+  ExtJobStatus.closed,
+  ExtJobStatus.reopened,
+  ExtJobStatus.customerContacted,
+  ExtJobStatus.readyForBilling,
+};
+
 class FeaturedJobsScreen extends ConsumerWidget {
   const FeaturedJobsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final extJobsAsync = ref.watch(djExtJobsProvider);
 
     return DefaultTabController(
@@ -33,36 +46,46 @@ class FeaturedJobsScreen extends ConsumerWidget {
           surfaceTintColor: _c.bg.surface,
           bottom: DSTabBar(
             tabs: [
-              DSTabItem(
-                label: 'Kommende',
-                activeColor: _c.state.success,
-              ),
-              DSTabItem(
-                label: 'Spillet',
-                activeColor: _c.text.muted,
-              ),
+              DSTabItem(label: 'Kommende', activeColor: _c.state.success),
+              DSTabItem(label: 'Spillet', activeColor: _c.text.muted),
             ],
           ),
         ),
         body: extJobsAsync.when(
           loading: () => const SkeletonListView(),
-          error: (error, _) => _ErrorView(
-            message: friendlyErrorMessage(error),
-            onRetry: () => ref.invalidate(djExtJobsProvider),
-          ),
-          data: (extJobs) {
+          error:
+              (error, _) => _ErrorView(
+                message: friendlyErrorMessage(error),
+                onRetry: () => ref.invalidate(djExtJobsProvider),
+              ),
+          data: (allExtJobs) {
+            final extJobs =
+                allExtJobs
+                    .where((j) => _kVisibleExtJobStatuses.contains(j.status))
+                    .toList();
             final now = DateTime.now();
             final today = DateTime(now.year, now.month, now.day);
-            final kommende = extJobs
-                .where((j) =>
-                    !DateTime(j.date.year, j.date.month, j.date.day)
-                        .isBefore(today))
-                .toList();
-            final spillet = extJobs
-                .where((j) =>
-                    DateTime(j.date.year, j.date.month, j.date.day)
-                        .isBefore(today))
-                .toList();
+            final kommende =
+                extJobs
+                    .where(
+                      (j) =>
+                          !DateTime(
+                            j.date.year,
+                            j.date.month,
+                            j.date.day,
+                          ).isBefore(today),
+                    )
+                    .toList();
+            final spillet =
+                extJobs
+                    .where(
+                      (j) => DateTime(
+                        j.date.year,
+                        j.date.month,
+                        j.date.day,
+                      ).isBefore(today),
+                    )
+                    .toList();
 
             return TabBarView(
               children: [
@@ -100,17 +123,17 @@ class _JobList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     if (jobs.isEmpty) {
       return EmptyJobsView(message: emptyMessage, icon: LucideIcons.star);
     }
     // Sort: jobs with a pending action first, then by date ascending.
     final sorted = [...jobs]..sort((a, b) {
-        final aAction = a.hasAction ? 0 : 1;
-        final bAction = b.hasAction ? 0 : 1;
-        if (aAction != bAction) return aAction.compareTo(bAction);
-        return a.date.compareTo(b.date);
-      });
+      final aAction = a.hasAction ? 0 : 1;
+      final bAction = b.hasAction ? 0 : 1;
+      if (aAction != bAction) return aAction.compareTo(bAction);
+      return a.date.compareTo(b.date);
+    });
 
     return RefreshIndicator(
       color: _c.brand.primary,
@@ -118,16 +141,18 @@ class _JobList extends StatelessWidget {
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 12),
         itemCount: sorted.length,
-        itemBuilder: (context, index) => AnimatedCard(
-          index: index,
-          child: _ExtJobCard(
-            extJob: sorted[index],
-            onTap: () => context.pushNamed(
-              AppRoutes.extJobDetail,
-              extra: sorted[index],
+        itemBuilder:
+            (context, index) => AnimatedCard(
+              index: index,
+              child: _ExtJobCard(
+                extJob: sorted[index],
+                onTap:
+                    () => context.pushNamed(
+                      AppRoutes.extJobDetail,
+                      extra: sorted[index],
+                    ),
+              ),
             ),
-          ),
-        ),
       ),
     );
   }
@@ -143,14 +168,16 @@ class _ExtJobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final accentColor = _c.state.success;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(
-            horizontal: DSSpacing.s4, vertical: DSSpacing.s2),
+          horizontal: DSSpacing.s4,
+          vertical: DSSpacing.s2,
+        ),
         decoration: BoxDecoration(
           color: _c.bg.surface,
           borderRadius: BorderRadius.circular(DSRadius.lg),
@@ -180,7 +207,11 @@ class _ExtJobCard extends StatelessWidget {
                       // Header: event type + date block
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
-                            DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          0,
+                        ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -192,9 +223,12 @@ class _ExtJobCard extends StatelessWidget {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          eventTypeLabel(extJob.displayEventType),
-                                          style: DSTextStyle.headingMd
-                                              .copyWith(color: _c.text.primary),
+                                          eventTypeLabel(
+                                            extJob.displayEventType,
+                                          ),
+                                          style: DSTextStyle.headingMd.copyWith(
+                                            color: _c.text.primary,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 8),
@@ -219,7 +253,11 @@ class _ExtJobCard extends StatelessWidget {
                       // Price row
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
-                            DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          DSSpacing.s4,
+                          0,
+                        ),
                         child: _PriceRow(extJob: extJob, c: _c),
                       ),
 
@@ -227,9 +265,15 @@ class _ExtJobCard extends StatelessWidget {
                       if (extJob.pendingAction != null)
                         Padding(
                           padding: const EdgeInsets.fromLTRB(
-                              DSSpacing.s4, DSSpacing.s2, DSSpacing.s4, 0),
+                            DSSpacing.s4,
+                            DSSpacing.s2,
+                            DSSpacing.s4,
+                            0,
+                          ),
                           child: _ExtJobActionChip(
-                              action: extJob.pendingAction!, c: _c),
+                            action: extJob.pendingAction!,
+                            c: _c,
+                          ),
                         ),
 
                       const SizedBox(height: DSSpacing.s3),
@@ -248,11 +292,7 @@ class _ExtJobCard extends StatelessWidget {
 // ─── Date Block ──────────────────────────────────────────────────────────────
 
 class _DateBlock extends StatelessWidget {
-  const _DateBlock({
-    required this.date,
-    required this.bg,
-    required this.fg,
-  });
+  const _DateBlock({required this.date, required this.bg, required this.fg});
 
   final DateTime date;
   final Color bg;
@@ -260,12 +300,13 @@ class _DateBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final day = date.day.toString();
-    final month = DateFormat('MMM', 'da_DK')
-        .format(date)
-        .replaceAll('.', '')
-        .toUpperCase();
+    final month =
+        DateFormat(
+          'MMM',
+          'da_DK',
+        ).format(date).replaceAll('.', '').toUpperCase();
     final year = date.year.toString();
 
     return Container(
@@ -324,25 +365,24 @@ class _MetaList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _MetaItem(
-            icon: LucideIcons.mapPin,
-            label: extJob.displayLocation,
-            c: c),
+          icon: LucideIcons.mapPin,
+          label: extJob.displayLocation,
+          c: c,
+        ),
         const SizedBox(height: 3),
-        _MetaItem(
-            icon: LucideIcons.clock,
-            label: extJob.timeDisplay,
-            c: c),
+        _MetaItem(icon: LucideIcons.clock, label: extJob.timeDisplay, c: c),
         if (extJob.guestsAmount != null) ...[
           const SizedBox(height: 3),
           _MetaItem(
-              icon: LucideIcons.users,
-              label: '${extJob.guestsAmount} gæster',
-              c: c),
+            icon: LucideIcons.users,
+            label: '${extJob.guestsAmount} gæster',
+            c: c,
+          ),
         ],
       ],
     );
@@ -358,7 +398,7 @@ class _MetaItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 13, color: c.text.muted),
@@ -389,10 +429,12 @@ class _PriceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(
-          horizontal: DSSpacing.s3, vertical: DSSpacing.s2),
+        horizontal: DSSpacing.s3,
+        vertical: DSSpacing.s2,
+      ),
       decoration: BoxDecoration(
         color: c.brand.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(DSRadius.sm),
@@ -426,33 +468,33 @@ class _ExtJobActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final (label, color, icon) = switch (action) {
       JobActionType.contactCustomer => (
-          'Kontakt kunden nu',
-          c.state.danger,
-          LucideIcons.phone,
-        ),
+        'Kontakt kunden nu',
+        c.state.danger,
+        LucideIcons.phone,
+      ),
       JobActionType.contactCustomerPlanned => (
-          'Kontakt kunden planlagt',
-          c.state.warning,
-          LucideIcons.calendarClock,
-        ),
+        'Kontakt kunden planlagt',
+        c.state.warning,
+        LucideIcons.calendarClock,
+      ),
       JobActionType.moveToReady => (
-          'Luk aftale og send faktura',
-          c.state.danger,
-          LucideIcons.fileCheck,
-        ),
+        'Luk aftale og send faktura',
+        c.state.danger,
+        LucideIcons.fileCheck,
+      ),
       JobActionType.confirmReady => (
-          'Bekræft klar!',
-          c.state.danger,
-          LucideIcons.checkCircle,
-        ),
+        'Bekræft klar!',
+        c.state.danger,
+        LucideIcons.checkCircle,
+      ),
       JobActionType.readyForBilling => (
-          'Send faktura',
-          c.state.danger,
-          LucideIcons.fileText,
-        ),
+        'Send faktura',
+        c.state.danger,
+        LucideIcons.fileText,
+      ),
     };
 
     return Row(
@@ -483,7 +525,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(DSSpacing.s8),

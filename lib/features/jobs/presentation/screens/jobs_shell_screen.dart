@@ -12,6 +12,7 @@ import 'package:dj_tilbud_app/core/widgets/skeleton_loading.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_provider.dart';
+import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_reminder_provider.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_event_card.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_grid.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/calendar_header.dart';
@@ -481,6 +482,7 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
         AnalyticsService.logDateUnmarkedUnavailable();
       } else {
         AnalyticsService.logDateMarkedUnavailable();
+        ref.read(calendarReminderProvider.notifier).markHandled();
       }
     } else {
       setState(() {
@@ -832,6 +834,7 @@ class _InstrumentalistCalendarViewState
         AnalyticsService.logDateUnmarkedUnavailable();
       } else {
         AnalyticsService.logDateMarkedUnavailable();
+        ref.read(calendarReminderProvider.notifier).markHandled();
       }
     } else {
       setState(() {
@@ -1378,8 +1381,19 @@ class _DjNewJobsTab extends ConsumerWidget {
           final filtersHiding = rawJobs.isNotEmpty;
           final djId = ref.watch(djProfileProvider).valueOrNull?.id;
 
+          // C-tier = a newly-registered DJ who is blocked-by-default until an
+          // admin activates them. The server returns no jobs for them, so reassure
+          // them their profile arrived and is under review (rather than the generic
+          // "no jobs" copy, which reads like something is wrong).
           final empty =
-              filtersHiding
+              djTier == 'C'
+                  ? const EmptyJobsView(
+                    icon: LucideIcons.clock,
+                    title: 'Vi har modtaget din profil',
+                    message:
+                        'Vi har registreret, at du har gjort din profil færdig. Vi gennemgår den og åbner for jobs til dig, så snart vi har bekræftet, at alt ser godt ud.',
+                  )
+                  : filtersHiding
                   ? EmptyJobsView(
                     icon: LucideIcons.slidersHorizontal,
                     title: 'Ingen jobs matcher dine filtre',

@@ -11,18 +11,46 @@ import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 const _allRegions = [
-  'Hovedstaden', 'Bornholm', 'Fyn', 'Nordjylland', 'Nordsjælland',
-  'Østjylland', 'Sønderjylland', 'Sydsjælland', 'Vestjylland', 'Vestsjælland',
+  'Hovedstaden',
+  'Bornholm',
+  'Fyn',
+  'Nordjylland',
+  'Nordsjælland',
+  'Østjylland',
+  'Sønderjylland',
+  'Sydsjælland',
+  'Vestjylland',
+  'Vestsjælland',
 ];
 
 const _djGenres = [
-  'EDM', 'Disco', 'Dansk top', 'Hip hop', 'House', 'Lounge', 'Pop',
-  'R&B', 'Reggae', 'Remixes', 'Rock', 'Techno', 'Top 50 (DK)',
-  'Top 50 (global)', "70'er/80'er/90'er",
+  'EDM',
+  'Disco',
+  'Dansk top',
+  'Hip hop',
+  'House',
+  'Lounge',
+  'Pop',
+  'R&B',
+  'Reggae',
+  'Remixes',
+  'Rock',
+  'Techno',
+  'Top 50 (DK)',
+  'Top 50 (global)',
+  '70’er/80’er/90’er',
 ];
 
 const _musicianGenres = [
-  'pop', 'house', 'disco', 'funk', 'jazz', 'hip hop', 'bossanova', 'latin', 'soul',
+  'pop',
+  'house',
+  'disco',
+  'funk',
+  'jazz',
+  'hip hop',
+  'bossanova',
+  'latin',
+  'soul',
 ];
 
 const _djSaxOptions = [
@@ -70,13 +98,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String _initialFingerprint = '';
 
   String _fingerprint() => [
-        _fullNameCtrl.text, _djNameCtrl.text, _phoneCtrl.text, _aboutCtrl.text,
-        _priceExtraHourCtrl.text, _soundcloudCtrl.text,
-        _hourlyRateCtrl.text, _minBookingCtrl.text, _experienceCtrl.text,
-        ..._selectedRegions, ..._selectedGenres, ..._venues,
-        _canPlayWithSax.toString(), _allowPublicProfile.toString(),
-        _djSaxCollaboration ?? '',
-      ].join('|');
+    _fullNameCtrl.text,
+    _djNameCtrl.text,
+    _phoneCtrl.text,
+    _aboutCtrl.text,
+    _priceExtraHourCtrl.text,
+    _soundcloudCtrl.text,
+    _hourlyRateCtrl.text,
+    _minBookingCtrl.text,
+    _experienceCtrl.text,
+    ..._selectedRegions,
+    ..._selectedGenres,
+    ..._venues,
+    _canPlayWithSax.toString(),
+    _allowPublicProfile.toString(),
+    _djSaxCollaboration ?? '',
+  ].join('|');
 
   bool get _isDirty => _initialized && _fingerprint() != _initialFingerprint;
 
@@ -108,7 +145,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _djNameCtrl.text = p.companyOrDjName;
     _phoneCtrl.text = p.phone;
     _aboutCtrl.text = p.aboutYou;
-    _priceExtraHourCtrl.text = p.pricePerExtraHour > 0 ? p.pricePerExtraHour.toString() : '';
+    _priceExtraHourCtrl.text =
+        p.pricePerExtraHour > 0 ? p.pricePerExtraHour.toString() : '';
     _soundcloudCtrl.text = p.soundcloudUrl ?? '';
     _selectedRegions = List.of(p.regions);
     _selectedGenres = List.of(p.genres);
@@ -116,7 +154,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _allowPublicProfile = p.allowPublicDjProfile;
     _venues = List.of(p.venuesAndEvents ?? []);
     _initialFingerprint = _fingerprint();
-    for (final c in [_fullNameCtrl, _djNameCtrl, _phoneCtrl, _aboutCtrl, _priceExtraHourCtrl, _soundcloudCtrl]) {
+    for (final c in [
+      _fullNameCtrl,
+      _djNameCtrl,
+      _phoneCtrl,
+      _aboutCtrl,
+      _priceExtraHourCtrl,
+      _soundcloudCtrl,
+    ]) {
       c.addListener(() => setState(() {}));
     }
   }
@@ -129,14 +174,22 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _aboutCtrl.text = p.aboutText ?? '';
     _instrument = p.instrument;
     _hourlyRateCtrl.text = p.hourlyRate > 0 ? p.hourlyRate.toString() : '';
-    _minBookingCtrl.text = p.minimumBookingRate > 0 ? p.minimumBookingRate.toString() : '';
+    _minBookingCtrl.text =
+        p.minimumBookingRate > 0 ? p.minimumBookingRate.toString() : '';
     _experienceCtrl.text = p.experienceYears?.toString() ?? '';
     _selectedRegions = List.of(p.regions);
     _selectedGenres = List.of(p.genres ?? []);
     _djSaxCollaboration = p.djSaxCollaboration;
     _venues = List.of(p.venuesAndEvents ?? []);
     _initialFingerprint = _fingerprint();
-    for (final c in [_fullNameCtrl, _phoneCtrl, _aboutCtrl, _hourlyRateCtrl, _minBookingCtrl, _experienceCtrl]) {
+    for (final c in [
+      _fullNameCtrl,
+      _phoneCtrl,
+      _aboutCtrl,
+      _hourlyRateCtrl,
+      _minBookingCtrl,
+      _experienceCtrl,
+    ]) {
       c.addListener(() => setState(() {}));
     }
   }
@@ -148,56 +201,70 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       final repo = ref.read(profileRepositoryProvider);
       if (widget.role == MusicianRole.dj) {
-        await repo.updateDjProfile(DjProfile(
-          id: ref.read(djProfileProvider).value!.id,
-          fullName: _fullNameCtrl.text.trim(),
-          companyOrDjName: _djNameCtrl.text.trim(),
-          phone: _phoneCtrl.text.trim(),
-          aboutYou: _aboutCtrl.text.trim(),
-          pricePerExtraHour: int.tryParse(_priceExtraHourCtrl.text) ?? 0,
-          regions: _selectedRegions,
-          genres: _selectedGenres,
-          canPlayWithSax: _canPlayWithSax,
-          allowPublicDjProfile: _allowPublicProfile,
-          soundcloudUrl: _soundcloudCtrl.text.trim().isEmpty ? null : _soundcloudCtrl.text.trim(),
-          venuesAndEvents: _venues.isEmpty ? null : _venues,
-        ));
+        await repo.updateDjProfile(
+          DjProfile(
+            id: ref.read(djProfileProvider).value!.id,
+            fullName: _fullNameCtrl.text.trim(),
+            companyOrDjName: _djNameCtrl.text.trim(),
+            phone: _phoneCtrl.text.trim(),
+            aboutYou: _aboutCtrl.text.trim(),
+            pricePerExtraHour: int.tryParse(_priceExtraHourCtrl.text) ?? 0,
+            regions: _selectedRegions,
+            genres: _selectedGenres,
+            canPlayWithSax: _canPlayWithSax,
+            allowPublicDjProfile: _allowPublicProfile,
+            soundcloudUrl:
+                _soundcloudCtrl.text.trim().isEmpty
+                    ? null
+                    : _soundcloudCtrl.text.trim(),
+            venuesAndEvents: _venues.isEmpty ? null : _venues,
+          ),
+        );
         ref.invalidate(djProfileProvider);
         await ref.read(djProfileProvider.future);
       } else {
-        await repo.updateMusicianProfile(MusicianProfile(
-          id: ref.read(musicianProfileProvider).value!.id,
-          fullName: _fullNameCtrl.text.trim(),
-          phone: _phoneCtrl.text.trim(),
-          instrument: _instrument,
-          hourlyRate: int.tryParse(_hourlyRateCtrl.text) ?? 0,
-          minimumBookingRate: int.tryParse(_minBookingCtrl.text) ?? 0,
-          regions: _selectedRegions,
-          aboutText: _aboutCtrl.text.trim().isEmpty ? null : _aboutCtrl.text.trim(),
-          experienceYears: int.tryParse(_experienceCtrl.text),
-          genres: _selectedGenres.isEmpty ? null : _selectedGenres,
-          djSaxCollaboration: _djSaxCollaboration,
-          venuesAndEvents: _venues.isEmpty ? null : _venues,
-        ));
+        await repo.updateMusicianProfile(
+          MusicianProfile(
+            id: ref.read(musicianProfileProvider).value!.id,
+            fullName: _fullNameCtrl.text.trim(),
+            phone: _phoneCtrl.text.trim(),
+            instrument: _instrument,
+            hourlyRate: int.tryParse(_hourlyRateCtrl.text) ?? 0,
+            minimumBookingRate: int.tryParse(_minBookingCtrl.text) ?? 0,
+            regions: _selectedRegions,
+            aboutText:
+                _aboutCtrl.text.trim().isEmpty ? null : _aboutCtrl.text.trim(),
+            experienceYears: int.tryParse(_experienceCtrl.text),
+            genres: _selectedGenres.isEmpty ? null : _selectedGenres,
+            djSaxCollaboration: _djSaxCollaboration,
+            venuesAndEvents: _venues.isEmpty ? null : _venues,
+          ),
+        );
         ref.invalidate(musicianProfileProvider);
         await ref.read(musicianProfileProvider.future);
       }
 
       if (mounted) {
-        DSToast.show(context, variant: DSToastVariant.success, title: 'Profil gemt');
+        DSToast.show(
+          context,
+          variant: DSToastVariant.success,
+          title: 'Profil gemt',
+        );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
         final msg = e.toString();
-        final isSaxRegionLimit =
-            msg.contains('musicians_saxophone_regions_max_two');
+        final isSaxRegionLimit = msg.contains(
+          'musicians_saxophone_regions_max_two',
+        );
         DSToast.show(
           context,
           variant: DSToastVariant.error,
-          title: isSaxRegionLimit
-              ? 'Saxofonister kan kun vælge 2 regioner'
-              : 'Kunne ikke gemme',
+          title:
+              isSaxRegionLimit
+                  ? 'Saxofonister kan kun vælge 2 regioner'
+                  : 'Kunne ikke gemme',
         );
       }
     } finally {
@@ -207,174 +274,228 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final isDj = widget.role == MusicianRole.dj;
-    final profileAsync = isDj ? ref.watch(djProfileProvider) : ref.watch(musicianProfileProvider);
+    final profileAsync =
+        isDj
+            ? ref.watch(djProfileProvider)
+            : ref.watch(musicianProfileProvider);
 
     return PopScope(
       canPop: !_isDirty,
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
-      backgroundColor: _c.bg.canvas,
-      appBar: AppBar(
-        title: Text('Profil oplysninger', style: DSTextStyle.headingSm.copyWith(color: _c.text.primary)),
-        backgroundColor: _c.bg.surface,
-        surfaceTintColor: _c.bg.surface,
-      ),
-      body: profileAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: _c.brand.primary)),
-        error: (e, _) => Center(child: Text('Fejl: $e')),
-        data: (profile) {
-          if (isDj) {
-            _initDj(profile as DjProfile);
-          } else {
-            _initMusician(profile as MusicianProfile);
-          }
+        backgroundColor: _c.bg.canvas,
+        appBar: AppBar(
+          title: Text(
+            'Profil oplysninger',
+            style: DSTextStyle.headingSm.copyWith(color: _c.text.primary),
+          ),
+          backgroundColor: _c.bg.surface,
+          surfaceTintColor: _c.bg.surface,
+        ),
+        body: profileAsync.when(
+          loading:
+              () => Center(
+                child: CircularProgressIndicator(color: _c.brand.primary),
+              ),
+          error: (e, _) => Center(child: Text('Fejl: $e')),
+          data: (profile) {
+            if (isDj) {
+              _initDj(profile as DjProfile);
+            } else {
+              _initMusician(profile as MusicianProfile);
+            }
 
-          return Form(
-            key: _formKey,
-            child: ListView(
-              padding: const EdgeInsets.all(DSSpacing.s6),
-              children: [
-                _buildTextField('Fulde navn', _fullNameCtrl, required: true),
-                if (isDj) ...[
-                  const SizedBox(height: DSSpacing.s4),
-                  _buildTextField('DJ / firma navn', _djNameCtrl, required: true),
-                ],
-                const SizedBox(height: DSSpacing.s4),
-                _buildTextField('Telefon', _phoneCtrl, required: true, keyboardType: TextInputType.phone),
-                const SizedBox(height: DSSpacing.s4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      isDj ? 'Om dig (maks 600 tegn)' : 'Om dig',
-                      style: DSTextStyle.labelLg.copyWith(color: _c.text.primary),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        final userContext = isDj
-                            ? djToUserContext(profile as DjProfile)
-                            : musicianToUserContext(profile as MusicianProfile);
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => ProviderScope(
-                            overrides: [
-                              agentSessionProvider.overrideWith(
-                                (ref) => AgentSessionNotifier(
-                                  ref.watch(agentRepositoryProvider),
-                                ),
-                              ),
-                            ],
-                            child: ProfileBioBottomSheet(
-                              userContext: userContext,
-                              userRole: isDj ? 'dj' : 'musician',
-                              isDj: isDj,
-                              onDraftAccepted: (draft) =>
-                                  setState(() => _aboutCtrl.text = draft),
-                            ),
-                          ),
-                        );
-                      },
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(LucideIcons.sparkles,
-                              size: 13, color: _c.brand.primaryActive),
-                          const SizedBox(width: DSSpacing.s1),
-                          Text(
-                            'AI',
-                            style: DSTextStyle.labelSm.copyWith(fontWeight: FontWeight.w600, color: _c.brand.primaryActive),
-                          ),
-                        ],
-                      ),
+            return Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(DSSpacing.s6),
+                children: [
+                  _buildTextField('Fulde navn', _fullNameCtrl, required: true),
+                  if (isDj) ...[
+                    const SizedBox(height: DSSpacing.s4),
+                    _buildTextField(
+                      'DJ / firma navn',
+                      _djNameCtrl,
+                      required: true,
                     ),
                   ],
-                ),
-                const SizedBox(height: DSSpacing.s2),
-                DSInput(
-                  controller: _aboutCtrl,
-                  maxLines: 4,
-                  maxLength: isDj ? 600 : null,
-                  showCounter: isDj,
-                  hint: 'Fortæl om dig selv som ${isDj ? 'DJ' : 'musiker'}...',
-                ),
-                if (isDj) ...[
                   const SizedBox(height: DSSpacing.s4),
-                  _buildTextField('Pris pr. ekstra time (inkl. moms)', _priceExtraHourCtrl,
-                      required: true, keyboardType: TextInputType.number),
-                ],
-                if (!isDj) ...[
-                  const SizedBox(height: DSSpacing.s4),
-                  _buildReadOnlyField('Instrument', _instrument),
-                  const SizedBox(height: DSSpacing.s4),
-                  _buildTextField('Timepris (DKK)', _hourlyRateCtrl,
-                      required: true, keyboardType: TextInputType.number),
-                  const SizedBox(height: DSSpacing.s4),
-                  _buildTextField('Minimum booking pris (DKK)', _minBookingCtrl,
-                      required: true, keyboardType: TextInputType.number),
-                  const SizedBox(height: DSSpacing.s4),
-                  _buildTextField('Års erfaring', _experienceCtrl,
-                      keyboardType: TextInputType.number),
-                ],
-
-                const SizedBox(height: DSSpacing.s6),
-                _buildChipSection(
-                  isDj ? 'Region' : 'Regioner',
-                  _allRegions,
-                  _selectedRegions,
-                  singleSelect: isDj,
-                  maxSelections: !isDj && _instrument == 'saxophone' ? 2 : null,
-                  subtitle: isDj
-                      ? 'Vælg én region — din hjemby/base'
-                      : (_instrument == 'saxophone'
-                          ? 'Saxofonister kan vælge op til 2 regioner'
-                          : null),
-                ),
-
-                const SizedBox(height: DSSpacing.s6),
-                _buildChipSection('Genrer', isDj ? _djGenres : _musicianGenres, _selectedGenres),
-
-                if (isDj) ...[
-                  const SizedBox(height: DSSpacing.s4),
-                  _buildTextField('SoundCloud URL', _soundcloudCtrl),
-                ],
-
-                const SizedBox(height: DSSpacing.s6),
-                _buildVenuesSection(),
-
-                if (isDj) ...[
-                  const SizedBox(height: DSSpacing.s4),
-                  DSSwitch(
-                    label: 'Kan spille med saxofonist',
-                    value: _canPlayWithSax,
-                    onChanged: (v) {
-                      setState(() => _canPlayWithSax = v);
-                    },
+                  _buildTextField(
+                    'Telefon',
+                    _phoneCtrl,
+                    required: true,
+                    keyboardType: TextInputType.phone,
                   ),
-                ],
-
-                if (!isDj) ...[
                   const SizedBox(height: DSSpacing.s4),
-                  _buildDjSaxDropdown(),
-                ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isDj ? 'Om dig (maks 600 tegn)' : 'Om dig',
+                        style: DSTextStyle.labelLg.copyWith(
+                          color: _c.text.primary,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          final userContext =
+                              isDj
+                                  ? djToUserContext(profile as DjProfile)
+                                  : musicianToUserContext(
+                                    profile as MusicianProfile,
+                                  );
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder:
+                                (_) => ProviderScope(
+                                  overrides: [
+                                    agentSessionProvider.overrideWith(
+                                      (ref) => AgentSessionNotifier(
+                                        ref.watch(agentRepositoryProvider),
+                                      ),
+                                    ),
+                                  ],
+                                  child: ProfileBioBottomSheet(
+                                    userContext: userContext,
+                                    userRole: isDj ? 'dj' : 'musician',
+                                    isDj: isDj,
+                                    onDraftAccepted:
+                                        (draft) => setState(
+                                          () => _aboutCtrl.text = draft,
+                                        ),
+                                  ),
+                                ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              LucideIcons.sparkles,
+                              size: 13,
+                              color: _c.brand.primaryActive,
+                            ),
+                            const SizedBox(width: DSSpacing.s1),
+                            Text(
+                              'AI',
+                              style: DSTextStyle.labelSm.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: _c.brand.primaryActive,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: DSSpacing.s2),
+                  DSInput(
+                    controller: _aboutCtrl,
+                    maxLines: 4,
+                    maxLength: isDj ? 600 : null,
+                    showCounter: isDj,
+                    hint:
+                        'Fortæl om dig selv som ${isDj ? 'DJ' : 'musiker'}...',
+                  ),
+                  if (isDj) ...[
+                    const SizedBox(height: DSSpacing.s4),
+                    _buildTextField(
+                      'Pris pr. ekstra time (inkl. moms)',
+                      _priceExtraHourCtrl,
+                      required: true,
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                  if (!isDj) ...[
+                    const SizedBox(height: DSSpacing.s4),
+                    _buildReadOnlyField('Instrument', _instrument),
+                    const SizedBox(height: DSSpacing.s4),
+                    _buildTextField(
+                      'Timepris (DKK)',
+                      _hourlyRateCtrl,
+                      required: true,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: DSSpacing.s4),
+                    _buildTextField(
+                      'Minimum booking pris (DKK)',
+                      _minBookingCtrl,
+                      required: true,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: DSSpacing.s4),
+                    _buildTextField(
+                      'Års erfaring',
+                      _experienceCtrl,
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
 
-                const SizedBox(height: DSSpacing.s8),
-                DSButton(
-                  label: 'Gem',
-                  size: DSButtonSize.lg,
-                  expand: true,
-                  isLoading: _saving,
-                  onTap: _saving ? null : _save,
-                ),
-                const SizedBox(height: DSSpacing.s8),
-              ],
-            ),
-          );
-        },
-      ),
+                  const SizedBox(height: DSSpacing.s6),
+                  _buildChipSection(
+                    isDj ? 'Region' : 'Regioner',
+                    _allRegions,
+                    _selectedRegions,
+                    singleSelect: isDj,
+                    maxSelections:
+                        !isDj && _instrument == 'saxophone' ? 2 : null,
+                    subtitle:
+                        isDj
+                            ? 'Vælg én region — din hjemby/base'
+                            : (_instrument == 'saxophone'
+                                ? 'Saxofonister kan vælge op til 2 regioner'
+                                : null),
+                  ),
+
+                  const SizedBox(height: DSSpacing.s6),
+                  _buildChipSection(
+                    'Genrer',
+                    isDj ? _djGenres : _musicianGenres,
+                    _selectedGenres,
+                  ),
+
+                  if (isDj) ...[
+                    const SizedBox(height: DSSpacing.s4),
+                    _buildTextField('SoundCloud URL', _soundcloudCtrl),
+                  ],
+
+                  const SizedBox(height: DSSpacing.s6),
+                  _buildVenuesSection(),
+
+                  if (isDj) ...[
+                    const SizedBox(height: DSSpacing.s4),
+                    DSSwitch(
+                      label: 'Kan spille med saxofonist',
+                      value: _canPlayWithSax,
+                      onChanged: (v) {
+                        setState(() => _canPlayWithSax = v);
+                      },
+                    ),
+                  ],
+
+                  if (!isDj) ...[
+                    const SizedBox(height: DSSpacing.s4),
+                    _buildDjSaxDropdown(),
+                  ],
+
+                  const SizedBox(height: DSSpacing.s8),
+                  DSButton(
+                    label: 'Gem',
+                    size: DSButtonSize.lg,
+                    expand: true,
+                    isLoading: _saving,
+                    onTap: _saving ? null : _save,
+                  ),
+                  const SizedBox(height: DSSpacing.s8),
+                ],
+              ),
+            );
+          },
+        ),
       ), // PopScope
     );
   }
@@ -394,9 +515,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       maxLength: maxLength,
       showCounter: maxLength != null,
       keyboardType: keyboardType,
-      validator: required
-          ? (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null
-          : null,
+      validator:
+          required
+              ? (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null
+              : null,
     );
   }
 
@@ -420,47 +542,57 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: DSTextStyle.labelLg.copyWith(fontWeight: FontWeight.w600, color: _c.text.primary)),
+        Text(
+          title,
+          style: DSTextStyle.labelLg.copyWith(
+            fontWeight: FontWeight.w600,
+            color: _c.text.primary,
+          ),
+        ),
         if (subtitle != null) ...[
           const SizedBox(height: 2),
-          Text(subtitle, style: DSTextStyle.bodySm.copyWith(color: _c.text.muted)),
+          Text(
+            subtitle,
+            style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+          ),
         ],
         const SizedBox(height: DSSpacing.s2),
         Wrap(
           spacing: 6,
           runSpacing: 6,
-          children: options.map((opt) {
-            final isSelected = selected.contains(opt);
-            return DSChip(
-              label: opt,
-              selected: isSelected,
-              onTap: () {
-                if (!isSelected &&
-                    !singleSelect &&
-                    maxSelections != null &&
-                    selected.length >= maxSelections) {
-                  DSToast.show(
-                    context,
-                    variant: DSToastVariant.warning,
-                    title: 'Du kan højst vælge $maxSelections regioner',
-                  );
-                  return;
-                }
-                setState(() {
-                  if (singleSelect) {
-                    selected.clear();
-                    if (!isSelected) selected.add(opt);
-                  } else {
-                    if (isSelected) {
-                      selected.remove(opt);
-                    } else {
-                      selected.add(opt);
+          children:
+              options.map((opt) {
+                final isSelected = selected.contains(opt);
+                return DSChip(
+                  label: opt,
+                  selected: isSelected,
+                  onTap: () {
+                    if (!isSelected &&
+                        !singleSelect &&
+                        maxSelections != null &&
+                        selected.length >= maxSelections) {
+                      DSToast.show(
+                        context,
+                        variant: DSToastVariant.warning,
+                        title: 'Du kan højst vælge $maxSelections regioner',
+                      );
+                      return;
                     }
-                  }
-                });
-              },
-            );
-          }).toList(),
+                    setState(() {
+                      if (singleSelect) {
+                        selected.clear();
+                        if (!isSelected) selected.add(opt);
+                      } else {
+                        if (isSelected) {
+                          selected.remove(opt);
+                        } else {
+                          selected.add(opt);
+                        }
+                      }
+                    });
+                  },
+                );
+              }).toList(),
         ),
       ],
     );
@@ -470,19 +602,28 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Spillesteder & events', style: DSTextStyle.labelLg.copyWith(fontWeight: FontWeight.w600, color: _c.text.primary)),
+        Text(
+          'Spillesteder & events',
+          style: DSTextStyle.labelLg.copyWith(
+            fontWeight: FontWeight.w600,
+            color: _c.text.primary,
+          ),
+        ),
         const SizedBox(height: DSSpacing.s2),
         Wrap(
           spacing: 6,
           runSpacing: 6,
-          children: _venues
-              .map((v) => DSChip(
-                    label: v,
-                    onDelete: () {
-                      setState(() => _venues.remove(v));
-                    },
-                  ))
-              .toList(),
+          children:
+              _venues
+                  .map(
+                    (v) => DSChip(
+                      label: v,
+                      onDelete: () {
+                        setState(() => _venues.remove(v));
+                      },
+                    ),
+                  )
+                  .toList(),
         ),
         const SizedBox(height: DSSpacing.s2),
         Row(
@@ -520,9 +661,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return DSDropdown<String>(
       label: 'Erfaring med DJ-samarbejde',
       value: _djSaxCollaboration,
-      items: _djSaxOptions
-          .map((o) => DSDropdownItem(value: o.$1, label: o.$2))
-          .toList(),
+      items:
+          _djSaxOptions
+              .map((o) => DSDropdownItem(value: o.$1, label: o.$2))
+              .toList(),
       onChanged: (v) {
         setState(() => _djSaxCollaboration = v);
       },

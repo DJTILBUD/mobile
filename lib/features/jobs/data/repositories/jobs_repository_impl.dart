@@ -81,9 +81,7 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<List<ServiceOffer>> fetchServiceOffers(String userId) async {
     try {
       final data = await _datasource.fetchServiceOffers(userId);
-      return data
-          .map((j) => ServiceOfferModel.fromJson(j).toEntity())
-          .toList();
+      return data.map((j) => ServiceOfferModel.fromJson(j).toEntity()).toList();
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -122,7 +120,11 @@ class JobsRepositoryImpl implements JobsRepository {
     List<String> reasons = const [],
   }) async {
     try {
-      await _datasource.rejectDjJob(djId: userId, jobId: jobId, reasons: reasons);
+      await _datasource.rejectDjJob(
+        djId: userId,
+        jobId: jobId,
+        reasons: reasons,
+      );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -229,10 +231,19 @@ class JobsRepositoryImpl implements JobsRepository {
   @override
   Future<bool?> fetchInvoiceStatus({int? jobId, int? extJobId}) async {
     try {
-      return await _datasource.fetchInvoiceStatus(jobId: jobId, extJobId: extJobId);
+      return await _datasource.fetchInvoiceStatus(
+        jobId: jobId,
+        extJobId: extJobId,
+      );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
+  }
+
+  @override
+  Future<String?> fetchEventAddress({int? jobId, int? extJobId}) {
+    // The datasource already swallows errors and returns null (display-only data).
+    return _datasource.fetchEventAddress(jobId: jobId, extJobId: extJobId);
   }
 
   @override
@@ -296,11 +307,19 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
-  Future<void> addExtraHours(int quoteId,
-      {required double extraHours, required int pricePerHour, required int newTotalPrice}) async {
+  Future<void> addExtraHours(
+    int quoteId, {
+    required double extraHours,
+    required int pricePerHour,
+    required int newTotalPrice,
+  }) async {
     try {
-      await _datasource.addExtraHours(quoteId,
-          extraHours: extraHours, pricePerHour: pricePerHour, newTotalPrice: newTotalPrice);
+      await _datasource.addExtraHours(
+        quoteId,
+        extraHours: extraHours,
+        pricePerHour: pricePerHour,
+        newTotalPrice: newTotalPrice,
+      );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -316,11 +335,19 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
-  Future<void> addExtJobExtraHours(int extJobId,
-      {required double extraHours, required int pricePerHour, required int newTotalPrice}) async {
+  Future<void> addExtJobExtraHours(
+    int extJobId, {
+    required double extraHours,
+    required int pricePerHour,
+    required int newTotalPrice,
+  }) async {
     try {
-      await _datasource.addExtJobExtraHours(extJobId,
-          extraHours: extraHours, pricePerHour: pricePerHour, newTotalPrice: newTotalPrice);
+      await _datasource.addExtJobExtraHours(
+        extJobId,
+        extraHours: extraHours,
+        pricePerHour: pricePerHour,
+        newTotalPrice: newTotalPrice,
+      );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -381,9 +408,13 @@ class JobsRepositoryImpl implements JobsRepository {
           ),
           musicianPayoutDkk: (row['musician_payout_dkk'] as num?)?.toInt(),
           salesPitch: row['sales_pitch'] as String?,
-          musicianFullName: (row['musician'] as Map<String, dynamic>?)?['full_name'] as String?,
-          musicianPhone: (row['musician'] as Map<String, dynamic>?)?['phone'] as String?,
-          musicianEmail: (row['musician'] as Map<String, dynamic>?)?['email'] as String?,
+          musicianFullName:
+              (row['musician'] as Map<String, dynamic>?)?['full_name']
+                  as String?,
+          musicianPhone:
+              (row['musician'] as Map<String, dynamic>?)?['phone'] as String?,
+          musicianEmail:
+              (row['musician'] as Map<String, dynamic>?)?['email'] as String?,
         );
       }).toList();
     } on sb.PostgrestException catch (e) {
@@ -392,7 +423,9 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
-  Future<({String djId, String fullName, String? phone})?> fetchWonDjInfoForJob(int jobId) async {
+  Future<({String djId, String fullName, String? phone})?> fetchWonDjInfoForJob(
+    int jobId,
+  ) async {
     try {
       final row = await _datasource.fetchWonDjInfoForJob(jobId);
       if (row == null) return null;
@@ -418,7 +451,10 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
-  Future<void> addMusicianExtraHours(int offerId, {required double extraHours}) async {
+  Future<void> addMusicianExtraHours(
+    int offerId, {
+    required double extraHours,
+  }) async {
     try {
       await _datasource.addMusicianExtraHours(offerId, extraHours: extraHours);
     } on sb.PostgrestException catch (e) {
@@ -481,15 +517,19 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<List<SongRequest>> fetchSongRequestsForJob(int jobId) async {
     try {
       final data = await _datasource.fetchSongRequestsForJob(jobId);
-      return data.map((row) => SongRequest(
-        id: (row['id'] as num).toInt(),
-        jobId: (row['job_id'] as num?)?.toInt(),
-        guestEmail: row['guest_email'] as String,
-        song1: row['song_1'] as String,
-        song2: row['song_2'] as String?,
-        song3: row['song_3'] as String?,
-        createdAt: DateTime.parse(row['created_at'] as String),
-      )).toList();
+      return data
+          .map(
+            (row) => SongRequest(
+              id: (row['id'] as num).toInt(),
+              jobId: (row['job_id'] as num?)?.toInt(),
+              guestEmail: row['guest_email'] as String,
+              song1: row['song_1'] as String,
+              song2: row['song_2'] as String?,
+              song3: row['song_3'] as String?,
+              createdAt: DateTime.parse(row['created_at'] as String),
+            ),
+          )
+          .toList();
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -499,15 +539,19 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<List<SongRequest>> fetchSongRequestsForExtJob(int extJobId) async {
     try {
       final data = await _datasource.fetchSongRequestsForExtJob(extJobId);
-      return data.map((row) => SongRequest(
-        id: (row['id'] as num).toInt(),
-        extJobId: (row['ext_job_id'] as num?)?.toInt(),
-        guestEmail: row['guest_email'] as String,
-        song1: row['song_1'] as String,
-        song2: row['song_2'] as String?,
-        song3: row['song_3'] as String?,
-        createdAt: DateTime.parse(row['created_at'] as String),
-      )).toList();
+      return data
+          .map(
+            (row) => SongRequest(
+              id: (row['id'] as num).toInt(),
+              extJobId: (row['ext_job_id'] as num?)?.toInt(),
+              guestEmail: row['guest_email'] as String,
+              song1: row['song_1'] as String,
+              song2: row['song_2'] as String?,
+              song3: row['song_3'] as String?,
+              createdAt: DateTime.parse(row['created_at'] as String),
+            ),
+          )
+          .toList();
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }

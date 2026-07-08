@@ -39,6 +39,8 @@ class ExtJobModel {
     this.postalCode,
     this.extraHours,
     this.extraHoursPricePerHour,
+    this.sentAt,
+    this.deadlineExtendedUntil,
   });
 
   final int id;
@@ -76,6 +78,8 @@ class ExtJobModel {
   final String? postalCode;
   final double? extraHours;
   final int? extraHoursPricePerHour;
+  final String? sentAt;
+  final String? deadlineExtendedUntil;
 
   factory ExtJobModel.fromJson(Map<String, dynamic> json) {
     // PostgreSQL time fields come as "HH:MM:SS", display as "HH:MM"
@@ -113,17 +117,22 @@ class ExtJobModel {
       notes: json['notes'] as String?,
       birthdayPersonAge: json['birthday_person_age'] as String?,
       company: json['company'] as String?,
-      djReadyConfirmedAt: json['dj_ready_confirmed_at'] != null
-          ? DateTime.parse(json['dj_ready_confirmed_at'] as String)
-          : null,
-      customerContactPlannedFor: json['customer_contact_planned_for'] as String?,
+      djReadyConfirmedAt:
+          json['dj_ready_confirmed_at'] != null
+              ? DateTime.parse(json['dj_ready_confirmed_at'] as String)
+              : null,
+      customerContactPlannedFor:
+          json['customer_contact_planned_for'] as String?,
       hasActiveOffer: json['has_active_offer'] as bool? ?? false,
       saxType: json['sax_type'] as String?,
       musicianSpecialRequest: json['musician_special_request'] as String?,
       songRequestToken: json['song_request_token'] as String?,
       postalCode: json['postal_code'] as String?,
       extraHours: (json['extra_hours'] as num?)?.toDouble(),
-      extraHoursPricePerHour: (json['extra_hours_price_per_hour'] as num?)?.toInt(),
+      extraHoursPricePerHour:
+          (json['extra_hours_price_per_hour'] as num?)?.toInt(),
+      sentAt: json['sent_at'] as String?,
+      deadlineExtendedUntil: json['deadline_extended_until'] as String?,
     );
   }
 
@@ -156,13 +165,19 @@ class ExtJobModel {
       birthdayPersonAge: birthdayPersonAge,
       company: company,
       djReadyConfirmedAt: djReadyConfirmedAt,
-      customerContactPlannedFor: customerContactPlannedFor != null
-          ? DateTime.parse(customerContactPlannedFor!)
-          : null,
+      customerContactPlannedFor:
+          customerContactPlannedFor != null
+              ? DateTime.parse(customerContactPlannedFor!)
+              : null,
       songRequestToken: songRequestToken,
       musicianSpecialRequest: musicianSpecialRequest,
       extraHours: extraHours,
       extraHoursPricePerHour: extraHoursPricePerHour,
+      sentAt: sentAt != null ? DateTime.parse(sentAt!) : null,
+      deadlineExtendedUntil:
+          deadlineExtendedUntil != null
+              ? DateTime.parse(deadlineExtendedUntil!)
+              : null,
     );
   }
 
@@ -201,6 +216,10 @@ class ExtJobModel {
       hasActiveOffer: hasActiveOffer,
       saxType: saxType,
       musicianSpecialRequest: musicianSpecialRequest,
+      // Carry the decision-window fields so the offer detail screen (which sees an ext job as a
+      // Job via this mapper) can render the customer countdown the same as a normal job.
+      sentAt: sentAt,
+      deadlineExtendedUntil: deadlineExtendedUntil,
     );
   }
 }

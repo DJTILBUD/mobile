@@ -64,74 +64,85 @@ class Job {
   final String? customerNote;
   final bool isExtJob;
   final int? extJobId;
+
   /// 'first_quote_only' → high-season priority (Højsæson-prioritet)
   final String? quoteSendMode;
+
   /// True when an admin has paused the job — no one can bid while paused.
   final bool isPaused;
   final String? assignedDjName;
+
   /// When the job was sent to the customer for selection. Null for unsent jobs
   /// and for ExtJobs (which don't have this column). Drives the customer
   /// response deadline countdown.
   final DateTime? sentAt;
   final DateTime? deadlineExtendedUntil;
   final DateTime? customerContactPlannedFor;
+
   /// HH:MM string for the musician's start time (separate from event start).
   final String? musicianStartTime;
+
   /// 'musician_only' | 'dj_and_musician' | 'dj_only' — only set for ext jobs.
   final String? roleType;
+
   /// True when another musician of the same instrument already has a non-lost offer on this job.
   final bool hasActiveOffer;
+
   /// True when the current musician already has a sent/won service offer on the same date.
   final bool hasDateConflict;
+
   /// 'lounge' | 'party' — type of saxophone performance requested.
   final String? saxType;
+
   /// Free-text special request from the customer directed at the musician.
   final String? musicianSpecialRequest;
+
   /// UUID token used to generate the public song-request link for guests.
   final String? songRequestToken;
+
   /// Postal code of the event location. Present on both Jobs and ExtJobs.
   final String? postalCode;
 
   Job withDateConflict() => Job(
-        id: id,
-        eventType: eventType,
-        date: date,
-        timeStart: timeStart,
-        timeEnd: timeEnd,
-        city: city,
-        region: region,
-        guestsAmount: guestsAmount,
-        status: status,
-        createdAt: createdAt,
-        budgetStart: budgetStart,
-        budgetEnd: budgetEnd,
-        genres: genres,
-        leadRequest: leadRequest,
-        additionalInformation: additionalInformation,
-        requestedSaxophonist: requestedSaxophonist,
-        requestedMusicianHours: requestedMusicianHours,
-        birthdayPersonAge: birthdayPersonAge,
-        leadName: leadName,
-        leadEmail: leadEmail,
-        leadPhoneNumber: leadPhoneNumber,
-        customerNote: customerNote,
-        isExtJob: isExtJob,
-        extJobId: extJobId,
-        quoteSendMode: quoteSendMode,
-        isPaused: isPaused,
-        assignedDjName: assignedDjName,
-        sentAt: sentAt,
-        deadlineExtendedUntil: deadlineExtendedUntil,
-        customerContactPlannedFor: customerContactPlannedFor,
-        musicianStartTime: musicianStartTime,
-        roleType: roleType,
-        hasActiveOffer: hasActiveOffer,
-        hasDateConflict: true,
-        saxType: saxType,
-        musicianSpecialRequest: musicianSpecialRequest,
-        songRequestToken: songRequestToken,
-        postalCode: postalCode,
-      );
+    id: id,
+    eventType: eventType,
+    date: date,
+    timeStart: timeStart,
+    timeEnd: timeEnd,
+    city: city,
+    region: region,
+    guestsAmount: guestsAmount,
+    status: status,
+    createdAt: createdAt,
+    budgetStart: budgetStart,
+    budgetEnd: budgetEnd,
+    genres: genres,
+    leadRequest: leadRequest,
+    additionalInformation: additionalInformation,
+    requestedSaxophonist: requestedSaxophonist,
+    requestedMusicianHours: requestedMusicianHours,
+    birthdayPersonAge: birthdayPersonAge,
+    leadName: leadName,
+    leadEmail: leadEmail,
+    leadPhoneNumber: leadPhoneNumber,
+    customerNote: customerNote,
+    isExtJob: isExtJob,
+    extJobId: extJobId,
+    quoteSendMode: quoteSendMode,
+    isPaused: isPaused,
+    assignedDjName: assignedDjName,
+    sentAt: sentAt,
+    deadlineExtendedUntil: deadlineExtendedUntil,
+    customerContactPlannedFor: customerContactPlannedFor,
+    musicianStartTime: musicianStartTime,
+    roleType: roleType,
+    hasActiveOffer: hasActiveOffer,
+    hasDateConflict: true,
+    saxType: saxType,
+    musicianSpecialRequest: musicianSpecialRequest,
+    songRequestToken: songRequestToken,
+    postalCode: postalCode,
+  );
 
   static String _fmtNum(double v) {
     final s = v.toInt().toString();
@@ -165,13 +176,24 @@ class Job {
     return city;
   }
 
-  String get timeDisplay => '${_stripSeconds(timeStart)} - ${_stripSeconds(timeEnd)}';
+  String get timeDisplay =>
+      '${_stripSeconds(timeStart)} - ${_stripSeconds(timeEnd)}';
+
+  /// requested_musician_hours formatted for display: whole numbers without decimals, halves with
+  /// one decimal (1, 0.5, 1.5). Single source so the card and the detail/offer screens never round
+  /// it differently (a 0.5h job must not read "0.5" on the card and "1" inside).
+  String get musicianHoursDisplay {
+    final h = requestedMusicianHours;
+    if (h == null) return '';
+    return h.toStringAsFixed(h % 1 == 0 ? 0 : 1);
+  }
 
   /// Customer response deadline. Mirrors web-app `getCountdownTargetDate`:
   ///   - admin-extended deadline wins if set,
   ///   - otherwise min(sentAt + 7d, jobDate − 2d).
-  /// Returns null when the job hasn't been sent yet (no countdown should
-  /// be shown). ExtJobs never have sent_at, so this is null for them too.
+  /// Returns null when the job hasn't been sent yet (no countdown should be shown). Ext jobs now
+  /// also carry sent_at + deadline_extended_until (via ExtJobModel.toJobModel), so this works for
+  /// the ext-job-as-Job the offer detail screen renders.
   DateTime? get customerDeadline {
     if (deadlineExtendedUntil != null) return deadlineExtendedUntil;
     if (sentAt == null) return null;

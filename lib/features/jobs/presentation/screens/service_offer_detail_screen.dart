@@ -7,13 +7,16 @@ import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/customer_deadline_banner.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/sick_disclaimer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/shared/widgets/copy_hint_row.dart';
 import 'package:dj_tilbud_app/shared/widgets/chat_bubble_fab.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/event_address_section.dart';
 
 String _fmt(num n) =>
     NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
@@ -48,8 +51,11 @@ class _ServiceOfferDetailScreenState
   bool _isWithin5Days(DateTime eventDate) {
     final today = DateTime.now();
     final todayMidnight = DateTime(today.year, today.month, today.day);
-    final eventMidnight =
-        DateTime(eventDate.year, eventDate.month, eventDate.day);
+    final eventMidnight = DateTime(
+      eventDate.year,
+      eventDate.month,
+      eventDate.day,
+    );
     return eventMidnight.difference(todayMidnight).inDays <= 5;
   }
 
@@ -60,12 +66,17 @@ class _ServiceOfferDetailScreenState
     if (!mounted) return;
     if (success) {
       setState(() => _musicianReadyConfirmedAt = DateTime.now());
-      DSToast.show(context,
-          variant: DSToastVariant.success,
-          title: 'Bekræftet! God fornøjelse med jobbet 🎵');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.success,
+        title: 'Bekræftet! God fornøjelse med jobbet 🎵',
+      );
     } else {
-      DSToast.show(context,
-          variant: DSToastVariant.error, title: 'Noget gik galt. Prøv igen.');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Noget gik galt. Prøv igen.',
+      );
     }
   }
 
@@ -77,75 +88,86 @@ class _ServiceOfferDetailScreenState
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
       ),
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: ContactCustomerSheet(
-          existingPlannedDate: _customerContactPlannedFor,
-          onContacted: () async {
-            final success = await ref
-                .read(markServiceOfferContactedProvider.notifier)
-                .markContacted(widget.offer.id);
-            if (mounted && success) {
-              setState(() {
-                _customerContacted = true;
-                _customerContactPlannedFor = null;
-              });
-              DSToast.show(context,
-                  variant: DSToastVariant.success,
-                  title: 'Kunden er markeret som kontaktet');
-            } else if (mounted) {
-              DSToast.show(context,
-                  variant: DSToastVariant.error,
-                  title: 'Noget gik galt. Prøv igen.');
-            }
-            return success;
-          },
-          onPlanned: (date) async {
-            final success = await ref
-                .read(setServiceOfferPlannedContactProvider.notifier)
-                .setPlanned(widget.offer.id, date);
-            if (mounted && success) {
-              setState(() =>
-                  _customerContactPlannedFor = DateTime.parse(date));
-              DSToast.show(context,
-                  variant: DSToastVariant.success,
-                  title: 'Planlagt kontakt gemt');
-            } else if (mounted) {
-              DSToast.show(context,
-                  variant: DSToastVariant.error,
-                  title: 'Noget gik galt. Prøv igen.');
-            }
-            return success;
-          },
-        ),
-      ),
+      builder:
+          (_) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: ContactCustomerSheet(
+              existingPlannedDate: _customerContactPlannedFor,
+              onContacted: () async {
+                final success = await ref
+                    .read(markServiceOfferContactedProvider.notifier)
+                    .markContacted(widget.offer.id);
+                if (mounted && success) {
+                  setState(() {
+                    _customerContacted = true;
+                    _customerContactPlannedFor = null;
+                  });
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.success,
+                    title: 'Kunden er markeret som kontaktet',
+                  );
+                } else if (mounted) {
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.error,
+                    title: 'Noget gik galt. Prøv igen.',
+                  );
+                }
+                return success;
+              },
+              onPlanned: (date) async {
+                final success = await ref
+                    .read(setServiceOfferPlannedContactProvider.notifier)
+                    .setPlanned(widget.offer.id, date);
+                if (mounted && success) {
+                  setState(
+                    () => _customerContactPlannedFor = DateTime.parse(date),
+                  );
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.success,
+                    title: 'Planlagt kontakt gemt',
+                  );
+                } else if (mounted) {
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.error,
+                    title: 'Noget gik galt. Prøv igen.',
+                  );
+                }
+                return success;
+              },
+            ),
+          ),
     );
   }
 
   // ── Shared: bid summary + sales pitch ──────────────────────────────
   List<Widget> _sharedBidSections() => [
-        _BidSummaryCard(offer: _offer),
-        if (_offer.salesPitch != null &&
-            _offer.salesPitch!.isNotEmpty) ...[
-          const SizedBox(height: DSSpacing.s4),
-          _Section(
-            title: 'Besked til kunden',
-            children: [
-              Text(
-                _offer.salesPitch!,
-                style: DSTextStyle.bodyMd
-                    .copyWith(color: _c.text.secondary, height: 1.5),
-              ),
-            ],
+    _BidSummaryCard(offer: _offer),
+    if (_offer.salesPitch != null && _offer.salesPitch!.isNotEmpty) ...[
+      const SizedBox(height: DSSpacing.s4),
+      _Section(
+        title: 'Besked til kunden',
+        children: [
+          Text(
+            _offer.salesPitch!,
+            style: DSTextStyle.bodyMd.copyWith(
+              color: _c.text.secondary,
+              height: 1.5,
+            ),
           ),
         ],
-      ];
+      ),
+    ],
+  ];
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     // Keep the local offer in sync with provider refreshes so a server-side
     // recompute (e.g. saving extra hours, which bumps price_dkk/payout) shows
     // immediately instead of only after reopening the screen.
@@ -169,8 +191,9 @@ class _ServiceOfferDetailScreenState
             ),
             const SizedBox(width: 8),
             JobIdBadge(
-                id: offer.jobId ?? offer.extJobId ?? 0,
-                isExtJob: offer.isExtJob),
+              id: offer.jobId ?? offer.extJobId ?? 0,
+              isExtJob: offer.isExtJob,
+            ),
             const SizedBox(width: 8),
           ],
         ),
@@ -180,27 +203,27 @@ class _ServiceOfferDetailScreenState
       body: switch (offer.status) {
         ServiceOfferStatus.sent => _sentBody(offer),
         ServiceOfferStatus.won => Stack(
-            children: [
-              _wonBody(offer),
-              // Floating "Beskeder" bubble (mirrors the web app). Self-hides
-              // when no conversation exists yet for this job.
-              if (offer.jobId != null || offer.extJobId != null)
-                Positioned.fill(
-                  child: SafeArea(
-                    child: Align(
-                      alignment: Alignment.bottomRight,
-                      child: Padding(
-                        padding: const EdgeInsets.all(DSSpacing.s4),
-                        child: ChatBubbleFab(
-                          jobId: offer.jobId,
-                          extJobId: offer.extJobId,
-                        ),
+          children: [
+            _wonBody(offer),
+            // Floating "Beskeder" bubble (mirrors the web app). Self-hides
+            // when no conversation exists yet for this job.
+            if (offer.jobId != null || offer.extJobId != null)
+              Positioned.fill(
+                child: SafeArea(
+                  child: Align(
+                    alignment: Alignment.bottomRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(DSSpacing.s4),
+                      child: ChatBubbleFab(
+                        jobId: offer.jobId,
+                        extJobId: offer.extJobId,
                       ),
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
+        ),
         ServiceOfferStatus.lost => _lostBody(offer),
       },
     );
@@ -208,42 +231,46 @@ class _ServiceOfferDetailScreenState
 
   // ── Sent / pending ─────────────────────────────────────────────────
   Widget _sentBody(ServiceOffer offer) => ListView(
-        padding: const EdgeInsets.all(DSSpacing.s4),
-        children: [
-          _TopStatusRow(offer: offer),
-          const SizedBox(height: DSSpacing.s3),
-          _JobHeroCard(offer: offer),
-          const SizedBox(height: DSSpacing.s3),
-          // ExtJobs don't have a customer-send step / response deadline —
-          // skip the banner entirely for them.
-          if (!offer.isExtJob) ...[
-            _CustomerDeadlineBanner(offer: offer),
-            const SizedBox(height: DSSpacing.s4),
-          ],
-          ..._sharedBidSections(),
-          const SizedBox(height: DSSpacing.s8),
-        ],
-      );
+    padding: const EdgeInsets.all(DSSpacing.s4),
+    children: [
+      _TopStatusRow(offer: offer),
+      const SizedBox(height: DSSpacing.s3),
+      _JobHeroCard(offer: offer),
+      const SizedBox(height: DSSpacing.s3),
+      // Customer decision-window countdown — same widget for normal jobs and ext jobs. The ext-job
+      // deadline is carried into offer.job via ExtJobModel.toJobModel(), so customerDeadline is set.
+      CustomerDeadlineBanner(deadline: offer.job.customerDeadline),
+      const SizedBox(height: DSSpacing.s4),
+      ..._sharedBidSections(),
+      const SizedBox(height: DSSpacing.s8),
+    ],
+  );
 
   // ── Won ────────────────────────────────────────────────────────────
   Widget _wonBody(ServiceOffer offer) {
     final isConfirmedReady = _musicianReadyConfirmedAt != null;
     final canConfirmReady = _isWithin5Days(offer.job.date);
-    final readyLoading = ref.watch(confirmMusicianReadyProvider) is AsyncLoading;
+    final readyLoading =
+        ref.watch(confirmMusicianReadyProvider) is AsyncLoading;
 
     return ListView(
       padding: const EdgeInsets.all(DSSpacing.s4),
       children: [
         _TopStatusRow(offer: offer),
+        EventAddressSection(
+          jobId: offer.isExtJob ? null : offer.jobId,
+          extJobId: offer.isExtJob ? offer.extJobId : null,
+        ),
         const SizedBox(height: DSSpacing.s4),
 
         // Non-binding call banner — shown until customer is contacted
         if (!_customerContacted) ...[
           _InfoBanner(
             title: 'Opkaldet er uforpligtende for kunden',
-            body: offer.job.roleType == 'musician_only'
-                ? 'Er alle detaljer på plads, sender du fakturaen med ét klik — jobbet er 100% bekræftet når kunden betaler første rate.'
-                : 'Er alle detaljer på plads, sørger DJ\'en for fakturaen — jobbet er 100% bekræftet når kunden betaler første rate.',
+            body:
+                offer.job.roleType == 'musician_only'
+                    ? 'Er alle detaljer på plads, sender du fakturaen med ét klik — jobbet er 100% bekræftet når kunden betaler første rate.'
+                    : 'Er alle detaljer på plads, sørger DJ\'en for fakturaen — jobbet er 100% bekræftet når kunden betaler første rate.',
           ),
           const SizedBox(height: DSSpacing.s4),
         ],
@@ -261,8 +288,11 @@ class _ServiceOfferDetailScreenState
                 label: offer.job.leadEmail!,
                 onCopy: () {
                   Clipboard.setData(ClipboardData(text: offer.job.leadEmail!));
-                  DSToast.show(context,
-                      variant: DSToastVariant.success, title: 'Email kopieret');
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.success,
+                    title: 'Email kopieret',
+                  );
                 },
               ),
             ],
@@ -273,10 +303,13 @@ class _ServiceOfferDetailScreenState
                 label: offer.job.leadPhoneNumber!,
                 onCopy: () {
                   Clipboard.setData(
-                      ClipboardData(text: offer.job.leadPhoneNumber!));
-                  DSToast.show(context,
-                      variant: DSToastVariant.success,
-                      title: 'Telefon kopieret');
+                    ClipboardData(text: offer.job.leadPhoneNumber!),
+                  );
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.success,
+                    title: 'Telefon kopieret',
+                  );
                 },
               ),
             ],
@@ -287,12 +320,14 @@ class _ServiceOfferDetailScreenState
               if (_customerContactPlannedFor != null)
                 _PlannedContactBanner(date: _customerContactPlannedFor!),
               DSButton(
-                label: _customerContactPlannedFor != null
-                    ? 'Ændr kontaktdato'
-                    : 'Kontakt kunden',
-                variant: _customerContactPlannedFor != null
-                    ? DSButtonVariant.secondary
-                    : DSButtonVariant.primary,
+                label:
+                    _customerContactPlannedFor != null
+                        ? 'Ændr kontaktdato'
+                        : 'Kontakt kunden',
+                variant:
+                    _customerContactPlannedFor != null
+                        ? DSButtonVariant.secondary
+                        : DSButtonVariant.primary,
                 expand: true,
                 onTap: _openContactSheet,
               ),
@@ -300,20 +335,23 @@ class _ServiceOfferDetailScreenState
             if (_customerContacted) ...[
               const SizedBox(height: DSSpacing.s3),
               DSButton(
-                label: isConfirmedReady
-                    ? 'Jeg er klar! ✓'
-                    : canConfirmReady
+                label:
+                    isConfirmedReady
+                        ? 'Jeg er klar! ✓'
+                        : canConfirmReady
                         ? 'Jeg er klar!'
                         : 'Jeg er klar (tilgængelig 5 dage før)',
-                variant: isConfirmedReady
-                    ? DSButtonVariant.secondary
-                    : DSButtonVariant.primary,
+                variant:
+                    isConfirmedReady
+                        ? DSButtonVariant.secondary
+                        : DSButtonVariant.primary,
                 expand: true,
                 isLoading: readyLoading,
                 enabled: isConfirmedReady || canConfirmReady,
-                onTap: (isConfirmedReady || !canConfirmReady || readyLoading)
-                    ? null
-                    : _handleConfirmReady,
+                onTap:
+                    (isConfirmedReady || !canConfirmReady || readyLoading)
+                        ? null
+                        : _handleConfirmReady,
               ),
             ],
           ],
@@ -324,14 +362,11 @@ class _ServiceOfferDetailScreenState
           title: 'Din proces',
           children: [
             ProcessTracker(
-              steps: const [
-                'Kontakt kunden',
-                'Bekræft klar',
-                'Spil jobbet',
-              ],
-              completedSteps: isConfirmedReady
-                  ? 2
-                  : _customerContacted
+              steps: const ['Kontakt kunden', 'Bekræft klar', 'Spil jobbet'],
+              completedSteps:
+                  isConfirmedReady
+                      ? 2
+                      : _customerContacted
                       ? 1
                       : 0,
             ),
@@ -346,7 +381,9 @@ class _ServiceOfferDetailScreenState
             title: 'DJ på jobbet',
             children: [
               _ContactRow(
-                  icon: LucideIcons.user, label: offer.job.assignedDjName!),
+                icon: LucideIcons.user,
+                label: offer.job.assignedDjName!,
+              ),
             ],
           ),
           const SizedBox(height: DSSpacing.s4),
@@ -382,18 +419,18 @@ class _ServiceOfferDetailScreenState
 
   // ── Lost ───────────────────────────────────────────────────────────
   Widget _lostBody(ServiceOffer offer) => ListView(
-        padding: const EdgeInsets.all(DSSpacing.s4),
-        children: [
-          _TopStatusRow(offer: offer),
-          const SizedBox(height: DSSpacing.s3),
-          _LostBanner(),
-          const SizedBox(height: DSSpacing.s4),
-          ..._sharedBidSections(),
-          const SizedBox(height: DSSpacing.s4),
-          _JobHeroCard(offer: offer),
-          const SizedBox(height: DSSpacing.s8),
-        ],
-      );
+    padding: const EdgeInsets.all(DSSpacing.s4),
+    children: [
+      _TopStatusRow(offer: offer),
+      const SizedBox(height: DSSpacing.s3),
+      _LostBanner(),
+      const SizedBox(height: DSSpacing.s4),
+      ..._sharedBidSections(),
+      const SizedBox(height: DSSpacing.s4),
+      _JobHeroCard(offer: offer),
+      const SizedBox(height: DSSpacing.s8),
+    ],
+  );
 }
 
 // ─── Job Hero Card ────────────────────────────────────────────────────────────
@@ -405,12 +442,12 @@ class _JobHeroCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final job = offer.job;
-    final dateStr =
-        DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);
+    final dateStr = DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);
 
-    final hasExtra = (job.genres != null && job.genres!.isNotEmpty) ||
+    final hasExtra =
+        (job.genres != null && job.genres!.isNotEmpty) ||
         (job.leadRequest != null && job.leadRequest!.isNotEmpty) ||
         (job.additionalInformation != null &&
             job.additionalInformation!.isNotEmpty) ||
@@ -434,14 +471,14 @@ class _JobHeroCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   eventTypeLabel(job.eventType),
-                  style:
-                      DSTextStyle.headingMd.copyWith(color: _c.text.primary),
+                  style: DSTextStyle.headingMd.copyWith(color: _c.text.primary),
                 ),
               ),
               const SizedBox(width: 8),
               JobIdBadge(
-                  id: offer.jobId ?? offer.extJobId ?? 0,
-                  isExtJob: offer.isExtJob),
+                id: offer.jobId ?? offer.extJobId ?? 0,
+                isExtJob: offer.isExtJob,
+              ),
             ],
           ),
           const SizedBox(height: DSSpacing.s3),
@@ -449,42 +486,51 @@ class _JobHeroCard extends StatelessWidget {
           // Meta rows
           _MetaRow(icon: LucideIcons.calendar, label: dateStr),
           const SizedBox(height: DSSpacing.s2),
+          // Time display mirrors the open job card (job_card.dart, musician view): musician_only
+          // shows the saxofonist start (falling back to the event time), otherwise the DJ time is
+          // labelled "DJ:" and the saxofonist start is shown separately.
           if (job.roleType == 'musician_only') ...[
-            if (job.musicianStartTime != null) ...[
-              _MetaRow(icon: LucideIcons.clock, label: 'Spillestart: ${job.musicianStartTime}'),
-              const SizedBox(height: DSSpacing.s2),
-            ],
-          ] else ...[
             _MetaRow(
-              icon: LucideIcons.clock,
-              label: job.requestedSaxophonist || job.roleType == 'dj_and_musician'
-                  ? 'DJ: ${job.timeDisplay}'
-                  : job.timeDisplay,
+              icon:
+                  job.musicianStartTime != null
+                      ? LucideIcons.music
+                      : LucideIcons.clock,
+              label:
+                  job.musicianStartTime != null
+                      ? 'Saxofonist: ${job.musicianStartTime}'
+                      : job.timeDisplay,
             ),
             const SizedBox(height: DSSpacing.s2),
+          ] else ...[
+            _MetaRow(icon: LucideIcons.clock, label: 'DJ: ${job.timeDisplay}'),
+            const SizedBox(height: DSSpacing.s2),
             if (job.musicianStartTime != null) ...[
-              _MetaRow(icon: LucideIcons.music, label: 'Saxofonist: ${job.musicianStartTime}'),
+              _MetaRow(
+                icon: LucideIcons.music,
+                label: 'Saxofonist: ${job.musicianStartTime}',
+              ),
               const SizedBox(height: DSSpacing.s2),
             ],
           ],
           _MetaRow(icon: LucideIcons.flag, label: job.region),
-          if (job.city.isNotEmpty) ...[
+          if (job.placeLabel.isNotEmpty) ...[
             const SizedBox(height: DSSpacing.s2),
-            _MetaRow(icon: LucideIcons.mapPin, label: job.city),
+            _MetaRow(icon: LucideIcons.mapPin, label: job.placeLabel),
           ],
           if (job.guestsAmount > 0) ...[
             const SizedBox(height: DSSpacing.s2),
             _MetaRow(
-                icon: LucideIcons.users,
-                label: '${job.guestsAmount} gæster'),
+              icon: LucideIcons.users,
+              label: '${job.guestsAmount} gæster',
+            ),
           ],
           if (job.requestedMusicianHours != null &&
               job.requestedMusicianHours! > 0) ...[
             const SizedBox(height: DSSpacing.s2),
             _MetaRow(
-                icon: LucideIcons.timer,
-                label:
-                    '${job.requestedMusicianHours!.toStringAsFixed(0)} timers spilletid ønsket'),
+              icon: LucideIcons.timer,
+              label: '${job.musicianHoursDisplay} timers spilletid ønsket',
+            ),
           ],
 
           if (hasExtra) ...[
@@ -495,78 +541,122 @@ class _JobHeroCard extends StatelessWidget {
 
           // Genres
           if (job.genres != null && job.genres!.isNotEmpty) ...[
-            Text('Genrer',
-                style: DSTextStyle.labelSm
-                    .copyWith(color: _c.text.muted, fontWeight: FontWeight.w600)),
+            Text(
+              'Genrer',
+              style: DSTextStyle.labelSm.copyWith(
+                color: _c.text.muted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: DSSpacing.s2),
             Wrap(
               spacing: 6,
               runSpacing: 6,
-              children: job.genres!
-                  .map((g) => Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: DSSpacing.s2, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _c.bg.inputBg,
-                          borderRadius: BorderRadius.circular(DSRadius.pill),
-                          border: Border.all(color: _c.border.subtle),
-                        ),
-                        child: Text(g,
+              children:
+                  job.genres!
+                      .map(
+                        (g) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: DSSpacing.s2,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _c.bg.inputBg,
+                            borderRadius: BorderRadius.circular(DSRadius.pill),
+                            border: Border.all(color: _c.border.subtle),
+                          ),
+                          child: Text(
+                            g,
                             style: DSTextStyle.bodySm.copyWith(
-                                fontSize: 12, color: _c.text.secondary)),
-                      ))
-                  .toList(),
+                              fontSize: 12,
+                              color: _c.text.secondary,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
             ),
             const SizedBox(height: DSSpacing.s3),
           ],
 
           // Customer request
           if (job.leadRequest != null && job.leadRequest!.isNotEmpty) ...[
-            Text('Kundens ønske',
-                style: DSTextStyle.labelSm
-                    .copyWith(color: _c.text.muted, fontWeight: FontWeight.w600)),
+            Text(
+              'Kundens ønske',
+              style: DSTextStyle.labelSm.copyWith(
+                color: _c.text.muted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: DSSpacing.s1),
-            Text(job.leadRequest!,
-                style: DSTextStyle.bodyMd
-                    .copyWith(color: _c.text.secondary, height: 1.5)),
+            Text(
+              job.leadRequest!,
+              style: DSTextStyle.bodyMd.copyWith(
+                color: _c.text.secondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: DSSpacing.s2),
+            CopyHintRow(
+              text: job.leadRequest!,
+              copiedTitle: 'Kundens ønske kopieret',
+            ),
             const SizedBox(height: DSSpacing.s3),
           ],
 
           // Additional info
           if (job.additionalInformation != null &&
               job.additionalInformation!.isNotEmpty) ...[
-            Text('Yderligere information',
-                style: DSTextStyle.labelSm
-                    .copyWith(color: _c.text.muted, fontWeight: FontWeight.w600)),
+            Text(
+              'Yderligere information',
+              style: DSTextStyle.labelSm.copyWith(
+                color: _c.text.muted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: DSSpacing.s1),
-            Text(job.additionalInformation!,
-                style: DSTextStyle.bodyMd
-                    .copyWith(color: _c.text.secondary, height: 1.5)),
+            Text(
+              job.additionalInformation!,
+              style: DSTextStyle.bodyMd.copyWith(
+                color: _c.text.secondary,
+                height: 1.5,
+              ),
+            ),
             const SizedBox(height: DSSpacing.s3),
           ],
 
           // Customer note — strip B2B billing block before displaying
           if (job.customerNote != null && job.customerNote!.isNotEmpty) ...[
-            Builder(builder: (context) {
-              final note = job.customerNote!
-                  .split('\n\nB2B-oplysninger:')
-                  .first
-                  .trim();
-              if (note.isEmpty) return const SizedBox.shrink();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Kundens note',
+            Builder(
+              builder: (context) {
+                final note =
+                    job.customerNote!
+                        .split('\n\nB2B-oplysninger:')
+                        .first
+                        .trim();
+                if (note.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Kundens note',
                       style: DSTextStyle.labelSm.copyWith(
-                          color: _c.text.muted,
-                          fontWeight: FontWeight.w600)),
-                  const SizedBox(height: DSSpacing.s1),
-                  Text(note,
-                      style: DSTextStyle.bodyMd
-                          .copyWith(color: _c.text.secondary, height: 1.5)),
-                ],
-              );
-            }),
+                        color: _c.text.muted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    Text(
+                      note,
+                      style: DSTextStyle.bodyMd.copyWith(
+                        color: _c.text.secondary,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ],
         ],
       ),
@@ -580,14 +670,16 @@ class _MetaRow extends StatelessWidget {
   final String label;
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 14, color: _c.text.muted),
         const SizedBox(width: 8),
         Flexible(
-          child: Text(label,
-              style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary)),
+          child: Text(
+            label,
+            style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary),
+          ),
         ),
       ],
     );
@@ -603,7 +695,7 @@ class _BidSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final payout = offer.musicianPayoutDkk ?? offer.priceDkk;
 
     return Container(
@@ -620,11 +712,14 @@ class _BidSummaryCard extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
-                horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
+              horizontal: DSSpacing.s4,
+              vertical: DSSpacing.s3,
+            ),
             decoration: BoxDecoration(
               color: _c.brand.onPrimary,
               borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(DSRadius.lg - 1)),
+                top: Radius.circular(DSRadius.lg - 1),
+              ),
             ),
             child: Text(
               'Dit tilbud',
@@ -665,15 +760,18 @@ class _BidSummaryCard extends StatelessWidget {
           const Divider(height: 1),
           Padding(
             padding: const EdgeInsets.fromLTRB(
-                DSSpacing.s4, DSSpacing.s3, DSSpacing.s4, DSSpacing.s3),
+              DSSpacing.s4,
+              DSSpacing.s3,
+              DSSpacing.s4,
+              DSSpacing.s3,
+            ),
             child: Row(
               children: [
                 Icon(LucideIcons.music2, size: 14, color: _c.text.muted),
                 const SizedBox(width: 6),
                 Text(
                   offer.instrument,
-                  style: DSTextStyle.labelMd
-                      .copyWith(color: _c.text.secondary),
+                  style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
                 ),
               ],
             ),
@@ -699,9 +797,8 @@ class _PriceKpi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
-    final valueColor =
-        highlight ? _c.brand.primaryActive : _c.text.primary;
+    final _c = DSTheme.of(context);
+    final valueColor = highlight ? _c.brand.primaryActive : _c.text.primary;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s3),
       child: Column(
@@ -711,8 +808,10 @@ class _PriceKpi extends StatelessWidget {
             children: [
               Icon(icon, size: 13, color: _c.text.muted),
               const SizedBox(width: 4),
-              Text(label,
-                  style: DSTextStyle.labelSm.copyWith(color: _c.text.muted)),
+              Text(
+                label,
+                style: DSTextStyle.labelSm.copyWith(color: _c.text.muted),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -730,85 +829,6 @@ class _PriceKpi extends StatelessWidget {
 }
 
 // ─── Customer Deadline Banner ─────────────────────────────────────────────────
-
-class _CustomerDeadlineBanner extends StatelessWidget {
-  const _CustomerDeadlineBanner({required this.offer});
-
-  final ServiceOffer offer;
-
-  DateTime? get _deadline => offer.job.customerDeadline;
-
-  bool get _isExpired {
-    final d = _deadline;
-    return d != null && d.isBefore(DateTime.now());
-  }
-
-  bool get _isUrgent {
-    final d = _deadline;
-    return d != null &&
-        !_isExpired &&
-        d.difference(DateTime.now()).inHours < 24;
-  }
-
-  String _label() {
-    final deadline = _deadline;
-    if (deadline == null) return 'Tilbuddet er endnu ikke sendt til kunden';
-    final diff = deadline.difference(DateTime.now());
-    if (diff.isNegative) return 'Fristen for kundens valg er udløbet';
-    if (diff.inDays >= 2) return 'Kunden skal svare inden ${diff.inDays} dage';
-    if (diff.inHours >= 1) {
-      final h = diff.inHours;
-      final m = diff.inMinutes % 60;
-      return 'Kunden skal svare inden ${h}t ${m}m';
-    }
-    return 'Kunden skal svare inden ${diff.inMinutes} min';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final _c = DSTheme.of(context);
-    final hasDeadline = _deadline != null;
-    final color = _isExpired
-        ? _c.state.danger
-        : _isUrgent
-            ? _c.state.warning
-            : _c.text.secondary;
-    final bg = _isExpired
-        ? _c.state.danger.withValues(alpha: 0.15)
-        : _isUrgent
-            ? _c.state.warning.withValues(alpha: 0.18)
-            : _c.bg.inputBg;
-    final icon = !hasDeadline
-        ? LucideIcons.send
-        : _isExpired
-            ? LucideIcons.timerOff
-            : LucideIcons.hourglass;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-          horizontal: DSSpacing.s3, vertical: DSSpacing.s2),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(DSRadius.sm),
-        border: Border.all(color: color.withValues(alpha: 0.50)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _label(),
-              style: DSTextStyle.labelMd.copyWith(
-                  color: _c.text.primary, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ─── Top Status Row (primary status pill + invoice pill if won) ──────────────
 
@@ -849,7 +869,7 @@ class _LostBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(DSSpacing.s4),
@@ -863,8 +883,10 @@ class _LostBanner extends StatelessWidget {
         children: [
           Text(
             'Udgået',
-            style: DSTextStyle.headingSm
-                .copyWith(color: _c.text.secondary, fontWeight: FontWeight.w700),
+            style: DSTextStyle.headingSm.copyWith(
+              color: _c.text.secondary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -880,11 +902,7 @@ class _LostBanner extends StatelessWidget {
 // ─── Contact Row ─────────────────────────────────────────────────────────────
 
 class _ContactRow extends StatelessWidget {
-  const _ContactRow({
-    required this.icon,
-    required this.label,
-    this.onCopy,
-  });
+  const _ContactRow({required this.icon, required this.label, this.onCopy});
 
   final IconData icon;
   final String label;
@@ -892,7 +910,7 @@ class _ContactRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 18, color: _c.text.secondary),
@@ -905,10 +923,11 @@ class _ContactRow extends StatelessWidget {
         ),
         if (onCopy != null)
           DSIconButton(
-              icon: LucideIcons.copy,
-              variant: DSIconButtonVariant.ghost,
-              size: DSButtonSize.sm,
-              onTap: onCopy),
+            icon: LucideIcons.copy,
+            variant: DSIconButtonVariant.ghost,
+            size: DSButtonSize.sm,
+            onTap: onCopy,
+          ),
       ],
     );
   }
@@ -924,7 +943,7 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(DSSpacing.s4),
@@ -959,7 +978,7 @@ class _WonDjSection extends ConsumerWidget {
   final int jobId;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final djAsync = ref.watch(wonDjInfoForJobProvider(jobId));
 
     return djAsync.when(
@@ -979,27 +998,37 @@ class _WonDjSection extends ConsumerWidget {
                   child: SizedBox(
                     width: 30,
                     height: 30,
-                    child: imageUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
-                              color:
-                                  _c.brand.primary.withValues(alpha: 0.12),
+                    child:
+                        imageUrl != null
+                            ? CachedNetworkImage(
+                              imageUrl: imageUrl,
+                              fit: BoxFit.cover,
+                              placeholder:
+                                  (_, __) => Container(
+                                    color: _c.brand.primary.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                  ),
+                              errorWidget:
+                                  (_, __, ___) => Container(
+                                    color: _c.brand.primary.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    child: Icon(
+                                      LucideIcons.user,
+                                      size: 16,
+                                      color: _c.brand.primaryActive,
+                                    ),
+                                  ),
+                            )
+                            : Container(
+                              color: _c.brand.primary.withValues(alpha: 0.12),
+                              child: Icon(
+                                LucideIcons.user,
+                                size: 16,
+                                color: _c.brand.primaryActive,
+                              ),
                             ),
-                            errorWidget: (_, __, ___) => Container(
-                              color:
-                                  _c.brand.primary.withValues(alpha: 0.12),
-                              child: Icon(LucideIcons.user,
-                                  size: 16,
-                                  color: _c.brand.primaryActive),
-                            ),
-                          )
-                        : Container(
-                            color: _c.brand.primary.withValues(alpha: 0.12),
-                            child: Icon(LucideIcons.user,
-                                size: 16, color: _c.brand.primaryActive),
-                          ),
                   ),
                 ),
                 const SizedBox(width: DSSpacing.s3),
@@ -1021,9 +1050,11 @@ class _WonDjSection extends ConsumerWidget {
                 label: dj.phone!,
                 onCopy: () {
                   Clipboard.setData(ClipboardData(text: dj.phone!));
-                  DSToast.show(context,
-                      variant: DSToastVariant.success,
-                      title: 'Telefon kopieret');
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.success,
+                    title: 'Telefon kopieret',
+                  );
                 },
               ),
             ],
@@ -1068,19 +1099,25 @@ class _MusicianExtraHoursSectionState
 
   bool _isWithinExtraHoursWindow(DateTime eventDate) {
     final todayMidnight = DateTime.now();
-    final eventMidnight =
-        DateTime(eventDate.year, eventDate.month, eventDate.day);
+    final eventMidnight = DateTime(
+      eventDate.year,
+      eventDate.month,
+      eventDate.day,
+    );
     // Show on event day and any day after — never before the event
-    return !eventMidnight.isAfter(DateTime(todayMidnight.year, todayMidnight.month, todayMidnight.day));
+    return !eventMidnight.isAfter(
+      DateTime(todayMidnight.year, todayMidnight.month, todayMidnight.day),
+    );
   }
 
   Future<void> _save() async {
-    final hours =
-        double.tryParse(_hoursController.text.replaceAll(',', '.'));
+    final hours = double.tryParse(_hoursController.text.replaceAll(',', '.'));
     if (hours == null || hours <= 0) {
-      DSToast.show(context,
-          variant: DSToastVariant.error,
-          title: 'Indtast et gyldigt timeantal');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Indtast et gyldigt timeantal',
+      );
       return;
     }
     final ok = await ref
@@ -1089,24 +1126,28 @@ class _MusicianExtraHoursSectionState
     if (!mounted) return;
     if (ok) {
       setState(() => _editing = false);
-      DSToast.show(context,
-          variant: DSToastVariant.success, title: 'Ekstra timer gemt');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.success,
+        title: 'Ekstra timer gemt',
+      );
     } else {
-      DSToast.show(context,
-          variant: DSToastVariant.error,
-          title: 'Kunne ikke gemme ekstra timer. Prøv igen.');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Kunne ikke gemme ekstra timer. Prøv igen.',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final job = widget.offer.job;
     final inWindow = _isWithinExtraHoursWindow(job.date);
     if (!inWindow) return const SizedBox.shrink();
 
-    final isSaving =
-        ref.watch(addMusicianExtraHoursProvider) is AsyncLoading;
+    final isSaving = ref.watch(addMusicianExtraHoursProvider) is AsyncLoading;
     final hasHours = widget.offer.extraHours != null;
 
     return _Section(
@@ -1116,8 +1157,7 @@ class _MusicianExtraHoursSectionState
           hasHours
               ? 'Du registrerede ${widget.offer.extraHours!.toStringAsFixed(1)} ekstra timer.'
               : 'Spillede du flere timer end aftalt? Registrér dem her.',
-          style:
-              DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+          style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
         ),
         if (inWindow) ...[
           if (_editing || !hasHours) ...[
@@ -1126,8 +1166,9 @@ class _MusicianExtraHoursSectionState
               label: 'Ekstra timer',
               hint: 'F.eks. 1.5',
               controller: _hoursController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
             ),
             const SizedBox(height: DSSpacing.s3),
             DSButton(
@@ -1189,8 +1230,11 @@ class _SpecialRequestFeeSectionState
   Future<void> _save() async {
     final fee = int.tryParse(_feeController.text.trim());
     if (fee == null || fee <= 0) {
-      DSToast.show(context,
-          variant: DSToastVariant.error, title: 'Angiv et gyldigt beløb');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Angiv et gyldigt beløb',
+      );
       return;
     }
     final ok = await ref
@@ -1201,9 +1245,11 @@ class _SpecialRequestFeeSectionState
         _currentFee = fee;
         _editing = false;
       });
-      DSToast.show(context,
-          variant: DSToastVariant.success,
-          title: 'Tillæg registreret – vi bekræfter snart');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.success,
+        title: 'Tillæg registreret – vi bekræfter snart',
+      );
     }
   }
 
@@ -1217,16 +1263,27 @@ class _SpecialRequestFeeSectionState
         _editing = false;
         _feeController.clear();
       });
-      DSToast.show(context,
-          variant: DSToastVariant.success, title: 'Tillæg fjernet');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.success,
+        title: 'Tillæg fjernet',
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isSaving = ref.watch(setSpecialRequestFeeProvider) is AsyncLoading;
-    final isRemoving = ref.watch(removeSpecialRequestFeeProvider) is AsyncLoading;
-    final musicianCut = (_currentFee * 0.8).round();
+    final isRemoving =
+        ref.watch(removeSpecialRequestFeeProvider) is AsyncLoading;
+    final musicianCut =
+        (_currentFee *
+                (widget.offer.job.createdAt.toUtc().isBefore(
+                      DateTime.utc(2026, 7, 6),
+                    )
+                    ? 0.8
+                    : 0.77))
+            .round();
 
     // Confirmed
     if (_isConfirmed && _currentFee > 0) {
@@ -1238,24 +1295,35 @@ class _SpecialRequestFeeSectionState
             decoration: BoxDecoration(
               color: _c.state.success.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(DSRadius.md),
-              border: Border.all(color: _c.state.success.withValues(alpha: 0.4)),
+              border: Border.all(
+                color: _c.state.success.withValues(alpha: 0.4),
+              ),
             ),
             child: Row(
               children: [
-                Icon(LucideIcons.checkCircle, size: 16, color: _c.state.success),
+                Icon(
+                  LucideIcons.checkCircle,
+                  size: 16,
+                  color: _c.state.success,
+                ),
                 const SizedBox(width: DSSpacing.s2),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Tillæg bekræftet og lagt til prisen',
-                          style: DSTextStyle.labelMd.copyWith(
-                              color: _c.state.success,
-                              fontWeight: FontWeight.w600)),
                       Text(
-                          '+${_fmt(_currentFee)} kr. (kunde) · +${_fmt(musicianCut)} kr. (dig)',
-                          style: DSTextStyle.bodySm
-                              .copyWith(color: _c.state.success)),
+                        'Tillæg bekræftet og lagt til prisen',
+                        style: DSTextStyle.labelMd.copyWith(
+                          color: _c.state.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '+${_fmt(_currentFee)} kr. (kunde) · +${_fmt(musicianCut)} kr. (dig)',
+                        style: DSTextStyle.bodySm.copyWith(
+                          color: _c.state.success,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1276,8 +1344,9 @@ class _SpecialRequestFeeSectionState
             decoration: BoxDecoration(
               color: _c.state.warning.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(DSRadius.md),
-              border:
-                  Border.all(color: _c.state.warning.withValues(alpha: 0.4)),
+              border: Border.all(
+                color: _c.state.warning.withValues(alpha: 0.4),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1286,19 +1355,24 @@ class _SpecialRequestFeeSectionState
                   children: [
                     Icon(LucideIcons.clock, size: 15, color: _c.state.warning),
                     const SizedBox(width: DSSpacing.s2),
-                    Text('Registreret – vi bekræfter snart',
-                        style: DSTextStyle.labelMd.copyWith(
-                            color: _c.text.primary,
-                            fontWeight: FontWeight.w600)),
+                    Text(
+                      'Registreret – vi bekræfter snart',
+                      style: DSTextStyle.labelMd.copyWith(
+                        color: _c.text.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: DSSpacing.s1),
                 Text(
-                    '+${_fmt(_currentFee)} kr. ekstra til kunden · +${_fmt(musicianCut)} kr. til dig',
-                    style:
-                        DSTextStyle.bodySm.copyWith(color: _c.text.secondary)),
-                Text('Beløbet lægges til prisen, når vi har set det.',
-                    style: DSTextStyle.bodySm.copyWith(color: _c.text.muted)),
+                  '+${_fmt(_currentFee)} kr. ekstra til kunden · +${_fmt(musicianCut)} kr. til dig',
+                  style: DSTextStyle.bodySm.copyWith(color: _c.text.secondary),
+                ),
+                Text(
+                  'Beløbet lægges til prisen, når vi har set det.',
+                  style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+                ),
               ],
             ),
           ),
@@ -1331,7 +1405,7 @@ class _SpecialRequestFeeSectionState
       title: 'Særligt ønske – ekstra tillæg',
       children: [
         Text(
-          'Har du og kunden aftalt et ekstra beløb? Registrer det her — vi ser det og lægger det til prisen. Du får 80%, vi tager 20%.',
+          'Har du og kunden aftalt et ekstra beløb? Registrer det her — vi ser det og lægger det til prisen. Du får 77%, vi tager 23%.',
           style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
         ),
         const SizedBox(height: DSSpacing.s3),
@@ -1379,8 +1453,7 @@ class _MusicianNotesSection extends ConsumerStatefulWidget {
       _MusicianNotesSectionState();
 }
 
-class _MusicianNotesSectionState
-    extends ConsumerState<_MusicianNotesSection> {
+class _MusicianNotesSectionState extends ConsumerState<_MusicianNotesSection> {
   DSColors get _c => DSTheme.of(context);
   late final TextEditingController _controller;
   bool _editing = false;
@@ -1421,7 +1494,7 @@ class _MusicianNotesSectionState
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final isSaving = ref.watch(saveMusicianNotesProvider) is AsyncLoading;
     final hasNotes = (_savedNotes ?? '').isNotEmpty;
 
@@ -1463,55 +1536,57 @@ class _MusicianNotesSectionState
                 ),
             ],
           ),
-        if (!_editing && !hasNotes) ...[
-          const SizedBox(height: DSSpacing.s2),
-          Text(
-            'Ingen noter endnu. Tryk "Tilføj" for at skrive private noter.',
-            style: DSTextStyle.labelMd.copyWith(color: _c.text.muted),
-          ),
-        ] else if (!_editing && hasNotes) ...[
-          const SizedBox(height: DSSpacing.s3),
-          Text(
-            _savedNotes ?? '',
-            style: DSTextStyle.bodyMd
-                .copyWith(color: _c.text.primary, height: 1.5),
-          ),
-        ] else ...[
-          const SizedBox(height: DSSpacing.s3),
-          DSInput(
-            controller: _controller,
-            hint: 'Skriv dine private noter her...',
-            minLines: 3,
-            maxLines: 8,
-          ),
-          const SizedBox(height: DSSpacing.s3),
-          Row(
-            children: [
-              Expanded(
-                child: DSButton(
-                  label: 'Annuller',
-                  variant: DSButtonVariant.secondary,
-                  onTap: () {
-                    _controller.text = _savedNotes ?? '';
-                    setState(() {
-                      _editing = false;
-                      _dirty = false;
-                    });
-                  },
-                ),
+          if (!_editing && !hasNotes) ...[
+            const SizedBox(height: DSSpacing.s2),
+            Text(
+              'Ingen noter endnu. Tryk "Tilføj" for at skrive private noter.',
+              style: DSTextStyle.labelMd.copyWith(color: _c.text.muted),
+            ),
+          ] else if (!_editing && hasNotes) ...[
+            const SizedBox(height: DSSpacing.s3),
+            Text(
+              _savedNotes ?? '',
+              style: DSTextStyle.bodyMd.copyWith(
+                color: _c.text.primary,
+                height: 1.5,
               ),
-              const SizedBox(width: DSSpacing.s2),
-              Expanded(
-                child: DSButton(
-                  label: isSaving ? 'Gemmer...' : 'Gem noter',
-                  variant: DSButtonVariant.primary,
-                  onTap: (isSaving || !_dirty) ? null : _save,
+            ),
+          ] else ...[
+            const SizedBox(height: DSSpacing.s3),
+            DSInput(
+              controller: _controller,
+              hint: 'Skriv dine private noter her...',
+              minLines: 3,
+              maxLines: 8,
+            ),
+            const SizedBox(height: DSSpacing.s3),
+            Row(
+              children: [
+                Expanded(
+                  child: DSButton(
+                    label: 'Annuller',
+                    variant: DSButtonVariant.secondary,
+                    onTap: () {
+                      _controller.text = _savedNotes ?? '';
+                      setState(() {
+                        _editing = false;
+                        _dirty = false;
+                      });
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: DSSpacing.s2),
+                Expanded(
+                  child: DSButton(
+                    label: isSaving ? 'Gemmer...' : 'Gem noter',
+                    variant: DSButtonVariant.primary,
+                    onTap: (isSaving || !_dirty) ? null : _save,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
-      ],
       ),
     );
   }
@@ -1525,11 +1600,13 @@ class _DoneButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
-          vertical: DSSpacing.s3, horizontal: DSSpacing.s4),
+        vertical: DSSpacing.s3,
+        horizontal: DSSpacing.s4,
+      ),
       decoration: BoxDecoration(
         color: _c.state.success.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(DSRadius.md),
@@ -1537,13 +1614,15 @@ class _DoneButton extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.check_circle_outline,
-              size: 18, color: _c.state.success),
+          Icon(Icons.check_circle_outline, size: 18, color: _c.state.success),
           const SizedBox(width: DSSpacing.s2),
-          Text(label,
-              style: DSTextStyle.labelMd.copyWith(
-                  color: _c.state.success,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: DSTextStyle.labelMd.copyWith(
+              color: _c.state.success,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -1556,29 +1635,36 @@ class _PlannedContactBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final dateStr = DateFormat('d. MMMM yyyy', 'da_DK').format(date);
     return Padding(
       padding: const EdgeInsets.only(bottom: DSSpacing.s2),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(
-            vertical: DSSpacing.s2, horizontal: DSSpacing.s3),
+          vertical: DSSpacing.s2,
+          horizontal: DSSpacing.s3,
+        ),
         decoration: BoxDecoration(
           color: _c.state.warning.withValues(alpha: 0.20),
           borderRadius: BorderRadius.circular(DSRadius.md),
-          border:
-              Border.all(color: _c.state.warning.withValues(alpha: 0.55)),
+          border: Border.all(color: _c.state.warning.withValues(alpha: 0.55)),
         ),
         child: Row(
           children: [
-            Icon(Icons.calendar_today_outlined,
-                size: 14, color: _c.state.warning),
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 14,
+              color: _c.state.warning,
+            ),
             const SizedBox(width: DSSpacing.s2),
-            Text('Husk at kontakte d. $dateStr',
-                style: DSTextStyle.bodySm.copyWith(
-                    color: _c.text.primary,
-                    fontWeight: FontWeight.w600)),
+            Text(
+              'Husk at kontakte d. $dateStr',
+              style: DSTextStyle.bodySm.copyWith(
+                color: _c.text.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -1594,7 +1680,7 @@ class _InfoBanner extends StatelessWidget {
   final String body;
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.all(DSSpacing.s3),
       decoration: BoxDecoration(
@@ -1611,13 +1697,21 @@ class _InfoBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: DSTextStyle.labelSm.copyWith(
-                        color: _c.text.primary, fontWeight: FontWeight.w700)),
+                Text(
+                  title,
+                  style: DSTextStyle.labelSm.copyWith(
+                    color: _c.text.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: DSSpacing.s1),
-                Text(body,
-                    style: DSTextStyle.bodySm
-                        .copyWith(color: _c.text.secondary, height: 1.4)),
+                Text(
+                  body,
+                  style: DSTextStyle.bodySm.copyWith(
+                    color: _c.text.secondary,
+                    height: 1.4,
+                  ),
+                ),
               ],
             ),
           ),

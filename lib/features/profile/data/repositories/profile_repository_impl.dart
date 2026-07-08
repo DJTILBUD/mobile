@@ -151,7 +151,10 @@ class ProfileRepositoryImpl implements ProfileRepository {
     required bool isDj,
   }) async {
     try {
-      final data = await _datasource.fetchPaymentInfo(userId: userId, isDj: isDj);
+      final data = await _datasource.fetchPaymentInfo(
+        userId: userId,
+        isDj: isDj,
+      );
       if (data == null) return null;
       return PaymentInfoModel.fromJson(data).toEntity();
     } on sb.PostgrestException catch (e) {
@@ -176,6 +179,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
           'account_number': info.accountNumber,
           'street': info.street,
           'city_postal_code': info.cityPostalCode,
+          'business_type': info.businessType?.toDbString(),
+          'cvr': info.cvr,
+          'billing_email': info.billingEmail,
         },
       );
     } on sb.PostgrestException catch (e) {
@@ -199,7 +205,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
   @override
   Future<void> saveDjJobFilters(DjJobFilters filters) async {
     try {
-      await _datasource.saveDjJobFilters(DjJobFiltersModel.fromEntity(filters).toJson());
+      await _datasource.saveDjJobFilters(
+        DjJobFiltersModel.fromEntity(filters).toJson(),
+      );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -299,12 +307,16 @@ class ProfileRepositoryImpl implements ProfileRepository {
     required String userId,
     required String filePath,
     required UserFileType type,
+    String? description,
+    void Function(double progress)? onProgress,
   }) async {
     try {
       final data = await _datasource.uploadFile(
         userId: userId,
         filePath: filePath,
         type: type,
+        description: description,
+        onProgress: onProgress,
       );
       return UserFileModel.fromJson(data).toEntity();
     } on sb.PostgrestException catch (e) {
@@ -344,10 +356,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     try {
       final data = await _datasource.createStandardMessage(
         userId: userId,
-        data: {
-          'message_text': messageText,
-          'event_type': eventType,
-        },
+        data: {'message_text': messageText, 'event_type': eventType},
       );
       return StandardMessageModel.fromJson(data).toEntity();
     } on sb.PostgrestException catch (e) {
@@ -364,10 +373,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
     try {
       await _datasource.updateStandardMessage(
         messageId: messageId,
-        data: {
-          'message_text': messageText,
-          'event_type': eventType,
-        },
+        data: {'message_text': messageText, 'event_type': eventType},
       );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
@@ -395,9 +401,10 @@ class ProfileRepositoryImpl implements ProfileRepository {
       );
       return data.map((row) {
         final reads = row['AdminMessageReads'] as List<dynamic>? ?? [];
-        final isRead = isDj
-            ? reads.any((r) => r['djId'] == userId)
-            : reads.any((r) => r['musicianId'] == userId);
+        final isRead =
+            isDj
+                ? reads.any((r) => r['djId'] == userId)
+                : reads.any((r) => r['musicianId'] == userId);
         return AdminMessage(
           id: (row['id'] as num).toInt(),
           header: row['header'] as String,

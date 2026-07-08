@@ -18,20 +18,55 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 
 const _allEventTypes = [
-  'bryllup', 'firmafest', 'fødselsdagsfest', 'julefrokost',
-  'privatfest', 'ungdomsfest', 'klub/bar', 'lounge', 'andet',
+  'bryllup',
+  'firmafest',
+  'fødselsdagsfest',
+  'julefrokost',
+  'privatfest',
+  'ungdomsfest',
+  'klub/bar',
+  'lounge',
+  'andet',
 ];
 const _allRegions = [
-  'Hovedstaden', 'Bornholm', 'Fyn', 'Nordjylland', 'Nordsjælland',
-  'Østjylland', 'Sønderjylland', 'Sydsjælland', 'Vestjylland', 'Vestsjælland',
+  'Hovedstaden',
+  'Bornholm',
+  'Fyn',
+  'Nordjylland',
+  'Nordsjælland',
+  'Østjylland',
+  'Sønderjylland',
+  'Sydsjælland',
+  'Vestjylland',
+  'Vestsjælland',
 ];
 const _djGenres = [
-  'EDM', 'Disco', 'Dansk top', 'Hip hop', 'House', 'Lounge', 'Pop',
-  'R&B', 'Reggae', 'Remixes', 'Rock', 'Techno', 'Top 50 (DK)',
-  'Top 50 (global)', "70'er/80'er/90'er",
+  'EDM',
+  'Disco',
+  'Dansk top',
+  'Hip hop',
+  'House',
+  'Lounge',
+  'Pop',
+  'R&B',
+  'Reggae',
+  'Remixes',
+  'Rock',
+  'Techno',
+  'Top 50 (DK)',
+  'Top 50 (global)',
+  '70’er/80’er/90’er',
 ];
 const _musicianGenres = [
-  'pop', 'house', 'disco', 'funk', 'jazz', 'hip hop', 'bossanova', 'latin', 'soul',
+  'pop',
+  'house',
+  'disco',
+  'funk',
+  'jazz',
+  'hip hop',
+  'bossanova',
+  'latin',
+  'soul',
 ];
 const _weekdayNames = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
 
@@ -43,9 +78,19 @@ const _guestsMax = 1000.0;
 const _guestsDivisions = 50;
 
 const _reviewEventTypes = [
-  'bryllup', 'firmafest', 'fødselsdagsfest', 'fødselsdag',
-  'julefrokost', 'privatfest', 'ungdomsfest', 'klub/bar',
-  'lounge', 'konfirmation', 'studenterfest', 'sommerfest', 'andet',
+  'bryllup',
+  'firmafest',
+  'fødselsdagsfest',
+  'fødselsdag',
+  'julefrokost',
+  'privatfest',
+  'ungdomsfest',
+  'klub/bar',
+  'lounge',
+  'konfirmation',
+  'studenterfest',
+  'sommerfest',
+  'andet',
 ];
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -91,9 +136,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               musician.regions.isNotEmpty;
         }
       case 1:
-        final hasProfilePic = files?.any((f) => f.type == UserFileType.profile) ?? false;
-        final hasCommonPic = files?.any((f) => f.type == UserFileType.common) ?? false;
-        final hasVideo = files?.any((f) => f.type == UserFileType.commonVideo) ?? false;
+        final hasProfilePic =
+            files?.any((f) => f.type == UserFileType.profile) ?? false;
+        final hasCommonPic =
+            files?.any((f) => f.type == UserFileType.common) ?? false;
+        final hasVideo =
+            files?.any((f) => f.type == UserFileType.commonVideo) ?? false;
         return hasProfilePic && hasCommonPic && hasVideo;
       case 2:
         return (reviews?.length ?? 0) >= 3;
@@ -111,13 +159,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }) {
     switch (_step) {
       case 0:
-        return stepComplete ? null : 'Udfyld alle påkrævede profilfelter for at fortsætte';
+        return stepComplete
+            ? null
+            : 'Udfyld alle påkrævede profilfelter for at fortsætte';
       case 1:
         if (stepComplete) return null;
         final missing = <String>[];
-        if (!(files?.any((f) => f.type == UserFileType.profile) ?? false)) missing.add('profilbillede');
-        if (!(files?.any((f) => f.type == UserFileType.common) ?? false)) missing.add('billede');
-        if (!(files?.any((f) => f.type == UserFileType.commonVideo) ?? false)) missing.add('video');
+        if (!(files?.any((f) => f.type == UserFileType.profile) ?? false))
+          missing.add('profilbillede');
+        if (!(files?.any((f) => f.type == UserFileType.common) ?? false))
+          missing.add('billede');
+        if (!(files?.any((f) => f.type == UserFileType.commonVideo) ?? false))
+          missing.add('video');
         return missing.isEmpty ? null : 'Mangler: ${missing.join(', ')}';
       case 2:
         if (stepComplete) return null;
@@ -151,10 +204,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ref.invalidate(djJobFiltersProvider);
       }
 
-      await ref.read(profileRepositoryProvider).setOnboardingCompleted(userId: userId, isDj: _isDj);
+      await ref
+          .read(profileRepositoryProvider)
+          .setOnboardingCompleted(userId: userId, isDj: _isDj);
       markOnboardingComplete();
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Kunne ikke afslutte opsætningen. Prøv igen.'));
+      if (mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: friendlyErrorMessage(
+            e,
+            fallback: 'Kunne ikke afslutte opsætningen. Prøv igen.',
+          ),
+        );
       if (mounted) setState(() => _completing = false);
     }
   }
@@ -162,14 +225,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final dj = _isDj ? ref.watch(djProfileProvider).valueOrNull : null;
-    final musician = !_isDj ? ref.watch(musicianProfileProvider).valueOrNull : null;
+    final musician =
+        !_isDj ? ref.watch(musicianProfileProvider).valueOrNull : null;
     final files = ref.watch(userFilesProvider).valueOrNull;
-    final reviews = (_isDj ? ref.watch(djReviewsProvider) : ref.watch(musicianReviewsProvider))
-        .valueOrNull;
+    final reviews =
+        (_isDj
+                ? ref.watch(djReviewsProvider)
+                : ref.watch(musicianReviewsProvider))
+            .valueOrNull;
 
     final stepComplete = _computeStepComplete(
-      dj: dj, musician: musician, files: files, reviews: reviews);
-    final hint = _computeStepHint(stepComplete: stepComplete, reviews: reviews, files: files);
+      dj: dj,
+      musician: musician,
+      files: files,
+      reviews: reviews,
+    );
+    final hint = _computeStepHint(
+      stepComplete: stepComplete,
+      reviews: reviews,
+      files: files,
+    );
 
     return PopScope(
       canPop: false,
@@ -191,24 +266,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildHeader() {
-    final titles = _isDj
-        ? ['Din profil', 'Billeder & video', 'Anmeldelser', 'Jobfiltre']
-        : ['Din profil', 'Billeder & video', 'Anmeldelser'];
-    final subtitles = _isDj
-        ? [
-            'Bekræft at dine profiloplysninger er udfyldt',
-            'Upload mindst 1 profilbillede (video er valgfri)',
-            'Tilføj mindst 3 anmeldelser fra kunder',
-            'Tilpas hvilke jobs du vil se — eller behold standarderne',
-          ]
-        : [
-            'Bekræft at dine profiloplysninger er udfyldt',
-            'Upload mindst 1 profilbillede (video er valgfri)',
-            'Tilføj mindst 3 anmeldelser fra kunder',
-          ];
+    final titles =
+        _isDj
+            ? ['Din profil', 'Billeder & video', 'Anmeldelser', 'Jobfiltre']
+            : ['Din profil', 'Billeder & video', 'Anmeldelser'];
+    final subtitles =
+        _isDj
+            ? [
+              'Bekræft at dine profiloplysninger er udfyldt',
+              'Upload mindst 1 profilbillede (video er valgfri)',
+              'Tilføj mindst 3 anmeldelser fra kunder',
+              'Tilpas hvilke jobs du vil se — eller behold standarderne',
+            ]
+            : [
+              'Bekræft at dine profiloplysninger er udfyldt',
+              'Upload mindst 1 profilbillede (video er valgfri)',
+              'Tilføj mindst 3 anmeldelser fra kunder',
+            ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(DSSpacing.s4, DSSpacing.s6, DSSpacing.s4, DSSpacing.s2),
+      padding: const EdgeInsets.fromLTRB(
+        DSSpacing.s4,
+        DSSpacing.s6,
+        DSSpacing.s4,
+        DSSpacing.s2,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -218,8 +300,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.chevronLeft, size: 20, color: _c.text.secondary),
-                  Text('Tilbage', style: DSTextStyle.bodySm.copyWith(color: _c.text.secondary)),
+                  Icon(
+                    LucideIcons.chevronLeft,
+                    size: 20,
+                    color: _c.text.secondary,
+                  ),
+                  Text(
+                    'Tilbage',
+                    style: DSTextStyle.bodySm.copyWith(
+                      color: _c.text.secondary,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -227,12 +318,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ],
           Text(
             'Opsætning',
-            style: DSTextStyle.headingLg.copyWith(fontWeight: FontWeight.w800, color: _c.text.primary),
+            style: DSTextStyle.headingLg.copyWith(
+              fontWeight: FontWeight.w800,
+              color: _c.text.primary,
+            ),
           ),
           const SizedBox(height: DSSpacing.s1),
           Text(
             titles[_step],
-            style: DSTextStyle.headingMd.copyWith(color: _c.brand.primary, fontWeight: FontWeight.w700),
+            style: DSTextStyle.headingMd.copyWith(
+              color: _c.brand.primary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: DSSpacing.s1),
           Text(
@@ -246,14 +343,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildStepIndicator() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DSSpacing.s4,
+        vertical: DSSpacing.s3,
+      ),
       child: Row(
         children: List.generate(_totalSteps, (i) {
           final done = i < _step;
           final active = i == _step;
           return Expanded(
             child: Padding(
-              padding: EdgeInsets.only(right: i < _totalSteps - 1 ? DSSpacing.s2 : 0),
+              padding: EdgeInsets.only(
+                right: i < _totalSteps - 1 ? DSSpacing.s2 : 0,
+              ),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
                 height: 4,
@@ -275,8 +377,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       1 => const _PicturesStep(),
       2 => _ReviewsStep(isDj: _isDj),
       3 => _FiltersStep(
-          onChanged: (filters) => setState(() => _djFilters = filters),
-        ),
+        onChanged: (filters) => setState(() => _djFilters = filters),
+      ),
       _ => const SizedBox(),
     };
   }
@@ -285,7 +387,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isLast = _step == _totalSteps - 1;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(DSSpacing.s4, DSSpacing.s2, DSSpacing.s4, DSSpacing.s6),
+      padding: const EdgeInsets.fromLTRB(
+        DSSpacing.s4,
+        DSSpacing.s2,
+        DSSpacing.s4,
+        DSSpacing.s6,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -326,25 +433,42 @@ class _ProfileStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final _c = DSTheme.of(context);
-    final profileAsync = isDj ? ref.watch(djProfileProvider) : ref.watch(musicianProfileProvider);
+    final profileAsync =
+        isDj
+            ? ref.watch(djProfileProvider)
+            : ref.watch(musicianProfileProvider);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4, vertical: DSSpacing.s6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DSSpacing.s4,
+        vertical: DSSpacing.s6,
+      ),
       child: profileAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: _c.brand.primary)),
-        error: (e, _) => Text('Fejl: $e', style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger)),
+        loading:
+            () => Center(
+              child: CircularProgressIndicator(color: _c.brand.primary),
+            ),
+        error:
+            (e, _) => Text(
+              'Fejl: $e',
+              style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger),
+            ),
         data: (profile) {
-          final rows = isDj
-              ? _djRows(profile as DjProfile)
-              : _musicianRows(profile as MusicianProfile);
+          final rows =
+              isDj
+                  ? _djRows(profile as DjProfile)
+                  : _musicianRows(profile as MusicianProfile);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               DSSurface(
                 child: Column(
-                  children: rows
-                      .map((r) => _ProfileFieldRow(label: r.$1, value: r.$2))
-                      .toList(),
+                  children:
+                      rows
+                          .map(
+                            (r) => _ProfileFieldRow(label: r.$1, value: r.$2),
+                          )
+                          .toList(),
                 ),
               ),
               const SizedBox(height: DSSpacing.s4),
@@ -354,15 +478,18 @@ class _ProfileStep extends ConsumerWidget {
                 iconLeft: LucideIcons.pencil,
                 size: DSButtonSize.md,
                 expand: true,
-                onTap: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: _c.bg.surface,
-                  shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(DSRadius.lg))),
-                  builder: (_) => _EditProfileSheet(isDj: isDj),
-                ),
+                onTap:
+                    () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: _c.bg.surface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(DSRadius.lg),
+                        ),
+                      ),
+                      builder: (_) => _EditProfileSheet(isDj: isDj),
+                    ),
               ),
             ],
           );
@@ -372,21 +499,21 @@ class _ProfileStep extends ConsumerWidget {
   }
 
   List<(String, String)> _djRows(DjProfile dj) => [
-        ('Navn', dj.fullName),
-        ('DJ-navn / firma', dj.companyOrDjName),
-        ('Telefon', dj.phone),
-        ('Om dig', dj.aboutYou),
-        ('Regioner', dj.regions.isEmpty ? '' : '${dj.regions.length} valgt'),
-        ('Genrer', dj.genres.isEmpty ? '' : '${dj.genres.length} valgt'),
-      ];
+    ('Navn', dj.fullName),
+    ('DJ-navn / firma', dj.companyOrDjName),
+    ('Telefon', dj.phone),
+    ('Om dig', dj.aboutYou),
+    ('Regioner', dj.regions.isEmpty ? '' : '${dj.regions.length} valgt'),
+    ('Genrer', dj.genres.isEmpty ? '' : '${dj.genres.length} valgt'),
+  ];
 
   List<(String, String)> _musicianRows(MusicianProfile m) => [
-        ('Navn', m.fullName),
-        ('Telefon', m.phone),
-        ('Instrument', m.instrument),
-        ('Timeløn', m.hourlyRate > 0 ? '${m.hourlyRate} kr/t' : ''),
-        ('Regioner', m.regions.isEmpty ? '' : '${m.regions.length} valgt'),
-      ];
+    ('Navn', m.fullName),
+    ('Telefon', m.phone),
+    ('Instrument', m.instrument),
+    ('Timeløn', m.hourlyRate > 0 ? '${m.hourlyRate} kr/t' : ''),
+    ('Regioner', m.regions.isEmpty ? '' : '${m.regions.length} valgt'),
+  ];
 }
 
 class _ProfileFieldRow extends StatelessWidget {
@@ -414,7 +541,10 @@ class _ProfileFieldRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: DSTextStyle.labelSm.copyWith(color: _c.text.muted)),
+                Text(
+                  label,
+                  style: DSTextStyle.labelSm.copyWith(color: _c.text.muted),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   filled ? value : 'Mangler — rediger din profil',
@@ -532,56 +662,66 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
       final repo = ref.read(profileRepositoryProvider);
       if (widget.isDj) {
         final cur = ref.read(djProfileProvider).value!;
-        await repo.updateDjProfile(DjProfile(
-          id: cur.id,
-          fullName: _fullNameCtrl.text.trim(),
-          companyOrDjName: _djNameCtrl.text.trim(),
-          phone: _phoneCtrl.text.trim(),
-          aboutYou: _aboutCtrl.text.trim(),
-          pricePerExtraHour: cur.pricePerExtraHour,
-          regions: _selectedRegions,
-          genres: _selectedGenres,
-          canPlayWithSax: cur.canPlayWithSax,
-          allowPublicDjProfile: cur.allowPublicDjProfile,
-          soundcloudUrl: cur.soundcloudUrl,
-          venuesAndEvents: cur.venuesAndEvents,
-        ));
+        await repo.updateDjProfile(
+          DjProfile(
+            id: cur.id,
+            fullName: _fullNameCtrl.text.trim(),
+            companyOrDjName: _djNameCtrl.text.trim(),
+            phone: _phoneCtrl.text.trim(),
+            aboutYou: _aboutCtrl.text.trim(),
+            pricePerExtraHour: cur.pricePerExtraHour,
+            regions: _selectedRegions,
+            genres: _selectedGenres,
+            canPlayWithSax: cur.canPlayWithSax,
+            allowPublicDjProfile: cur.allowPublicDjProfile,
+            soundcloudUrl: cur.soundcloudUrl,
+            venuesAndEvents: cur.venuesAndEvents,
+          ),
+        );
         ref.invalidate(djProfileProvider);
         await ref.read(djProfileProvider.future);
       } else {
         final cur = ref.read(musicianProfileProvider).value!;
-        await repo.updateMusicianProfile(MusicianProfile(
-          id: cur.id,
-          fullName: _fullNameCtrl.text.trim(),
-          phone: _phoneCtrl.text.trim(),
-          instrument: cur.instrument,
-          hourlyRate: int.tryParse(_hourlyRateCtrl.text) ?? cur.hourlyRate,
-          minimumBookingRate: cur.minimumBookingRate,
-          regions: _selectedRegions,
-          aboutText: cur.aboutText,
-          experienceYears: cur.experienceYears,
-          genres: _selectedGenres.isEmpty ? cur.genres : _selectedGenres,
-          djSaxCollaboration: cur.djSaxCollaboration,
-          venuesAndEvents: cur.venuesAndEvents,
-        ));
+        await repo.updateMusicianProfile(
+          MusicianProfile(
+            id: cur.id,
+            fullName: _fullNameCtrl.text.trim(),
+            phone: _phoneCtrl.text.trim(),
+            instrument: cur.instrument,
+            hourlyRate: int.tryParse(_hourlyRateCtrl.text) ?? cur.hourlyRate,
+            minimumBookingRate: cur.minimumBookingRate,
+            regions: _selectedRegions,
+            aboutText: cur.aboutText,
+            experienceYears: cur.experienceYears,
+            genres: _selectedGenres.isEmpty ? cur.genres : _selectedGenres,
+            djSaxCollaboration: cur.djSaxCollaboration,
+            venuesAndEvents: cur.venuesAndEvents,
+          ),
+        );
         ref.invalidate(musicianProfileProvider);
         await ref.read(musicianProfileProvider.future);
       }
       if (mounted) {
-        DSToast.show(context, variant: DSToastVariant.success, title: 'Profil gemt');
+        DSToast.show(
+          context,
+          variant: DSToastVariant.success,
+          title: 'Profil gemt',
+        );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
         final msg = e.toString();
-        final isSaxRegionLimit =
-            msg.contains('musicians_saxophone_regions_max_two');
+        final isSaxRegionLimit = msg.contains(
+          'musicians_saxophone_regions_max_two',
+        );
         DSToast.show(
           context,
           variant: DSToastVariant.error,
-          title: isSaxRegionLimit
-              ? 'Saxofonister kan kun vælge 2 regioner'
-              : 'Kunne ikke gemme. Prøv igen.',
+          title:
+              isSaxRegionLimit
+                  ? 'Saxofonister kan kun vælge 2 regioner'
+                  : 'Kunne ikke gemme. Prøv igen.',
         );
       }
     } finally {
@@ -592,7 +732,9 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
   @override
   Widget build(BuildContext context) {
     final profileAsync =
-        widget.isDj ? ref.watch(djProfileProvider) : ref.watch(musicianProfileProvider);
+        widget.isDj
+            ? ref.watch(djProfileProvider)
+            : ref.watch(musicianProfileProvider);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -605,12 +747,18 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
         key: _formKey,
         child: SingleChildScrollView(
           child: profileAsync.when(
-            loading: () => SizedBox(
-              height: 120,
-              child: Center(child: CircularProgressIndicator(color: _c.brand.primary)),
-            ),
-            error: (e, _) =>
-                Text('Fejl: $e', style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger)),
+            loading:
+                () => SizedBox(
+                  height: 120,
+                  child: Center(
+                    child: CircularProgressIndicator(color: _c.brand.primary),
+                  ),
+                ),
+            error:
+                (e, _) => Text(
+                  'Fejl: $e',
+                  style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger),
+                ),
             data: (profile) {
               if (widget.isDj) {
                 _initDj(profile as DjProfile);
@@ -633,7 +781,9 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
         Text(
           'Rediger profil',
           style: DSTextStyle.headingMd.copyWith(
-              fontWeight: FontWeight.w700, color: _c.text.primary),
+            fontWeight: FontWeight.w700,
+            color: _c.text.primary,
+          ),
         ),
         const SizedBox(height: DSSpacing.s4),
         DSInput(
@@ -646,7 +796,8 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
           DSInput(
             controller: _djNameCtrl,
             label: 'DJ / firma navn',
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
+            validator:
+                (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
           ),
         ],
         const SizedBox(height: DSSpacing.s3),
@@ -664,7 +815,8 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
             maxLines: 4,
             maxLength: 600,
             showCounter: true,
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
+            validator:
+                (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
           ),
         ],
         if (!widget.isDj) ...[
@@ -691,13 +843,16 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _allRegions
-              .map((r) => _OnboardingFilterChip(
-                    label: r,
-                    active: _selectedRegions.contains(r),
-                    onTap: () => _toggleRegion(r),
-                  ))
-              .toList(),
+          children:
+              _allRegions
+                  .map(
+                    (r) => _OnboardingFilterChip(
+                      label: r,
+                      active: _selectedRegions.contains(r),
+                      onTap: () => _toggleRegion(r),
+                    ),
+                  )
+                  .toList(),
         ),
         const SizedBox(height: DSSpacing.s4),
         Text(
@@ -708,13 +863,16 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: (widget.isDj ? _djGenres : _musicianGenres)
-              .map((g) => _OnboardingFilterChip(
-                    label: g,
-                    active: _selectedGenres.contains(g),
-                    onTap: () => _toggleGenre(g),
-                  ))
-              .toList(),
+          children:
+              (widget.isDj ? _djGenres : _musicianGenres)
+                  .map(
+                    (g) => _OnboardingFilterChip(
+                      label: g,
+                      active: _selectedGenres.contains(g),
+                      onTap: () => _toggleGenre(g),
+                    ),
+                  )
+                  .toList(),
         ),
         const SizedBox(height: DSSpacing.s6),
         DSButton(
@@ -746,6 +904,8 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
   bool _uploadingProfileVideo = false;
   bool _uploadingCommonVideo = false;
   int? _deletingId;
+  // Live upload progress (0..1) per slot while an upload is in flight.
+  final Map<UserFileType, double> _uploadProgress = {};
 
   String get _userId =>
       ref.read(djProfileProvider).value?.id ??
@@ -753,29 +913,61 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
       '';
 
   bool get _busy =>
-      _uploadingProfilePic || _uploadingCommonPic ||
-      _uploadingProfileVideo || _uploadingCommonVideo ||
+      _uploadingProfilePic ||
+      _uploadingCommonPic ||
+      _uploadingProfileVideo ||
+      _uploadingCommonVideo ||
       _deletingId != null;
 
   Future<void> _uploadImage(UserFileType type) async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (picked == null || !mounted) return;
     setState(() {
-      if (type == UserFileType.profile) _uploadingProfilePic = true;
-      else _uploadingCommonPic = true;
+      if (type == UserFileType.profile)
+        _uploadingProfilePic = true;
+      else
+        _uploadingCommonPic = true;
     });
     try {
-      await ref.read(profileRepositoryProvider).uploadFile(
-            userId: _userId, filePath: picked.path, type: type);
+      await ref
+          .read(profileRepositoryProvider)
+          .uploadFile(
+            userId: _userId,
+            filePath: picked.path,
+            type: type,
+            onProgress: (p) {
+              if (mounted) setState(() => _uploadProgress[type] = p);
+            },
+          );
       ref.invalidate(userFilesProvider);
-      if (mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Billede uploadet');
+      if (mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.success,
+          title: 'Billede uploadet',
+        );
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Billedet kunne ikke uploades. Prøv igen.'));
+      if (mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: friendlyErrorMessage(
+            e,
+            fallback: 'Billedet kunne ikke uploades. Prøv igen.',
+          ),
+        );
     } finally {
-      if (mounted) setState(() {
-        if (type == UserFileType.profile) _uploadingProfilePic = false;
-        else _uploadingCommonPic = false;
-      });
+      if (mounted)
+        setState(() {
+          if (type == UserFileType.profile)
+            _uploadingProfilePic = false;
+          else
+            _uploadingCommonPic = false;
+          _uploadProgress.remove(type);
+        });
     }
   }
 
@@ -783,37 +975,75 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
     final picked = await ImagePicker().pickVideo(source: ImageSource.gallery);
     if (picked == null || !mounted) return;
     setState(() {
-      if (type == UserFileType.profileVideo) _uploadingProfileVideo = true;
-      else _uploadingCommonVideo = true;
+      if (type == UserFileType.profileVideo)
+        _uploadingProfileVideo = true;
+      else
+        _uploadingCommonVideo = true;
     });
     try {
-      await ref.read(profileRepositoryProvider).uploadFile(
-            userId: _userId, filePath: picked.path, type: type);
+      await ref
+          .read(profileRepositoryProvider)
+          .uploadFile(
+            userId: _userId,
+            filePath: picked.path,
+            type: type,
+            onProgress: (p) {
+              if (mounted) setState(() => _uploadProgress[type] = p);
+            },
+          );
       ref.invalidate(userFilesProvider);
-      if (mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Video uploadet');
+      if (mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.success,
+          title: 'Video uploadet',
+        );
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Videoen kunne ikke uploades. Prøv igen.'));
+      if (mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: friendlyErrorMessage(
+            e,
+            fallback: 'Videoen kunne ikke uploades. Prøv igen.',
+          ),
+        );
     } finally {
-      if (mounted) setState(() {
-        if (type == UserFileType.profileVideo) _uploadingProfileVideo = false;
-        else _uploadingCommonVideo = false;
-      });
+      if (mounted)
+        setState(() {
+          if (type == UserFileType.profileVideo)
+            _uploadingProfileVideo = false;
+          else
+            _uploadingCommonVideo = false;
+          _uploadProgress.remove(type);
+        });
     }
   }
 
   Future<void> _delete(UserFile file) async {
-    final isVideo = file.type == UserFileType.profileVideo || file.type == UserFileType.commonVideo;
+    final isVideo =
+        file.type == UserFileType.profileVideo ||
+        file.type == UserFileType.commonVideo;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isVideo ? 'Slet video?' : 'Slet billede?'),
-        actions: [
-          DSButton(label: 'Annuller', variant: DSButtonVariant.ghost, size: DSButtonSize.sm,
-              onTap: () => Navigator.of(ctx).pop(false)),
-          DSButton(label: 'Slet', variant: DSButtonVariant.tertiary, size: DSButtonSize.sm,
-              onTap: () => Navigator.of(ctx).pop(true)),
-        ],
-      ),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(isVideo ? 'Slet video?' : 'Slet billede?'),
+            actions: [
+              DSButton(
+                label: 'Annuller',
+                variant: DSButtonVariant.ghost,
+                size: DSButtonSize.sm,
+                onTap: () => Navigator.of(ctx).pop(false),
+              ),
+              DSButton(
+                label: 'Slet',
+                variant: DSButtonVariant.tertiary,
+                size: DSButtonSize.sm,
+                onTap: () => Navigator.of(ctx).pop(true),
+              ),
+            ],
+          ),
     );
     if (ok != true || !mounted) return;
     setState(() => _deletingId = file.id);
@@ -821,7 +1051,15 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
       await ref.read(profileRepositoryProvider).deleteFile(file.id);
       ref.invalidate(userFilesProvider);
     } catch (e) {
-      if (mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Filen kunne ikke slettes. Prøv igen.'));
+      if (mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: friendlyErrorMessage(
+            e,
+            fallback: 'Filen kunne ikke slettes. Prøv igen.',
+          ),
+        );
     } finally {
       if (mounted) setState(() => _deletingId = null);
     }
@@ -832,18 +1070,33 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
     final filesAsync = ref.watch(userFilesProvider);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4, vertical: DSSpacing.s6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DSSpacing.s4,
+        vertical: DSSpacing.s6,
+      ),
       child: filesAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: _c.brand.primary)),
-        error: (e, _) => Text('Fejl: $e', style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger)),
+        loading:
+            () => Center(
+              child: CircularProgressIndicator(color: _c.brand.primary),
+            ),
+        error:
+            (e, _) => Text(
+              'Fejl: $e',
+              style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger),
+            ),
         data: (files) {
-          final profilePics = files.where((f) => f.type == UserFileType.profile).toList();
-          final commonPics = files.where((f) => f.type == UserFileType.common).toList();
-          final profileVideos = files.where((f) => f.type == UserFileType.profileVideo).toList();
-          final commonVideos = files.where((f) => f.type == UserFileType.commonVideo).toList();
+          final profilePics =
+              files.where((f) => f.type == UserFileType.profile).toList();
+          final commonPics =
+              files.where((f) => f.type == UserFileType.common).toList();
+          final profileVideos =
+              files.where((f) => f.type == UserFileType.profileVideo).toList();
+          final commonVideos =
+              files.where((f) => f.type == UserFileType.commonVideo).toList();
           final thumbnailMap = <int, String>{
             for (final f in files)
-              if (f.type == UserFileType.thumbnail && f.thumbnailVideoId != null)
+              if (f.type == UserFileType.thumbnail &&
+                  f.thumbnailVideoId != null)
                 f.thumbnailVideoId!: f.url,
           };
 
@@ -851,77 +1104,127 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Profilbillede (required) ──
-              _MediaSectionHeader(title: 'Profilbillede', required: true,
-                  subtitle: 'Dit primære billede på platformen.'),
+              _MediaSectionHeader(
+                title: 'Profilbillede',
+                required: true,
+                subtitle: 'Dit primære billede på platformen.',
+              ),
               const SizedBox(height: DSSpacing.s3),
               Wrap(
-                spacing: DSSpacing.s3, runSpacing: DSSpacing.s3,
+                spacing: DSSpacing.s3,
+                runSpacing: DSSpacing.s3,
                 children: [
-                  ...profilePics.map((f) => _ImageTile(
-                        file: f, isDeleting: _deletingId == f.id,
-                        onDelete: _busy ? null : () => _delete(f))),
+                  ...profilePics.map(
+                    (f) => _ImageTile(
+                      file: f,
+                      isDeleting: _deletingId == f.id,
+                      onDelete: _busy ? null : () => _delete(f),
+                    ),
+                  ),
                   if (profilePics.isEmpty)
                     _UploadTile(
-                        isLoading: _uploadingProfilePic,
-                        onTap: _busy ? null : () => _uploadImage(UserFileType.profile)),
+                      isLoading: _uploadingProfilePic,
+                      progress: _uploadProgress[UserFileType.profile],
+                      onTap:
+                          _busy
+                              ? null
+                              : () => _uploadImage(UserFileType.profile),
+                    ),
                 ],
               ),
 
               const SizedBox(height: DSSpacing.s6),
 
               // ── Billeder (required, multiple) ──
-              _MediaSectionHeader(title: 'Billeder', required: true,
-                  subtitle: 'Mindst 1 billede af dig i aktion.'),
+              _MediaSectionHeader(
+                title: 'Billeder',
+                required: true,
+                subtitle: 'Mindst 1 billede af dig i aktion.',
+              ),
               const SizedBox(height: DSSpacing.s3),
               Wrap(
-                spacing: DSSpacing.s3, runSpacing: DSSpacing.s3,
+                spacing: DSSpacing.s3,
+                runSpacing: DSSpacing.s3,
                 children: [
-                  ...commonPics.map((f) => _ImageTile(
-                        file: f, isDeleting: _deletingId == f.id,
-                        onDelete: _busy ? null : () => _delete(f))),
+                  ...commonPics.map(
+                    (f) => _ImageTile(
+                      file: f,
+                      isDeleting: _deletingId == f.id,
+                      onDelete: _busy ? null : () => _delete(f),
+                    ),
+                  ),
                   _UploadTile(
-                      isLoading: _uploadingCommonPic,
-                      onTap: _busy ? null : () => _uploadImage(UserFileType.common)),
+                    isLoading: _uploadingCommonPic,
+                    progress: _uploadProgress[UserFileType.common],
+                    onTap:
+                        _busy ? null : () => _uploadImage(UserFileType.common),
+                  ),
                 ],
               ),
 
               const SizedBox(height: DSSpacing.s6),
 
               // ── Video (required) ──
-              _MediaSectionHeader(title: 'Video', required: true,
-                  subtitle: 'Et klip af dig i aktion.'),
+              _MediaSectionHeader(
+                title: 'Video',
+                required: true,
+                subtitle: 'Et klip af dig i aktion.',
+              ),
               const SizedBox(height: DSSpacing.s3),
               if (commonVideos.isNotEmpty)
-                ...commonVideos.map((f) => Padding(
-                      padding: const EdgeInsets.only(bottom: DSSpacing.s3),
-                      child: _VideoTile(
-                          file: f, label: 'Video uploadet',
-                          thumbnailUrl: thumbnailMap[f.id],
-                          isDeleting: _deletingId == f.id,
-                          onDelete: _busy ? null : () => _delete(f))))
+                ...commonVideos.map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.only(bottom: DSSpacing.s3),
+                    child: _VideoTile(
+                      file: f,
+                      label: 'Video uploadet',
+                      thumbnailUrl: thumbnailMap[f.id],
+                      isDeleting: _deletingId == f.id,
+                      onDelete: _busy ? null : () => _delete(f),
+                    ),
+                  ),
+                )
               else
                 _VideoUploadTile(
-                    isLoading: _uploadingCommonVideo,
-                    onTap: _busy ? null : () => _uploadVideo(UserFileType.commonVideo)),
+                  isLoading: _uploadingCommonVideo,
+                  progress: _uploadProgress[UserFileType.commonVideo],
+                  onTap:
+                      _busy
+                          ? null
+                          : () => _uploadVideo(UserFileType.commonVideo),
+                ),
 
               const SizedBox(height: DSSpacing.s6),
 
               // ── Profiivideo (optional) ──
-              _MediaSectionHeader(title: 'Profiivideo', required: false,
-                  subtitle: 'Et kort klip til din offentlige profil.'),
+              _MediaSectionHeader(
+                title: 'Profiivideo',
+                required: false,
+                subtitle: 'Et kort klip til din offentlige profil.',
+              ),
               const SizedBox(height: DSSpacing.s3),
               if (profileVideos.isNotEmpty)
-                ...profileVideos.map((f) => Padding(
-                      padding: const EdgeInsets.only(bottom: DSSpacing.s3),
-                      child: _VideoTile(
-                          file: f, label: 'Profiivideo uploadet',
-                          thumbnailUrl: thumbnailMap[f.id],
-                          isDeleting: _deletingId == f.id,
-                          onDelete: _busy ? null : () => _delete(f))))
+                ...profileVideos.map(
+                  (f) => Padding(
+                    padding: const EdgeInsets.only(bottom: DSSpacing.s3),
+                    child: _VideoTile(
+                      file: f,
+                      label: 'Profiivideo uploadet',
+                      thumbnailUrl: thumbnailMap[f.id],
+                      isDeleting: _deletingId == f.id,
+                      onDelete: _busy ? null : () => _delete(f),
+                    ),
+                  ),
+                )
               else
                 _VideoUploadTile(
-                    isLoading: _uploadingProfileVideo,
-                    onTap: _busy ? null : () => _uploadVideo(UserFileType.profileVideo)),
+                  isLoading: _uploadingProfileVideo,
+                  progress: _uploadProgress[UserFileType.profileVideo],
+                  onTap:
+                      _busy
+                          ? null
+                          : () => _uploadVideo(UserFileType.profileVideo),
+                ),
             ],
           );
         },
@@ -931,7 +1234,11 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
 }
 
 class _ImageTile extends StatelessWidget {
-  const _ImageTile({required this.file, required this.isDeleting, required this.onDelete});
+  const _ImageTile({
+    required this.file,
+    required this.isDeleting,
+    required this.onDelete,
+  });
 
   final UserFile file;
   final bool isDeleting;
@@ -943,14 +1250,21 @@ class _ImageTile extends StatelessWidget {
     return Stack(
       children: [
         Container(
-          width: 110, height: 110,
+          width: 110,
+          height: 110,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(DSRadius.md),
             border: Border.all(color: _c.border.subtle),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Image.network(file.url, fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Center(child: Icon(LucideIcons.imageOff, color: _c.border.subtle))),
+          child: Image.network(
+            file.url,
+            fit: BoxFit.cover,
+            errorBuilder:
+                (_, __, ___) => Center(
+                  child: Icon(LucideIcons.imageOff, color: _c.border.subtle),
+                ),
+          ),
         ),
         if (isDeleting)
           Positioned.fill(
@@ -959,18 +1273,30 @@ class _ImageTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(DSRadius.md),
                 color: _c.bg.canvas.withValues(alpha: 0.7),
               ),
-              child: Center(child: SizedBox(width: 20, height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: _c.state.danger))),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: _c.state.danger,
+                  ),
+                ),
+              ),
             ),
           )
         else
           Positioned(
-            top: 4, right: 4,
+            top: 4,
+            right: 4,
             child: GestureDetector(
               onTap: onDelete,
               child: Container(
                 padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(color: _c.state.danger, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: _c.state.danger,
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(LucideIcons.x, size: 14, color: _c.text.onDark),
               ),
             ),
@@ -981,9 +1307,14 @@ class _ImageTile extends StatelessWidget {
 }
 
 class _UploadTile extends StatelessWidget {
-  const _UploadTile({required this.isLoading, required this.onTap});
+  const _UploadTile({
+    required this.isLoading,
+    required this.onTap,
+    this.progress,
+  });
 
   final bool isLoading;
+  final double? progress;
   final VoidCallback? onTap;
 
   @override
@@ -992,24 +1323,59 @@ class _UploadTile extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 110, height: 110,
+        width: 110,
+        height: 110,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(DSRadius.md),
           border: Border.all(color: _c.border.subtle),
           color: _c.bg.canvas,
         ),
-        child: isLoading
-            ? Center(child: SizedBox(width: 24, height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: _c.brand.primary)))
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.imagePlus, size: 32, color: _c.text.secondary),
-                  const SizedBox(height: DSSpacing.s1),
-                  Text('Tilføj billede',
-                      style: DSTextStyle.bodySm.copyWith(fontSize: 11, color: _c.text.secondary)),
-                ],
-              ),
+        child:
+            isLoading
+                ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          value: progress,
+                          color: _c.brand.primary,
+                        ),
+                      ),
+                      if (progress != null) ...[
+                        const SizedBox(height: DSSpacing.s2),
+                        Text(
+                          '${(progress! * 100).round()}%',
+                          style: DSTextStyle.bodySm.copyWith(
+                            fontSize: 11,
+                            color: _c.text.secondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                )
+                : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      LucideIcons.imagePlus,
+                      size: 32,
+                      color: _c.text.secondary,
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    Text(
+                      'Tilføj billede',
+                      style: DSTextStyle.bodySm.copyWith(
+                        fontSize: 11,
+                        color: _c.text.secondary,
+                      ),
+                    ),
+                  ],
+                ),
       ),
     );
   }
@@ -1034,29 +1400,38 @@ class _MediaSectionHeader extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(title,
-                style: DSTextStyle.headingSm
-                    .copyWith(fontWeight: FontWeight.w700, color: _c.text.primary)),
+            Text(
+              title,
+              style: DSTextStyle.headingSm.copyWith(
+                fontWeight: FontWeight.w700,
+                color: _c.text.primary,
+              ),
+            ),
             const SizedBox(width: DSSpacing.s2),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: required
-                    ? _c.state.danger.withValues(alpha: 0.1)
-                    : _c.border.subtle,
+                color:
+                    required
+                        ? _c.state.danger.withValues(alpha: 0.1)
+                        : _c.border.subtle,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 required ? 'Påkrævet' : 'Valgfri',
                 style: DSTextStyle.labelSm.copyWith(
-                    color: required ? _c.state.danger : _c.text.muted),
+                  color: required ? _c.state.danger : _c.text.muted,
+                ),
               ),
             ),
           ],
         ),
         if (subtitle != null) ...[
           const SizedBox(height: 2),
-          Text(subtitle!, style: DSTextStyle.bodySm.copyWith(color: _c.text.muted)),
+          Text(
+            subtitle!,
+            style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+          ),
         ],
       ],
     );
@@ -1092,36 +1467,53 @@ class _VideoTile extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(DSRadius.sm),
-            child: thumbnailUrl != null
-                ? Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Image.network(thumbnailUrl!,
-                          width: 64, height: 64, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _videoIcon(_c)),
-                      Container(
-                        width: 64, height: 64,
-                        color: Colors.black.withValues(alpha: 0.25),
-                      ),
-                      Icon(LucideIcons.play, size: 20, color: Colors.white),
-                    ],
-                  )
-                : _videoIcon(_c),
+            child:
+                thumbnailUrl != null
+                    ? Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Image.network(
+                          thumbnailUrl!,
+                          width: 64,
+                          height: 64,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _videoIcon(_c),
+                        ),
+                        Container(
+                          width: 64,
+                          height: 64,
+                          color: Colors.black.withValues(alpha: 0.25),
+                        ),
+                        Icon(LucideIcons.play, size: 20, color: Colors.white),
+                      ],
+                    )
+                    : _videoIcon(_c),
           ),
           const SizedBox(width: DSSpacing.s3),
           Expanded(
-            child: Text(label,
-                style: DSTextStyle.bodyMd.copyWith(color: _c.text.primary)),
+            child: Text(
+              label,
+              style: DSTextStyle.bodyMd.copyWith(color: _c.text.primary),
+            ),
           ),
           if (isDeleting)
-            SizedBox(width: 20, height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: _c.state.danger))
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: _c.state.danger,
+              ),
+            )
           else
             GestureDetector(
               onTap: onDelete,
               child: Container(
                 padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(color: _c.state.danger, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: _c.state.danger,
+                  shape: BoxShape.circle,
+                ),
                 child: Icon(LucideIcons.x, size: 14, color: _c.text.onDark),
               ),
             ),
@@ -1131,19 +1523,25 @@ class _VideoTile extends StatelessWidget {
   }
 
   Widget _videoIcon(DSColors c) => Container(
-        width: 64, height: 64,
-        decoration: BoxDecoration(
-          color: c.brand.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(DSRadius.sm),
-        ),
-        child: Icon(LucideIcons.video, size: 26, color: c.brand.primary),
-      );
+    width: 64,
+    height: 64,
+    decoration: BoxDecoration(
+      color: c.brand.primary.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(DSRadius.sm),
+    ),
+    child: Icon(LucideIcons.video, size: 26, color: c.brand.primary),
+  );
 }
 
 class _VideoUploadTile extends StatelessWidget {
-  const _VideoUploadTile({required this.isLoading, required this.onTap});
+  const _VideoUploadTile({
+    required this.isLoading,
+    required this.onTap,
+    this.progress,
+  });
 
   final bool isLoading;
+  final double? progress;
   final VoidCallback? onTap;
 
   @override
@@ -1159,18 +1557,47 @@ class _VideoUploadTile extends StatelessWidget {
           border: Border.all(color: _c.border.subtle),
           color: _c.bg.canvas,
         ),
-        child: isLoading
-            ? Center(child: SizedBox(width: 24, height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2, color: _c.brand.primary)))
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.video, size: 22, color: _c.text.secondary),
-                  const SizedBox(width: DSSpacing.s2),
-                  Text('Upload profiivideo',
-                      style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary)),
-                ],
-              ),
+        child:
+            isLoading
+                ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          value: progress,
+                          color: _c.brand.primary,
+                        ),
+                      ),
+                      if (progress != null) ...[
+                        const SizedBox(height: DSSpacing.s2),
+                        Text(
+                          '${(progress! * 100).round()}%',
+                          style: DSTextStyle.bodySm.copyWith(
+                            fontSize: 11,
+                            color: _c.text.secondary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                )
+                : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(LucideIcons.video, size: 22, color: _c.text.secondary),
+                    const SizedBox(width: DSSpacing.s2),
+                    Text(
+                      'Upload profiivideo',
+                      style: DSTextStyle.bodyMd.copyWith(
+                        color: _c.text.secondary,
+                      ),
+                    ),
+                  ],
+                ),
       ),
     );
   }
@@ -1186,85 +1613,143 @@ class _ReviewsStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final _c = DSTheme.of(context);
-    final reviewsAsync = isDj ? ref.watch(djReviewsProvider) : ref.watch(musicianReviewsProvider);
+    final reviewsAsync =
+        isDj
+            ? ref.watch(djReviewsProvider)
+            : ref.watch(musicianReviewsProvider);
 
     return reviewsAsync.when(
-      loading: () => Center(child: CircularProgressIndicator(color: _c.brand.primary)),
+      loading:
+          () =>
+              Center(child: CircularProgressIndicator(color: _c.brand.primary)),
       error: (e, _) => Center(child: Text('Fejl: $e')),
-      data: (reviews) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (reviews.length < 3)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
-              child: Container(
-                padding: const EdgeInsets.all(DSSpacing.s3),
-                decoration: BoxDecoration(
-                  color: _c.state.warning.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(DSRadius.md),
-                ),
-                child: Row(children: [
-                  Icon(LucideIcons.info, size: 18, color: _c.state.warning),
-                  const SizedBox(width: DSSpacing.s2),
-                  Expanded(child: Text(
-                    '${reviews.length}/3 anmeldelser tilføjet',
-                    style: DSTextStyle.bodySm.copyWith(color: _c.text.primary),
-                  )),
-                ]),
-              ),
-            ),
-          Expanded(
-            child: reviews.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+      data:
+          (reviews) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (reviews.length < 3)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    DSSpacing.s4,
+                    DSSpacing.s4,
+                    DSSpacing.s4,
+                    0,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(DSSpacing.s3),
+                    decoration: BoxDecoration(
+                      color: _c.state.warning.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(DSRadius.md),
+                    ),
+                    child: Row(
                       children: [
-                        Icon(LucideIcons.star, size: 48, color: _c.border.subtle),
-                        const SizedBox(height: DSSpacing.s3),
-                        Text('Ingen anmeldelser endnu',
-                            style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary)),
+                        Icon(
+                          LucideIcons.info,
+                          size: 18,
+                          color: _c.state.warning,
+                        ),
+                        const SizedBox(width: DSSpacing.s2),
+                        Expanded(
+                          child: Text(
+                            '${reviews.length}/3 anmeldelser tilføjet',
+                            style: DSTextStyle.bodySm.copyWith(
+                              color: _c.text.primary,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(top: DSSpacing.s4, bottom: DSSpacing.s2),
-                      itemCount: reviews.length,
-                      itemBuilder: (ctx, i) => Padding(
-                        padding: const EdgeInsets.only(bottom: DSSpacing.s3),
-                        child: DSSurface(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(reviews[i].customerName,
-                                style: DSTextStyle.headingSm.copyWith(fontSize: 15, color: _c.text.primary)),
-                            const SizedBox(height: DSSpacing.s1),
-                            Text(
-                              '${eventTypeLabel(reviews[i].eventType)} — ${reviews[i].eventDate}',
-                              style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
-                            ),
-                            const SizedBox(height: DSSpacing.s2),
-                            Text(reviews[i].review,
-                                style: DSTextStyle.labelMd.copyWith(
-                                    fontWeight: FontWeight.w400, color: _c.text.secondary)),
-                          ]),
-                        ),
-                      ),
-                    ),
                   ),
+                ),
+              Expanded(
+                child:
+                    reviews.isEmpty
+                        ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.star,
+                                size: 48,
+                                color: _c.border.subtle,
+                              ),
+                              const SizedBox(height: DSSpacing.s3),
+                              Text(
+                                'Ingen anmeldelser endnu',
+                                style: DSTextStyle.bodyMd.copyWith(
+                                  color: _c.text.secondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                        : Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: DSSpacing.s4,
+                          ),
+                          child: ListView.builder(
+                            padding: const EdgeInsets.only(
+                              top: DSSpacing.s4,
+                              bottom: DSSpacing.s2,
+                            ),
+                            itemCount: reviews.length,
+                            itemBuilder:
+                                (ctx, i) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: DSSpacing.s3,
+                                  ),
+                                  child: DSSurface(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          reviews[i].customerName,
+                                          style: DSTextStyle.headingSm.copyWith(
+                                            fontSize: 15,
+                                            color: _c.text.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: DSSpacing.s1),
+                                        Text(
+                                          '${eventTypeLabel(reviews[i].eventType)} — ${reviews[i].eventDate}',
+                                          style: DSTextStyle.bodySm.copyWith(
+                                            color: _c.text.muted,
+                                          ),
+                                        ),
+                                        const SizedBox(height: DSSpacing.s2),
+                                        Text(
+                                          reviews[i].review,
+                                          style: DSTextStyle.labelMd.copyWith(
+                                            fontWeight: FontWeight.w400,
+                                            color: _c.text.secondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                          ),
+                        ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DSSpacing.s4,
+                  DSSpacing.s2,
+                  DSSpacing.s4,
+                  DSSpacing.s2,
+                ),
+                child: DSButton(
+                  label: 'Tilføj anmeldelse',
+                  variant: DSButtonVariant.secondary,
+                  iconLeft: LucideIcons.plus,
+                  size: DSButtonSize.md,
+                  expand: true,
+                  onTap: () => _showAddReview(context, ref),
+                ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(DSSpacing.s4, DSSpacing.s2, DSSpacing.s4, DSSpacing.s2),
-            child: DSButton(
-              label: 'Tilføj anmeldelse',
-              variant: DSButtonVariant.secondary,
-              iconLeft: LucideIcons.plus,
-              size: DSButtonSize.md,
-              expand: true,
-              onTap: () => _showAddReview(context, ref),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1275,22 +1760,38 @@ class _ReviewsStep extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: _c.bg.surface,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg))),
-      builder: (ctx) => _AddReviewSheet(
-        onSave: (name, review, eventType, eventDate) async {
-          final userId = isDj
-              ? ref.read(djProfileProvider).value!.id
-              : ref.read(musicianProfileProvider).value!.id;
-          await ref.read(profileRepositoryProvider).createReview(
-            userId: userId, isDj: isDj, customerName: name,
-            rating: 5, review: review, eventType: eventType, eventDate: eventDate,
-          );
-          ref.invalidate(isDj ? djReviewsProvider : musicianReviewsProvider);
-          if (ctx.mounted) Navigator.of(ctx).pop();
-          if (context.mounted)
-            DSToast.show(context, variant: DSToastVariant.success, title: 'Anmeldelse tilføjet');
-        },
+        borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
       ),
+      builder:
+          (ctx) => _AddReviewSheet(
+            onSave: (name, review, eventType, eventDate) async {
+              final userId =
+                  isDj
+                      ? ref.read(djProfileProvider).value!.id
+                      : ref.read(musicianProfileProvider).value!.id;
+              await ref
+                  .read(profileRepositoryProvider)
+                  .createReview(
+                    userId: userId,
+                    isDj: isDj,
+                    customerName: name,
+                    rating: 5,
+                    review: review,
+                    eventType: eventType,
+                    eventDate: eventDate,
+                  );
+              ref.invalidate(
+                isDj ? djReviewsProvider : musicianReviewsProvider,
+              );
+              if (ctx.mounted) Navigator.of(ctx).pop();
+              if (context.mounted)
+                DSToast.show(
+                  context,
+                  variant: DSToastVariant.success,
+                  title: 'Anmeldelse tilføjet',
+                );
+            },
+          ),
     );
   }
 }
@@ -1298,7 +1799,13 @@ class _ReviewsStep extends ConsumerWidget {
 class _AddReviewSheet extends StatefulWidget {
   const _AddReviewSheet({required this.onSave});
 
-  final Future<void> Function(String name, String review, String eventType, String eventDate) onSave;
+  final Future<void> Function(
+    String name,
+    String review,
+    String eventType,
+    String eventDate,
+  )
+  onSave;
 
   @override
   State<_AddReviewSheet> createState() => _AddReviewSheetState();
@@ -1324,7 +1831,9 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        left: DSSpacing.s6, right: DSSpacing.s6, top: DSSpacing.s6,
+        left: DSSpacing.s6,
+        right: DSSpacing.s6,
+        top: DSSpacing.s6,
         bottom: MediaQuery.of(context).viewInsets.bottom + DSSpacing.s6,
       ),
       child: Form(
@@ -1334,24 +1843,35 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Ny anmeldelse',
-                  style: DSTextStyle.headingMd.copyWith(
-                      fontWeight: FontWeight.w700, color: _c.text.primary)),
+              Text(
+                'Ny anmeldelse',
+                style: DSTextStyle.headingMd.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: _c.text.primary,
+                ),
+              ),
               const SizedBox(height: DSSpacing.s4),
               DSInput(
                 controller: _nameCtrl,
                 label: 'Kundens fornavn',
                 maxLength: 20,
                 showCounter: true,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
+                validator:
+                    (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
               ),
               const SizedBox(height: DSSpacing.s3),
               DSDropdown<String>(
                 label: 'Event type',
                 value: _eventType,
-                items: _reviewEventTypes
-                    .map((t) => DSDropdownItem(value: t, label: eventTypeLabel(t)))
-                    .toList(),
+                items:
+                    _reviewEventTypes
+                        .map(
+                          (t) => DSDropdownItem(
+                            value: t,
+                            label: eventTypeLabel(t),
+                          ),
+                        )
+                        .toList(),
                 onChanged: (v) => setState(() => _eventType = v!),
               ),
               const SizedBox(height: DSSpacing.s3),
@@ -1368,23 +1888,40 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Dato for arrangement',
-                        style: DSTextStyle.bodyMd.copyWith(
-                            color: _c.text.primary, fontWeight: FontWeight.w500)),
+                    Text(
+                      'Dato for arrangement',
+                      style: DSTextStyle.bodyMd.copyWith(
+                        color: _c.text.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const SizedBox(height: DSSpacing.s1),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
+                        horizontal: DSSpacing.s4,
+                        vertical: DSSpacing.s3,
+                      ),
                       decoration: BoxDecoration(
-                          color: _c.bg.inputBg,
-                          borderRadius: BorderRadius.circular(DSRadius.sm)),
-                      child: Row(children: [
-                        Expanded(
-                          child: Text(DateFormat('dd/MM/yyyy').format(_eventDate),
-                              style: DSTextStyle.bodyMd.copyWith(color: _c.text.primary)),
-                        ),
-                        Icon(LucideIcons.calendar, size: 18, color: _c.text.secondary),
-                      ]),
+                        color: _c.bg.inputBg,
+                        borderRadius: BorderRadius.circular(DSRadius.sm),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              DateFormat('dd/MM/yyyy').format(_eventDate),
+                              style: DSTextStyle.bodyMd.copyWith(
+                                color: _c.text.primary,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            LucideIcons.calendar,
+                            size: 18,
+                            color: _c.text.secondary,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1396,7 +1933,8 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
                 maxLength: 750,
                 showCounter: true,
                 maxLines: 4,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
+                validator:
+                    (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
               ),
               const SizedBox(height: DSSpacing.s4),
               DSButton(
@@ -1404,22 +1942,23 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
                 size: DSButtonSize.lg,
                 expand: true,
                 isLoading: _saving,
-                onTap: _saving
-                    ? null
-                    : () async {
-                        if (!_formKey.currentState!.validate()) return;
-                        setState(() => _saving = true);
-                        try {
-                          await widget.onSave(
-                            _nameCtrl.text.trim(),
-                            _reviewCtrl.text.trim(),
-                            _eventType,
-                            DateFormat('yyyy-MM-dd').format(_eventDate),
-                          );
-                        } finally {
-                          if (mounted) setState(() => _saving = false);
-                        }
-                      },
+                onTap:
+                    _saving
+                        ? null
+                        : () async {
+                          if (!_formKey.currentState!.validate()) return;
+                          setState(() => _saving = true);
+                          try {
+                            await widget.onSave(
+                              _nameCtrl.text.trim(),
+                              _reviewCtrl.text.trim(),
+                              _eventType,
+                              DateFormat('yyyy-MM-dd').format(_eventDate),
+                            );
+                          } finally {
+                            if (mounted) setState(() => _saving = false);
+                          }
+                        },
               ),
             ],
           ),
@@ -1468,9 +2007,11 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
     _update(_filters!.copyWith(excludedEventTypes: current));
   }
 
-  void _selectAllEventTypes() => _update(_filters!.copyWith(excludedEventTypes: []));
-  void _deselectAllEventTypes() =>
-      _update(_filters!.copyWith(excludedEventTypes: List.from(_allEventTypes)));
+  void _selectAllEventTypes() =>
+      _update(_filters!.copyWith(excludedEventTypes: []));
+  void _deselectAllEventTypes() => _update(
+    _filters!.copyWith(excludedEventTypes: List.from(_allEventTypes)),
+  );
 
   // ── Regions ──
 
@@ -1499,13 +2040,16 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
   // ── Weekdays ──
 
   void _toggleWeekday(int day) {
-    final current = _filters!.allowedWeekdays == null
-        ? List<int>.generate(7, (i) => i)
-        : List<int>.from(_filters!.allowedWeekdays!);
+    final current =
+        _filters!.allowedWeekdays == null
+            ? List<int>.generate(7, (i) => i)
+            : List<int>.from(_filters!.allowedWeekdays!);
     current.contains(day) ? current.remove(day) : current.add(day);
-    _update(_filters!.copyWith(
-      allowedWeekdays: current.length == 7 ? () => null : () => current,
-    ));
+    _update(
+      _filters!.copyWith(
+        allowedWeekdays: current.length == 7 ? () => null : () => current,
+      ),
+    );
   }
 
   void _applyWeekendPreset() =>
@@ -1514,42 +2058,65 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
   // ── Budget ──
 
   RangeValues get _budgetRange => RangeValues(
-        (_filters!.minBudget ?? _budgetMin).toDouble().clamp(_budgetMin, _budgetMax),
-        (_filters!.maxBudget ?? _budgetMax).toDouble().clamp(_budgetMin, _budgetMax),
-      );
+    (_filters!.minBudget ?? _budgetMin).toDouble().clamp(
+      _budgetMin,
+      _budgetMax,
+    ),
+    (_filters!.maxBudget ?? _budgetMax).toDouble().clamp(
+      _budgetMin,
+      _budgetMax,
+    ),
+  );
 
   void _onBudgetChanged(RangeValues v) {
     final lo = v.start.round();
     final hi = v.end.round();
-    _update(_filters!.copyWith(
-      minBudget: () => lo == _budgetMin.toInt() ? null : lo,
-      maxBudget: () => hi == _budgetMax.toInt() ? null : hi,
-    ));
+    _update(
+      _filters!.copyWith(
+        minBudget: () => lo == _budgetMin.toInt() ? null : lo,
+        maxBudget: () => hi == _budgetMax.toInt() ? null : hi,
+      ),
+    );
   }
 
   // ── Guests ──
 
   RangeValues get _guestsRange => RangeValues(
-        (_filters!.minGuests ?? _guestsMin).toDouble().clamp(_guestsMin, _guestsMax),
-        (_filters!.maxGuests ?? _guestsMax).toDouble().clamp(_guestsMin, _guestsMax),
-      );
+    (_filters!.minGuests ?? _guestsMin).toDouble().clamp(
+      _guestsMin,
+      _guestsMax,
+    ),
+    (_filters!.maxGuests ?? _guestsMax).toDouble().clamp(
+      _guestsMin,
+      _guestsMax,
+    ),
+  );
 
   void _onGuestsChanged(RangeValues v) {
     final lo = v.start.round();
     final hi = v.end.round();
-    _update(_filters!.copyWith(
-      minGuests: () => lo == _guestsMin.toInt() ? null : lo,
-      maxGuests: () => hi == _guestsMax.toInt() ? null : hi,
-    ));
+    _update(
+      _filters!.copyWith(
+        minGuests: () => lo == _guestsMin.toInt() ? null : lo,
+        maxGuests: () => hi == _guestsMax.toInt() ? null : hi,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final filtersAsync = ref.watch(djJobFiltersProvider);
     return filtersAsync.when(
-      loading: () => Center(child: CircularProgressIndicator(color: _c.brand.primary)),
-      error: (e, _) => Center(
-          child: Text('Fejl: $e', style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger))),
+      loading:
+          () =>
+              Center(child: CircularProgressIndicator(color: _c.brand.primary)),
+      error:
+          (e, _) => Center(
+            child: Text(
+              'Fejl: $e',
+              style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger),
+            ),
+          ),
       data: (saved) {
         if (!_initialized) _initFrom(saved);
         return _buildForm();
@@ -1559,10 +2126,16 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
 
   Widget _buildForm() {
     final f = _filters!;
-    final effectiveWeekdays = f.allowedWeekdays ?? List<int>.generate(7, (i) => i);
+    final effectiveWeekdays =
+        f.allowedWeekdays ?? List<int>.generate(7, (i) => i);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, DSSpacing.s2),
+      padding: const EdgeInsets.fromLTRB(
+        DSSpacing.s4,
+        DSSpacing.s4,
+        DSSpacing.s4,
+        DSSpacing.s2,
+      ),
       children: [
         // ── Event types ──
         _FilterSectionHeader(
@@ -1573,12 +2146,18 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
         ),
         const SizedBox(height: DSSpacing.s2),
         Wrap(
-          spacing: 8, runSpacing: 8,
-          children: _allEventTypes.map((type) => _OnboardingFilterChip(
-                label: eventTypeLabel(type),
-                active: !f.excludedEventTypes.contains(type),
-                onTap: () => _toggleEventType(type),
-              )).toList(),
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              _allEventTypes
+                  .map(
+                    (type) => _OnboardingFilterChip(
+                      label: eventTypeLabel(type),
+                      active: !f.excludedEventTypes.contains(type),
+                      onTap: () => _toggleEventType(type),
+                    ),
+                  )
+                  .toList(),
         ),
         const SizedBox(height: DSSpacing.s6),
 
@@ -1591,12 +2170,18 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
         ),
         const SizedBox(height: DSSpacing.s2),
         Wrap(
-          spacing: 8, runSpacing: 8,
-          children: _allRegions.map((r) => _OnboardingFilterChip(
-                label: r,
-                active: !f.excludedRegions.contains(r),
-                onTap: () => _toggleRegion(r),
-              )).toList(),
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              _allRegions
+                  .map(
+                    (r) => _OnboardingFilterChip(
+                      label: r,
+                      active: !f.excludedRegions.contains(r),
+                      onTap: () => _toggleRegion(r),
+                    ),
+                  )
+                  .toList(),
         ),
         const SizedBox(height: DSSpacing.s6),
 
@@ -1609,12 +2194,18 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
         ),
         const SizedBox(height: DSSpacing.s2),
         Wrap(
-          spacing: 8, runSpacing: 8,
-          children: _djGenres.map((g) => _OnboardingFilterChip(
-                label: g,
-                active: !f.excludedGenres.contains(g),
-                onTap: () => _toggleGenre(g),
-              )).toList(),
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              _djGenres
+                  .map(
+                    (g) => _OnboardingFilterChip(
+                      label: g,
+                      active: !f.excludedGenres.contains(g),
+                      onTap: () => _toggleGenre(g),
+                    ),
+                  )
+                  .toList(),
         ),
         const SizedBox(height: DSSpacing.s6),
 
@@ -1623,13 +2214,19 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
           children: [
             Expanded(
               child: _FilterSectionLabel(
-                  title: 'Ugedage', subtitle: 'Vis kun jobs på valgte dage'),
+                title: 'Ugedage',
+                subtitle: 'Vis kun jobs på valgte dage',
+              ),
             ),
             GestureDetector(
               onTap: _applyWeekendPreset,
-              child: Text('Weekend-preset',
-                  style: DSTextStyle.labelSm.copyWith(
-                      fontWeight: FontWeight.w600, color: _c.brand.primaryActive)),
+              child: Text(
+                'Weekend-preset',
+                style: DSTextStyle.labelSm.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: _c.brand.primaryActive,
+                ),
+              ),
             ),
           ],
         ),
@@ -1641,7 +2238,8 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
             return GestureDetector(
               onTap: () => _toggleWeekday(jsDay),
               child: Container(
-                width: 40, height: 40,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: active ? _c.brand.primary : _c.bg.inputBg,
@@ -1651,9 +2249,10 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
                   child: Text(
                     _weekdayNames[jsDay],
                     style: DSTextStyle.bodySm.copyWith(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: active ? _c.brand.onPrimary : _c.text.secondary),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: active ? _c.brand.onPrimary : _c.text.secondary,
+                    ),
                   ),
                 ),
               ),
@@ -1663,7 +2262,10 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
         const SizedBox(height: DSSpacing.s6),
 
         // ── Budget ──
-        _FilterSectionLabel(title: 'Budget (kr.)', subtitle: 'Skjul jobs udenfor dette interval'),
+        _FilterSectionLabel(
+          title: 'Budget (kr.)',
+          subtitle: 'Skjul jobs udenfor dette interval',
+        ),
         DSRangeSlider(
           values: _budgetRange,
           min: _budgetMin,
@@ -1677,7 +2279,9 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
 
         // ── Guests ──
         _FilterSectionLabel(
-            title: 'Antal gæster', subtitle: 'Skjul jobs udenfor dette interval'),
+          title: 'Antal gæster',
+          subtitle: 'Skjul jobs udenfor dette interval',
+        ),
         DSRangeSlider(
           values: _guestsRange,
           min: _guestsMin,
@@ -1705,11 +2309,19 @@ class _FilterSectionLabel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: DSTextStyle.headingSm
-                .copyWith(fontSize: 15, fontWeight: FontWeight.w700, color: _c.text.primary)),
+        Text(
+          title,
+          style: DSTextStyle.headingSm.copyWith(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: _c.text.primary,
+          ),
+        ),
         if (subtitle != null)
-          Text(subtitle!, style: DSTextStyle.bodySm.copyWith(color: _c.text.muted)),
+          Text(
+            subtitle!,
+            style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+          ),
       ],
     );
   }
@@ -1736,19 +2348,30 @@ class _FilterSectionHeader extends StatelessWidget {
         Expanded(child: _FilterSectionLabel(title: title, subtitle: subtitle)),
         GestureDetector(
           onTap: onSelectAll,
-          child: Text('Vælg alle',
-              style: DSTextStyle.labelSm
-                  .copyWith(fontWeight: FontWeight.w600, color: _c.brand.primaryActive)),
+          child: Text(
+            'Vælg alle',
+            style: DSTextStyle.labelSm.copyWith(
+              fontWeight: FontWeight.w600,
+              color: _c.brand.primaryActive,
+            ),
+          ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Text('·', style: DSTextStyle.bodySm.copyWith(color: _c.text.muted)),
+          child: Text(
+            '·',
+            style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+          ),
         ),
         GestureDetector(
           onTap: onDeselectAll,
-          child: Text('Fravælg alle',
-              style: DSTextStyle.labelSm.copyWith(
-                  fontWeight: FontWeight.w600, color: _c.text.muted)),
+          child: Text(
+            'Fravælg alle',
+            style: DSTextStyle.labelSm.copyWith(
+              fontWeight: FontWeight.w600,
+              color: _c.text.muted,
+            ),
+          ),
         ),
       ],
     );
@@ -1756,8 +2379,11 @@ class _FilterSectionHeader extends StatelessWidget {
 }
 
 class _OnboardingFilterChip extends StatelessWidget {
-  const _OnboardingFilterChip(
-      {required this.label, required this.active, required this.onTap});
+  const _OnboardingFilterChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
   final String label;
   final bool active;
   final VoidCallback onTap;
@@ -1774,9 +2400,12 @@ class _OnboardingFilterChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(DSRadius.pill),
           border: active ? null : Border.all(color: _c.border.subtle),
         ),
-        child: Text(label,
-            style: DSTextStyle.labelMd.copyWith(
-                color: active ? _c.brand.onPrimary : _c.text.secondary)),
+        child: Text(
+          label,
+          style: DSTextStyle.labelMd.copyWith(
+            color: active ? _c.brand.onPrimary : _c.text.secondary,
+          ),
+        ),
       ),
     );
   }

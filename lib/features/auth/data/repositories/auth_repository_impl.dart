@@ -70,6 +70,30 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<SignUpResult> signUp({
+    required String email,
+    required String password,
+  }) async {
+    final sb.AuthResponse response;
+    try {
+      response = await _datasource.signUpWithPassword(
+        email: email,
+        password: password,
+      );
+    } on sb.AuthException catch (e) {
+      throw _mapSignUpException(e);
+    }
+
+    // Email confirmation is disabled (project default) → a session comes back and
+    // the brand-new user has no role yet, so they continue to profile setup. If
+    // confirmations are ever enabled there's no session, and they must verify via
+    // the emailed link first (mirrors the web register flow).
+    return response.session != null
+        ? SignUpResult.signedInNeedsSetup
+        : SignUpResult.needsEmailConfirmation;
+  }
+
+  @override
   Future<void> signOut() => _datasource.signOut();
 
   @override
@@ -96,9 +120,37 @@ class AuthRepositoryImpl implements AuthRepository {
     debugPrint('AuthException: code=${e.statusCode} message=${e.message}');
     if (e.statusCode == '429') {
       return const AuthException(
-        'Bas lige ned makker! Du kan kun forsøge at logge ind hvert 60. sekund.',
+        'Du kan kun forsøge at logge ind én gang i minuttet. Prøv venligst igen om lidt.',
       );
     }
     return const AuthException('Forkert email eller adgangskode. Prøv igen.');
+  }
+
+  AppException _mapSignUpException(sb.AuthException e) {
+    debugPrint(
+      'SignUp AuthException: code=${e.statusCode} message=${e.message}',
+    );
+    if (e.statusCode == '429') {
+      return const AuthException(
+        'For mange forsøg. Vent et øjeblik, og prøv igen.',
+      );
+    }
+    final msg = e.message.toLowerCase();
+    if (msg.contains('already registered') ||
+        msg.contains('already been registered') ||
+        msg.contains('already exists')) {
+      return const AuthException(
+        'Der findes allerede en bruger med denne email. Prøv at logge ind i stedet.',
+      );
+    }
+    if (msg.contains('password')) {
+      return const AuthException(
+        'Adgangskoden er for svag. Brug mindst 6 tegn.',
+      );
+    }
+    if (msg.contains('valid email') || msg.contains('invalid email')) {
+      return const AuthException('Indtast en gyldig email.');
+    }
+    return const AuthException('Kunne ikke oprette bruger. Prøv igen senere.');
   }
 }

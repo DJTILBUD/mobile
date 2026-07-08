@@ -263,6 +263,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                         children: [
                           Center(
                             child: GestureDetector(
+                              onTap: () => context.pushNamed(AppRoutes.signup),
+                              child: Text.rich(
+                                TextSpan(
+                                  text: 'Har du ikke en konto? ',
+                                  style: DSTextStyle.bodyMd.copyWith(
+                                    color: _c.text.secondary,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Opret konto',
+                                      style: DSTextStyle.bodyMd.copyWith(
+                                        color: _c.brand.primaryActive,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: DSSpacing.s3),
+                          Center(
+                            child: GestureDetector(
                               onTap:
                                   () => context.pushNamed(
                                     AppRoutes.forgotPassword,

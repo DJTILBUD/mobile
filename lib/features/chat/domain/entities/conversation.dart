@@ -8,6 +8,8 @@ class Conversation {
     required this.isLastMessageFromMe,
     required this.lastMessageIsSystem,
     required this.senderType,
+    this.type = 'job',
+    this.userId,
     this.djId,
     this.musicianId,
     this.jobId,
@@ -18,6 +20,12 @@ class Conversation {
   });
 
   final int id;
+
+  /// 'job' for a job-coordination chat, 'support' for the pinned DJTILBUD channel.
+  final String type;
+
+  /// The support participant (this user) on a support conversation; null otherwise.
+  final String? userId;
   final String? djId;
   final String? musicianId;
   final int? jobId;
@@ -48,4 +56,7 @@ class Conversation {
   final int unreadCount;
 
   bool get hasUnread => unreadCount > 0;
+
+  /// True for the pinned DJTILBUD support channel.
+  bool get isSupport => type == 'support';
 }

@@ -26,15 +26,25 @@ class ChatRepositoryImpl implements ChatRepository {
     required String senderId,
     required String senderType,
     required String message,
+    int? replyToId,
+    String? attachmentUrl,
   }) async {
     final model = await _datasource.sendMessage(
       conversationId: conversationId,
       senderId: senderId,
       senderType: senderType,
       message: message,
+      replyToId: replyToId,
+      attachmentUrl: attachmentUrl,
     );
     return model.toEntity();
   }
+
+  @override
+  Future<String> uploadChatImage({
+    required String userId,
+    required String filePath,
+  }) => _datasource.uploadChatImage(userId: userId, filePath: filePath);
 
   @override
   Future<void> markMessagesAsRead({
@@ -46,4 +56,21 @@ class ChatRepositoryImpl implements ChatRepository {
       currentUserId: currentUserId,
     );
   }
+
+  @override
+  Future<List<MessageReaction>> fetchReactions(int conversationId) =>
+      _datasource.fetchReactions(conversationId);
+
+  @override
+  Future<void> toggleReaction({
+    required int messageId,
+    required int conversationId,
+    required String userId,
+    required String emoji,
+  }) => _datasource.toggleReaction(
+    messageId: messageId,
+    conversationId: conversationId,
+    userId: userId,
+    emoji: emoji,
+  );
 }

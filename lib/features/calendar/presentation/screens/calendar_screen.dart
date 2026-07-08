@@ -16,6 +16,10 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:intl/intl.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
+import 'package:dj_tilbud_app/features/calendar/presentation/widgets/unavailable_dates_panel.dart';
+import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_reminder_provider.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key, required this.role});
@@ -32,10 +36,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   bool _showNew = true;
   bool _showSent = true;
   bool _showWon = true;
+  bool _isEditingUnavailable = false;
 
   static const _monthNames = [
-    'Januar', 'Februar', 'Marts', 'April', 'Maj', 'Juni',
-    'Juli', 'August', 'September', 'Oktober', 'November', 'December',
+    'Januar',
+    'Februar',
+    'Marts',
+    'April',
+    'Maj',
+    'Juni',
+    'Juli',
+    'August',
+    'September',
+    'Oktober',
+    'November',
+    'December',
   ];
 
   @override
@@ -57,18 +72,51 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     ];
   }
 
+  /// In edit mode a tap toggles the date's availability; otherwise it selects
+  /// the day to filter the event list below (existing behaviour).
+  void _onDayTapped(DateTime day, Map<String, int> unavailableMap, bool isDj) {
+    if (_isEditingUnavailable) {
+      final dateStr = DateFormat('yyyy-MM-dd').format(day);
+      final wasUnavailable = unavailableMap.containsKey(dateStr);
+      if (isDj) {
+        ref.read(djUnavailableDatesProvider.notifier).toggle(dateStr);
+      } else {
+        ref.read(musicianUnavailableDatesProvider.notifier).toggle(dateStr);
+      }
+      if (wasUnavailable) {
+        AnalyticsService.logDateUnmarkedUnavailable();
+      } else {
+        AnalyticsService.logDateMarkedUnavailable();
+        ref.read(calendarReminderProvider.notifier).markHandled();
+      }
+    } else {
+      setState(() {
+        _selectedDay =
+            (_selectedDay != null &&
+                    _selectedDay!.year == day.year &&
+                    _selectedDay!.month == day.month &&
+                    _selectedDay!.day == day.day)
+                ? null
+                : day;
+      });
+    }
+  }
+
   List<CalendarEvent> _eventsForView(List<CalendarEvent> all) {
-    if (_selectedDay != null) {
+    if (_selectedDay != null && !_isEditingUnavailable) {
       return all
-          .where((e) =>
-              e.date.year == _selectedDay!.year &&
-              e.date.month == _selectedDay!.month &&
-              e.date.day == _selectedDay!.day)
+          .where(
+            (e) =>
+                e.date.year == _selectedDay!.year &&
+                e.date.month == _selectedDay!.month &&
+                e.date.day == _selectedDay!.day,
+          )
           .toList();
     }
     return all
-        .where((e) =>
-            e.date.year == _month.year && e.date.month == _month.month)
+        .where(
+          (e) => e.date.year == _month.year && e.date.month == _month.month,
+        )
         .toList();
   }
 
@@ -86,14 +134,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         if (job != null) context.pushNamed(AppRoutes.djQuoteForm, extra: job);
       case CalendarEventKind.sent:
         final quote = pendingById[event.id];
-        if (quote != null) context.pushNamed(AppRoutes.quoteDetail, extra: quote);
+        if (quote != null)
+          context.pushNamed(AppRoutes.quoteDetail, extra: quote);
       case CalendarEventKind.won:
         if (event.type == CalendarEventType.internal && event.jobId != null) {
           final quote = wonByJobId[event.jobId!];
-          if (quote != null) context.pushNamed(AppRoutes.quoteDetail, extra: quote);
-        } else if (event.type == CalendarEventType.external && event.extJobId != null) {
+          if (quote != null)
+            context.pushNamed(AppRoutes.quoteDetail, extra: quote);
+        } else if (event.type == CalendarEventType.external &&
+            event.extJobId != null) {
           final extJob = extJobById[event.extJobId!];
-          if (extJob != null) context.pushNamed(AppRoutes.extJobDetail, extra: extJob);
+          if (extJob != null)
+            context.pushNamed(AppRoutes.extJobDetail, extra: extJob);
         }
     }
   }
@@ -108,13 +160,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     switch (event.kind) {
       case CalendarEventKind.newJob:
         final job = jobById[event.id];
-        if (job != null) context.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
+        if (job != null)
+          context.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
       case CalendarEventKind.sent:
         final offer = sentById[event.id];
-        if (offer != null) context.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
+        if (offer != null)
+          context.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
       case CalendarEventKind.won:
         final offer = wonById[event.id];
-        if (offer != null) context.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
+        if (offer != null)
+          context.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
     }
   }
 
@@ -123,38 +178,80 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final c = DSTheme.of(context);
     final isDj = widget.role == MusicianRole.dj;
 
+    // Manually-marked unavailable ("optaget") dates for the current user.
+    final unavailableAsync =
+        isDj
+            ? ref.watch(djUnavailableDatesProvider)
+            : ref.watch(musicianUnavailableDatesProvider);
+    final unavailableMap = unavailableAsync.valueOrNull ?? <String, int>{};
+    final unavailableDays = unavailableMap.keys.toSet();
+
     // ── Data ──
-    final newJobs = isDj
-        ? (ref.watch(filteredDjJobsProvider).valueOrNull ?? <Job>[])
-        : (ref.watch(combinedInstrumentalistJobsProvider).valueOrNull ?? <Job>[]);
+    final newJobs =
+        isDj
+            ? (ref.watch(filteredDjJobsProvider).valueOrNull ?? <Job>[])
+            : (ref.watch(combinedInstrumentalistJobsProvider).valueOrNull ??
+                <Job>[]);
 
-    final sentEvents = isDj
-        ? (ref.watch(pendingDjQuotesProvider).valueOrNull ?? <DjQuote>[])
-            .map(_quoteToEvent)
-            .toList()
-        : (ref.watch(sentServiceOffersProvider).valueOrNull ?? <ServiceOffer>[])
-            .map(_offerToEvent)
-            .toList();
+    final sentEvents =
+        isDj
+            ? (ref.watch(pendingDjQuotesProvider).valueOrNull ?? <DjQuote>[])
+                .map(_quoteToEvent)
+                .toList()
+            : (ref.watch(sentServiceOffersProvider).valueOrNull ??
+                    <ServiceOffer>[])
+                .map(_offerToEvent)
+                .toList();
 
-    final wonEvents = ref.watch(calendarEventsProvider(widget.role)).valueOrNull ?? <CalendarEvent>[];
+    final wonEvents =
+        ref.watch(calendarEventsProvider(widget.role)).valueOrNull ??
+        <CalendarEvent>[];
 
     // Navigation lookup maps
     final jobById = {for (final j in newJobs) j.id: j};
-    final pendingDjById = isDj
-        ? {for (final q in ref.watch(pendingDjQuotesProvider).valueOrNull ?? <DjQuote>[]) q.id: q}
-        : <int, DjQuote>{};
-    final wonDjByJobId = isDj
-        ? {for (final q in ref.watch(wonDjQuotesProvider).valueOrNull ?? <DjQuote>[]) q.jobId: q}
-        : <int, DjQuote>{};
-    final extJobById = isDj
-        ? {for (final e in ref.watch(djExtJobsProvider).valueOrNull ?? <ExtJob>[]) e.id: e}
-        : <int, ExtJob>{};
-    final sentMusicianById = !isDj
-        ? {for (final o in ref.watch(sentServiceOffersProvider).valueOrNull ?? <ServiceOffer>[]) o.id: o}
-        : <int, ServiceOffer>{};
-    final wonMusicianById = !isDj
-        ? {for (final o in ref.watch(wonServiceOffersProvider).valueOrNull ?? <ServiceOffer>[]) o.id: o}
-        : <int, ServiceOffer>{};
+    final pendingDjById =
+        isDj
+            ? {
+              for (final q
+                  in ref.watch(pendingDjQuotesProvider).valueOrNull ??
+                      <DjQuote>[])
+                q.id: q,
+            }
+            : <int, DjQuote>{};
+    final wonDjByJobId =
+        isDj
+            ? {
+              for (final q
+                  in ref.watch(wonDjQuotesProvider).valueOrNull ?? <DjQuote>[])
+                q.jobId: q,
+            }
+            : <int, DjQuote>{};
+    final extJobById =
+        isDj
+            ? {
+              for (final e
+                  in ref.watch(djExtJobsProvider).valueOrNull ?? <ExtJob>[])
+                e.id: e,
+            }
+            : <int, ExtJob>{};
+    final sentMusicianById =
+        !isDj
+            ? {
+              for (final o
+                  in ref.watch(sentServiceOffersProvider).valueOrNull ??
+                      <ServiceOffer>[])
+                o.id: o,
+            }
+            : <int, ServiceOffer>{};
+    final wonMusicianById =
+        !isDj
+            ? {
+              for (final o
+                  in ref.watch(wonServiceOffersProvider).valueOrNull ??
+                      <ServiceOffer>[])
+                o.id: o,
+            }
+            : <int, ServiceOffer>{};
 
     final allEvents = _buildEvents(
       newJobs: newJobs,
@@ -163,14 +260,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
     final visibleEvents = _eventsForView(allEvents);
 
-    final selectedLabel = _selectedDay != null
-        ? '${_selectedDay!.day}. ${_monthNames[_selectedDay!.month - 1]}'
-        : '${_monthNames[_month.month - 1]} ${_month.year}';
+    final selectedLabel =
+        _selectedDay != null
+            ? '${_selectedDay!.day}. ${_monthNames[_selectedDay!.month - 1]}'
+            : '${_monthNames[_month.month - 1]} ${_month.year}';
 
     return Scaffold(
       backgroundColor: c.bg.canvas,
       appBar: AppBar(
-        title: Text('Kalender', style: DSTextStyle.headingSm.copyWith(color: c.text.primary)),
+        title: Text(
+          'Kalender',
+          style: DSTextStyle.headingSm.copyWith(color: c.text.primary),
+        ),
         backgroundColor: c.bg.surface,
         surfaceTintColor: c.bg.surface,
         iconTheme: IconThemeData(color: c.text.primary),
@@ -183,10 +284,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 const SizedBox(height: DSSpacing.s2),
                 CalendarHeader(
                   month: _month,
-                  onMonthChanged: (m) => setState(() {
-                    _month = m;
-                    _selectedDay = null;
-                  }),
+                  onMonthChanged:
+                      (m) => setState(() {
+                        _month = m;
+                        _selectedDay = null;
+                      }),
                   onTodayTapped: () {
                     final now = DateTime.now();
                     setState(() {
@@ -194,13 +296,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       _selectedDay = null;
                     });
                   },
-                  onShare: wonEvents.isNotEmpty
-                      ? () => showIcalExportBottomSheet(
+                  onShare:
+                      wonEvents.isNotEmpty
+                          ? () => showIcalExportBottomSheet(
                             context,
                             events: wonEvents,
                             isDj: isDj,
                           )
-                      : null,
+                          : null,
                 ),
                 const SizedBox(height: DSSpacing.s2),
                 // ── Filter chips ──
@@ -238,23 +341,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   ),
                 ),
                 const SizedBox(height: DSSpacing.s2),
+                // ── Mark-unavailable panel ──
+                UnavailableDatesPanel(
+                  isEditing: _isEditingUnavailable,
+                  onToggleEdit:
+                      () => setState(() {
+                        _isEditingUnavailable = !_isEditingUnavailable;
+                        if (_isEditingUnavailable) _selectedDay = null;
+                      }),
+                ),
+                const SizedBox(height: DSSpacing.s2),
                 // ── Calendar grid ──
                 CalendarGrid(
                   month: _month,
                   events: allEvents,
-                  selectedDay: _selectedDay,
-                  onDaySelected: (day) => setState(() {
-                    _selectedDay = (_selectedDay != null &&
-                            _selectedDay!.year == day.year &&
-                            _selectedDay!.month == day.month &&
-                            _selectedDay!.day == day.day)
-                        ? null
-                        : day;
-                  }),
-                  onMonthChanged: (m) => setState(() {
-                    _month = m;
-                    _selectedDay = null;
-                  }),
+                  selectedDay: _isEditingUnavailable ? null : _selectedDay,
+                  unavailableDays: unavailableDays,
+                  onDaySelected:
+                      (day) => _onDayTapped(day, unavailableMap, isDj),
+                  onMonthChanged:
+                      (m) => setState(() {
+                        _month = m;
+                        _selectedDay = null;
+                      }),
                 ),
                 const SizedBox(height: DSSpacing.s4),
                 Divider(height: 1, color: c.border.subtle),
@@ -273,7 +382,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       ),
                       const SizedBox(width: DSSpacing.s2),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: c.brand.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(DSRadius.pill),
@@ -303,11 +415,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     Icon(LucideIcons.calendar, size: 40, color: c.text.muted),
                     const SizedBox(height: DSSpacing.s3),
                     Text(
-                      _selectedDay != null
-                          ? 'Ingen jobs denne dag'
-                          : 'Ingen jobs denne måned',
+                      _isEditingUnavailable
+                          ? 'Tryk på datoer for at markere dem som optaget'
+                          : (_selectedDay != null
+                              ? 'Ingen jobs denne dag'
+                              : 'Ingen jobs denne måned'),
                       style: DSTextStyle.labelMd.copyWith(
-                          fontSize: 15, color: c.text.secondary),
+                        fontSize: 15,
+                        color: c.text.secondary,
+                      ),
                     ),
                   ],
                 ),
@@ -315,21 +431,31 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             )
           else
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final event = visibleEvents[index];
-                  return CalendarEventCard(
-                    event: event,
-                    showTypeTag: true,
-                    onTap: () => isDj
-                        ? _navigateDj(context, event, jobById, pendingDjById,
-                            wonDjByJobId, extJobById)
-                        : _navigateInstrumentalist(context, event, jobById,
-                            sentMusicianById, wonMusicianById),
-                  );
-                },
-                childCount: visibleEvents.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final event = visibleEvents[index];
+                return CalendarEventCard(
+                  event: event,
+                  showTypeTag: true,
+                  onTap:
+                      () =>
+                          isDj
+                              ? _navigateDj(
+                                context,
+                                event,
+                                jobById,
+                                pendingDjById,
+                                wonDjByJobId,
+                                extJobById,
+                              )
+                              : _navigateInstrumentalist(
+                                context,
+                                event,
+                                jobById,
+                                sentMusicianById,
+                                wonMusicianById,
+                              ),
+                );
+              }, childCount: visibleEvents.length),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: DSSpacing.s8)),
         ],
@@ -343,50 +469,57 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 bool _isZeroTime(String t) => t.isEmpty || t.startsWith('00:00');
 
 CalendarEvent _jobToEvent(Job job) => CalendarEvent(
-      id: job.id,
-      date: job.date,
-      label: job.eventType,
-      type: CalendarEventType.internal,
-      kind: CalendarEventKind.newJob,
-      startTime: _isZeroTime(job.timeStart) ? null : job.timeStart,
-      endTime: _isZeroTime(job.timeEnd) ? null : job.timeEnd,
-      location: job.city.isEmpty ? null : job.city,
-      region: job.region.isEmpty ? null : job.region,
-      guestsAmount: job.guestsAmount,
-      budgetDisplay: job.budgetDisplay == 'Ikke angivet' ? null : job.budgetDisplay,
-      jobId: job.id,
-    );
+  id: job.id,
+  date: job.date,
+  label: job.eventType,
+  type: CalendarEventType.internal,
+  kind: CalendarEventKind.newJob,
+  startTime: _isZeroTime(job.timeStart) ? null : job.timeStart,
+  endTime: _isZeroTime(job.timeEnd) ? null : job.timeEnd,
+  location: job.city.isEmpty ? null : job.city,
+  region: job.region.isEmpty ? null : job.region,
+  guestsAmount: job.guestsAmount,
+  budgetDisplay: job.budgetDisplay == 'Ikke angivet' ? null : job.budgetDisplay,
+  jobId: job.id,
+);
 
 CalendarEvent _quoteToEvent(DjQuote quote) => CalendarEvent(
-      id: quote.id,
-      date: quote.job.date,
-      label: quote.job.eventType,
-      type: CalendarEventType.internal,
-      kind: CalendarEventKind.sent,
-      startTime: _isZeroTime(quote.job.timeStart) ? null : quote.job.timeStart,
-      endTime: _isZeroTime(quote.job.timeEnd) ? null : quote.job.timeEnd,
-      location: quote.job.city.isEmpty ? null : quote.job.city,
-      region: quote.job.region.isEmpty ? null : quote.job.region,
-      guestsAmount: quote.job.guestsAmount,
-      budgetDisplay: quote.job.budgetDisplay == 'Ikke angivet' ? null : quote.job.budgetDisplay,
-      jobId: quote.jobId,
-    );
+  id: quote.id,
+  date: quote.job.date,
+  label: quote.job.eventType,
+  type: CalendarEventType.internal,
+  kind: CalendarEventKind.sent,
+  startTime: _isZeroTime(quote.job.timeStart) ? null : quote.job.timeStart,
+  endTime: _isZeroTime(quote.job.timeEnd) ? null : quote.job.timeEnd,
+  location: quote.job.city.isEmpty ? null : quote.job.city,
+  region: quote.job.region.isEmpty ? null : quote.job.region,
+  guestsAmount: quote.job.guestsAmount,
+  budgetDisplay:
+      quote.job.budgetDisplay == 'Ikke angivet'
+          ? null
+          : quote.job.budgetDisplay,
+  jobId: quote.jobId,
+);
 
 CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
-      id: offer.id,
-      date: offer.job.date,
-      label: offer.job.eventType,
-      type: offer.isExtJob ? CalendarEventType.external : CalendarEventType.internal,
-      kind: CalendarEventKind.sent,
-      startTime: _isZeroTime(offer.job.timeStart) ? null : offer.job.timeStart,
-      endTime: _isZeroTime(offer.job.timeEnd) ? null : offer.job.timeEnd,
-      location: offer.job.city.isEmpty ? null : offer.job.city,
-      region: offer.job.region.isEmpty ? null : offer.job.region,
-      guestsAmount: offer.job.guestsAmount > 0 ? offer.job.guestsAmount : null,
-      budgetDisplay: offer.job.budgetDisplay == 'Ikke angivet' ? null : offer.job.budgetDisplay,
-      jobId: offer.isExtJob ? null : offer.jobId,
-      extJobId: offer.isExtJob ? offer.extJobId : null,
-    );
+  id: offer.id,
+  date: offer.job.date,
+  label: offer.job.eventType,
+  type:
+      offer.isExtJob ? CalendarEventType.external : CalendarEventType.internal,
+  kind: CalendarEventKind.sent,
+  startTime: _isZeroTime(offer.job.timeStart) ? null : offer.job.timeStart,
+  endTime: _isZeroTime(offer.job.timeEnd) ? null : offer.job.timeEnd,
+  location: offer.job.city.isEmpty ? null : offer.job.city,
+  region: offer.job.region.isEmpty ? null : offer.job.region,
+  guestsAmount: offer.job.guestsAmount > 0 ? offer.job.guestsAmount : null,
+  budgetDisplay:
+      offer.job.budgetDisplay == 'Ikke angivet'
+          ? null
+          : offer.job.budgetDisplay,
+  jobId: offer.isExtJob ? null : offer.jobId,
+  extJobId: offer.isExtJob ? offer.extJobId : null,
+);
 
 // ── Filter chip ──
 
@@ -410,7 +543,10 @@ class _CalFilterChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s3, vertical: 6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DSSpacing.s3,
+          vertical: 6,
+        ),
         decoration: BoxDecoration(
           color: active ? activeColor.withValues(alpha: 0.12) : c.bg.inputBg,
           borderRadius: BorderRadius.circular(DSRadius.pill),

@@ -7,6 +7,7 @@ class UserFileModel {
     required this.type,
     required this.createdAt,
     this.thumbnailVideoId,
+    this.description,
   });
 
   final int id;
@@ -14,6 +15,7 @@ class UserFileModel {
   final String type;
   final String createdAt;
   final int? thumbnailVideoId;
+  final String? description;
 
   factory UserFileModel.fromJson(Map<String, dynamic> json) {
     return UserFileModel(
@@ -21,9 +23,11 @@ class UserFileModel {
       url: json['url'] as String,
       type: json['type'] as String,
       createdAt: json['created_at'] as String,
-      thumbnailVideoId: json['thumbnail_video_id'] != null
-          ? (json['thumbnail_video_id'] as num).toInt()
-          : null,
+      thumbnailVideoId:
+          json['thumbnail_video_id'] != null
+              ? (json['thumbnail_video_id'] as num).toInt()
+              : null,
+      description: json['description'] as String?,
     );
   }
 
@@ -34,6 +38,7 @@ class UserFileModel {
       type: UserFileType.fromString(type),
       createdAt: DateTime.parse(createdAt),
       thumbnailVideoId: thumbnailVideoId,
+      description: description,
     );
   }
 }

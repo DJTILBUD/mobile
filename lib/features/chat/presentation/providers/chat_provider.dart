@@ -1,9 +1,11 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_provider.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/conversation.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/chat_message.dart';
+import 'package:dj_tilbud_app/features/chat/domain/chat_errors.dart';
 import 'package:dj_tilbud_app/features/chat/domain/repositories/chat_repository.dart';
 import 'package:dj_tilbud_app/features/chat/data/datasources/chat_remote_datasource.dart';
 import 'package:dj_tilbud_app/features/chat/data/models/chat_message_model.dart';
@@ -17,9 +19,11 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
 // ─── Conversations list ───────────────────────────────────────────────────────
 
 class ConversationsNotifier
-    extends StateNotifier<AsyncValue<List<Conversation>>> {
+    extends StateNotifier<AsyncValue<List<Conversation>>>
+    with WidgetsBindingObserver {
   ConversationsNotifier(this._repository, this._client, this._userId)
-      : super(const AsyncLoading()) {
+    : super(const AsyncLoading()) {
+    WidgetsBinding.instance.addObserver(this);
     _init();
   }
 
@@ -31,6 +35,12 @@ class ConversationsNotifier
   Future<void> _init() async {
     await _fetchSilent();
     _subscribeToRealtime();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Realtime can miss events while backgrounded — silently re-fetch the list on resume.
+    if (state == AppLifecycleState.resumed) _fetchSilent();
   }
 
   Future<void> _fetchSilent() async {
@@ -77,6 +87,18 @@ class ConversationsNotifier
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
+          table: 'Conversations',
+          // Support conversations have null dj_id/musician_id — they match only on user_id.
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: _userId,
+          ),
+          callback: (_) => _fetchSilent(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
           table: 'ChatMessages',
           callback: (_) => _fetchSilent(),
         )
@@ -88,13 +110,16 @@ class ConversationsNotifier
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (_channel != null) _client.removeChannel(_channel!);
     super.dispose();
   }
 }
 
-final conversationsProvider = StateNotifierProvider<ConversationsNotifier,
-    AsyncValue<List<Conversation>>>(
+final conversationsProvider = StateNotifierProvider<
+  ConversationsNotifier,
+  AsyncValue<List<Conversation>>
+>(
   (ref) => ConversationsNotifier(
     ref.watch(chatRepositoryProvider),
     ref.watch(supabaseClientProvider),
@@ -107,8 +132,10 @@ final conversationsProvider = StateNotifierProvider<ConversationsNotifier,
 class ConversationMessagesNotifier
     extends StateNotifier<AsyncValue<List<ChatMessage>>> {
   ConversationMessagesNotifier(
-      this._repository, this._client, this._conversationId)
-      : super(const AsyncLoading()) {
+    this._repository,
+    this._client,
+    this._conversationId,
+  ) : super(const AsyncLoading()) {
     _init();
   }
 
@@ -196,9 +223,7 @@ class ConversationMessagesNotifier
               final updated = ChatMessageModel.fromJson(json).toEntity();
               if (mounted) {
                 state = AsyncData(
-                  current
-                      .map((m) => m.id == updated.id ? updated : m)
-                      .toList(),
+                  current.map((m) => m.id == updated.id ? updated : m).toList(),
                 );
               }
             } catch (_) {
@@ -215,10 +240,14 @@ class ConversationMessagesNotifier
   /// Silent re-fetch triggered externally (e.g. on screen re-entry via notification).
   Future<void> refresh() => _reload();
 
-  Future<bool> sendMessage({
+  /// Sends a message. Returns null on success, or a user-facing Danish error message
+  /// (e.g. the friendly rate-limit text) on failure.
+  Future<String?> sendMessage({
     required String senderId,
     required String senderType,
     required String message,
+    int? replyToId,
+    String? attachmentUrl,
   }) async {
     try {
       await _repository.sendMessage(
@@ -226,12 +255,21 @@ class ConversationMessagesNotifier
         senderId: senderId,
         senderType: senderType,
         message: message,
+        replyToId: replyToId,
+        attachmentUrl: attachmentUrl,
       );
-      return true;
-    } catch (_) {
-      return false;
+      return null;
+    } catch (e) {
+      if (isChatRateLimitError(e)) return chatRateLimitMessage;
+      return 'Beskeden kunne ikke sendes. Prøv igen.';
     }
   }
+
+  /// Uploads a chat image to S3 and returns its public URL (throws on failure).
+  Future<String> uploadImage({
+    required String userId,
+    required String filePath,
+  }) => _repository.uploadChatImage(userId: userId, filePath: filePath);
 
   Future<void> markAsRead(String currentUserId) async {
     try {
@@ -253,12 +291,12 @@ class ConversationMessagesNotifier
 
 final conversationMessagesProvider = StateNotifierProvider.autoDispose
     .family<ConversationMessagesNotifier, AsyncValue<List<ChatMessage>>, int>(
-  (ref, conversationId) => ConversationMessagesNotifier(
-    ref.watch(chatRepositoryProvider),
-    ref.watch(supabaseClientProvider),
-    conversationId,
-  ),
-);
+      (ref, conversationId) => ConversationMessagesNotifier(
+        ref.watch(chatRepositoryProvider),
+        ref.watch(supabaseClientProvider),
+        conversationId,
+      ),
+    );
 
 // ─── Total unread count ───────────────────────────────────────────────────────
 

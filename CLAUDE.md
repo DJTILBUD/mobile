@@ -165,6 +165,39 @@ A musician can reach an ext job via **two** rendering paths — keep field displ
 
 The GoRouter `redirect` in `app.dart` gates on `_onboardingNotifier.resolved` — a flag that is only true once we actually know the session's role + onboarding status. On `signIn()`, Supabase fires the `signedIn` event (→ router refresh) **before** `RoleCache.save(role)` runs, so for a moment the user is authenticated with `RoleCache.role == null`; without the gate the redirect sent them to `/profile-setup` (the "DJ or musician?" screen) for ~0.5s before bouncing home. Rule: **after any `RoleCache.save(...)`, `await initOnboardingStatus()` before navigating** (see `login_screen.dart` and all four save sites in `profile_setup_screen.dart`) so `resolved` is set and the redirect routes correctly (home vs `/onboarding`). While `resolved` is false the redirect returns `null` (stay put) instead of routing to setup/onboarding. `initOnboardingStatus()` is also awaited in `main()` before `runApp`, so cold-start is already resolved.
 
+## Registration (mobile signup)
+
+Mobile can create brand-new accounts (`SignupScreen`, route `AppRoutes.signup`, reached from the
+"Opret konto" link on `login_screen.dart`). Key facts:
+
+- **It's pure Supabase Auth client-side** (`AuthRemoteDatasource.signUpWithPassword` → `auth.signUp`),
+  exactly like `signIn` — there is **no web-app registration endpoint**; account creation carries no
+  business logic, so it does not need to route through the web API.
+- **Email confirmation is OFF** (`web-app/supabase/config.toml` `enable_confirmations = false`), so
+  `signUp` returns an **active session immediately**. The repo still returns a `SignUpResult` so the
+  screen handles both: `signedInNeedsSetup` (the normal path) and `needsEmailConfirmation` (a
+  "Tjek din mail" fallback, only hit if confirmations get enabled in some env).
+- **Role is NOT chosen at signup** (unlike web, which has separate `/dj/login/register` vs
+  `/instrumentalist/login/register` pages). A new mobile user has a session but no role, so signup
+  just `goNamed(AppRoutes.profileSetup)` — the **existing** `profile-setup` (role select + create
+  `DjInfos`/`Musicians`) → `onboarding` path takes over unchanged. This is the same state as the
+  `NeedsProfileSetupException` branch in `login_screen`.
+- **`/signup` MUST be in the router's `isPublicRoute` list** (`app.dart`). Without it, the moment the
+  session appears the onboarding gate (Gate 4) would bounce the user to `/onboarding` before any
+  profile exists. `/profile-setup` is already public for the same reason; do not "tidy" either out.
+
+## "Udvalgte jobs" must filter `sent` out — `djExtJobsProvider` deliberately includes it
+
+`djExtJobsProvider` / `fetchDjExtJobs` (`jobs_remote_datasource.dart`) returns ext jobs with status
+`sent`/`closed`/`customer_contacted`/`ready_for_billing` — **`sent` is intentionally included** because
+the date-collision guard (`dj_quote_form_screen`, `jobs_shell_screen`) treats a `sent` assigned ext job
+as a confirmed booking that blocks bidding on that date. So the provider is shared between two consumers
+with different needs. The **"Udvalgte jobs" screen (`featured_jobs_screen.dart`) must filter the list
+itself** to `_kVisibleExtJobStatuses` (`closed`/`reopened`/`customer_contacted`/`ready_for_billing`),
+mirroring web's `VISIBLE_STATUSES` in `dj/udvalgte-jobs/page.tsx`. Without that filter an
+assigned-but-still-`sent` ext job (not yet a real booking) leaks into the list — the bug fixed here.
+Do NOT "fix" this by dropping `sent` at the datasource: that silently breaks the date-collision guard.
+
 ## DSButton gotchas (design system)
 
 - **`secondary`/`tertiary` foreground must NOT be `brand.primary`.** `brand.primary` (`#D1F366` lime) is a *background* token whose readable text pair is `brand.onPrimary` (dark). On a tinted bg (secondary = `brand.primary @ 10%`) the correct, theme-aware text token is **`brand.primaryActive`** (commented "text on tinted bg"). Using `brand.primary` as fg renders light-lime-on-light-lime (invisible). Same applies to `DSIconButton`.
@@ -202,6 +235,24 @@ A DJ may not bid on a date where they already have a won quote (or 2 pending quo
 
 `_DjNewJobsTab` (`jobs_shell_screen.dart`) shows a smart empty state when the visible list is empty: if `newDjJobsProvider` (the **unfiltered** server list) still has jobs, the DJ's own `DjJobFilters` are hiding them → "Ingen jobs matcher dine filtre" with a **Justér filtre** CTA (→ `AppRoutes.djJobFilters`, `extra: djId` from `djProfileProvider`) + a one-tap **Slå filtre fra** (`djFiltersEnabledProvider.state = false`). If the raw list is also empty, it's genuinely none → softer "Vi giver dig besked" copy. The reusable `EmptyJobsView` now takes optional `title`/`actionLabel`/`onAction`/`secondaryLabel`/`onSecondary`. Web mirror: `web-app/src/app/dj/page.tsx` `NewJobsEmptyState`, driven by `useUnbidJobsFromMyRegions(false)` (unfiltered) vs the filtered list.
 
+## Customer decision-window countdown is ONE shared widget (normal jobs + ext jobs)
+
+`features/jobs/presentation/widgets/customer_deadline_banner.dart` (`CustomerDeadlineBanner`, takes a
+`DateTime? deadline`) is the single countdown banner used by **both** normal jobs and ext jobs, on
+`quote_detail_screen`/`service_offer_detail_screen` (normal) and `ext_job_detail_screen` +
+`service_offer_detail_screen` (ext). Do NOT reintroduce a bespoke ext-job banner — mirror the web
+decision to reuse the normal-job widget.
+
+Two non-obvious wiring facts:
+- **`ExtJob.decisionDeadline` and `Job.customerDeadline` both honor `deadline_extended_until`** (admin
+  deadline extension, ext-jobs column added web-side in `20260622000001`). The mobile model must parse it
+  (`ExtJobModel`) or an admin extension silently won't show on mobile while it does on web.
+- **The offer detail screen sees an ext job as a `Job`** (`ServiceOfferModel` builds `offer.job` via
+  `ExtJobModel.toJobModel()`). That mapper MUST pass `sentAt` + `deadlineExtendedUntil` through, or
+  `offer.job.customerDeadline` is null and the countdown silently hides for ext-job offers (the bug that
+  made the banner missing on the post-bid screen). The `if (!offer.isExtJob)` gate around the banner was
+  removed for the same reason.
+
 ## Things Claude must NOT do
 
 - Do NOT call the Anthropic API directly from Flutter — always use an Edge Function
@@ -219,6 +270,45 @@ A DJ may not bid on a date where they already have a won quote (or 2 pending quo
 - Do NOT create Supabase migrations here — migrations live in `web-app/supabase/migrations/` only
 - Do NOT submit **DJ quotes** with a direct `Quotes` insert — POST to the web API `/api/jobs/{job_id}/quotes` (via `_webApiPost`, like `createServiceOffer` does). The "3 pending quotes → job goes `sent`" transition (plus `first_quote_only` send, suppression and tier-quota checks) lives ONLY in that route handler — **there is no DB trigger**. A direct insert leaves the job stuck in `open`. The route returns the **bare** quote row (no `job` join), so `DjQuoteModel.fromJson` tolerates a missing `job` key. **`editDjQuote` also routes through the web API** (`PUT /api/quotes/{id}`) so the 10-minute edit window, the pending-status guard and the price/pitch/equipment validation are enforced — a direct update bypassed all of it. That route returns only `{success, message}`, so `editDjQuote` re-reads the row afterwards to return the `DjQuote` shape callers expect.
 - Do NOT update **`Jobs.status` / `ExtJobs.status`** (e.g. `customer_contacted`, `ready_for_billing`, planned contact) with a direct Supabase update. RLS on `Jobs` only lets the **customer (by `lead_email`)** update — a DJ's direct update matches **0 rows, returns no error**, so it looks like success but silently does nothing (status "resets" on reload). Use the elevated web API routes via `_webApiPut`: `/api/jobs/{id}/customer-contact`, `/api/jobs/{id}/ready-for-billing` (and the `/api/ext-jobs/{id}/...` equivalents). The ext-job datasource methods already do this — match that pattern.
+
+## Genre option lists must byte-match the DB enum (curly apostrophe `’`, U+2019)
+
+The `genres` / `musician_genre` Postgres enums are the source of truth, and the DJ genre
+`70’er/80’er/90’er` is stored with a **typographic right single quote `’` (U+2019)** — see
+`web-app/supabase/migrations/20240613131422_add-genres-dj.sql`. A selected genre is written to the
+enum-typed `DjInfos.genres` column **verbatim**, so a value that differs by even one byte is an
+invalid enum member and Postgres **rejects the whole profile save** (the DJ sees a generic save
+error). Mobile previously hardcoded these lists with a **straight ASCII apostrophe `'` (U+0027)**, so
+picking that genre made the profile unsaveable. The four lists
+(`edit_profile_screen`, `profile_setup_screen`, `dj_job_filters_screen`, `onboarding_screen`
+`_djGenres`) now use the curly `’`. **When adding/editing any genre option, copy the exact string
+from the web-app's enum/`genrePriority.ts` — never retype it** (an editor or keyboard may substitute
+a straight apostrophe). The straight-vs-curly difference is invisible on screen; verify with a
+hexdump (`e2 80 99` = correct) if a save mysteriously fails.
+
+## Web-API error messages are Danish + user-facing — but get suppressed by default
+
+The web-app authors its API rejection reasons as **Danish, user-safe** text (e.g. ready-for-billing:
+*"Alle vindende musikere skal have kontaktet kunden…"*). On mobile they arrive via
+`JobsRemoteDatasource._webApiPut/Post/...` which wraps them in **`DatabaseException`** — and
+`friendlyErrorMessage()` **deliberately suppresses `DatabaseException` inner messages** (assumes raw
+DB text), returning a generic *"Noget gik galt. Prøv igen."*. So by default the DJ never sees WHY an
+action failed.
+
+To surface a specific reason, the screen's error handler must **pattern-match the Danish server text**
+(not English, and not rely on `friendlyErrorMessage`). Example: `ext_job_detail_screen.dart`
+`_toastError` matches `'musikere'` / `'markeres som kontaktet'` to explain that the instrumentalist
+(or the DJ) still has to contact the customer. A real incident: a sax+DJ ready-for-billing was blocked
+because the saxophonist hadn't marked contact, but the heuristic only matched the English words
+`'musician'`/`'contact'`, so the Danish message fell through to the generic toast and the DJ had no
+idea the sax player was the blocker. **When matching server reasons, match the Danish strings.**
+(Internal-job `quote_detail_screen._handleReadyForBilling` still shows only a generic toast — a known
+minor gap; internal DJ-only jobs can't hit the musician-contact blocker.)
+
+## Handelsbetingelser (terms) + FAQ content are hardcoded and duplicated — sync by hand
+
+- **Terms URLs** (mirror these exactly across apps): customer `https://djtilbud.dk/kunde-handelsebetingelser/` (the odd spelling "handels**e**betingelser" is the real live URL, not a typo), DJ `https://djtilbud.dk/dj-handelsbetingelser/`, sax/instrumentalist `https://djtilbud.dk/handelsbetingelser-instrumentalister/`. Mobile lists all three in `features/profile/presentation/screens/terms_screen.dart` (profile menu "Handelsbetingelser", route `AppRoutes.terms`, role-aware: customer link + the user's own DJ/sax link). Web sources: `web-app/src/components/SickDisclaimer.tsx` (dj/musician) + the customer link in `web-app/src/app/dj/faq/page.tsx`.
+- **FAQ content lives in 3 independent hand-maintained copies** (no shared source): mobile `features/profile/presentation/screens/faq_screen.dart` (`_djFaqData` / `_instrumentalistFaqData`), web DJ `web-app/src/app/dj/faq/page.tsx` (inline `faqData`), web customer `web-app/src/app/faq/page.tsx` (+ `web-app/src/staticData/static-faqs.ts`). A wording change must be applied to each relevant copy. There is **no** instrumentalist/sax FAQ *page* on web — the sax FAQ exists only in mobile's `_instrumentalistFaqData`.
 
 ## Definition of done
 

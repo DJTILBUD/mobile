@@ -7,17 +7,44 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/dj_job_filters.da
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 
 const _allEventTypes = [
-  'bryllup', 'firmafest', 'fødselsdagsfest', 'julefrokost',
-  'privatfest', 'ungdomsfest', 'klub/bar', 'lounge', 'andet',
+  'bryllup',
+  'firmafest',
+  'fødselsdagsfest',
+  'julefrokost',
+  'privatfest',
+  'ungdomsfest',
+  'klub/bar',
+  'lounge',
+  'andet',
 ];
 const _allRegions = [
-  'Hovedstaden', 'Bornholm', 'Fyn', 'Nordjylland', 'Nordsjælland',
-  'Østjylland', 'Sønderjylland', 'Sydsjælland', 'Vestjylland', 'Vestsjælland',
+  'Hovedstaden',
+  'Bornholm',
+  'Fyn',
+  'Nordjylland',
+  'Nordsjælland',
+  'Østjylland',
+  'Sønderjylland',
+  'Sydsjælland',
+  'Vestjylland',
+  'Vestsjælland',
 ];
 const _djGenres = [
-  'EDM', 'Disco', 'Dansk top', 'Hip hop', 'House', 'Lounge', 'Pop',
-  'R&B', 'Reggae', 'Remixes', 'Rock', 'Techno', 'Top 50 (DK)',
-  'Top 50 (global)', "70'er/80'er/90'er",
+  'EDM',
+  'Disco',
+  'Dansk top',
+  'Hip hop',
+  'House',
+  'Lounge',
+  'Pop',
+  'R&B',
+  'Reggae',
+  'Remixes',
+  'Rock',
+  'Techno',
+  'Top 50 (DK)',
+  'Top 50 (global)',
+  '70’er/80’er/90’er',
 ];
 // Weekday names in Danish — index 0 = Sunday (matching JS/DB convention)
 const _weekdayNames = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
@@ -73,7 +100,12 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
   }
 
   void _deselectAllEventTypes() {
-    setState(() => _filters = _filters!.copyWith(excludedEventTypes: List.from(_allEventTypes)));
+    setState(
+      () =>
+          _filters = _filters!.copyWith(
+            excludedEventTypes: List.from(_allEventTypes),
+          ),
+    );
   }
 
   // ── Regions ──
@@ -89,7 +121,12 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
   }
 
   void _deselectAllRegions() {
-    setState(() => _filters = _filters!.copyWith(excludedRegions: List.from(_allRegions)));
+    setState(
+      () =>
+          _filters = _filters!.copyWith(
+            excludedRegions: List.from(_allRegions),
+          ),
+    );
   }
 
   // ── Genres ──
@@ -105,69 +142,106 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
   }
 
   void _deselectAllGenres() {
-    setState(() => _filters = _filters!.copyWith(excludedGenres: List.from(_djGenres)));
+    setState(
+      () => _filters = _filters!.copyWith(excludedGenres: List.from(_djGenres)),
+    );
   }
 
   // ── Weekdays ──
 
   void _toggleWeekday(int day) {
-    final current = _filters!.allowedWeekdays == null
-        ? List<int>.generate(7, (i) => i)
-        : List<int>.from(_filters!.allowedWeekdays!);
+    final current =
+        _filters!.allowedWeekdays == null
+            ? List<int>.generate(7, (i) => i)
+            : List<int>.from(_filters!.allowedWeekdays!);
     current.contains(day) ? current.remove(day) : current.add(day);
-    setState(() => _filters = _filters!.copyWith(
-          allowedWeekdays: current.length == 7 ? () => null : () => current,
-        ));
+    setState(
+      () =>
+          _filters = _filters!.copyWith(
+            allowedWeekdays: current.length == 7 ? () => null : () => current,
+          ),
+    );
   }
 
   void _applyWeekendPreset() {
-    setState(() => _filters = _filters!.copyWith(
-          allowedWeekdays: () => [5, 6, 0], // Fri, Sat, Sun
-        ));
+    setState(
+      () =>
+          _filters = _filters!.copyWith(
+            allowedWeekdays: () => [5, 6, 0], // Fri, Sat, Sun
+          ),
+    );
   }
 
   // ── Budget slider ──
 
   RangeValues get _budgetRange => RangeValues(
-        (_filters!.minBudget ?? _budgetMin).toDouble().clamp(_budgetMin, _budgetMax),
-        (_filters!.maxBudget ?? _budgetMax).toDouble().clamp(_budgetMin, _budgetMax),
-      );
+    (_filters!.minBudget ?? _budgetMin).toDouble().clamp(
+      _budgetMin,
+      _budgetMax,
+    ),
+    (_filters!.maxBudget ?? _budgetMax).toDouble().clamp(
+      _budgetMin,
+      _budgetMax,
+    ),
+  );
 
   void _onBudgetChanged(RangeValues v) {
     final lo = v.start.round();
     final hi = v.end.round();
-    setState(() => _filters = _filters!.copyWith(
-          minBudget: () => lo == _budgetMin.toInt() ? null : lo,
-          maxBudget: () => hi == _budgetMax.toInt() ? null : hi,
-        ));
+    setState(
+      () =>
+          _filters = _filters!.copyWith(
+            minBudget: () => lo == _budgetMin.toInt() ? null : lo,
+            maxBudget: () => hi == _budgetMax.toInt() ? null : hi,
+          ),
+    );
   }
 
   // ── Guests slider ──
 
   RangeValues get _guestsRange => RangeValues(
-        (_filters!.minGuests ?? _guestsMin).toDouble().clamp(_guestsMin, _guestsMax),
-        (_filters!.maxGuests ?? _guestsMax).toDouble().clamp(_guestsMin, _guestsMax),
-      );
+    (_filters!.minGuests ?? _guestsMin).toDouble().clamp(
+      _guestsMin,
+      _guestsMax,
+    ),
+    (_filters!.maxGuests ?? _guestsMax).toDouble().clamp(
+      _guestsMin,
+      _guestsMax,
+    ),
+  );
 
   void _onGuestsChanged(RangeValues v) {
     final lo = v.start.round();
     final hi = v.end.round();
-    setState(() => _filters = _filters!.copyWith(
-          minGuests: () => lo == _guestsMin.toInt() ? null : lo,
-          maxGuests: () => hi == _guestsMax.toInt() ? null : hi,
-        ));
+    setState(
+      () =>
+          _filters = _filters!.copyWith(
+            minGuests: () => lo == _guestsMin.toInt() ? null : lo,
+            maxGuests: () => hi == _guestsMax.toInt() ? null : hi,
+          ),
+    );
   }
 
   // ── Save / reset ──
 
   Future<void> _save() async {
-    final success = await ref.read(saveDjJobFiltersProvider.notifier).save(_filters!);
+    final success = await ref
+        .read(saveDjJobFiltersProvider.notifier)
+        .save(_filters!);
     if (!mounted) return;
     if (success) {
-      DSToast.show(context, variant: DSToastVariant.success, title: 'Filtre gemt');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.success,
+        title: 'Filtre gemt',
+      );
       Navigator.of(context).pop();
     } else {
-      DSToast.show(context, variant: DSToastVariant.error, title: 'Noget gik galt. Prøv igen.');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Noget gik galt. Prøv igen.',
+      );
     }
   }
 
@@ -177,15 +251,24 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final filtersAsync = ref.watch(djJobFiltersProvider);
     final isSaving = ref.watch(saveDjJobFiltersProvider) is AsyncLoading;
 
     return filtersAsync.when(
-      loading: () => _buildScaffold(child: const Center(child: CircularProgressIndicator())),
-      error: (e, _) => _buildScaffold(
-        child: Center(child: Text('Fejl: $e', style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger))),
-      ),
+      loading:
+          () => _buildScaffold(
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+      error:
+          (e, _) => _buildScaffold(
+            child: Center(
+              child: Text(
+                'Fejl: $e',
+                style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger),
+              ),
+            ),
+          ),
       data: (saved) {
         if (!_initialized) _initFrom(saved);
         return _buildScaffold(isSaving: isSaving, child: _buildForm());
@@ -198,45 +281,56 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
       canPop: !_isDirty,
       onPopInvokedWithResult: _onPopInvoked,
       child: Scaffold(
-      backgroundColor: _c.bg.canvas,
-      appBar: AppBar(
-        title: const Text('Job-filtre'),
-        backgroundColor: _c.bg.surface,
-        surfaceTintColor: _c.bg.surface,
-        actions: [
-          if (_filters != null)
-            Padding(
-              padding: const EdgeInsets.only(right: DSSpacing.s2),
-              child: DSButton(label: 'Nulstil', variant: DSButtonVariant.ghost, size: DSButtonSize.sm, onTap: _reset),
-            ),
-        ],
-      ),
-      body: child,
-      bottomNavigationBar: _filters == null
-          ? null
-          : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(DSSpacing.s4),
+        backgroundColor: _c.bg.canvas,
+        appBar: AppBar(
+          title: const Text('Job-filtre'),
+          backgroundColor: _c.bg.surface,
+          surfaceTintColor: _c.bg.surface,
+          actions: [
+            if (_filters != null)
+              Padding(
+                padding: const EdgeInsets.only(right: DSSpacing.s2),
                 child: DSButton(
-                  label: 'Gem filtre',
-                  variant: DSButtonVariant.primary,
-                  expand: true,
-                  isLoading: isSaving,
-                  onTap: isSaving ? null : _save,
+                  label: 'Nulstil',
+                  variant: DSButtonVariant.ghost,
+                  size: DSButtonSize.sm,
+                  onTap: _reset,
                 ),
               ),
-            ),
+          ],
+        ),
+        body: child,
+        bottomNavigationBar:
+            _filters == null
+                ? null
+                : SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(DSSpacing.s4),
+                    child: DSButton(
+                      label: 'Gem filtre',
+                      variant: DSButtonVariant.primary,
+                      expand: true,
+                      isLoading: isSaving,
+                      onTap: isSaving ? null : _save,
+                    ),
+                  ),
+                ),
       ), // PopScope
     );
   }
 
   Widget _buildForm() {
     final f = _filters!;
-    final effectiveWeekdays = f.allowedWeekdays ?? List<int>.generate(7, (i) => i);
+    final effectiveWeekdays =
+        f.allowedWeekdays ?? List<int>.generate(7, (i) => i);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(
-          DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, DSSpacing.s8),
+        DSSpacing.s4,
+        DSSpacing.s4,
+        DSSpacing.s4,
+        DSSpacing.s8,
+      ),
       children: [
         // ── Event types ──
         _ChipSectionHeader(
@@ -249,13 +343,14 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _allEventTypes.map((type) {
-            return _FilterChip(
-              label: eventTypeLabel(type),
-              active: !f.excludedEventTypes.contains(type),
-              onTap: () => _toggleEventType(type),
-            );
-          }).toList(),
+          children:
+              _allEventTypes.map((type) {
+                return _FilterChip(
+                  label: eventTypeLabel(type),
+                  active: !f.excludedEventTypes.contains(type),
+                  onTap: () => _toggleEventType(type),
+                );
+              }).toList(),
         ),
         const SizedBox(height: DSSpacing.s6),
 
@@ -270,13 +365,14 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _allRegions.map((r) {
-            return _FilterChip(
-              label: r,
-              active: !f.excludedRegions.contains(r),
-              onTap: () => _toggleRegion(r),
-            );
-          }).toList(),
+          children:
+              _allRegions.map((r) {
+                return _FilterChip(
+                  label: r,
+                  active: !f.excludedRegions.contains(r),
+                  onTap: () => _toggleRegion(r),
+                );
+              }).toList(),
         ),
         const SizedBox(height: DSSpacing.s6),
 
@@ -291,25 +387,34 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _djGenres.map((g) {
-            return _FilterChip(
-              label: g,
-              active: !f.excludedGenres.contains(g),
-              onTap: () => _toggleGenre(g),
-            );
-          }).toList(),
+          children:
+              _djGenres.map((g) {
+                return _FilterChip(
+                  label: g,
+                  active: !f.excludedGenres.contains(g),
+                  onTap: () => _toggleGenre(g),
+                );
+              }).toList(),
         ),
         const SizedBox(height: DSSpacing.s6),
 
         // ── Weekdays ──
         Row(
           children: [
-            Expanded(child: _SectionHeader('Ugedage', subtitle: 'Vis kun jobs på valgte dage')),
+            Expanded(
+              child: _SectionHeader(
+                'Ugedage',
+                subtitle: 'Vis kun jobs på valgte dage',
+              ),
+            ),
             GestureDetector(
               onTap: _applyWeekendPreset,
               child: Text(
                 'Weekend-preset',
-                style: DSTextStyle.labelSm.copyWith(fontWeight: FontWeight.w600, color: _c.brand.primaryActive),
+                style: DSTextStyle.labelSm.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: _c.brand.primaryActive,
+                ),
               ),
             ),
           ],
@@ -332,7 +437,11 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
                 child: Center(
                   child: Text(
                     _weekdayNames[jsDay],
-                    style: DSTextStyle.bodySm.copyWith(fontSize: 11, fontWeight: FontWeight.w600, color: active ? _c.brand.onPrimary : _c.text.secondary),
+                    style: DSTextStyle.bodySm.copyWith(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: active ? _c.brand.onPrimary : _c.text.secondary,
+                    ),
                   ),
                 ),
               ),
@@ -342,7 +451,10 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
         const SizedBox(height: DSSpacing.s6),
 
         // ── Budget slider ──
-        _SectionHeader('Budget (kr.)', subtitle: 'Skjul jobs udenfor dette interval'),
+        _SectionHeader(
+          'Budget (kr.)',
+          subtitle: 'Skjul jobs udenfor dette interval',
+        ),
         DSRangeSlider(
           values: _budgetRange,
           min: _budgetMin,
@@ -355,7 +467,10 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
         const SizedBox(height: DSSpacing.s4),
 
         // ── Guests slider ──
-        _SectionHeader('Antal gæster', subtitle: 'Skjul jobs udenfor dette interval'),
+        _SectionHeader(
+          'Antal gæster',
+          subtitle: 'Skjul jobs udenfor dette interval',
+        ),
         DSRangeSlider(
           values: _guestsRange,
           min: _guestsMin,
@@ -379,14 +494,23 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: DSTextStyle.headingSm.copyWith(fontSize: 15, fontWeight: FontWeight.w700, color: _c.text.primary)),
+        Text(
+          title,
+          style: DSTextStyle.headingSm.copyWith(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: _c.text.primary,
+          ),
+        ),
         if (subtitle != null)
-          Text(subtitle!, style: DSTextStyle.bodySm.copyWith(color: _c.text.muted)),
+          Text(
+            subtitle!,
+            style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+          ),
       ],
     );
   }
@@ -406,7 +530,7 @@ class _ChipSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -415,18 +539,27 @@ class _ChipSectionHeader extends StatelessWidget {
           onTap: onSelectAll,
           child: Text(
             'Vælg alle',
-            style: DSTextStyle.labelSm.copyWith(fontWeight: FontWeight.w600, color: _c.brand.primaryActive),
+            style: DSTextStyle.labelSm.copyWith(
+              fontWeight: FontWeight.w600,
+              color: _c.brand.primaryActive,
+            ),
           ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Text('·', style: DSTextStyle.bodySm.copyWith(color: _c.text.muted)),
+          child: Text(
+            '·',
+            style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+          ),
         ),
         GestureDetector(
           onTap: onDeselectAll,
           child: Text(
             'Fravælg alle',
-            style: DSTextStyle.labelSm.copyWith(fontWeight: FontWeight.w600, color: _c.text.muted),
+            style: DSTextStyle.labelSm.copyWith(
+              fontWeight: FontWeight.w600,
+              color: _c.text.muted,
+            ),
           ),
         ),
       ],
@@ -437,14 +570,18 @@ class _ChipSectionHeader extends StatelessWidget {
 // ── Filter chip ───────────────────────────────────────────────────────────────
 
 class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.active, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
   final String label;
   final bool active;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -456,10 +593,11 @@ class _FilterChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: DSTextStyle.labelMd.copyWith(color: active ? _c.brand.onPrimary : _c.text.secondary),
+          style: DSTextStyle.labelMd.copyWith(
+            color: active ? _c.brand.onPrimary : _c.text.secondary,
+          ),
         ),
       ),
     );
   }
 }
-

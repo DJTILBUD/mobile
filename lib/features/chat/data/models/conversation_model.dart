@@ -5,6 +5,8 @@ class ConversationModel {
   const ConversationModel({
     required this.id,
     required this.createdAt,
+    this.type = 'job',
+    this.userId,
     this.djId,
     this.musicianId,
     this.jobId,
@@ -25,6 +27,8 @@ class ConversationModel {
 
   final int id;
   final String createdAt;
+  final String type;
+  final String? userId;
   final String? djId;
   final String? musicianId;
   final int? jobId;
@@ -59,6 +63,8 @@ class ConversationModel {
     return ConversationModel(
       id: (json['id'] as num).toInt(),
       createdAt: json['created_at'] as String,
+      type: json['type'] as String? ?? 'job',
+      userId: json['user_id'] as String?,
       djId: json['dj_id'] as String?,
       musicianId: json['musician_id'] as String?,
       jobId: (json['job_id'] as num?)?.toInt(),
@@ -81,6 +87,8 @@ class ConversationModel {
   /// Returns true if this conversation should be shown to [currentUserId].
   /// Mirrors web app's isConversationChatEnabledForUser.
   bool isChatEnabled(String currentUserId) {
+    // The DJTILBUD support channel always renders (its counterpart is the admin team).
+    if (type == 'support') return true;
     final isCurrentUserDj = currentUserId == djId;
     if (isCurrentUserDj) return musicianName != null;
     // For musicians: accept if DJ has a DjInfos record OR ext job has an assigned name
@@ -88,27 +96,40 @@ class ConversationModel {
   }
 
   Conversation toEntity(String currentUserId) {
+    final isSupport = type == 'support';
     final isCurrentUserDj = currentUserId == djId;
     final effectiveDjName = djName ?? assignedDjName;
-    final partnerName = isCurrentUserDj
-        ? (musicianName ?? 'Ukendt musiker')
-        : (effectiveDjName ?? 'Ukendt DJ');
+    // Support: the counterpart is the DJTILBUD team; per-message admin identity is resolved in the
+    // detail screen from each message's sender_name/sender_avatar_url.
+    final partnerName =
+        isSupport
+            ? 'DJTILBUD'
+            : isCurrentUserDj
+            ? (musicianName ?? 'Ukendt musiker')
+            : (effectiveDjName ?? 'Ukendt DJ');
 
+    // For the user's own support messages the role label is cosmetic (display keys off sender_id,
+    // and a user->admin push has no recipient), so default to 'musician' when role is unknown.
     final senderType = isCurrentUserDj ? 'dj' : 'musician';
 
     final effectiveJobId = jobId ?? extJobId;
     final effectiveEventType = jobEventType ?? extJobEventType;
-    final jobInfo = effectiveJobId != null && effectiveEventType != null
-        ? '#$effectiveJobId • ${eventTypeLabel(effectiveEventType)}'
-        : effectiveEventType != null
+    final jobInfo =
+        isSupport
+            ? 'Support'
+            : effectiveJobId != null && effectiveEventType != null
+            ? '#$effectiveJobId • ${eventTypeLabel(effectiveEventType)}'
+            : effectiveEventType != null
             ? eventTypeLabel(effectiveEventType)
             : 'Arrangement';
 
     final partnerAvatarUrl =
-        isCurrentUserDj ? musicianAvatarUrl : djAvatarUrl;
+        isSupport ? null : (isCurrentUserDj ? musicianAvatarUrl : djAvatarUrl);
 
     return Conversation(
       id: id,
+      type: type,
+      userId: userId,
       djId: djId,
       musicianId: musicianId,
       jobId: jobId,

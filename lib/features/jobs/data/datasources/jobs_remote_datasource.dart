@@ -53,7 +53,7 @@ class JobsRemoteDatasource {
       body: jsonEncode(body),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw DatabaseException(_extractMessage(response.body));
+      throw _errorFor(response.body);
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -110,6 +110,26 @@ class JobsRemoteDatasource {
     } catch (_) {
       return '';
     }
+  }
+
+  // Maps an error response body to the right exception. The self-billing gate
+  // returns `code: "billing_info_incomplete"` (HTTP 400) with a Danish
+  // user-facing `message`; surface that as a dedicated exception so the submit
+  // screens can deep-link the user to the billing screen. Everything else is a
+  // generic DatabaseException.
+  AppException _errorFor(String body) {
+    String? code;
+    try {
+      final json = jsonDecode(body) as Map<String, dynamic>;
+      code = json['code'] as String?;
+    } catch (_) {
+      code = null;
+    }
+    final message = _extractMessage(body);
+    if (code == 'billing_info_incomplete') {
+      return BillingInfoIncompleteException(message);
+    }
+    return DatabaseException(message);
   }
 
   /// Fetches the jobs a DJ should see in "Nye jobs".
@@ -839,5 +859,27 @@ class JobsRemoteDatasource {
     if (response.data == null) return null;
     final map = response.data as Map<String, dynamic>;
     return map['first_invoice_paid'] as bool?;
+  }
+
+  /// The customer's precise event address (JobMetadata.event_address), provided
+  /// after booking. Read via the web API, which only releases it to the winning
+  /// DJ/musician (RLS blocks a direct read). Returns null when none is set, not
+  /// yet provided, or the caller is not authorized — callers treat any of those
+  /// as simply "nothing to show".
+  Future<String?> fetchEventAddress({int? jobId, int? extJobId}) async {
+    assert(
+      (jobId == null) != (extJobId == null),
+      'Provide exactly one of jobId / extJobId',
+    );
+    final query = jobId != null ? 'job_id=$jobId' : 'ext_job_id=$extJobId';
+    try {
+      final body = await _webApiGet('/api/job-metadata?$query');
+      final metadata = body['metadata'] as Map<String, dynamic>?;
+      final address = (metadata?['event_address'] as String?)?.trim();
+      if (address == null || address.isEmpty) return null;
+      return address;
+    } catch (_) {
+      return null;
+    }
   }
 }

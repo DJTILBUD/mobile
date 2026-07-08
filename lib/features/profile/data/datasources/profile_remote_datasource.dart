@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -38,8 +39,10 @@ class ProfileRemoteDatasource {
   Future<void> updateDjProfile(Map<String, dynamic> data) async {
     final id = data['id'] as String;
     final payload = Map<String, dynamic>.from(data)..remove('id');
-    final result = await _client.from('DjInfos').update(payload).eq('id', id).select();
-    if (result.isEmpty) throw Exception('DjInfos update matched 0 rows (id=$id)');
+    final result =
+        await _client.from('DjInfos').update(payload).eq('id', id).select();
+    if (result.isEmpty)
+      throw Exception('DjInfos update matched 0 rows (id=$id)');
   }
 
   // ── Musician Profile ──
@@ -55,8 +58,10 @@ class ProfileRemoteDatasource {
   Future<void> updateMusicianProfile(Map<String, dynamic> data) async {
     final id = data['id'] as String;
     final payload = Map<String, dynamic>.from(data)..remove('id');
-    final result = await _client.from('Musicians').update(payload).eq('id', id).select();
-    if (result.isEmpty) throw Exception('Musicians update matched 0 rows (id=$id)');
+    final result =
+        await _client.from('Musicians').update(payload).eq('id', id).select();
+    if (result.isEmpty)
+      throw Exception('Musicians update matched 0 rows (id=$id)');
   }
 
   // ── Payment Info ──
@@ -78,7 +83,8 @@ class ProfileRemoteDatasource {
     );
     if (response.statusCode != 200) {
       throw Exception(
-          'fetchPaymentInfo failed (${response.statusCode}): ${response.body}');
+        'fetchPaymentInfo failed (${response.statusCode}): ${response.body}',
+      );
     }
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     return body['data'] as Map<String, dynamic>?;
@@ -100,7 +106,8 @@ class ProfileRemoteDatasource {
     );
     if (response.statusCode != 200) {
       throw Exception(
-          'upsertPaymentInfo failed (${response.statusCode}): ${response.body}');
+        'upsertPaymentInfo failed (${response.statusCode}): ${response.body}',
+      );
     }
   }
 
@@ -171,6 +178,8 @@ class ProfileRemoteDatasource {
     required String userId,
     required String filePath,
     required UserFileType type,
+    String? description,
+    void Function(double progress)? onProgress,
   }) async {
     final file = File(filePath);
     final fileName = filePath.split('/').last;
@@ -188,15 +197,19 @@ class ProfileRemoteDatasource {
     if (signedUrlRes.statusCode < 200 || signedUrlRes.statusCode >= 300) {
       throw Exception('Could not get signed URL (${signedUrlRes.statusCode})');
     }
-    final signedUrl = (jsonDecode(signedUrlRes.body) as Map<String, dynamic>)['url'] as String;
+    final signedUrl =
+        (jsonDecode(signedUrlRes.body) as Map<String, dynamic>)['url']
+            as String;
     // The public URL is the signed URL without query params
     final fileUrl = signedUrl.split('?').first;
 
-    // 2. Upload directly to S3
-    final uploadRes = await http.put(
+    // 2. Upload directly to S3, streaming from disk so we can report real
+    // upload progress (matters for large videos on slow connections).
+    final uploadRes = await _putWithProgress(
       Uri.parse(signedUrl),
-      headers: {'Content-Type': contentType},
-      body: await file.readAsBytes(),
+      file,
+      contentType,
+      onProgress,
     );
     if (uploadRes.statusCode < 200 || uploadRes.statusCode >= 300) {
       throw Exception('S3 upload failed (${uploadRes.statusCode})');
@@ -209,9 +222,43 @@ class ProfileRemoteDatasource {
           'user_id': userId,
           'url': fileUrl,
           'type': type.toDbString(),
+          if (description != null && description.trim().isNotEmpty)
+            'description': description.trim(),
         })
         .select()
         .single();
+  }
+
+  /// PUTs [file] to [url] streaming straight from disk, reporting upload
+  /// progress as a 0..1 fraction via [onProgress]. Streaming (instead of
+  /// `readAsBytes`) surfaces real progress and avoids loading large videos
+  /// fully into memory. Mirrors the job-content uploader.
+  Future<http.StreamedResponse> _putWithProgress(
+    Uri url,
+    File file,
+    String contentType,
+    void Function(double progress)? onProgress,
+  ) async {
+    final total = await file.length();
+    var sent = 0;
+    final request =
+        http.StreamedRequest('PUT', url)
+          ..headers['Content-Type'] = contentType
+          ..contentLength = total;
+
+    final body = file.openRead().transform(
+      StreamTransformer<List<int>, List<int>>.fromHandlers(
+        handleData: (chunk, sink) {
+          sent += chunk.length;
+          if (total > 0) onProgress?.call((sent / total).clamp(0.0, 1.0));
+          sink.add(chunk);
+        },
+      ),
+    );
+
+    final response = request.send();
+    unawaited(request.sink.addStream(body).then((_) => request.sink.close()));
+    return response;
   }
 
   Future<void> deleteFile(int fileId) async {
@@ -231,7 +278,8 @@ class ProfileRemoteDatasource {
   // ── Standard Messages ──
 
   Future<List<Map<String, dynamic>>> fetchStandardMessages(
-      String userId) async {
+    String userId,
+  ) async {
     return _client
         .from('StandardMessages')
         .select()
@@ -266,9 +314,10 @@ class ProfileRemoteDatasource {
     required bool isDj,
   }) async {
     final audiences = isDj ? ['dj', 'both'] : ['musician', 'both'];
-    final readJoin = isDj
-        ? 'AdminMessageReads!left(readAt, djId)'
-        : 'AdminMessageReads!left(readAt, musicianId)';
+    final readJoin =
+        isDj
+            ? 'AdminMessageReads!left(readAt, djId)'
+            : 'AdminMessageReads!left(readAt, musicianId)';
     final userCreatedAt = _client.auth.currentUser?.createdAt;
     var query = _client
         .from('AdminMessages')
@@ -285,9 +334,10 @@ class ProfileRemoteDatasource {
     required String userId,
     required bool isDj,
   }) async {
-    final payload = isDj
-        ? {'messageId': messageId, 'djId': userId}
-        : {'messageId': messageId, 'musicianId': userId};
+    final payload =
+        isDj
+            ? {'messageId': messageId, 'djId': userId}
+            : {'messageId': messageId, 'musicianId': userId};
     await _client.from('AdminMessageReads').insert(payload);
   }
 
@@ -311,11 +361,12 @@ class ProfileRemoteDatasource {
     required bool isDj,
   }) async {
     final table = isDj ? 'DjInfos' : 'Musicians';
-    final row = await _client
-        .from(table)
-        .select('ical_token')
-        .eq('id', userId)
-        .maybeSingle();
+    final row =
+        await _client
+            .from(table)
+            .select('ical_token')
+            .eq('id', userId)
+            .maybeSingle();
     return row?['ical_token'] as String?;
   }
 
@@ -325,10 +376,7 @@ class ProfileRemoteDatasource {
   }) async {
     final token = _generateUuid();
     final table = isDj ? 'DjInfos' : 'Musicians';
-    await _client
-        .from(table)
-        .update({'ical_token': token})
-        .eq('id', userId);
+    await _client.from(table).update({'ical_token': token}).eq('id', userId);
     return token;
   }
 
@@ -353,6 +401,11 @@ class ProfileRemoteDatasource {
       'mp4' => 'video/mp4',
       'mov' => 'video/quicktime',
       'avi' => 'video/x-msvideo',
+      'mp3' => 'audio/mpeg',
+      'm4a' => 'audio/mp4',
+      'aac' => 'audio/aac',
+      'wav' => 'audio/wav',
+      'ogg' => 'audio/ogg',
       _ => 'application/octet-stream',
     };
   }

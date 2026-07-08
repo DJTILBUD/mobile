@@ -32,6 +32,8 @@ class ExtJob {
     this.musicianSpecialRequest,
     this.extraHours,
     this.extraHoursPricePerHour,
+    this.sentAt,
+    this.deadlineExtendedUntil,
   });
 
   final int id;
@@ -63,6 +65,7 @@ class ExtJob {
   final DateTime? djReadyConfirmedAt;
   final DateTime? customerContactPlannedFor;
   final String? songRequestToken;
+
   /// Free-text special request from the customer directed at the musician.
   /// Distinct from [notes] (general job notes). Never holds internal/admin notes.
   final String? musicianSpecialRequest;
@@ -74,6 +77,36 @@ class ExtJob {
   /// this is folded into [fullAmount] and (× DJ share) into [honorar]
   /// server-side. Used here to recompute the expected total before saving.
   final int? extraHoursPricePerHour;
+
+  /// When the offer was sent to the customer (DJ/musician assigned, status -> sent).
+  /// Baseline for the 7-day decision countdown, mirroring Jobs.sent_at. Null = not yet sent.
+  final DateTime? sentAt;
+
+  /// Admin-set override of the customer decision deadline (mirrors Jobs.deadline_extended_until).
+  /// Null = no manual extension.
+  final DateTime? deadlineExtendedUntil;
+
+  /// The deadline the customer's decision window counts down to. Mirrors the web
+  /// `getCountdownTargetDate` exactly: the admin-extended deadline wins if set, otherwise the
+  /// earlier of sent_at + 7 days and event_date - 2 days. Null when not yet sent.
+  DateTime? get decisionDeadline {
+    if (deadlineExtendedUntil != null) return deadlineExtendedUntil;
+    if (sentAt == null) return null;
+    final sevenDaysAfterSent = sentAt!.add(const Duration(days: 7));
+    final twoDaysBeforeEvent = date.subtract(const Duration(days: 2));
+    return sevenDaysAfterSent.isBefore(twoDaysBeforeEvent)
+        ? sevenDaysAfterSent
+        : twoDaysBeforeEvent;
+  }
+
+  /// requested_musician_hours formatted for display: whole numbers without decimals, halves with
+  /// one decimal (1, 0.5, 1.5). Mirrors Job.musicianHoursDisplay so the ext-job card and detail
+  /// never round it differently. Empty when null.
+  String get musicianHoursDisplay {
+    final h = requestedMusicianHours;
+    if (h == null) return '';
+    return h.toStringAsFixed(h % 1 == 0 ? 0 : 1);
+  }
 
   static String _fmtNum(double v) {
     final s = v.toInt().toString();
@@ -121,17 +154,23 @@ class ExtJob {
 
 enum ExtJobStatus {
   open,
+  sent,
   customerContacted,
   readyForBilling,
   closed,
-  expired;
+  expired,
+  canceled,
+  reopened;
 
   static ExtJobStatus fromString(String value) {
     return switch (value) {
+      'sent' => ExtJobStatus.sent,
       'customer_contacted' => ExtJobStatus.customerContacted,
       'ready_for_billing' => ExtJobStatus.readyForBilling,
       'closed' => ExtJobStatus.closed,
       'expired' => ExtJobStatus.expired,
+      'canceled' => ExtJobStatus.canceled,
+      'reopened' => ExtJobStatus.reopened,
       _ => ExtJobStatus.open,
     };
   }
