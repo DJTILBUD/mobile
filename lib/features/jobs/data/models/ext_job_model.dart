@@ -77,7 +77,7 @@ class ExtJobModel {
   final String? songRequestToken;
   final String? postalCode;
   final double? extraHours;
-  final int? extraHoursPricePerHour;
+  final num? extraHoursPricePerHour;
   final String? sentAt;
   final String? deadlineExtendedUntil;
 
@@ -130,7 +130,7 @@ class ExtJobModel {
       postalCode: json['postal_code'] as String?,
       extraHours: (json['extra_hours'] as num?)?.toDouble(),
       extraHoursPricePerHour:
-          (json['extra_hours_price_per_hour'] as num?)?.toInt(),
+          (json['extra_hours_price_per_hour'] as num?)?.toDouble(),
       sentAt: json['sent_at'] as String?,
       deadlineExtendedUntil: json['deadline_extended_until'] as String?,
     );
@@ -140,9 +140,12 @@ class ExtJobModel {
     return ExtJob(
       id: id,
       leadName: leadName,
-      date: DateTime.parse(date),
+      // tryParse + sentinel so one malformed date can't blank the whole feed (see JobModel).
+      date: DateTime.tryParse(date) ?? DateTime.fromMillisecondsSinceEpoch(0),
       status: ExtJobStatus.fromString(status),
-      createdAt: DateTime.parse(createdAt),
+      createdAt:
+          DateTime.tryParse(createdAt) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
       phoneNumber: phoneNumber,
       email: email,
       startTime: startTime,

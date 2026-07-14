@@ -310,7 +310,7 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<void> addExtraHours(
     int quoteId, {
     required double extraHours,
-    required int pricePerHour,
+    required num pricePerHour,
     required int newTotalPrice,
   }) async {
     try {
@@ -338,7 +338,7 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<void> addExtJobExtraHours(
     int extJobId, {
     required double extraHours,
-    required int pricePerHour,
+    required num pricePerHour,
     required int newTotalPrice,
   }) async {
     try {

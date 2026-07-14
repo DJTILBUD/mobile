@@ -13,6 +13,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/utils/extra_hours_options.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/hours_picker_field.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/customer_deadline_banner.dart';
@@ -964,6 +965,8 @@ class _ExtJobExtraHoursSectionState
     extends ConsumerState<_ExtJobExtraHoursSection> {
   DSColors get _c => DSTheme.of(context);
   final _priceController = TextEditingController();
+  final _totalController = TextEditingController();
+  String _priceMode = 'perHour'; // 'perHour' | 'total'
   double? _selectedHours;
   bool _editing = false;
 
@@ -1004,13 +1007,20 @@ class _ExtJobExtraHoursSectionState
   }
 
   void _prefill() {
-    if (widget.extJob.extraHoursPricePerHour != null) {
-      _priceController.text = widget.extJob.extraHoursPricePerHour.toString();
+    final rate = widget.extJob.extraHoursPricePerHour;
+    if (rate != null) {
+      _priceController.text = rate.round().toString();
     } else {
       final djProfile = ref.read(djProfileProvider).valueOrNull;
       if (djProfile != null && djProfile.pricePerExtraHour > 0) {
         _priceController.text = djProfile.pricePerExtraHour.toString();
       }
+    }
+    final eh = widget.extJob.extraHours;
+    if (eh != null && rate != null) {
+      _totalController.text = (eh * rate).round().toString();
+      // A non-whole stored rate means it was entered as a total → default to that mode.
+      if (rate != rate.roundToDouble()) _priceMode = 'total';
     }
     _selectedHours = extraHoursSelectedValue(widget.extJob.extraHours);
   }
@@ -1018,19 +1028,48 @@ class _ExtJobExtraHoursSectionState
   @override
   void dispose() {
     _priceController.dispose();
+    _totalController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     final hours = _selectedHours;
-    final price = int.tryParse(_priceController.text);
-    if (hours == null || hours <= 0 || price == null || price <= 0) {
+    if (hours == null || hours <= 0) {
       DSToast.show(
         context,
         variant: DSToastVariant.error,
-        title: 'Angiv gyldigt timetal og pris',
+        title: 'Vælg antal timer',
       );
       return;
+    }
+
+    // Either the DJ typed the agreed TOTAL (rate derived) or a per-hour rate.
+    num effectiveRate;
+    num extraCost;
+    if (_priceMode == 'total') {
+      final total = int.tryParse(_totalController.text);
+      if (total == null || total <= 0) {
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: 'Angiv en gyldig samlet pris',
+        );
+        return;
+      }
+      extraCost = total;
+      effectiveRate = total / hours;
+    } else {
+      final price = int.tryParse(_priceController.text);
+      if (price == null || price <= 0) {
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: 'Angiv en gyldig pris pr. time',
+        );
+        return;
+      }
+      extraCost = hours * price;
+      effectiveRate = price;
     }
     final fullAmount = widget.extJob.fullAmount;
     if (fullAmount == null || fullAmount <= 0) {
@@ -1046,14 +1085,14 @@ class _ExtJobExtraHoursSectionState
     final existingExtra =
         (widget.extJob.extraHours ?? 0) *
         (widget.extJob.extraHoursPricePerHour ?? 0);
-    final newTotalPrice = (fullAmount - existingExtra + hours * price).round();
+    final newTotalPrice = (fullAmount - existingExtra + extraCost).round();
 
     final ok = await ref
         .read(addExtJobExtraHoursProvider.notifier)
         .add(
           widget.extJob.id,
           extraHours: hours,
-          pricePerHour: price,
+          pricePerHour: effectiveRate,
           newTotalPrice: newTotalPrice,
         );
     if (!mounted) return;
@@ -1139,20 +1178,51 @@ class _ExtJobExtraHoursSectionState
             style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
           ),
           const SizedBox(height: DSSpacing.s3),
-          DSDropdown<double>(
-            label: 'Antal timer',
-            hint: 'Vælg antal timer...',
+          HoursPickerField(
             value: _selectedHours,
-            items: extraHoursOptions,
             onChanged: (v) => setState(() => _selectedHours = v),
           ),
           const SizedBox(height: DSSpacing.s3),
-          DSInput(
-            label: 'Pris pr. time (DKK)',
-            controller: _priceController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          Row(
+            children: [
+              Expanded(
+                child: DSButton(
+                  label: 'Pris pr. time',
+                  variant:
+                      _priceMode == 'perHour'
+                          ? DSButtonVariant.primary
+                          : DSButtonVariant.secondary,
+                  onTap: () => setState(() => _priceMode = 'perHour'),
+                ),
+              ),
+              const SizedBox(width: DSSpacing.s2),
+              Expanded(
+                child: DSButton(
+                  label: 'Samlet pris',
+                  variant:
+                      _priceMode == 'total'
+                          ? DSButtonVariant.primary
+                          : DSButtonVariant.secondary,
+                  onTap: () => setState(() => _priceMode = 'total'),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: DSSpacing.s3),
+          if (_priceMode == 'perHour')
+            DSInput(
+              label: 'Pris pr. time (DKK)',
+              controller: _priceController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            )
+          else
+            DSInput(
+              label: 'Samlet pris for de ekstra timer (DKK)',
+              controller: _totalController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            ),
           const SizedBox(height: DSSpacing.s3),
           Consumer(
             builder: (context, ref, _) {
@@ -1195,7 +1265,7 @@ class _ExtJobExtraHoursSummary extends StatelessWidget {
   });
 
   final double hours;
-  final int pricePerHour;
+  final num pricePerHour;
   final double payoutShare;
 
   @override
@@ -1210,7 +1280,10 @@ class _ExtJobExtraHoursSummary extends StatelessWidget {
     return Column(
       children: [
         _ExtJobSummaryRow(label: 'Timer', value: hoursLabel),
-        _ExtJobSummaryRow(label: 'Pris pr. time', value: '$pricePerHour kr.'),
+        _ExtJobSummaryRow(
+          label: 'Pris pr. time',
+          value: '${pricePerHour.round()} kr.',
+        ),
         _ExtJobSummaryRow(label: 'Ekstra omkostning', value: '+$extraCost kr.'),
         Divider(height: 16, color: c.border.subtle),
         _ExtJobSummaryRow(

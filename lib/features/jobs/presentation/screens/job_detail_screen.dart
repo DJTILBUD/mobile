@@ -308,7 +308,7 @@ class JobDetailScreen extends ConsumerWidget {
                         label: 'Saxofonist',
                         value: 'Ja',
                       ),
-                    if (job.saxType != null) ...[
+                    if (job.saxType != null && job.saxType!.isNotEmpty) ...[
                       if (job.requestedSaxophonist)
                         const SizedBox(height: DSSpacing.s2),
                       _InfoRow(

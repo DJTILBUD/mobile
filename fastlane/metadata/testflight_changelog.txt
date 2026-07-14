@@ -1,1 +1,10 @@
-Bug fixes and improvements.
+New: Notification Center 🔔
+
+All your notifications are now collected in one place, so you never miss a new job, a message, or an accepted offer.
+
+• Tap the bell at the top of your Profile to see every notification you've received
+• Tap a notification to jump straight to the job, chat, or offer it's about
+• The unread count shows on the app icon, the Profile tab, and the bell
+• Swipe to mark as read — or mark all read in one tap
+
+Plus minor bug fixes and improvements.

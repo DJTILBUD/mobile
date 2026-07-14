@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,8 @@ import 'package:dj_tilbud_app/features/chat/domain/entities/conversation.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/chat_provider.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/admin_support_provider.dart';
 import 'package:dj_tilbud_app/features/chat/data/datasources/admin_support_datasource.dart';
+import 'package:dj_tilbud_app/features/chat/presentation/screens/admin_support_thread_screen.dart';
+import 'package:dj_tilbud_app/features/chat/presentation/widgets/new_support_message_sheet.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class ChatScreen extends ConsumerWidget {
@@ -123,66 +126,287 @@ class _MyConversationsTab extends ConsumerWidget {
   }
 }
 
-class _AdminSupportTab extends ConsumerWidget {
+class _AdminSupportTab extends ConsumerStatefulWidget {
   const _AdminSupportTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final _c = DSTheme.of(context);
-    final threadsAsync = ref.watch(adminSupportThreadsProvider);
+  ConsumerState<_AdminSupportTab> createState() => _AdminSupportTabState();
+}
 
-    return threadsAsync.when(
+class _AdminSupportTabState extends ConsumerState<_AdminSupportTab> {
+  final _searchController = TextEditingController();
+  String _query = '';
+  Timer? _debounce;
+  // Last successfully-loaded threads, so typing another search char (a new provider key) keeps the
+  // current results on screen instead of flashing the skeleton between keystrokes.
+  List<AdminSupportThread>? _lastThreads;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _retry() {
+    if (_query.isNotEmpty) {
+      ref.invalidate(adminSupportSearchProvider(_query));
+    } else {
+      ref.read(adminSupportThreadsProvider.notifier).refresh();
+    }
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    AsyncValue<List<AdminSupportThread>> async,
+    bool searching,
+  ) {
+    final data = async.valueOrNull;
+    if (data != null) _lastThreads = data;
+    // While a new query loads, keep the previous results visible (no skeleton flash).
+    if (async.isLoading && _lastThreads != null) {
+      return _threadListView(context, _lastThreads!, searching);
+    }
+    return async.when(
       loading: () => const _ConversationListSkeleton(),
-      error:
-          (e, _) => _ErrorView(
-            onRetry:
-                () => ref.read(adminSupportThreadsProvider.notifier).refresh(),
-          ),
+      error: (e, _) => _ErrorView(onRetry: _retry),
       data:
           (threads) =>
               threads.isEmpty
-                  ? Center(
-                    child: Text(
-                      'Ingen support-samtaler',
-                      style: DSTextStyle.bodyMd.copyWith(color: _c.text.muted),
-                    ),
-                  )
-                  : RefreshIndicator(
-                    onRefresh:
-                        () =>
-                            ref
-                                .read(adminSupportThreadsProvider.notifier)
-                                .refresh(),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: threads.length,
-                      separatorBuilder:
-                          (_, __) => Divider(
-                            height: 1,
-                            color: _c.border.subtle,
-                            indent: 72,
-                          ),
-                      itemBuilder:
-                          (context, i) => _AdminThreadTile(thread: threads[i]),
-                    ),
-                  ),
+                  ? _emptyState(context, searching)
+                  : _threadListView(context, threads, searching),
     );
   }
-}
 
-class _AdminThreadTile extends StatelessWidget {
-  const _AdminThreadTile({required this.thread});
+  Widget _emptyState(BuildContext context, bool searching) {
+    final c = DSTheme.of(context);
+    return Center(
+      child: Text(
+        searching ? 'Ingen resultater for "$_query"' : 'Ingen support-samtaler',
+        style: DSTextStyle.bodyMd.copyWith(color: c.text.muted),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
 
-  final AdminSupportThread thread;
+  Widget _threadListView(
+    BuildContext context,
+    List<AdminSupportThread> threads,
+    bool searching,
+  ) {
+    final c = DSTheme.of(context);
+    return RefreshIndicator(
+      onRefresh: () async {
+        if (searching) {
+          ref.invalidate(adminSupportSearchProvider(_query));
+        } else {
+          await ref.read(adminSupportThreadsProvider.notifier).refresh();
+        }
+      },
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: threads.length,
+        separatorBuilder:
+            (_, __) => Divider(height: 1, color: c.border.subtle, indent: 72),
+        itemBuilder:
+            (context, i) => _AdminThreadTile(
+              thread: threads[i],
+              searchTerm: searching ? _query : null,
+            ),
+      ),
+    );
+  }
+
+  void _onChanged(String v) {
+    // Match the admin tool's 180ms debounce before hitting the server search.
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 180), () {
+      if (mounted) setState(() => _query = v.trim());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
+    final searching = _query.isNotEmpty;
+    // Empty query = the live (realtime) list; a query = server-side name+message search.
+    final threadsAsync =
+        searching
+            ? ref.watch(adminSupportSearchProvider(_query))
+            : ref.watch(adminSupportThreadsProvider);
+
+    return Stack(
+      children: [
+        Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                DSSpacing.s3,
+                DSSpacing.s2,
+                DSSpacing.s3,
+                DSSpacing.s2,
+              ),
+              child: DSInput(
+                controller: _searchController,
+                hint: 'Søg i support (navn eller besked)',
+                iconLeft: LucideIcons.search,
+                onChanged: _onChanged,
+                textInputAction: TextInputAction.search,
+              ),
+            ),
+            Expanded(child: _buildBody(context, threadsAsync, searching)),
+          ],
+        ),
+        Positioned(
+          right: DSSpacing.s4,
+          bottom: DSSpacing.s4,
+          child: FloatingActionButton(
+            onPressed: _openComposer,
+            backgroundColor: _c.brand.primary,
+            foregroundColor: _c.brand.onPrimary,
+            child: const Icon(LucideIcons.messageSquarePlus),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openComposer() async {
+    final thread = await showModalBottomSheet<AdminSupportThread>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: DSTheme.of(context).bg.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
+      ),
+      builder: (_) => const NewSupportMessageSheet(),
+    );
+    if (thread == null || !mounted) return;
+    // Refresh the inbox so the new thread appears, then open it.
+    ref.read(adminSupportThreadsProvider.notifier).refresh();
+    if (!context.mounted) return;
+    context.pushNamed(
+      AppRoutes.adminSupportThread,
+      extra: AdminSupportThreadArgs(thread: thread),
+    );
+  }
+}
+
+class _AdminThreadTile extends ConsumerWidget {
+  const _AdminThreadTile({required this.thread, this.searchTerm});
+
+  final AdminSupportThread thread;
+
+  /// When set (searching), the name is highlighted and the matching messages are listed below.
+  final String? searchTerm;
+
+  void _open(BuildContext context, {int? messageId}) {
+    context.pushNamed(
+      AppRoutes.adminSupportThread,
+      extra: AdminSupportThreadArgs(
+        thread: thread,
+        initialMessageId: messageId,
+      ),
+    );
+  }
+
+  /// Long-press menu: mark the thread read/unread (team-wide). Optimistic — the list updates
+  /// instantly and the badge follows; the web endpoint + Realtime reconcile in the background.
+  Future<void> _showThreadMenu(BuildContext context, WidgetRef ref) async {
+    final c = DSTheme.of(context);
+    final notifier = ref.read(adminSupportThreadsProvider.notifier);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: c.bg.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DSSpacing.s4,
+                  DSSpacing.s4,
+                  DSSpacing.s4,
+                  DSSpacing.s2,
+                ),
+                child: Row(
+                  children: [
+                    _ConversationAvatar(
+                      name: thread.userName,
+                      imageUrl: thread.userAvatarUrl,
+                    ),
+                    const SizedBox(width: DSSpacing.s3),
+                    Expanded(
+                      child: Text(
+                        thread.userName,
+                        style: DSTextStyle.headingSm.copyWith(
+                          color: c.text.primary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: c.border.subtle),
+              if (thread.hasUnread)
+                ListTile(
+                  leading: Icon(
+                    LucideIcons.checkCheck,
+                    color: c.text.secondary,
+                  ),
+                  title: const Text('Marker som læst'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    notifier.markThreadRead(thread.id);
+                  },
+                )
+              else
+                ListTile(
+                  leading: Icon(
+                    LucideIcons.mailWarning,
+                    color: c.text.secondary,
+                  ),
+                  title: const Text('Marker som ulæst'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    notifier.markThreadUnread(thread.id);
+                  },
+                ),
+              ListTile(
+                leading: Icon(
+                  LucideIcons.messageSquare,
+                  color: c.text.secondary,
+                ),
+                title: const Text('Åbn samtale'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _open(context);
+                },
+              ),
+              const SizedBox(height: DSSpacing.s2),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final _c = DSTheme.of(context);
     final hasUnread = thread.hasUnread;
+    final term = searchTerm;
+    final matches = thread.matches;
 
     return InkWell(
-      onTap:
-          () => context.pushNamed(AppRoutes.adminSupportThread, extra: thread),
+      onTap: () => _open(context),
+      onLongPress: () => _showThreadMenu(context, ref),
       child: Container(
         color: hasUnread ? _c.brand.primary.withValues(alpha: 0.06) : null,
         padding: const EdgeInsets.symmetric(
@@ -201,18 +425,46 @@ class _AdminThreadTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    thread.userName,
+                  _HighlightedText(
+                    text: thread.userName,
+                    term: term,
                     style: DSTextStyle.headingSm.copyWith(
                       fontSize: 15,
                       color: _c.text.primary,
                       fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w500,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  if (thread.lastMessage != null)
+                  // When searching, show the matching messages instead of the last-message preview.
+                  if (term != null && matches.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    ...matches.map(
+                      (m) => Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: InkWell(
+                          onTap: () => _open(context, messageId: m.id),
+                          child: _HighlightedText(
+                            text: _snippet(m.message, term),
+                            term: term,
+                            style: DSTextStyle.labelMd.copyWith(
+                              color: _c.text.secondary,
+                            ),
+                            maxLines: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (thread.matchCount > matches.length)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          '+${thread.matchCount - matches.length} flere',
+                          style: DSTextStyle.labelSm.copyWith(
+                            color: _c.text.muted,
+                          ),
+                        ),
+                      ),
+                  ] else if (thread.lastMessage != null)
                     Row(
                       children: [
                         Expanded(
@@ -264,6 +516,75 @@ class _AdminThreadTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// Windows a long message to ~45 chars around the first case-insensitive hit, with ellipses.
+  String _snippet(String message, String term) {
+    final lower = message.toLowerCase();
+    final idx = lower.indexOf(term.toLowerCase());
+    if (idx < 0)
+      return message.length > 90 ? '${message.substring(0, 90)}…' : message;
+    final start = (idx - 45).clamp(0, message.length);
+    final end = (idx + term.length + 45).clamp(0, message.length);
+    final core = message.substring(start, end);
+    return '${start > 0 ? '…' : ''}$core${end < message.length ? '…' : ''}';
+  }
+}
+
+/// Text that highlights every case-insensitive occurrence of [term] with an amber background.
+/// [term] null/empty renders plain text.
+class _HighlightedText extends StatelessWidget {
+  const _HighlightedText({
+    required this.text,
+    required this.style,
+    this.term,
+    this.maxLines = 1,
+  });
+
+  final String text;
+  final TextStyle style;
+  final String? term;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = term?.trim() ?? '';
+    if (t.isEmpty) {
+      return Text(
+        text,
+        style: style,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+    final lower = text.toLowerCase();
+    final needle = t.toLowerCase();
+    final spans = <TextSpan>[];
+    int i = 0;
+    while (i < text.length) {
+      final hit = lower.indexOf(needle, i);
+      if (hit < 0) {
+        spans.add(TextSpan(text: text.substring(i)));
+        break;
+      }
+      if (hit > i) spans.add(TextSpan(text: text.substring(i, hit)));
+      spans.add(
+        TextSpan(
+          text: text.substring(hit, hit + t.length),
+          style: const TextStyle(
+            backgroundColor: Color(0xFFFFE082),
+            color: Colors.black,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+      i = hit + t.length;
+    }
+    return Text.rich(
+      TextSpan(style: style, children: spans),
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
@@ -351,7 +672,8 @@ class _ConversationTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (conversation.lastMessageText != null) ...[
+                  if (conversation.lastMessageText != null ||
+                      conversation.reactionPreview != null) ...[
                     const SizedBox(height: 4),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -365,7 +687,8 @@ class _ConversationTile extends StatelessWidget {
                               fontWeight:
                                   hasUnread ? FontWeight.w700 : FontWeight.w400,
                               fontStyle:
-                                  conversation.lastMessageIsSystem
+                                  conversation.reactionPreview == null &&
+                                          conversation.lastMessageIsSystem
                                       ? FontStyle.italic
                                       : FontStyle.normal,
                             ),
@@ -410,6 +733,8 @@ class _ConversationTile extends StatelessWidget {
   }
 
   String _buildPreview(Conversation c) {
+    // A reaction newer than the last message wins ("DJTILBUD reagerede med 👍").
+    if (c.reactionPreview != null) return c.reactionPreview!;
     final text = c.lastMessageText ?? '';
     if (c.lastMessageIsSystem) return text;
     final prefix = c.isLastMessageFromMe ? 'Du: ' : '';

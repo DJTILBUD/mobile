@@ -76,7 +76,7 @@ class ExtJob {
   /// Customer-facing price per extra hour, in DKK. Combined with [extraHours]
   /// this is folded into [fullAmount] and (× DJ share) into [honorar]
   /// server-side. Used here to recompute the expected total before saving.
-  final int? extraHoursPricePerHour;
+  final num? extraHoursPricePerHour;
 
   /// When the offer was sent to the customer (DJ/musician assigned, status -> sent).
   /// Baseline for the 7-day decision countdown, mirroring Jobs.sent_at. Null = not yet sent.

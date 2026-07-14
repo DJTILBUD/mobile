@@ -267,6 +267,74 @@ Both read the body from `ChatMessage.message` and copy via `Clipboard.setData` (
 `package:flutter/services.dart`; the conversation file already had it, the support file did not).
 Copy is gated on `message.isNotEmpty` so image-only bubbles don't offer it.
 
+## Chat keyboard avoidance: use the Scaffold default, do NOT hand-roll `viewInsets`
+
+`conversation_detail_screen.dart` (musician + support chat) must keep the Scaffold's
+**default `resizeToAvoidBottomInset: true`** and lay the body out as
+`Column[Expanded(list), …banners, ChatMessageInput]` — the composer pins itself above the
+keyboard because the Scaffold shrinks the body. The admin side
+(`admin_support_thread_screen.dart`) uses this exact default and works. An earlier version set
+`resizeToAvoidBottomInset: false` and manually padded the body by
+`MediaQuery.of(context).viewInsets.bottom`, with a comment claiming the Scaffold's auto-resize is
+"unreliable inside the MaterialApp.builder Stack." That premise is **wrong** (nothing above the
+router strips `viewInsets`; the admin thread proves default resize works in the same Stack) and the
+manual override left the input hidden behind the keyboard. Do not reintroduce it. Note the global
+`_KeyboardDismissBar` (`app.dart`, a "Luk" bar at `bottom: viewInsets.bottom`) is already suppressed
+on this screen via `suppressKeyboardDismissBarProvider` (set true in `initState`'s post-frame,
+false in `dispose`) so it can't overlay the composer — keep that.
+
+## Notification center (in-app feed) — `features/notifications/`
+
+Facebook-style feed of every push the user received, reached via a **bell icon in the Profile tab
+app bar, top-right** (`NotificationBell` in `profile_screen.dart` `actions`; the dark-mode toggle
+sits in `leading`, top-left) → route `AppRoutes.notifications` → `NotificationsScreen` (All/Ulæste
+filter, Nye/Tidligere grouping, per-type icon, unread dot).
+
+- **Data source is the `UserNotifications` table** (web-app migration `20260713130000`), written
+  **server-side** by the `notify-*` Edge Functions at send time — NOT by client received-logging
+  (which is iOS-blind, see above). The mobile side only reads + marks read.
+- **Tap reuses `NotificationsService.navigateTo(data, router)`** — the stored `data` jsonb is the
+  exact FCM payload, so the feed replays the identical deep-link routing. No per-type nav logic was
+  added; the tile just calls `navigateTo(n.data, ref.read(routerProvider))`.
+- **`notificationsProvider`** (`StateNotifierProvider`, NOT autoDispose so the badge survives) fetches
+  + subscribes to Realtime on `UserNotifications` filtered by `user_id` (Realtime lives in the
+  provider, per the rule), re-fetches on resume, and does optimistic mark-read.
+  `unreadNotificationCountProvider` drives the bell badge.
+- **No backfill** — the feed only fills from notifications sent after deploy (the table didn't exist
+  before). Tapping a seeded/old notification only navigates if the referenced row still exists.
+- **One unread count across three surfaces, all reading `unreadNotificationCountProvider`:** the OS
+  **app-icon badge** (`app_badge_plus`, set by `NotificationsNotifier._emit` on every change +
+  cleared on logout in `app.dart`), the **Profile bottom-nav tab badge** (`main_shell.dart` — this
+  replaced the old `unreadAdminMessageCountProvider` badge, so the Profile tab now counts
+  notifications, not admin messages; admin messages still surface as `admin_message` rows in the
+  feed), and the **profile app-bar bell**. Keep all three on this one provider so the number is
+  traceable icon → tab → bell.
+- **Tap from the in-app list keeps the back stack:** the tile calls
+  `NotificationsService.navigateTo(data, router, keepCurrentStack: true)`. That flag makes the
+  internal `goTab()` skip the `router.go(<shell tab>)` reset, so the detail pushes ON TOP of the
+  notifications screen and Back returns there (a real push / foreground banner passes the default
+  `false`, still resetting to the tab so Back → home when the app opens fresh).
+
+## Admin support search (mobile Support tab) mirrors the admin tool
+
+The mobile admin **Support tab** (`chat_screen.dart` `_AdminSupportTab`) has the same search as the web
+admin tool's support inbox — search logic lives **server-side in the web-app** (source of truth):
+- **Cross-conversation search**: `GET /api/chat/support/admin/threads?q=` searches user **name + message
+  content** and returns per-thread `matches` (+ `match_count`), mirroring the admin tool's
+  `admin/app/api/support/route.ts`. Mobile: `AdminSupportDatasource.fetchThreads({q})` +
+  `adminSupportSearchProvider(query)` (a debounced search box; empty query falls back to the realtime
+  `adminSupportThreadsProvider`). The list shows highlighted match snippets under each name; tapping a
+  snippet opens the thread at that message.
+- **Jump-to-message**: the thread screen (`admin_support_thread_screen.dart`) takes
+  `AdminSupportThreadArgs(thread, initialMessageId)` (router accepts the bare thread too for back-compat)
+  and scrolls+flashes that message. Reliable scroll uses a **non-lazy `ListView` + a `GlobalKey` per
+  message + `Scrollable.ensureVisible`** (support threads are small) — that's the workaround for "lazy
+  ListView can't scroll to an arbitrary off-screen message"; do NOT switch this list back to
+  `ListView.builder` or jump breaks.
+- **In-thread search**: app-bar search field → highlights matches in bubbles (`_AdminFormattedText`
+  gained a `highlight` param), with a **`n/m` counter + up/down** step-through (`_gotoMatch`, wraps).
+  This goes beyond the admin tool (which has no in-thread stepper).
+
 ## DSButton gotchas (design system)
 
 - **`secondary`/`tertiary` foreground must NOT be `brand.primary`.** `brand.primary` (`#D1F366` lime) is a *background* token whose readable text pair is `brand.onPrimary` (dark). On a tinted bg (secondary = `brand.primary @ 10%`) the correct, theme-aware text token is **`brand.primaryActive`** (commented "text on tinted bg"). Using `brand.primary` as fg renders light-lime-on-light-lime (invisible). Same applies to `DSIconButton`.
@@ -305,6 +373,24 @@ The song-request QR is **per-DJ**, shown on the profile (`profile_screen.dart`, 
   mobile windows + the server route in sync. (Business rule: `business-rules.md` — extra hours only on
   the event date through 2 days after.)
 
+## Profile media: uploads MUST generate a video thumbnail + display via CachedNetworkImage
+
+Two long-standing bugs, fixed by making the **profile** upload path match the job-content path (and the
+web-app source of truth `useFiles.createFile`):
+- **Profile/performance videos had no poster.** `profile_remote_datasource.uploadFile` inserted only the
+  video `UserFiles` row and never generated a `type='thumbnail'` row, so every profile/common video
+  showed the grey `LucideIcons.video` fallback (job-content worked because it DOES generate one). Fixed:
+  `uploadFile` now, for `profileVideo`/`commonVideo`, generates a JPEG via `VideoThumbnail.thumbnailData`,
+  uploads it (`type=thumbnail` signed URL), and inserts a companion `type='thumbnail'` row with
+  `thumbnail_video_id` = the video row's id (mirrors `job_content_remote_datasource._uploadThumbnail`).
+  The resolution side (`thumbnail_video_id → url` map in `media_screen`/`onboarding`/`profile_preview`)
+  was already correct — the thumbnail rows just never existed.
+- **A just-uploaded profile image flashed the error icon.** `media_screen.dart` + `onboarding_screen.dart`
+  used `Image.network` (no disk cache, no retry), so the freshly-PUT S3 object (not readable for a split
+  second) hit the `errorBuilder` and didn't recover. Switched to **`CachedNetworkImage`** (like
+  `my_content_screen`/`profile_preview_screen`), which retries + caches only successful responses. Use
+  `CachedNetworkImage` for any newly-uploaded S3 media, never `Image.network`.
+
 ## DJ content capture (feature 52)
 
 Step 5 of the DJ job process: short clips (max 15s, 9:16) recorded per job. `quote_detail_screen` + `ext_job_detail_screen` show a reminder/CTA (`features/jobs/presentation/widgets/job_content_section.dart`) once `djReadyConfirmedAt != null`; tapping it opens **`MyContentScreen`** (`AppRoutes.myContent`, profile menu "Mit content", DJ-only) scoped to that job via a `JobContentKey` `extra`. That screen is the library of **all** the DJ's clips (labelled by job) + the scoped uploader + delete. Data: `job_content_remote_datasource.dart` (`fetchMyJobContent`) + `job_content_provider.dart` (`myJobContentProvider`).
@@ -313,6 +399,18 @@ Step 5 of the DJ job process: short clips (max 15s, 9:16) recorded per job. `quo
 - 15s / 9:16 is hard-validated client-side via `validateContentVideo` (`video_player` duration + aspectRatio) — there is no server-side ffprobe.
 - A thumbnail is generated on upload via `video_thumbnail` and uploaded as a separate `thumbnail` row, so web + admin (and the in-app list) show a real preview.
 - Notification types `content_record_reminder` / `content_upload_reminder` are DJ-only and routed exactly like `ready_reminder` in `notifications_service.dart`.
+
+## Copyable "intro message to the customer" on won jobs (mirrors web-app)
+
+The won-job contact section shows a ready-to-send Danish intro message with a "Kopiér besked" button, to
+make DJs/saxes contact the customer within 24h. Text = `features/jobs/domain/customer_intro_message.dart`
+`buildCustomerIntroMessage({leadName, role, performerName})` — **byte-identical to web-app
+`web-app/src/helpers/customerIntroMessage.ts`; change both together** (emojis included). UI =
+`features/jobs/presentation/widgets/copy_intro_message_card.dart`, placed in the "Kundekontakt" section
+of `quote_detail_screen.dart` (DJ: role `'DJ'`, name from `djProfileProvider.companyOrDjName`) and
+`service_offer_detail_screen.dart` (sax: role `'saxofonist'`, name from `musicianProfileProvider.fullName`),
+gated on not-yet-contacted. (`offer.musicianFullName` is NOT reliably populated in the offer detail — the
+service-offers query doesn't embed the musician — so read the name from `musicianProfileProvider`.)
 
 ## Saxophonist same-date offers are TIME-AWARE (multiple open offers allowed)
 

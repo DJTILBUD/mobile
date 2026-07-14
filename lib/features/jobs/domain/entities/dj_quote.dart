@@ -34,7 +34,7 @@ class DjQuote {
   final int? earlySetupPrice;
   final DateTime? djReadyConfirmedAt;
   final double? extraHours;
-  final int? extraHoursPricePerHour;
+  final num? extraHoursPricePerHour;
   final String? djNotes;
 
   /// Admin-negotiated payout that REPLACES the standard 75% calculation.

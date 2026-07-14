@@ -108,7 +108,8 @@ class JobModel {
       isPaused: json['is_paused'] as bool? ?? false,
       sentAt: json['sent_at'] as String?,
       deadlineExtendedUntil: json['deadline_extended_until'] as String?,
-      customerContactPlannedFor: json['customer_contact_planned_for'] as String?,
+      customerContactPlannedFor:
+          json['customer_contact_planned_for'] as String?,
       musicianStartTime: _formatTime(json['musician_start_time']),
       roleType: json['role_type'] as String?,
       hasActiveOffer: json['has_active_offer'] as bool? ?? false,
@@ -129,14 +130,19 @@ class JobModel {
     return Job(
       id: id,
       eventType: eventType,
-      date: DateTime.parse(date),
+      // tryParse + sentinel: a malformed date must never throw and blank the whole jobs list —
+      // a single bad row survives as an obviously-wrong 1970 date instead (same "one bad row can't
+      // kill the feed" principle as the sax_type fix).
+      date: DateTime.tryParse(date) ?? DateTime.fromMillisecondsSinceEpoch(0),
       timeStart: timeStart,
       timeEnd: timeEnd,
       city: city,
       region: region,
       guestsAmount: guestsAmount,
       status: JobStatus.fromString(status),
-      createdAt: DateTime.parse(createdAt),
+      createdAt:
+          DateTime.tryParse(createdAt) ??
+          DateTime.fromMillisecondsSinceEpoch(0),
       budgetStart: budgetStart,
       budgetEnd: budgetEnd,
       genres: genres,
@@ -155,12 +161,14 @@ class JobModel {
       isPaused: isPaused,
       assignedDjName: assignedDjName,
       sentAt: sentAt != null ? DateTime.parse(sentAt!) : null,
-      deadlineExtendedUntil: deadlineExtendedUntil != null
-          ? DateTime.parse(deadlineExtendedUntil!)
-          : null,
-      customerContactPlannedFor: customerContactPlannedFor != null
-          ? DateTime.parse(customerContactPlannedFor!)
-          : null,
+      deadlineExtendedUntil:
+          deadlineExtendedUntil != null
+              ? DateTime.parse(deadlineExtendedUntil!)
+              : null,
+      customerContactPlannedFor:
+          customerContactPlannedFor != null
+              ? DateTime.parse(customerContactPlannedFor!)
+              : null,
       musicianStartTime: musicianStartTime,
       roleType: roleType,
       hasActiveOffer: hasActiveOffer,

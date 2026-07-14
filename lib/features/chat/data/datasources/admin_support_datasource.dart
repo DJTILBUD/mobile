@@ -8,6 +8,26 @@ import 'package:dj_tilbud_app/features/chat/data/models/chat_message_model.dart'
 import 'package:dj_tilbud_app/features/chat/domain/entities/chat_message.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/job_link.dart';
 
+/// One matching message inside a thread, returned when searching (`?q=`). Lets the list show a
+/// snippet under the name and jump straight to that message.
+class SupportMatch {
+  const SupportMatch({
+    required this.id,
+    required this.message,
+    this.senderType,
+  });
+
+  final int id;
+  final String message;
+  final String? senderType; // 'dj' | 'musician' | 'admin'
+
+  factory SupportMatch.fromJson(Map<String, dynamic> json) => SupportMatch(
+    id: (json['id'] as num).toInt(),
+    message: (json['message'] as String?) ?? '',
+    senderType: json['sender_type'] as String?,
+  );
+}
+
 /// A support thread in the admin inbox (mobile Support tab). Maps the shape returned by the web-app's
 /// `GET /api/chat/support/admin/threads`.
 class AdminSupportThread {
@@ -21,6 +41,8 @@ class AdminSupportThread {
     this.lastMessageAt,
     this.lastMessageIsSystem = false,
     this.unreadCount = 0,
+    this.matches = const [],
+    this.matchCount = 0,
   });
 
   final int id;
@@ -33,7 +55,26 @@ class AdminSupportThread {
   final bool lastMessageIsSystem;
   final int unreadCount;
 
+  /// Search hits in this thread's messages (only populated when searching). Capped server-side;
+  /// [matchCount] is the full number.
+  final List<SupportMatch> matches;
+  final int matchCount;
+
   bool get hasUnread => unreadCount > 0;
+
+  AdminSupportThread copyWith({int? unreadCount}) => AdminSupportThread(
+    id: id,
+    userName: userName,
+    userId: userId,
+    userRole: userRole,
+    userAvatarUrl: userAvatarUrl,
+    lastMessage: lastMessage,
+    lastMessageAt: lastMessageAt,
+    lastMessageIsSystem: lastMessageIsSystem,
+    unreadCount: unreadCount ?? this.unreadCount,
+    matches: matches,
+    matchCount: matchCount,
+  );
 
   factory AdminSupportThread.fromJson(Map<String, dynamic> json) {
     return AdminSupportThread(
@@ -46,8 +87,36 @@ class AdminSupportThread {
       lastMessageAt: json['last_message_at'] as String?,
       lastMessageIsSystem: json['last_message_is_system'] as bool? ?? false,
       unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
+      matches:
+          ((json['matches'] as List?) ?? const [])
+              .map((m) => SupportMatch.fromJson(m as Map<String, dynamic>))
+              .toList(),
+      matchCount: (json['match_count'] as num?)?.toInt() ?? 0,
     );
   }
+}
+
+/// A DJ/musician an admin can start a NEW support conversation with (recipient picker). Maps the
+/// shape returned by the web-app's `GET /api/chat/support/admin/recipients`.
+class AdminRecipient {
+  const AdminRecipient({
+    required this.userId,
+    required this.name,
+    required this.role,
+    this.avatarUrl,
+  });
+
+  final String userId;
+  final String name;
+  final String role; // 'dj' | 'musician'
+  final String? avatarUrl;
+
+  factory AdminRecipient.fromJson(Map<String, dynamic> json) => AdminRecipient(
+    userId: json['user_id'] as String,
+    name: (json['name'] as String?) ?? 'Ukendt',
+    role: (json['role'] as String?) ?? 'musician',
+    avatarUrl: json['avatar_url'] as String?,
+  );
 }
 
 /// One emoji reaction on a message.
@@ -142,12 +211,44 @@ class AdminSupportDatasource {
     }
   }
 
-  Future<List<AdminSupportThread>> fetchThreads() async {
-    final body = await _get('/api/chat/support/admin/threads');
+  Future<List<AdminSupportThread>> fetchThreads({String? q}) async {
+    final query = (q ?? '').trim();
+    final path =
+        query.isEmpty
+            ? '/api/chat/support/admin/threads'
+            : '/api/chat/support/admin/threads?q=${Uri.encodeQueryComponent(query)}';
+    final body = await _get(path);
     final list = (body['conversations'] as List?) ?? [];
     return list
         .map((j) => AdminSupportThread.fromJson(j as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Search DJs + musicians by name for the "new message" recipient picker.
+  Future<List<AdminRecipient>> fetchRecipients({String? q}) async {
+    final query = (q ?? '').trim();
+    final path =
+        query.isEmpty
+            ? '/api/chat/support/admin/recipients'
+            : '/api/chat/support/admin/recipients?q=${Uri.encodeQueryComponent(query)}';
+    final body = await _get(path);
+    final list = (body['recipients'] as List?) ?? [];
+    return list
+        .map((j) => AdminRecipient.fromJson(j as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Start (or reuse) a support conversation with [userId] and post the first admin message.
+  /// Returns the conversation id on success; throws [DatabaseException] on failure.
+  Future<int> startConversation({
+    required String userId,
+    required String message,
+  }) async {
+    final body = await _post('/api/chat/support/admin/start', {
+      'userId': userId,
+      'message': message,
+    });
+    return (body['conversationId'] as num).toInt();
   }
 
   Future<AdminThreadData> fetchMessages(int conversationId) async {
@@ -266,6 +367,11 @@ class AdminSupportDatasource {
 
   Future<void> markRead(int conversationId) async {
     await _post('/api/chat/support/admin/$conversationId/read', {});
+  }
+
+  /// Mark a thread UNREAD again (team-wide) — re-bolds it in the inbox + returns the badge.
+  Future<void> markUnread(int conversationId) async {
+    await _post('/api/chat/support/admin/$conversationId/unread', {});
   }
 
   /// Composer "@" picker: search every job/ext-job (admins see all). When

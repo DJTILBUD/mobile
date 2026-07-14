@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/core/config/env_config.dart';
 import 'package:dj_tilbud_app/features/chat/data/models/conversation_model.dart';
 import 'package:dj_tilbud_app/features/chat/data/models/chat_message_model.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/chat_message.dart';
+import 'package:dj_tilbud_app/features/chat/domain/chat_message_preview.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 
 class ChatRemoteDatasource {
@@ -117,11 +118,13 @@ class ChatRemoteDatasource {
           final results = await Future.wait([
             _fetchLastMessage(id),
             _fetchUnreadCount(id, currentUserId),
+            _fetchLatestReaction(id),
           ]);
           return (
             json: json,
             lastMsg: results[0] as Map<String, dynamic>?,
             unread: results[1] as int,
+            reaction: results[2] as Map<String, dynamic>?,
           );
         }),
       ),
@@ -135,6 +138,7 @@ class ChatRemoteDatasource {
                 Map<String, dynamic> json,
                 Map<String, dynamic>? lastMsg,
                 int unread,
+                Map<String, dynamic>? reaction,
               })
             >;
     final imageRows =
@@ -155,13 +159,24 @@ class ChatRemoteDatasource {
           final musicianId = r.json['musician_id'] as String?;
           return ConversationModel.fromJson(
             r.json,
-            lastMessageText: r.lastMsg?['message'] as String?,
+            // Image-only messages have empty text — show "sent an image" instead of a blank preview.
+            // Keep null when there's no message at all (the "Ingen beskeder endnu" case).
+            lastMessageText:
+                r.lastMsg == null
+                    ? null
+                    : chatMessagePreview(
+                      r.lastMsg?['message'] as String?,
+                      r.lastMsg?['attachment_url'] as String?,
+                    ),
             lastMessageSenderId: r.lastMsg?['sender_id'] as String?,
             lastMessageIsSystem:
                 r.lastMsg?['is_system_message'] as bool? ?? false,
             unreadCount: r.unread,
             djAvatarUrl: djId != null ? imageMap[djId] : null,
             musicianAvatarUrl: musicianId != null ? imageMap[musicianId] : null,
+            lastReactionEmoji: r.reaction?['emoji'] as String?,
+            lastReactionUserId: r.reaction?['user_id'] as String?,
+            lastReactionAt: r.reaction?['created_at'] as String?,
           );
         }).toList();
 
@@ -180,12 +195,24 @@ class ChatRemoteDatasource {
     final response =
         await _client
             .from('ChatMessages')
-            .select('message, sender_id, is_system_message')
+            .select('message, sender_id, is_system_message, attachment_url')
             .eq('conversation_id', conversationId)
             .order('created_at', ascending: false)
             .limit(1)
             .maybeSingle();
     return response;
+  }
+
+  /// The most recent reaction on a conversation (emoji + who + when), for the list preview
+  /// ("<name> reagerede med <emoji>" when it's newer than the last message).
+  Future<Map<String, dynamic>?> _fetchLatestReaction(int conversationId) async {
+    return await _client
+        .from('ChatMessageReactions')
+        .select('emoji, user_id, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
   }
 
   Future<int> _fetchUnreadCount(
@@ -306,6 +333,7 @@ class ChatRemoteDatasource {
               'sender_type': senderType,
               'message': message.trim(),
               'reply_to_id': replyToId,
+              'attachment_url': attachmentUrl,
               'is_system_message': false,
             },
           },
@@ -325,7 +353,10 @@ class ChatRemoteDatasource {
     // admin messages whose sender_id == my uid.
     await _client
         .from('ChatMessages')
-        .update({'read_at': DateTime.now().toIso8601String()})
+        // MUST be UTC: read_at is a timestamptz. DateTime.now().toIso8601String() emits local
+        // wall-clock with NO offset, so Postgres stores it as UTC → the "Set kl" the admin sees is
+        // shifted by the reader's UTC offset (e.g. +2h in Denmark). .toUtc() writes a real instant.
+        .update({'read_at': DateTime.now().toUtc().toIso8601String()})
         .eq('conversation_id', conversationId)
         .isFilter('read_at', null)
         .or('sender_id.neq.$currentUserId,sender_type.eq.admin');

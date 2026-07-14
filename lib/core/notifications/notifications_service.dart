@@ -235,8 +235,9 @@ class NotificationsService {
   /// Public entry-point used by the in-app notification banner on tap.
   static Future<void> navigateTo(
     Map<String, dynamic> data,
-    GoRouter router,
-  ) async {
+    GoRouter router, {
+    bool keepCurrentStack = false,
+  }) async {
     final type = data['type'] as String?;
     final role = data['role'] as String?;
     final userId = supabase.auth.currentUser?.id;
@@ -256,6 +257,15 @@ class NotificationsService {
           .catchError((_) {}),
     );
 
+    // Reset to the relevant shell tab before pushing the detail, so a push tapped
+    // from OUTSIDE the app opens with the right tab underneath and Back returns to
+    // it. But when navigating from the IN-APP notification list (keepCurrentStack),
+    // skip that reset so the detail pushes on top of the notifications screen and
+    // Back returns there instead of jumping to the home tab.
+    void goTab(String path) {
+      if (!keepCurrentStack) router.go(path);
+    }
+
     // Helper: go to shell tab then push detail synchronously (no async gap between
     // them) so the shell stays underneath and the back button works — exactly
     // the same as navigating from within the app.
@@ -270,14 +280,14 @@ class NotificationsService {
             final json =
                 await supabase.from('Jobs').select().eq('id', jobId).single();
             final job = JobModel.fromJson(json).toEntity();
-            router.go(homeTab);
+            goTab(homeTab);
             if (role == 'musician') {
               router.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
             } else {
               router.pushNamed(AppRoutes.djQuoteForm, extra: job);
             }
           } else {
-            router.go(homeTab);
+            goTab(homeTab);
           }
 
         case 'quote_won':
@@ -291,10 +301,10 @@ class NotificationsService {
                     .eq('id', quoteId)
                     .single();
             final quote = DjQuoteModel.fromJson(json).toEntity();
-            router.go('/dj/home');
+            goTab('/dj/home');
             router.pushNamed(AppRoutes.quoteDetail, extra: quote);
           } else {
-            router.go('/dj/home');
+            goTab('/dj/home');
           }
 
         case 'offer_won':
@@ -310,10 +320,10 @@ class NotificationsService {
                     .eq('id', offerId)
                     .single();
             final offer = ServiceOfferModel.fromJson(json).toEntity();
-            router.go('/instrumentalist/home');
+            goTab('/instrumentalist/home');
             router.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
           } else {
-            router.go('/instrumentalist/home');
+            goTab('/instrumentalist/home');
           }
 
         // The "unused chat" reminder and emoji-reaction pushes deep-link to the
@@ -340,17 +350,17 @@ class NotificationsService {
             final conversation = ConversationModel.fromJson(
               json,
             ).toEntity(userId);
-            router.go(chatTab);
+            goTab(chatTab);
             router.pushNamed(AppRoutes.conversationDetail, extra: conversation);
           } else {
-            router.go(chatTab);
+            goTab(chatTab);
           }
 
         case 'support_admin':
           // An admin support reply: open the chat screen (the admin Support tab lives there). Uses
           // the admin's own role shell. Deep-linking to the exact thread is a follow-up (would need
           // the thread entity, not just the conversation id).
-          router.go(
+          goTab(
             RoleCache.role == MusicianRole.instrumentalist
                 ? '/instrumentalist/chat'
                 : '/dj/chat',
@@ -371,10 +381,10 @@ class NotificationsService {
                     .eq('id', extJobId)
                     .single();
             final job = ExtJobModel.fromJson(json).toJobEntity();
-            router.go('/instrumentalist/home');
+            goTab('/instrumentalist/home');
             router.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
           } else {
-            router.go('/instrumentalist/home');
+            goTab('/instrumentalist/home');
           }
 
         case 'ext_job_assigned':
@@ -389,10 +399,10 @@ class NotificationsService {
                     .eq('id', extJobId)
                     .single();
             final extJob = ExtJobModel.fromJson(json).toEntity();
-            router.go(featuredTab);
+            goTab(featuredTab);
             router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
           } else {
-            router.go(featuredTab);
+            goTab(featuredTab);
           }
 
         case 'song_request':
@@ -407,7 +417,7 @@ class NotificationsService {
                     .eq('id', extJobId)
                     .single();
             final extJob = ExtJobModel.fromJson(json).toEntity();
-            router.go('/dj/featured');
+            goTab('/dj/featured');
             router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
           } else if (songJobId != null) {
             final quoteJson =
@@ -419,13 +429,13 @@ class NotificationsService {
                     .maybeSingle();
             if (quoteJson != null) {
               final quote = DjQuoteModel.fromJson(quoteJson).toEntity();
-              router.go('/dj/home');
+              goTab('/dj/home');
               router.pushNamed(AppRoutes.quoteDetail, extra: quote);
             } else {
-              router.go('/dj/home');
+              goTab('/dj/home');
             }
           } else {
-            router.go('/dj/home');
+            goTab('/dj/home');
           }
 
         case 'custom_notification':
@@ -436,7 +446,7 @@ class NotificationsService {
           final isMusician = role == 'musician';
           final profileTab =
               isMusician ? '/instrumentalist/profile' : '/dj/profile';
-          router.go(profileTab);
+          goTab(profileTab);
           // The adminMessages route requires a MusicianRole enum as `extra`;
           // passing the raw `role` String fell through to the "Mangler data"
           // screen (the bug that broke tapping this notification).
@@ -449,7 +459,7 @@ class NotificationsService {
         // Content accepted/rejected (DJ-only) → open the content library.
         case 'content_accepted':
         case 'content_rejected':
-          router.go('/dj/profile');
+          goTab('/dj/profile');
           router.pushNamed(AppRoutes.myContent);
           break;
 
@@ -478,7 +488,7 @@ class NotificationsService {
                         .eq('id', jobId)
                         .single();
                 final extJob = ExtJobModel.fromJson(json).toEntity();
-                router.go('/dj/featured');
+                goTab('/dj/featured');
                 router.pushNamed(AppRoutes.extJobDetail, extra: extJob);
               } else {
                 final quoteJson =
@@ -490,10 +500,10 @@ class NotificationsService {
                         .maybeSingle();
                 if (quoteJson != null) {
                   final quote = DjQuoteModel.fromJson(quoteJson).toEntity();
-                  router.go('/dj/home');
+                  goTab('/dj/home');
                   router.pushNamed(AppRoutes.quoteDetail, extra: quote);
                 } else {
-                  router.go('/dj/home');
+                  goTab('/dj/home');
                 }
               }
             } else {
@@ -509,24 +519,22 @@ class NotificationsService {
                       .maybeSingle();
               if (offerJson != null) {
                 final offer = ServiceOfferModel.fromJson(offerJson).toEntity();
-                router.go('/instrumentalist/home');
+                goTab('/instrumentalist/home');
                 router.pushNamed(AppRoutes.serviceOfferDetail, extra: offer);
               } else {
-                router.go('/instrumentalist/home');
+                goTab('/instrumentalist/home');
               }
             }
           } else {
-            router.go(
-              role == 'musician' ? '/instrumentalist/home' : '/dj/home',
-            );
+            goTab(role == 'musician' ? '/instrumentalist/home' : '/dj/home');
           }
       }
     } catch (e) {
       debugPrint('[NotificationsService] navigation error for type=$type: $e');
       if (role == 'musician') {
-        router.go('/instrumentalist/home');
+        goTab('/instrumentalist/home');
       } else {
-        router.go('/dj/home');
+        goTab('/dj/home');
       }
     }
   }

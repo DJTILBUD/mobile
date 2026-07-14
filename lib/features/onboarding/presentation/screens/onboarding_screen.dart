@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -1257,10 +1258,10 @@ class _ImageTile extends StatelessWidget {
             border: Border.all(color: _c.border.subtle),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Image.network(
-            file.url,
+          child: CachedNetworkImage(
+            imageUrl: file.url,
             fit: BoxFit.cover,
-            errorBuilder:
+            errorWidget:
                 (_, __, ___) => Center(
                   child: Icon(LucideIcons.imageOff, color: _c.border.subtle),
                 ),
@@ -1472,12 +1473,12 @@ class _VideoTile extends StatelessWidget {
                     ? Stack(
                       alignment: Alignment.center,
                       children: [
-                        Image.network(
-                          thumbnailUrl!,
+                        CachedNetworkImage(
+                          imageUrl: thumbnailUrl!,
                           width: 64,
                           height: 64,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _videoIcon(_c),
+                          errorWidget: (_, __, ___) => _videoIcon(_c),
                         ),
                         Container(
                           width: 64,

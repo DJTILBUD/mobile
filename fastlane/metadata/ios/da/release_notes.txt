@@ -1,1 +1,10 @@
-Fejlrettelser og forbedringer.
+Nyt: Notifikationscenter 🔔
+
+Nu samler vi alle dine notifikationer ét sted, så du aldrig går glip af et nyt job, en besked eller et accepteret tilbud.
+
+• Tryk på klokken øverst på din profil for at se alle dine notifikationer
+• Tryk på en notifikation og hop direkte til jobbet, chatten eller tilbuddet
+• Antal ulæste vises på app-ikonet, på profil-fanen og på klokken
+• Swipe for at markere som læst – eller markér alle på én gang
+
+Desuden: mindre fejlrettelser og forbedringer.

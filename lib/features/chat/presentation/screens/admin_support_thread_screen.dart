@@ -15,12 +15,27 @@ import 'package:dj_tilbud_app/features/chat/presentation/widgets/chat_message_in
 
 const _kQuickReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
+/// Route args: the thread plus an optional message to jump to (set when the admin tapped a search
+/// result in the support list). The router accepts a bare [AdminSupportThread] too, for back-compat.
+class AdminSupportThreadArgs {
+  const AdminSupportThreadArgs({required this.thread, this.initialMessageId});
+  final AdminSupportThread thread;
+  final int? initialMessageId;
+}
+
 /// The admin-side view of a single DJTILBUD support thread (mobile Support tab). Reads/sends via the
 /// web-app admin endpoints. Own-ness is by sender_type — the admin ('admin') is "us" (right side).
 class AdminSupportThreadScreen extends ConsumerStatefulWidget {
-  const AdminSupportThreadScreen({super.key, required this.thread});
+  const AdminSupportThreadScreen({
+    super.key,
+    required this.thread,
+    this.initialMessageId,
+  });
 
   final AdminSupportThread thread;
+
+  /// A message to scroll to + flash on open (from a tapped search result).
+  final int? initialMessageId;
 
   @override
   ConsumerState<AdminSupportThreadScreen> createState() =>
@@ -39,6 +54,18 @@ class _AdminSupportThreadScreenState
   int _mentionStart = -1;
   String _mentionSearchQuery = '';
   Timer? _mentionDebounce;
+
+  // In-thread search.
+  bool _searchOpen = false;
+  final _searchCtrl = TextEditingController();
+  String _searchTerm = '';
+  List<int> _matchIds = const []; // matching message ids, chronological
+  int _matchCursor = 0;
+
+  // Jump-to-message (search hits + the tapped-from-list target).
+  int? _flashId;
+  final Map<int, GlobalKey> _msgKeys = {};
+  bool _didInitialJump = false;
 
   int get _conversationId => widget.thread.id;
   String get _recipientUserId => widget.thread.userId ?? '';
@@ -62,8 +89,87 @@ class _AdminSupportThreadScreenState
     _controller.removeListener(_onComposerChanged);
     _mentionDebounce?.cancel();
     _controller.dispose();
+    _searchCtrl.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _searchOpen = !_searchOpen;
+      if (!_searchOpen) {
+        _searchCtrl.clear();
+        _searchTerm = '';
+        _matchIds = const [];
+        _flashId = null;
+      }
+    });
+  }
+
+  void _onSearchChanged(String v) {
+    final term = v.trim();
+    final msgs =
+        ref
+            .read(adminThreadMessagesProvider(_conversationId))
+            .valueOrNull
+            ?.messages ??
+        const <ChatMessage>[];
+    final lower = term.toLowerCase();
+    final ids =
+        term.isEmpty
+            ? const <int>[]
+            : msgs
+                .where(
+                  (m) =>
+                      !m.isSystemMessage &&
+                      m.message.toLowerCase().contains(lower),
+                )
+                .map((m) => m.id)
+                .toList();
+    setState(() {
+      _searchTerm = term;
+      _matchIds = ids;
+      // Land on the newest hit first; up/down step from there.
+      _matchCursor = ids.isEmpty ? 0 : ids.length - 1;
+    });
+    if (ids.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _jumpTo(ids[_matchCursor]),
+      );
+    }
+  }
+
+  // delta -1 = older hit, +1 = newer hit (wraps).
+  void _gotoMatch(int delta) {
+    if (_matchIds.isEmpty) return;
+    setState(() => _matchCursor = (_matchCursor + delta) % _matchIds.length);
+    _jumpTo(_matchIds[_matchCursor]);
+  }
+
+  void _jumpTo(int messageId) {
+    final ctx = _msgKeys[messageId]?.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.4,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+    setState(() => _flashId = messageId);
+    Future.delayed(const Duration(milliseconds: 1400), () {
+      if (mounted && _flashId == messageId) setState(() => _flashId = null);
+    });
+  }
+
+  // On first data load, jump to the message the admin tapped in the search list.
+  void _maybeInitialJump(List<ChatMessage> visible) {
+    if (_didInitialJump || widget.initialMessageId == null) return;
+    if (!visible.any((m) => m.id == widget.initialMessageId)) return;
+    _didInitialJump = true;
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _jumpTo(widget.initialMessageId!),
+    );
   }
 
   Future<void> _pickImage() async {
@@ -285,31 +391,88 @@ class _AdminSupportThreadScreenState
 
     return Scaffold(
       backgroundColor: _c.bg.surface,
-      appBar: AppBar(
-        backgroundColor: _c.bg.surface,
-        surfaceTintColor: _c.bg.surface,
-        title: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.thread.userName,
-                    style: DSTextStyle.headingSm.copyWith(
-                      color: _c.text.primary,
+      appBar:
+          _searchOpen
+              ? AppBar(
+                backgroundColor: _c.bg.surface,
+                surfaceTintColor: _c.bg.surface,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: _toggleSearch,
+                ),
+                titleSpacing: 0,
+                title: TextField(
+                  controller: _searchCtrl,
+                  autofocus: true,
+                  onChanged: _onSearchChanged,
+                  textInputAction: TextInputAction.search,
+                  style: DSTextStyle.bodyMd.copyWith(color: _c.text.primary),
+                  decoration: InputDecoration(
+                    hintText: 'Søg i samtalen',
+                    border: InputBorder.none,
+                    hintStyle: DSTextStyle.bodyMd.copyWith(
+                      color: _c.text.muted,
                     ),
                   ),
-                  Text(
-                    'Support',
-                    style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+                ),
+                actions: [
+                  if (_searchTerm.isNotEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          _matchIds.isEmpty
+                              ? '0/0'
+                              : '${_matchCursor + 1}/${_matchIds.length}',
+                          style: DSTextStyle.labelMd.copyWith(
+                            color: _c.text.muted,
+                          ),
+                        ),
+                      ),
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.keyboard_arrow_up),
+                    onPressed: _matchIds.isEmpty ? null : () => _gotoMatch(-1),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.keyboard_arrow_down),
+                    onPressed: _matchIds.isEmpty ? null : () => _gotoMatch(1),
+                  ),
+                ],
+              )
+              : AppBar(
+                backgroundColor: _c.bg.surface,
+                surfaceTintColor: _c.bg.surface,
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.thread.userName,
+                            style: DSTextStyle.headingSm.copyWith(
+                              color: _c.text.primary,
+                            ),
+                          ),
+                          Text(
+                            'Support',
+                            style: DSTextStyle.bodySm.copyWith(
+                              color: _c.text.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.search),
+                    onPressed: _toggleSearch,
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
       body: Column(
         children: [
           Expanded(
@@ -322,14 +485,25 @@ class _AdminSupportThreadScreenState
                       style: DSTextStyle.bodyMd.copyWith(color: _c.text.muted),
                     ),
                   ),
-              data:
-                  (data) => _MessageList(
-                    data: data,
-                    myId: myId,
-                    jobLinks: jobLinks,
-                    onReact: _showReactionBar,
-                    onImageTap: _showFullImage,
-                  ),
+              data: (data) {
+                final visible =
+                    data.messages.where((m) => !m.isSystemMessage).toList();
+                for (final m in visible) {
+                  _msgKeys.putIfAbsent(m.id, () => GlobalKey());
+                }
+                _maybeInitialJump(visible);
+                return _MessageList(
+                  messages: visible,
+                  reactionsByMessage: data.reactionsByMessage,
+                  myId: myId,
+                  jobLinks: jobLinks,
+                  onReact: _showReactionBar,
+                  onImageTap: _showFullImage,
+                  messageKeys: _msgKeys,
+                  searchTerm: _searchOpen ? _searchTerm : null,
+                  flashId: _flashId,
+                );
+              },
             ),
           ),
           if (_mentionQuery != null)
@@ -399,25 +573,31 @@ class _AdminSupportThreadScreenState
 
 class _MessageList extends StatelessWidget {
   const _MessageList({
-    required this.data,
+    required this.messages,
+    required this.reactionsByMessage,
     required this.myId,
     required this.jobLinks,
     required this.onReact,
     required this.onImageTap,
+    required this.messageKeys,
+    this.searchTerm,
+    this.flashId,
   });
 
-  final AdminThreadData data;
+  // Already filtered to non-system messages, chronological (oldest first).
+  final List<ChatMessage> messages;
+  final Map<int, List<AdminReaction>> reactionsByMessage;
   final String? myId;
   final Map<String, JobLinkResolution> jobLinks;
   final void Function(ChatMessage) onReact;
   final void Function(String) onImageTap;
+  final Map<int, GlobalKey> messageKeys;
+  final String? searchTerm;
+  final int? flashId;
 
   @override
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
-    // Hide system messages (the auto "Velkommen til DJTILBUD" greeting): the admin
-    // IS the team, so a musician-facing welcome shouldn't appear on the admin side.
-    final messages = data.messages.where((m) => !m.isSystemMessage).toList();
     if (messages.isEmpty) {
       return Center(
         child: Text(
@@ -426,40 +606,46 @@ class _MessageList extends StatelessWidget {
         ),
       );
     }
-    return ListView.builder(
+    // Non-lazy (reverse) list so each bubble carries a GlobalKey that is always laid out —
+    // `Scrollable.ensureVisible` can then reliably jump to any message (search hits, tapped
+    // list results). Support threads are small, so building all bubbles is fine.
+    return ListView(
       reverse: true,
       padding: const EdgeInsets.symmetric(
         horizontal: DSSpacing.s3,
         vertical: DSSpacing.s3,
       ),
-      itemCount: messages.length,
-      itemBuilder: (context, i) {
-        final msg = messages[messages.length - 1 - i];
-        // The admin (this side) is 'admin'; the user's messages are 'dj'/'musician'.
-        final isOwn = msg.senderType == 'admin';
-        final reactions =
-            data.reactionsByMessage[msg.id] ?? const <AdminReaction>[];
-        return _Bubble(
-          message: msg,
-          isOwn: isOwn,
-          reactions: reactions,
-          jobLinks: jobLinks,
-          onLongPress: () => onReact(msg),
-          onImageTap: onImageTap,
-        );
-      },
+      children: [
+        for (int i = messages.length - 1; i >= 0; i--)
+          _Bubble(
+            key: messageKeys[messages[i].id],
+            message: messages[i],
+            // The admin (this side) is 'admin'; the user's messages are 'dj'/'musician'.
+            isOwn: messages[i].senderType == 'admin',
+            reactions:
+                reactionsByMessage[messages[i].id] ?? const <AdminReaction>[],
+            jobLinks: jobLinks,
+            searchTerm: searchTerm,
+            isFlashing: flashId == messages[i].id,
+            onLongPress: () => onReact(messages[i]),
+            onImageTap: onImageTap,
+          ),
+      ],
     );
   }
 }
 
 class _Bubble extends StatelessWidget {
   const _Bubble({
+    super.key,
     required this.message,
     required this.isOwn,
     required this.reactions,
     required this.jobLinks,
     required this.onLongPress,
     required this.onImageTap,
+    this.searchTerm,
+    this.isFlashing = false,
   });
 
   final ChatMessage message;
@@ -468,6 +654,8 @@ class _Bubble extends StatelessWidget {
   final Map<String, JobLinkResolution> jobLinks;
   final VoidCallback onLongPress;
   final void Function(String) onImageTap;
+  final String? searchTerm;
+  final bool isFlashing;
 
   @override
   Widget build(BuildContext context) {
@@ -482,7 +670,8 @@ class _Bubble extends StatelessWidget {
       children: [
         GestureDetector(
           onLongPress: onLongPress,
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
             margin: const EdgeInsets.symmetric(vertical: 3),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             constraints: BoxConstraints(
@@ -491,6 +680,10 @@ class _Bubble extends StatelessWidget {
             decoration: BoxDecoration(
               color: bg,
               borderRadius: BorderRadius.circular(14),
+              border:
+                  isFlashing
+                      ? Border.all(color: const Color(0xFFFFB300), width: 2)
+                      : null,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,6 +720,7 @@ class _Bubble extends StatelessWidget {
                     text: message.message,
                     baseStyle: DSTextStyle.bodyMd.copyWith(color: fg),
                     jobLinks: jobLinks,
+                    highlight: searchTerm,
                   ),
               ],
             ),
@@ -581,22 +775,56 @@ class _AdminFormattedText extends StatelessWidget {
     required this.text,
     required this.baseStyle,
     required this.jobLinks,
+    this.highlight,
   });
 
   final String text;
   final TextStyle baseStyle;
   final Map<String, JobLinkResolution> jobLinks;
 
+  /// Search term to highlight (amber) within the text; null/empty = no highlight.
+  final String? highlight;
+
+  // Splits a plain-text segment into spans, wrapping every case-insensitive
+  // occurrence of the search term with an amber highlight.
+  List<InlineSpan> _textSpans(String s) {
+    final hl = highlight?.trim().toLowerCase() ?? '';
+    if (hl.isEmpty) return [TextSpan(text: s)];
+    final lower = s.toLowerCase();
+    final out = <InlineSpan>[];
+    int i = 0;
+    while (i < s.length) {
+      final hit = lower.indexOf(hl, i);
+      if (hit < 0) {
+        out.add(TextSpan(text: s.substring(i)));
+        break;
+      }
+      if (hit > i) out.add(TextSpan(text: s.substring(i, hit)));
+      out.add(
+        TextSpan(
+          text: s.substring(hit, hit + hl.length),
+          style: const TextStyle(
+            backgroundColor: Color(0xFFFFE082),
+            color: Colors.black,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+      i = hit + hl.length;
+    }
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!jobRefRegExp.hasMatch(text)) {
-      return Text(text, style: baseStyle);
+      return Text.rich(TextSpan(style: baseStyle, children: _textSpans(text)));
     }
     final spans = <InlineSpan>[];
     int i = 0;
     for (final m in jobRefRegExp.allMatches(text)) {
       if (m.start > i) {
-        spans.add(TextSpan(text: text.substring(i, m.start)));
+        spans.addAll(_textSpans(text.substring(i, m.start)));
       }
       final ref = '${m.group(1)}:${m.group(2)}';
       spans.add(
@@ -612,7 +840,7 @@ class _AdminFormattedText extends StatelessWidget {
       i = m.end;
     }
     if (i < text.length) {
-      spans.add(TextSpan(text: text.substring(i)));
+      spans.addAll(_textSpans(text.substring(i)));
     }
     return Text.rich(TextSpan(style: baseStyle, children: spans));
   }
@@ -718,7 +946,7 @@ class _AdminMentionPicker extends StatelessWidget {
         decoration: decoration,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Text(
-          'Ingen jobs matcher — skriv et event eller job-id efter @',
+          'Ingen jobs matcher — skriv fx 491 (internt job) eller E491 (eksternt) efter @',
           style: DSTextStyle.labelMd.copyWith(color: _c.text.muted),
         ),
       );

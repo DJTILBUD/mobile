@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:dj_tilbud_app/core/config/env_config.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 
@@ -233,17 +234,88 @@ class ProfileRemoteDatasource {
     }
 
     // 3. Store metadata in UserFiles table
-    return _client
-        .from('UserFiles')
-        .insert({
+    final row =
+        await _client
+            .from('UserFiles')
+            .insert({
+              'user_id': userId,
+              'url': fileUrl,
+              'type': type.toDbString(),
+              if (description != null && description.trim().isNotEmpty)
+                'description': description.trim(),
+            })
+            .select()
+            .single();
+
+    // 4. Videos get a poster: a separate `type='thumbnail'` row linked to the video
+    //    via `thumbnail_video_id`, so web + admin + mobile show a preview instead of a
+    //    grey placeholder. Best-effort (the video is still usable if this fails).
+    //    Mirrors the job-content uploader + web-app `useFiles.createFile`.
+    if (type == UserFileType.profileVideo || type == UserFileType.commonVideo) {
+      final thumbnailUrl = await _uploadThumbnail(
+        userId: userId,
+        videoPath: filePath,
+        baseName: fileName,
+      );
+      if (thumbnailUrl != null) {
+        await _client.from('UserFiles').insert({
           'user_id': userId,
-          'url': fileUrl,
-          'type': type.toDbString(),
-          if (description != null && description.trim().isNotEmpty)
-            'description': description.trim(),
-        })
-        .select()
-        .single();
+          'url': thumbnailUrl,
+          'type': 'thumbnail',
+          'thumbnail_video_id': row['id'],
+        });
+      }
+    }
+
+    return row;
+  }
+
+  /// Generates a JPEG poster from [videoPath] and uploads it to S3, returning its
+  /// public URL (or null on any failure — the video is still usable). Mirrors
+  /// `job_content_remote_datasource._uploadThumbnail`.
+  Future<String?> _uploadThumbnail({
+    required String userId,
+    required String videoPath,
+    required String baseName,
+  }) async {
+    try {
+      final bytes = await VideoThumbnail.thumbnailData(
+        video: videoPath,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 720,
+        quality: 75,
+      );
+      if (bytes == null) return null;
+
+      final thumbName = 'thumbnail_$baseName.jpg';
+      const thumbContentType = 'image/jpeg';
+      final signedUrlUri = Uri.parse(
+        '$_webAppBaseUrl/api/files/signed-url'
+        '?fileName=${Uri.encodeComponent(thumbName)}'
+        '&contentType=${Uri.encodeComponent(thumbContentType)}'
+        '&type=thumbnail'
+        '&userId=${Uri.encodeComponent(userId)}',
+      );
+      final signedUrlRes = await http.get(signedUrlUri);
+      if (signedUrlRes.statusCode < 200 || signedUrlRes.statusCode >= 300) {
+        return null;
+      }
+      final signedUrl =
+          (jsonDecode(signedUrlRes.body) as Map<String, dynamic>)['url']
+              as String;
+
+      final uploadRes = await http.put(
+        Uri.parse(signedUrl),
+        headers: {'Content-Type': thumbContentType},
+        body: bytes,
+      );
+      if (uploadRes.statusCode < 200 || uploadRes.statusCode >= 300) {
+        return null;
+      }
+      return signedUrl.split('?').first;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// PUTs [file] to [url] streaming straight from disk, reporting upload

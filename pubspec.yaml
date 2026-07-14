@@ -1,7 +1,7 @@
 name: dj_tilbud_app
 description: "DJTilbud - Musician mobile app"
 publish_to: 'none'
-version: 1.0.26+51
+version: 1.0.32+58
 environment:
   sdk: ^3.7.2
 
@@ -36,6 +36,7 @@ dependencies:
   qr_flutter: ^4.1.0
   package_info_plus: ^8.0.2
   file_picker: ^11.0.2
+  app_badge_plus: ^1.2.2
 
 dev_dependencies:
   flutter_test:

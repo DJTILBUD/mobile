@@ -7,7 +7,9 @@ import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/copy_intro_message_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/customer_deadline_banner.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/sick_disclaimer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -252,6 +254,9 @@ class _ServiceOfferDetailScreenState
     final canConfirmReady = _isWithin5Days(offer.job.date);
     final readyLoading =
         ref.watch(confirmMusicianReadyProvider) is AsyncLoading;
+    // The sax's own name for the copyable intro message.
+    final musicianName =
+        ref.watch(musicianProfileProvider).valueOrNull?.fullName ?? '';
 
     return ListView(
       padding: const EdgeInsets.all(DSSpacing.s4),
@@ -317,6 +322,14 @@ class _ServiceOfferDetailScreenState
             if (_customerContacted)
               _DoneButton(label: 'Kunden er kontaktet')
             else ...[
+              if (offer.job.leadName != null) ...[
+                CopyIntroMessageCard(
+                  leadName: offer.job.leadName!,
+                  role: 'saxofonist',
+                  performerName: musicianName,
+                ),
+                const SizedBox(height: DSSpacing.s3),
+              ],
               if (_customerContactPlannedFor != null)
                 _PlannedContactBanner(date: _customerContactPlannedFor!),
               DSButton(

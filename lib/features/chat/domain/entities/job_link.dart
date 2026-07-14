@@ -21,6 +21,7 @@ class JobLinkResolution {
     this.eventType,
     this.date,
     this.target,
+    this.reason,
   });
 
   final String ref; // "job:123" | "extjob:456"
@@ -28,6 +29,16 @@ class JobLinkResolution {
   final String? eventType;
   final String? date;
   final JobLinkTarget? target;
+
+  /// Why an inaccessible link can't be opened (only set when [accessible] is false):
+  /// 'not_found' = the job no longer exists; 'no_access' = it exists but isn't visible to the viewer.
+  final String? reason;
+
+  /// A short Danish explanation for an unavailable link, shown under the message.
+  String get unavailableReasonDa =>
+      reason == 'not_found'
+          ? 'jobbet findes ikke længere'
+          : 'du har ikke adgang til det';
 
   factory JobLinkResolution.fromJson(Map<String, dynamic> json) =>
       JobLinkResolution(
@@ -41,6 +52,7 @@ class JobLinkResolution {
                   Map<String, dynamic>.from(json['target'] as Map),
                 )
                 : null,
+        reason: json['reason'] as String?,
       );
 }
 

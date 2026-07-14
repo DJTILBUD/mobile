@@ -75,7 +75,15 @@ def do_ios_release
   version_name, build_number = pubspec_version
 
   # Build the store IPA — identical to your manual `flutter build ipa --release` (automatic signing).
-  sh("cd #{FLUTTER_ROOT} && flutter build ipa --release")
+  #
+  # `env -u GEM_HOME -u GEM_PATH` is the important bit: fastlane exports GEM_HOME/GEM_PATH pointing at
+  # ITS OWN gem dir (~/.local/share/fastlane + fastlane libexec). The Homebrew `pod` wrapper overrides
+  # GEM_HOME but NOT GEM_PATH, so pod's Ruby then tries to load fastlane's gems, hits a dependency
+  # conflict and EXITS NON-ZERO. Flutter reads that as "CocoaPods is installed but broken. Skipping
+  # pod install." and the build fails. It works in a plain shell (no GEM_* pollution) but not under
+  # fastlane — clearing those two vars lets pod run in its own clean gem env.
+  # The PATH prepend additionally keeps the working Homebrew pod ahead of any stale /usr/local/bin/pod.
+  sh("cd #{FLUTTER_ROOT} && env -u GEM_HOME -u GEM_PATH PATH=/opt/homebrew/bin:$PATH flutter build ipa --release")
 
   # Authenticate with an App Store Connect API key — no Apple ID / 2FA prompts.
   # ASC_KEY_ID + ASC_ISSUER_ID come from fastlane/.env; the key is fastlane/AuthKey.p8.

@@ -23,6 +23,9 @@ class ConversationModel {
     this.unreadCount = 0,
     this.djAvatarUrl,
     this.musicianAvatarUrl,
+    this.lastReactionEmoji,
+    this.lastReactionUserId,
+    this.lastReactionAt,
   });
 
   final int id;
@@ -45,6 +48,9 @@ class ConversationModel {
   final int unreadCount;
   final String? djAvatarUrl;
   final String? musicianAvatarUrl;
+  final String? lastReactionEmoji;
+  final String? lastReactionUserId;
+  final String? lastReactionAt;
 
   factory ConversationModel.fromJson(
     Map<String, dynamic> json, {
@@ -54,6 +60,9 @@ class ConversationModel {
     int unreadCount = 0,
     String? djAvatarUrl,
     String? musicianAvatarUrl,
+    String? lastReactionEmoji,
+    String? lastReactionUserId,
+    String? lastReactionAt,
   }) {
     final djJson = json['dj'] as Map<String, dynamic>?;
     final musicianJson = json['musician'] as Map<String, dynamic>?;
@@ -81,6 +90,9 @@ class ConversationModel {
       unreadCount: unreadCount,
       djAvatarUrl: djAvatarUrl,
       musicianAvatarUrl: musicianAvatarUrl,
+      lastReactionEmoji: lastReactionEmoji,
+      lastReactionUserId: lastReactionUserId,
+      lastReactionAt: lastReactionAt,
     );
   }
 
@@ -128,6 +140,23 @@ class ConversationModel {
     final partnerAvatarUrl =
         isSupport ? null : (isCurrentUserDj ? musicianAvatarUrl : djAvatarUrl);
 
+    // Show a reaction as the latest activity when it's newer than the last message (reactions don't
+    // bump last_message_at, so a bare comparison against it is correct). Mirrors the admin inbox.
+    String? reactionPreview;
+    if (lastReactionEmoji != null && lastReactionAt != null) {
+      final reactionTime = DateTime.tryParse(lastReactionAt!);
+      final messageTime =
+          lastMessageAt != null ? DateTime.tryParse(lastMessageAt!) : null;
+      final reactionIsLatest =
+          reactionTime != null &&
+          (messageTime == null || reactionTime.isAfter(messageTime));
+      if (reactionIsLatest) {
+        final reactorName =
+            lastReactionUserId == currentUserId ? 'Du' : partnerName;
+        reactionPreview = '$reactorName reagerede med $lastReactionEmoji';
+      }
+    }
+
     return Conversation(
       id: id,
       type: type,
@@ -147,6 +176,7 @@ class ConversationModel {
       senderType: senderType,
       unreadCount: unreadCount,
       partnerAvatarUrl: partnerAvatarUrl,
+      reactionPreview: reactionPreview,
     );
   }
 }

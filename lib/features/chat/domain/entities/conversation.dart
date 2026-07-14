@@ -17,6 +17,7 @@ class Conversation {
     this.lastMessageAt,
     this.lastMessageText,
     this.partnerAvatarUrl,
+    this.reactionPreview,
   });
 
   final int id;
@@ -59,4 +60,9 @@ class Conversation {
 
   /// True for the pinned DJTILBUD support channel.
   bool get isSupport => type == 'support';
+
+  /// When the most recent activity is a REACTION newer than the last message, this holds the
+  /// preview line to show instead of [lastMessageText] (e.g. "DJTILBUD reagerede med 👍"). Mirrors
+  /// the admin support inbox, so a reaction (often the only "reply" on support) is visible in the list.
+  final String? reactionPreview;
 }

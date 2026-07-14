@@ -79,6 +79,10 @@ class _ConversationDetailScreenState
   XFile? _pendingImage;
   ChatMessage? _replyTo;
   int? _highlightId; // message to flash after tapping a reply quote
+  // One-shot: scroll to the bottom on the first loaded render only. New-message scrolls are driven
+  // by the ref.listen below, so we must NOT re-scroll on every rebuild (that yanked the user back
+  // down while they read history whenever a reaction/typing/job-link resolve triggered a rebuild).
+  bool _didInitialScroll = false;
   OverlayEntry? _reactionBar;
   // In-conversation search: filter this chat to messages containing the term.
   bool _searchOpen = false;
@@ -575,10 +579,11 @@ class _ConversationDetailScreenState
 
     return Scaffold(
       backgroundColor: _c.bg.surface,
-      // Take manual control of keyboard avoidance: the routed content sits in a
-      // Stack (MaterialApp.builder), where the Scaffold's own auto-resize is
-      // unreliable, so we pad the body by viewInsets.bottom below instead.
-      resizeToAvoidBottomInset: false,
+      // Use the Scaffold's default keyboard avoidance (resizeToAvoidBottomInset:
+      // true): it shrinks the body above the keyboard so the composer stays
+      // visible while typing. The admin support thread does the same and works;
+      // the previous manual `viewInsets` bottom-padding left the input hidden
+      // behind the keyboard.
       appBar: AppBar(
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
@@ -623,7 +628,9 @@ class _ConversationDetailScreenState
                   ),
                 )
                 : Text(
-                  widget.conversation.partnerName,
+                  widget.conversation.isSupport
+                      ? 'DJTilbud Support'
+                      : widget.conversation.partnerName,
                   style: DSTextStyle.headingSm.copyWith(
                     fontWeight: FontWeight.w700,
                     color: _c.text.primary,
@@ -646,242 +653,232 @@ class _ConversationDetailScreenState
           ),
         ],
       ),
-      body: Padding(
-        // Lift the whole chat (message list + composer) above the keyboard.
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          children: [
-            _JobBanner(conversation: widget.conversation),
-            Expanded(
-              child: messagesAsync.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error:
-                    (e, _) => Center(
-                      child: Text(
-                        'Kunne ikke hente beskeder',
-                        style: DSTextStyle.bodyMd.copyWith(
-                          color: _c.text.muted,
-                        ),
-                      ),
+      body: Column(
+        children: [
+          _JobBanner(conversation: widget.conversation),
+          Expanded(
+            child: messagesAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error:
+                  (e, _) => Center(
+                    child: Text(
+                      'Kunne ikke hente beskeder',
+                      style: DSTextStyle.bodyMd.copyWith(color: _c.text.muted),
                     ),
-                data: (messages) {
-                  if (messages.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'Send en besked for at starte samtalen',
-                        style: DSTextStyle.bodyMd.copyWith(
-                          color: _c.text.muted,
-                        ),
-                      ),
-                    );
-                  }
-                  // While searching, filter the conversation to messages that
-                  // contain the term (the term itself is highlighted in-bubble).
-                  final term = _searchTerm.trim().toLowerCase();
-                  final searching = _searchOpen && term.isNotEmpty;
-                  final displayed =
-                      searching
-                          ? messages
-                              .where(
-                                (m) =>
-                                    !m.isSystemMessage &&
-                                    m.message.toLowerCase().contains(term),
-                              )
-                              .toList()
-                          : messages;
-
-                  if (searching && displayed.isEmpty) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(DSSpacing.s4),
-                        child: Text(
-                          'Ingen beskeder matcher "$_searchTerm"',
-                          textAlign: TextAlign.center,
-                          style: DSTextStyle.bodyMd.copyWith(
-                            color: _c.text.muted,
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  // Don't yank to the bottom while searching the history.
-                  if (!searching) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _scrollToBottom(animate: false);
-                    });
-                  }
-
-                  // Resolve every job-link token in the conversation, per viewer.
-                  final refsCsv = (messages
-                          .expand((m) => extractJobRefs(m.message))
-                          .toSet()
-                          .toList()
-                        ..sort())
-                      .join(',');
-                  final jobLinks =
-                      ref
-                          .watch(jobLinkResolutionsProvider(refsCsv))
-                          .valueOrNull ??
-                      const <String, JobLinkResolution>{};
-
-                  return _MessageList(
-                    messages: displayed,
-                    currentUserId: _currentUserId,
-                    partnerName: widget.conversation.partnerName,
-                    isSupport: widget.conversation.isSupport,
-                    scrollController: _scrollController,
-                    reactions: reactions,
-                    highlightId: _highlightId,
-                    searchTerm: searching ? _searchTerm : null,
-                    jobLinks: jobLinks,
-                    onJobTap: _openJobTarget,
-                    onReply: _startReply,
-                    onReact: _react,
-                    onLongPressStart: _showReactionBar,
-                    onJumpToReplied: _jumpToMessage,
+                  ),
+              data: (messages) {
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Send en besked for at starte samtalen',
+                      style: DSTextStyle.bodyMd.copyWith(color: _c.text.muted),
+                    ),
                   );
-                },
-              ),
-            ),
+                }
+                // While searching, filter the conversation to messages that
+                // contain the term (the term itself is highlighted in-bubble).
+                final term = _searchTerm.trim().toLowerCase();
+                final searching = _searchOpen && term.isNotEmpty;
+                final displayed =
+                    searching
+                        ? messages
+                            .where(
+                              (m) =>
+                                  !m.isSystemMessage &&
+                                  m.message.toLowerCase().contains(term),
+                            )
+                            .toList()
+                        : messages;
 
-            if (adminTyping)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DSSpacing.s4,
-                  vertical: DSSpacing.s1,
-                ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'DJTILBUD skriver...',
-                    style: DSTextStyle.bodySm.copyWith(
-                      color: _c.text.muted,
-                      fontStyle: FontStyle.italic,
+                if (searching && displayed.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(DSSpacing.s4),
+                      child: Text(
+                        'Ingen beskeder matcher "$_searchTerm"',
+                        textAlign: TextAlign.center,
+                        style: DSTextStyle.bodyMd.copyWith(
+                          color: _c.text.muted,
+                        ),
+                      ),
                     ),
+                  );
+                }
+
+                // Initial load only: jump to the bottom once. Subsequent scrolls come from the
+                // ref.listen (new message) so an unrelated rebuild never yanks the reader down.
+                if (!searching && !_didInitialScroll) {
+                  _didInitialScroll = true;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToBottom(animate: false);
+                  });
+                }
+
+                // Resolve every job-link token in the conversation, per viewer.
+                final refsCsv = (messages
+                        .expand((m) => extractJobRefs(m.message))
+                        .toSet()
+                        .toList()
+                      ..sort())
+                    .join(',');
+                final jobLinks =
+                    ref
+                        .watch(jobLinkResolutionsProvider(refsCsv))
+                        .valueOrNull ??
+                    const <String, JobLinkResolution>{};
+
+                return _MessageList(
+                  messages: displayed,
+                  currentUserId: _currentUserId,
+                  partnerName: widget.conversation.partnerName,
+                  isSupport: widget.conversation.isSupport,
+                  scrollController: _scrollController,
+                  reactions: reactions,
+                  highlightId: _highlightId,
+                  searchTerm: searching ? _searchTerm : null,
+                  jobLinks: jobLinks,
+                  onJobTap: _openJobTarget,
+                  onReply: _startReply,
+                  onReact: _react,
+                  onLongPressStart: _showReactionBar,
+                  onJumpToReplied: _jumpToMessage,
+                );
+              },
+            ),
+          ),
+
+          if (adminTyping)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DSSpacing.s4,
+                vertical: DSSpacing.s1,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'DJTILBUD skriver...',
+                  style: DSTextStyle.bodySm.copyWith(
+                    color: _c.text.muted,
+                    fontStyle: FontStyle.italic,
                   ),
                 ),
               ),
-
-            if (_errorMsg != null)
-              Container(
-                width: double.infinity,
-                color: _c.state.danger.withValues(alpha: 0.16),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: DSSpacing.s4,
-                  vertical: DSSpacing.s2,
-                ),
-                child: Text(
-                  _errorMsg!,
-                  style: DSTextStyle.labelMd.copyWith(color: _c.state.danger),
-                ),
-              ),
-
-            if (_replyTo != null)
-              Container(
-                padding: const EdgeInsets.fromLTRB(
-                  DSSpacing.s4,
-                  DSSpacing.s2,
-                  DSSpacing.s2,
-                  0,
-                ),
-                child: Row(
-                  children: [
-                    Container(width: 3, height: 32, color: _c.brand.primary),
-                    const SizedBox(width: DSSpacing.s2),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Svarer ${_replyTo!.senderType == 'admin' ? (_replyTo!.senderName ?? 'DJTILBUD') : (_replyTo!.senderId == _currentUserId ? 'dig selv' : widget.conversation.partnerName)}',
-                            style: DSTextStyle.labelSm.copyWith(
-                              color: _c.text.secondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            _replyTo!.isSystemMessage
-                                ? 'Systembesked'
-                                : _replyTo!.message,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: DSTextStyle.bodySm.copyWith(
-                              color: _c.text.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, size: 18, color: _c.text.muted),
-                      onPressed: () => setState(() => _replyTo = null),
-                    ),
-                  ],
-                ),
-              ),
-
-            if (_mentionQuery != null)
-              _MentionPicker(
-                results:
-                    ref
-                        .watch(linkableJobsProvider(_mentionSearchQuery))
-                        .valueOrNull ??
-                    const [],
-                onSelect: _insertJobToken,
-              ),
-
-            if (_pendingImage != null)
-              Container(
-                padding: const EdgeInsets.fromLTRB(
-                  DSSpacing.s4,
-                  DSSpacing.s2,
-                  DSSpacing.s2,
-                  0,
-                ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(DSRadius.sm),
-                      child: Image.file(
-                        File(_pendingImage!.path),
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(width: DSSpacing.s2),
-                    Expanded(
-                      child: Text(
-                        'Billede vedhæftet',
-                        style: DSTextStyle.bodySm.copyWith(
-                          color: _c.text.muted,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, size: 18, color: _c.text.muted),
-                      onPressed:
-                          _isSending
-                              ? null
-                              : () => setState(() => _pendingImage = null),
-                    ),
-                  ],
-                ),
-              ),
-
-            ChatMessageInput(
-              controller: _textController,
-              focusNode: _focusNode,
-              isSending: _isSending,
-              onSend: _sendMessage,
-              onAttach: _pickImage,
             ),
-          ],
-        ),
+
+          if (_errorMsg != null)
+            Container(
+              width: double.infinity,
+              color: _c.state.danger.withValues(alpha: 0.16),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DSSpacing.s4,
+                vertical: DSSpacing.s2,
+              ),
+              child: Text(
+                _errorMsg!,
+                style: DSTextStyle.labelMd.copyWith(color: _c.state.danger),
+              ),
+            ),
+
+          if (_replyTo != null)
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                DSSpacing.s4,
+                DSSpacing.s2,
+                DSSpacing.s2,
+                0,
+              ),
+              child: Row(
+                children: [
+                  Container(width: 3, height: 32, color: _c.brand.primary),
+                  const SizedBox(width: DSSpacing.s2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Svarer ${_replyTo!.senderType == 'admin' ? (_replyTo!.senderName ?? 'DJTILBUD') : (_replyTo!.senderId == _currentUserId ? 'dig selv' : widget.conversation.partnerName)}',
+                          style: DSTextStyle.labelSm.copyWith(
+                            color: _c.text.secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          _replyTo!.isSystemMessage
+                              ? 'Systembesked'
+                              : _replyTo!.message,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DSTextStyle.bodySm.copyWith(
+                            color: _c.text.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 18, color: _c.text.muted),
+                    onPressed: () => setState(() => _replyTo = null),
+                  ),
+                ],
+              ),
+            ),
+
+          if (_mentionQuery != null)
+            _MentionPicker(
+              results:
+                  ref
+                      .watch(linkableJobsProvider(_mentionSearchQuery))
+                      .valueOrNull ??
+                  const [],
+              onSelect: _insertJobToken,
+            ),
+
+          if (_pendingImage != null)
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                DSSpacing.s4,
+                DSSpacing.s2,
+                DSSpacing.s2,
+                0,
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(DSRadius.sm),
+                    child: Image.file(
+                      File(_pendingImage!.path),
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: DSSpacing.s2),
+                  Expanded(
+                    child: Text(
+                      'Billede vedhæftet',
+                      style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 18, color: _c.text.muted),
+                    onPressed:
+                        _isSending
+                            ? null
+                            : () => setState(() => _pendingImage = null),
+                  ),
+                ],
+              ),
+            ),
+
+          ChatMessageInput(
+            controller: _textController,
+            focusNode: _focusNode,
+            isSending: _isSending,
+            onSend: _sendMessage,
+            onAttach: _pickImage,
+          ),
+        ],
       ),
     );
   }
@@ -1050,11 +1047,15 @@ class _MessageList extends StatelessWidget {
               final next =
                   i < group.messages.length - 1 ? group.messages[i + 1] : null;
 
-              // Group consecutive messages from the same side. On support the side is the
-              // sender_type (admin vs user); elsewhere it's the sender id.
+              // Group consecutive messages by SENDER. On support, own-ness is by sender_type but
+              // grouping must still split by the individual admin's id — otherwise two different
+              // admins (e.g. Alex then Victor) merge into one block showing the first admin's name
+              // at the top and the last admin's avatar at the bottom. The user side stays one group.
               String keyOf(ChatMessage m) =>
                   isSupport
-                      ? (m.senderType == 'admin' ? 'admin' : 'user')
+                      ? (m.senderType == 'admin'
+                          ? 'admin:${m.senderId}'
+                          : 'user')
                       : m.senderId;
               final isGroupStart = prev == null || keyOf(prev) != keyOf(msg);
               final isGroupEnd = next == null || keyOf(next) != keyOf(msg);
@@ -1873,10 +1874,64 @@ class _FormattedText extends StatelessWidget {
       }
     }
 
+    // Under the message, spell out any job link that isn't openable + why, instead of leaving the
+    // greyed chip unexplained. Only for links that resolved as inaccessible (pending ones stay quiet).
+    for (final ref in extractJobRefs(text)) {
+      final res = jobLinks[ref];
+      if (res == null || (res.accessible && res.target != null)) continue;
+      blocks.add(const SizedBox(height: 6));
+      blocks.add(
+        _UnavailableJobNote(ref: ref, resolution: res, baseStyle: baseStyle),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: blocks,
+    );
+  }
+}
+
+/// A small explanatory line shown UNDER a message when one of its job links can't be opened by the
+/// viewer, spelling out which job and why (instead of leaving a silently greyed chip).
+class _UnavailableJobNote extends StatelessWidget {
+  const _UnavailableJobNote({
+    required this.ref,
+    required this.resolution,
+    required this.baseStyle,
+  });
+
+  final String ref;
+  final JobLinkResolution resolution;
+  final TextStyle baseStyle;
+
+  String _label() {
+    final parts = ref.split(':');
+    final id = parts.length > 1 ? parts[1] : '';
+    return ref.startsWith('extjob:') ? '#E$id' : '#$id';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    final noteColor = baseStyle.color?.withValues(alpha: 0.7) ?? _c.text.muted;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(LucideIcons.lock, size: 12, color: noteColor),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            'Job ${_label()} er ikke tilgængeligt: ${resolution.unavailableReasonDa}',
+            style: DSTextStyle.labelSm.copyWith(
+              color: noteColor,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -2021,7 +2076,7 @@ class _MentionPicker extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${job.kind == 'extjob' ? 'Ekstern opgave' : 'Job'} #${job.id}',
+                    '${job.kind == 'extjob' ? 'Ekstern opgave' : 'Job'} #${job.kind == 'extjob' ? 'E' : ''}${job.id}',
                     style: DSTextStyle.labelSm.copyWith(color: _c.text.muted),
                   ),
                 ],

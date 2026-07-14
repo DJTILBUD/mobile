@@ -82,7 +82,10 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
     if (_availabilityGateShowing) return;
     final dateMap = async.valueOrNull;
     if (dateMap == null) return;
-    final distinctMonths = dateMap.keys.map((d) => d.substring(0, 7)).toSet();
+    // Guard the substring: a malformed/short availability-map key (< 7 chars) would throw a
+    // RangeError. Keys are normally 'YYYY-MM-DD'; keep only the 'YYYY-MM' prefix when present.
+    final distinctMonths =
+        dateMap.keys.map((d) => d.length >= 7 ? d.substring(0, 7) : d).toSet();
     if (distinctMonths.length >= 2) return;
     _availabilityGateShowing = true;
     final missingMonths = 2 - distinctMonths.length;

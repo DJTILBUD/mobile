@@ -65,7 +65,9 @@ class CalendarEventModel {
   }
 
   /// Parses a ServiceOffer row with nested `job:Jobs(...)` data.
-  factory CalendarEventModel.fromMusicianJobOfferJson(Map<String, dynamic> json) {
+  factory CalendarEventModel.fromMusicianJobOfferJson(
+    Map<String, dynamic> json,
+  ) {
     final job = json['job'] as Map<String, dynamic>;
     return CalendarEventModel(
       id: (json['id'] as num).toInt(),
@@ -84,7 +86,8 @@ class CalendarEventModel {
 
   /// Parses a ServiceOffer row with nested `ext_job:ExtJobs(...)` data.
   factory CalendarEventModel.fromMusicianExtJobOfferJson(
-      Map<String, dynamic> json) {
+    Map<String, dynamic> json,
+  ) {
     final extJob = json['ext_job'] as Map<String, dynamic>;
     return CalendarEventModel(
       id: (json['id'] as num).toInt(),
@@ -104,11 +107,12 @@ class CalendarEventModel {
   CalendarEvent toEntity({CalendarEventKind kind = CalendarEventKind.won}) {
     return CalendarEvent(
       id: id,
-      date: DateTime.parse(date),
+      date: DateTime.tryParse(date) ?? DateTime.fromMillisecondsSinceEpoch(0),
       label: label,
-      type: type == 'internal'
-          ? CalendarEventType.internal
-          : CalendarEventType.external,
+      type:
+          type == 'internal'
+              ? CalendarEventType.internal
+              : CalendarEventType.external,
       kind: kind,
       startTime: startTime,
       endTime: endTime,
@@ -134,12 +138,13 @@ class CalendarEventModel {
     final s = (start as num?)?.toInt();
     final e = (end as num?)?.toInt();
     if (s == null && e == null) return null;
-    if (s != null && e != null && s != e) return '${_fmtNum(s)} – ${_fmtNum(e)} kr.';
+    if (s != null && e != null && s != e)
+      return '${_fmtNum(s)} – ${_fmtNum(e)} kr.';
     return '${_fmtNum(e ?? s!)} kr.';
   }
 
   static String _fmtNum(int n) => n.toString().replaceAllMapped(
-        RegExp(r'\B(?=(\d{3})+(?!\d))'),
-        (_) => '.',
-      );
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => '.',
+  );
 }

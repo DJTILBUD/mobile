@@ -1000,7 +1000,7 @@ class AddExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> add(
     int quoteId, {
     required double extraHours,
-    required int pricePerHour,
+    required num pricePerHour,
     required int newTotalPrice,
   }) async {
     state = const AsyncLoading();
@@ -1062,7 +1062,7 @@ class AddExtJobExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> add(
     int extJobId, {
     required double extraHours,
-    required int pricePerHour,
+    required num pricePerHour,
     required int newTotalPrice,
   }) async {
     state = const AsyncLoading();

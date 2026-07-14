@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -57,6 +59,15 @@ class ConversationsNotifier
     await _fetchSilent();
   }
 
+  // Each chat action emits several DB events (message insert + Conversations.last_message_at
+  // update, ± a reaction), and the ChatMessages subscription is unfiltered. The list fetch is an
+  // N+1, so coalesce a burst into ONE refetch instead of one per event.
+  Timer? _fetchDebounce;
+  void _coalescedFetch() {
+    _fetchDebounce?.cancel();
+    _fetchDebounce = Timer(const Duration(milliseconds: 400), _fetchSilent);
+  }
+
   void _subscribeToRealtime() {
     // One channel with chained handlers — mirrors web app exactly.
     // Web app: .channel("conversations-changes").on(...).on(...).on(...).subscribe()
@@ -71,7 +82,7 @@ class ConversationsNotifier
             column: 'dj_id',
             value: _userId,
           ),
-          callback: (_) => _fetchSilent(),
+          callback: (_) => _coalescedFetch(),
         )
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
@@ -82,7 +93,7 @@ class ConversationsNotifier
             column: 'musician_id',
             value: _userId,
           ),
-          callback: (_) => _fetchSilent(),
+          callback: (_) => _coalescedFetch(),
         )
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
@@ -94,13 +105,21 @@ class ConversationsNotifier
             column: 'user_id',
             value: _userId,
           ),
-          callback: (_) => _fetchSilent(),
+          callback: (_) => _coalescedFetch(),
         )
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'ChatMessages',
-          callback: (_) => _fetchSilent(),
+          callback: (_) => _coalescedFetch(),
+        )
+        // Reactions don't insert a ChatMessage, so without this the list preview
+        // ("<name> reagerede med <emoji>") wouldn't update live.
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'ChatMessageReactions',
+          callback: (_) => _coalescedFetch(),
         )
         .subscribe((status, [error]) {
           // ignore: avoid_print
@@ -111,6 +130,7 @@ class ConversationsNotifier
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _fetchDebounce?.cancel();
     if (_channel != null) _client.removeChannel(_channel!);
     super.dispose();
   }
@@ -250,7 +270,7 @@ class ConversationMessagesNotifier
     String? attachmentUrl,
   }) async {
     try {
-      await _repository.sendMessage(
+      final sent = await _repository.sendMessage(
         conversationId: _conversationId,
         senderId: senderId,
         senderType: senderType,
@@ -258,6 +278,12 @@ class ConversationMessagesNotifier
         replyToId: replyToId,
         attachmentUrl: attachmentUrl,
       );
+      // Optimistically append the sent row immediately so the bubble shows without waiting for the
+      // realtime echo. The INSERT handler dedups by id, so the echo won't add a duplicate.
+      final current = state.valueOrNull;
+      if (current != null && mounted && !current.any((m) => m.id == sent.id)) {
+        state = AsyncData([...current, sent]);
+      }
       return null;
     } catch (e) {
       if (isChatRateLimitError(e)) return chatRateLimitMessage;

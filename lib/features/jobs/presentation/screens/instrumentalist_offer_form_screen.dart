@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
+import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
+import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/core/utils/musician_price.dart';
@@ -13,6 +15,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/standard_message_picker_button.dart';
 import 'package:dj_tilbud_app/features/profile/domain/self_billing_complete.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -155,6 +158,58 @@ class _InstrumentalistOfferFormScreenState
               ? error.message
               : 'Kunne ikke sende tilbud. Prøv igen.';
       DSToast.show(context, variant: DSToastVariant.error, title: message);
+    }
+  }
+
+  /// Saves the current pitch as a reusable [StandardMessage] (the "Gem som
+  /// skabelon" action). Templates are keyed by user + event type, so the job's
+  /// event type is required.
+  Future<void> _saveAsTemplate() async {
+    final messageText = _salesPitchController.text.trim();
+    if (messageText.isEmpty) {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Besked til kunden kan ikke være tom',
+      );
+      return;
+    }
+    final eventType = widget.job.eventType.trim();
+    if (eventType.isEmpty) {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Kan ikke gemme standardbesked uden en event-type',
+      );
+      return;
+    }
+    try {
+      final repo = ref.read(profileRepositoryProvider);
+      final userId = supabase.auth.currentUser!.id;
+      await repo.createStandardMessage(
+        userId: userId,
+        messageText: messageText,
+        eventType: eventType,
+      );
+      ref.invalidate(standardMessagesProvider);
+      if (context.mounted) {
+        DSToast.show(
+          context,
+          variant: DSToastVariant.success,
+          title: 'Standardbesked gemt',
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: friendlyErrorMessage(
+            e,
+            fallback: 'Standardbeskeden kunne ikke gemmes. Prøv igen.',
+          ),
+        );
+      }
     }
   }
 
@@ -536,15 +591,28 @@ class _InstrumentalistOfferFormScreenState
                         color: _c.text.primary,
                       ),
                     ),
-                    AgentAiButton(
-                      job: widget.job,
-                      isDj: false,
-                      onDraftAccepted: (draft) {
-                        setState(() {
-                          _salesPitchController.text = draft;
-                          _usedAiDraft = true;
-                        });
-                      },
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        StandardMessagePickerButton(
+                          onSelected:
+                              (text) => setState(() {
+                                _salesPitchController.text = text;
+                                _pitchLength = text.length;
+                              }),
+                        ),
+                        const SizedBox(width: DSSpacing.s2),
+                        AgentAiButton(
+                          job: widget.job,
+                          isDj: false,
+                          onDraftAccepted: (draft) {
+                            setState(() {
+                              _salesPitchController.text = draft;
+                              _usedAiDraft = true;
+                            });
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -556,7 +624,6 @@ class _InstrumentalistOfferFormScreenState
                   maxLines: 5,
                   maxLength: 450,
                   showCounter: true,
-                  helperText: '$_pitchLength / 450',
                   textInputAction: TextInputAction.newline,
                   validator: (v) {
                     if (v == null || v.trim().length < 100) {
@@ -564,6 +631,17 @@ class _InstrumentalistOfferFormScreenState
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: DSSpacing.s1),
+                Row(
+                  children: [
+                    Text(
+                      '$_pitchLength / 450',
+                      style: DSTextStyle.labelSm.copyWith(color: _c.text.muted),
+                    ),
+                    const Spacer(),
+                    SaveTemplateButton(onTap: _saveAsTemplate),
+                  ],
                 ),
                 const SizedBox(height: DSSpacing.s6),
               ],

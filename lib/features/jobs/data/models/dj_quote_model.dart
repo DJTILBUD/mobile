@@ -32,7 +32,7 @@ class DjQuoteModel {
   final int? earlySetupPrice;
   final DateTime? djReadyConfirmedAt;
   final double? extraHours;
-  final int? extraHoursPricePerHour;
+  final num? extraHoursPricePerHour;
   final String? djNotes;
   final int? djPayoutOverride;
 
@@ -58,7 +58,7 @@ class DjQuoteModel {
           ? DateTime.parse(json['dj_ready_confirmed_at'] as String)
           : null,
       extraHours: (json['extra_hours'] as num?)?.toDouble(),
-      extraHoursPricePerHour: (json['extra_hours_price_per_hour'] as num?)?.toInt(),
+      extraHoursPricePerHour: (json['extra_hours_price_per_hour'] as num?)?.toDouble(),
       djNotes: json['dj_notes'] as String?,
       djPayoutOverride: (json['dj_payout_override'] as num?)?.toInt(),
     );

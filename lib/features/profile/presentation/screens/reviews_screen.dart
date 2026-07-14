@@ -10,9 +10,19 @@ import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_pr
 import 'package:lucide_icons/lucide_icons.dart';
 
 const _eventTypes = [
-  'bryllup', 'firmafest', 'fødselsdagsfest', 'fødselsdag',
-  'julefrokost', 'privatfest', 'ungdomsfest', 'klub/bar',
-  'lounge', 'konfirmation', 'studenterfest', 'sommerfest', 'andet',
+  'bryllup',
+  'firmafest',
+  'fødselsdagsfest',
+  'fødselsdag',
+  'julefrokost',
+  'privatfest',
+  'ungdomsfest',
+  'klub/bar',
+  'lounge',
+  'konfirmation',
+  'studenterfest',
+  'sommerfest',
+  'andet',
 ];
 
 class ReviewsScreen extends ConsumerWidget {
@@ -22,14 +32,20 @@ class ReviewsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final isDj = role == MusicianRole.dj;
-    final reviewsAsync = isDj ? ref.watch(djReviewsProvider) : ref.watch(musicianReviewsProvider);
+    final reviewsAsync =
+        isDj
+            ? ref.watch(djReviewsProvider)
+            : ref.watch(musicianReviewsProvider);
 
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
-        title: Text('Anmeldelser', style: DSTextStyle.headingSm.copyWith(color: _c.text.primary)),
+        title: Text(
+          'Anmeldelser',
+          style: DSTextStyle.headingSm.copyWith(color: _c.text.primary),
+        ),
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
       ),
@@ -40,7 +56,10 @@ class ReviewsScreen extends ConsumerWidget {
         onTap: () => _showUpsertDialog(context, ref, isDj: isDj),
       ),
       body: reviewsAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: _c.brand.primary)),
+        loading:
+            () => Center(
+              child: CircularProgressIndicator(color: _c.brand.primary),
+            ),
         error: (e, _) => Center(child: Text('Fejl: $e')),
         data: (reviews) {
           if (reviews.isEmpty) {
@@ -50,9 +69,17 @@ class ReviewsScreen extends ConsumerWidget {
                 children: [
                   Icon(LucideIcons.star, size: 48, color: _c.border.subtle),
                   const SizedBox(height: DSSpacing.s3),
-                  Text('Ingen anmeldelser endnu', style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary)),
+                  Text(
+                    'Ingen anmeldelser endnu',
+                    style: DSTextStyle.bodyMd.copyWith(
+                      color: _c.text.secondary,
+                    ),
+                  ),
                   const SizedBox(height: DSSpacing.s1),
-                  Text('Tryk + for at tilføje en', style: DSTextStyle.labelMd.copyWith(color: _c.text.muted)),
+                  Text(
+                    'Tryk + for at tilføje en',
+                    style: DSTextStyle.labelMd.copyWith(color: _c.text.muted),
+                  ),
                 ],
               ),
             );
@@ -65,8 +92,20 @@ class ReviewsScreen extends ConsumerWidget {
               final review = reviews[index];
               return _ReviewCard(
                 review: review,
-                onEdit: () => _showUpsertDialog(context, ref, isDj: isDj, existing: review),
-                onDelete: () => _confirmDelete(context, ref, isDj: isDj, review: review),
+                onEdit:
+                    () => _showUpsertDialog(
+                      context,
+                      ref,
+                      isDj: isDj,
+                      existing: review,
+                    ),
+                onDelete:
+                    () => _confirmDelete(
+                      context,
+                      ref,
+                      isDj: isDj,
+                      review: review,
+                    ),
               );
             },
           );
@@ -75,54 +114,86 @@ class ReviewsScreen extends ConsumerWidget {
     );
   }
 
-  void _showUpsertDialog(BuildContext context, WidgetRef ref, {required bool isDj, Review? existing}) {
+  void _showUpsertDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool isDj,
+    Review? existing,
+  }) {
     final _c = DSTheme.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: _c.bg.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg))),
-      builder: (ctx) => _ReviewForm(
-        existing: existing,
-        onSave: (name, review, eventType, eventDate) async {
-          try {
-            final repo = ref.read(profileRepositoryProvider);
-            if (existing != null) {
-              await repo.updateReview(
-                reviewId: existing.id,
-                customerName: name,
-                rating: 3,
-                review: review,
-                eventType: eventType,
-                eventDate: eventDate,
-              );
-            } else {
-              await repo.createReview(
-                userId: isDj ? ref.read(djProfileProvider).value!.id : ref.read(musicianProfileProvider).value!.id,
-                isDj: isDj,
-                customerName: name,
-                rating: 3,
-                review: review,
-                eventType: eventType,
-                eventDate: eventDate,
-              );
-            }
-            ref.invalidate(isDj ? djReviewsProvider : musicianReviewsProvider);
-            if (ctx.mounted) Navigator.of(ctx).pop();
-            if (context.mounted) {
-              DSToast.show(context, variant: DSToastVariant.success, title: existing != null ? 'Anmeldelse opdateret' : 'Anmeldelse tilføjet');
-            }
-          } catch (e) {
-            if (context.mounted) {
-              DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Anmeldelsen kunne ikke gemmes. Prøv igen.'));
-            }
-          }
-        },
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
       ),
+      builder:
+          (ctx) => _ReviewForm(
+            existing: existing,
+            onSave: (name, review, eventType, eventDate) async {
+              try {
+                final repo = ref.read(profileRepositoryProvider);
+                if (existing != null) {
+                  await repo.updateReview(
+                    reviewId: existing.id,
+                    customerName: name,
+                    rating: 3,
+                    review: review,
+                    eventType: eventType,
+                    eventDate: eventDate,
+                  );
+                } else {
+                  await repo.createReview(
+                    userId:
+                        isDj
+                            ? ref.read(djProfileProvider).value!.id
+                            : ref.read(musicianProfileProvider).value!.id,
+                    isDj: isDj,
+                    customerName: name,
+                    rating: 3,
+                    review: review,
+                    eventType: eventType,
+                    eventDate: eventDate,
+                  );
+                }
+                ref.invalidate(
+                  isDj ? djReviewsProvider : musicianReviewsProvider,
+                );
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                if (context.mounted) {
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.success,
+                    title:
+                        existing != null
+                            ? 'Anmeldelse opdateret'
+                            : 'Anmeldelse tilføjet',
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.error,
+                    title: friendlyErrorMessage(
+                      e,
+                      fallback: 'Anmeldelsen kunne ikke gemmes. Prøv igen.',
+                    ),
+                  );
+                }
+              }
+            },
+          ),
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, {required bool isDj, required Review review}) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool isDj,
+    required Review review,
+  }) async {
     final confirmed = await showDSConfirm(
       context,
       title: 'Slet anmeldelse?',
@@ -134,19 +205,33 @@ class ReviewsScreen extends ConsumerWidget {
     try {
       await ref.read(profileRepositoryProvider).deleteReview(review.id);
       ref.invalidate(isDj ? djReviewsProvider : musicianReviewsProvider);
-      if (context.mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Anmeldelse slettet');
+      if (context.mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.success,
+          title: 'Anmeldelse slettet',
+        );
     } catch (e) {
       if (context.mounted) {
-        DSToast.show(context,
-            variant: DSToastVariant.error,
-            title: friendlyErrorMessage(e, fallback: 'Anmeldelsen kunne ikke slettes. Prøv igen.'));
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: friendlyErrorMessage(
+            e,
+            fallback: 'Anmeldelsen kunne ikke slettes. Prøv igen.',
+          ),
+        );
       }
     }
   }
 }
 
 class _ReviewCard extends StatelessWidget {
-  const _ReviewCard({required this.review, required this.onEdit, required this.onDelete});
+  const _ReviewCard({
+    required this.review,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final Review review;
   final VoidCallback onEdit;
@@ -154,48 +239,70 @@ class _ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: DSSpacing.s3),
       child: DSSurface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  review.customerName,
-                  style: DSTextStyle.headingSm.copyWith(fontSize: 15, color: _c.text.primary),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    review.customerName,
+                    style: DSTextStyle.headingSm.copyWith(
+                      fontSize: 15,
+                      color: _c.text.primary,
+                    ),
+                  ),
                 ),
+                PopupMenuButton<String>(
+                  onSelected: (v) {
+                    if (v == 'edit') onEdit();
+                    if (v == 'delete') onDelete();
+                  },
+                  itemBuilder:
+                      (_) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Rediger'),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(
+                            'Slet',
+                            style: DSTextStyle.bodyMd.copyWith(
+                              color: _c.state.danger,
+                            ),
+                          ),
+                        ),
+                      ],
+                  icon: Icon(
+                    LucideIcons.moreVertical,
+                    size: 20,
+                    color: _c.text.secondary,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: DSSpacing.s1),
+            Text(
+              '${eventTypeLabel(review.eventType)} — ${review.eventDate}',
+              style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+            ),
+            const SizedBox(height: DSSpacing.s2),
+            Text(
+              review.review,
+              style: DSTextStyle.labelMd.copyWith(
+                fontWeight: FontWeight.w400,
+                color: _c.text.secondary,
               ),
-              PopupMenuButton<String>(
-                onSelected: (v) {
-                  if (v == 'edit') onEdit();
-                  if (v == 'delete') onDelete();
-                },
-                itemBuilder: (_) => [
-                  const PopupMenuItem(value: 'edit', child: Text('Rediger')),
-                  PopupMenuItem(value: 'delete', child: Text('Slet', style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger))),
-                ],
-                icon: Icon(LucideIcons.moreVertical, size: 20, color: _c.text.secondary),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-          const SizedBox(height: DSSpacing.s1),
-          Text(
-            '${eventTypeLabel(review.eventType)} — ${review.eventDate}',
-            style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
-          ),
-          const SizedBox(height: DSSpacing.s2),
-          Text(
-            review.review,
-            style: DSTextStyle.labelMd.copyWith(fontWeight: FontWeight.w400, color: _c.text.secondary),
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -205,7 +312,13 @@ class _ReviewForm extends StatefulWidget {
   const _ReviewForm({this.existing, required this.onSave});
 
   final Review? existing;
-  final Future<void> Function(String name, String review, String eventType, String eventDate) onSave;
+  final Future<void> Function(
+    String name,
+    String review,
+    String eventType,
+    String eventDate,
+  )
+  onSave;
 
   @override
   State<_ReviewForm> createState() => _ReviewFormState();
@@ -223,12 +336,15 @@ class _ReviewFormState extends State<_ReviewForm> {
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController(text: widget.existing?.customerName ?? '');
+    _nameCtrl = TextEditingController(
+      text: widget.existing?.customerName ?? '',
+    );
     _reviewCtrl = TextEditingController(text: widget.existing?.review ?? '');
     _eventType = widget.existing?.eventType ?? 'bryllup';
-    _eventDate = widget.existing != null
-        ? (DateTime.tryParse(widget.existing!.eventDate) ?? DateTime.now())
-        : DateTime.now();
+    _eventDate =
+        widget.existing != null
+            ? (DateTime.tryParse(widget.existing!.eventDate) ?? DateTime.now())
+            : DateTime.now();
   }
 
   @override
@@ -240,10 +356,12 @@ class _ReviewFormState extends State<_ReviewForm> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Padding(
       padding: EdgeInsets.only(
-        left: DSSpacing.s6, right: DSSpacing.s6, top: DSSpacing.s6,
+        left: DSSpacing.s6,
+        right: DSSpacing.s6,
+        top: DSSpacing.s6,
         bottom: MediaQuery.of(context).viewInsets.bottom + DSSpacing.s6,
       ),
       child: Form(
@@ -254,8 +372,13 @@ class _ReviewFormState extends State<_ReviewForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.existing != null ? 'Rediger anmeldelse' : 'Ny anmeldelse',
-                style: DSTextStyle.headingMd.copyWith(fontWeight: FontWeight.w700, color: _c.text.primary),
+                widget.existing != null
+                    ? 'Rediger anmeldelse'
+                    : 'Ny anmeldelse',
+                style: DSTextStyle.headingMd.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: _c.text.primary,
+                ),
               ),
               const SizedBox(height: DSSpacing.s4),
               DSInput(
@@ -263,15 +386,22 @@ class _ReviewFormState extends State<_ReviewForm> {
                 label: 'Kundens fornavn',
                 maxLength: 20,
                 showCounter: true,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
+                validator:
+                    (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
               ),
               const SizedBox(height: DSSpacing.s3),
               DSDropdown<String>(
                 label: 'Event type',
                 value: _eventType,
-                items: _eventTypes
-                    .map((t) => DSDropdownItem(value: t, label: eventTypeLabel(t)))
-                    .toList(),
+                items:
+                    _eventTypes
+                        .map(
+                          (t) => DSDropdownItem(
+                            value: t,
+                            label: eventTypeLabel(t),
+                          ),
+                        )
+                        .toList(),
                 onChanged: (v) => setState(() => _eventType = v!),
               ),
               const SizedBox(height: DSSpacing.s3),
@@ -288,38 +418,47 @@ class _ReviewFormState extends State<_ReviewForm> {
                   const SizedBox(height: DSSpacing.s1),
                   GestureDetector(
                     onTap: () async {
-                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      final isDark =
+                          Theme.of(context).brightness == Brightness.dark;
                       final picked = await showDatePicker(
                         context: context,
                         initialDate: _eventDate,
                         firstDate: DateTime(2015),
                         lastDate: DateTime.now(),
-                        builder: (context, child) => Theme(
-                          data: (isDark ? ThemeData.dark() : ThemeData.light()).copyWith(
-                            colorScheme: (isDark
-                                    ? const ColorScheme.dark()
-                                    : const ColorScheme.light())
-                                .copyWith(
-                              primary: _c.brand.primary,
-                              onPrimary: _c.brand.onPrimary,
-                              surface: _c.bg.surface,
-                              onSurface: _c.text.primary,
+                        builder:
+                            (context, child) => Theme(
+                              data: (isDark
+                                      ? ThemeData.dark()
+                                      : ThemeData.light())
+                                  .copyWith(
+                                    colorScheme: (isDark
+                                            ? const ColorScheme.dark()
+                                            : const ColorScheme.light())
+                                        .copyWith(
+                                          primary: _c.brand.primary,
+                                          onPrimary: _c.brand.onPrimary,
+                                          surface: _c.bg.surface,
+                                          onSurface: _c.text.primary,
+                                        ),
+                                    datePickerTheme: DatePickerThemeData(
+                                      backgroundColor: _c.bg.surface,
+                                      headerBackgroundColor: _c.brand.primary,
+                                      headerForegroundColor: _c.brand.onPrimary,
+                                      dayOverlayColor: WidgetStatePropertyAll(
+                                        _c.brand.primary.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                      ),
+                                      todayBorder: BorderSide(
+                                        color: _c.brand.primary,
+                                      ),
+                                    ),
+                                    dialogTheme: DialogThemeData(
+                                      backgroundColor: _c.bg.surface,
+                                    ),
+                                  ),
+                              child: child!,
                             ),
-                            datePickerTheme: DatePickerThemeData(
-                              backgroundColor: _c.bg.surface,
-                              headerBackgroundColor: _c.brand.primary,
-                              headerForegroundColor: _c.brand.onPrimary,
-                              dayOverlayColor: WidgetStatePropertyAll(
-                                _c.brand.primary.withValues(alpha: 0.12),
-                              ),
-                              todayBorder: BorderSide(color: _c.brand.primary),
-                            ),
-                            dialogTheme: DialogThemeData(
-                              backgroundColor: _c.bg.surface,
-                            ),
-                          ),
-                          child: child!,
-                        ),
                       );
                       if (picked != null) setState(() => _eventDate = picked);
                     },
@@ -342,7 +481,11 @@ class _ReviewFormState extends State<_ReviewForm> {
                               ),
                             ),
                           ),
-                          Icon(LucideIcons.calendar, size: 18, color: _c.text.secondary),
+                          Icon(
+                            LucideIcons.calendar,
+                            size: 18,
+                            color: _c.text.secondary,
+                          ),
                         ],
                       ),
                     ),
@@ -353,10 +496,11 @@ class _ReviewFormState extends State<_ReviewForm> {
               DSInput(
                 controller: _reviewCtrl,
                 label: 'Anmeldelse',
-                maxLength: 750,
+                maxLength: 1500,
                 showCounter: true,
                 maxLines: 5,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
+                validator:
+                    (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
               ),
               const SizedBox(height: DSSpacing.s4),
               DSButton(
@@ -364,17 +508,20 @@ class _ReviewFormState extends State<_ReviewForm> {
                 size: DSButtonSize.lg,
                 expand: true,
                 isLoading: _saving,
-                onTap: _saving ? null : () async {
-                  if (!_formKey.currentState!.validate()) return;
-                  setState(() => _saving = true);
-                  await widget.onSave(
-                    _nameCtrl.text.trim(),
-                    _reviewCtrl.text.trim(),
-                    _eventType,
-                    DateFormat('yyyy-MM-dd').format(_eventDate),
-                  );
-                  if (mounted) setState(() => _saving = false);
-                },
+                onTap:
+                    _saving
+                        ? null
+                        : () async {
+                          if (!_formKey.currentState!.validate()) return;
+                          setState(() => _saving = true);
+                          await widget.onSave(
+                            _nameCtrl.text.trim(),
+                            _reviewCtrl.text.trim(),
+                            _eventType,
+                            DateFormat('yyyy-MM-dd').format(_eventDate),
+                          );
+                          if (mounted) setState(() => _saving = false);
+                        },
               ),
             ],
           ),

@@ -6,7 +6,7 @@ import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/chat_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
-import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
+import 'package:dj_tilbud_app/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class MainShell extends ConsumerWidget {
@@ -28,6 +28,14 @@ class MainShell extends ConsumerWidget {
     // catches up on the next frame.
     if (supabase.auth.currentUser == null) return const SizedBox.shrink();
 
+    // Single source of truth for the unread notification count. Watching it here:
+    //  (a) instantiates the notifications provider at app start, so its notifier keeps
+    //      the OS app-icon badge in sync (it sets the badge on every emission), and
+    //  (b) drives the Profile bottom-nav badge below.
+    // The profile app-bar bell reads the SAME provider, so app icon = Profile tab =
+    // bell — one number, traceable end to end.
+    final notifBadge = ref.watch(unreadNotificationCountProvider);
+
     final chatBadge = ref.watch(totalUnreadChatCountProvider);
 
     final List<DSNavigationItem> items;
@@ -35,7 +43,6 @@ class MainShell extends ConsumerWidget {
     if (role == MusicianRole.dj) {
       final jobsBadge = ref.watch(djQuoteActionCountProvider);
       final udvalgteBadge = ref.watch(djExtJobActionCountProvider);
-      final adminBadge = ref.watch(unreadAdminMessageCountProvider(true));
       items = [
         DSNavigationItem(
           label: 'Jobs',
@@ -59,12 +66,11 @@ class MainShell extends ConsumerWidget {
           label: 'Profil',
           icon: LucideIcons.user,
           activeIcon: LucideIcons.user,
-          badgeCount: adminBadge,
+          badgeCount: notifBadge,
         ),
       ];
     } else {
       final actionBadge = ref.watch(musicianWonActionCountProvider);
-      final adminBadge = ref.watch(unreadAdminMessageCountProvider(false));
       items = [
         DSNavigationItem(
           label: 'Jobs',
@@ -82,7 +88,7 @@ class MainShell extends ConsumerWidget {
           label: 'Profil',
           icon: LucideIcons.user,
           activeIcon: LucideIcons.user,
-          badgeCount: adminBadge,
+          badgeCount: notifBadge,
         ),
       ];
     }
@@ -91,8 +97,11 @@ class MainShell extends ConsumerWidget {
       body: navigationShell,
       bottomNavigationBar: DSNavigationBar(
         selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) =>
-            navigationShell.goBranch(index, initialLocation: index == navigationShell.currentIndex),
+        onDestinationSelected:
+            (index) => navigationShell.goBranch(
+              index,
+              initialLocation: index == navigationShell.currentIndex,
+            ),
         items: items,
       ),
     );

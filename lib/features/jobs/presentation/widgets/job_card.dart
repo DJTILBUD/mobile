@@ -29,7 +29,12 @@ class JobCard extends StatelessWidget {
     return switch (saxType) {
       'lounge' => 'Lounge-sax',
       'party' => 'Party-sax',
-      _ => '${saxType[0].toUpperCase()}${saxType.substring(1)}',
+      // Guard the empty string: `sax_type` can be '' (not null) in the DB, and ''[0] throws a
+      // RangeError that crashed the whole jobs list in production.
+      _ =>
+        saxType.isEmpty
+            ? 'Sax'
+            : '${saxType[0].toUpperCase()}${saxType.substring(1)}',
     };
   }
 
@@ -228,7 +233,9 @@ class JobCard extends StatelessWidget {
                                     label: 'Højsæson',
                                     color: c.state.info,
                                   ),
-                                if (isMusicianView && job.saxType != null)
+                                if (isMusicianView &&
+                                    job.saxType != null &&
+                                    job.saxType!.isNotEmpty)
                                   DSStatusBadge(
                                     label: _saxTypeLabel(job.saxType!),
                                     color:

@@ -50,12 +50,14 @@ import 'package:dj_tilbud_app/features/profile/presentation/screens/payment_scre
 import 'package:dj_tilbud_app/features/profile/presentation/screens/profile_preview_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/admin_messages_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/feedback_screen.dart';
+import 'package:dj_tilbud_app/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/faq_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/terms_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/notification_settings_screen.dart';
 import 'package:dj_tilbud_app/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:dj_tilbud_app/core/widgets/dev_env_banner.dart';
 import 'package:dj_tilbud_app/core/notifications/in_app_notification_banner.dart';
+import 'package:dj_tilbud_app/core/notifications/app_badge.dart';
 import 'package:dj_tilbud_app/core/notifications/in_app_notification_provider.dart';
 import 'package:dj_tilbud_app/features/app_config/presentation/widgets/update_gate.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -134,6 +136,9 @@ class _AuthNotifier extends ChangeNotifier {
       if (event.event == AuthChangeEvent.signedOut) {
         RoleCache.clear();
         _onboardingNotifier.reset();
+        setAppIconBadge(
+          0,
+        ); // don't leave the previous user's unread count on the icon
       }
       notifyListeners();
     });
@@ -488,11 +493,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/admin-support-thread',
         name: AppRoutes.adminSupportThread,
         builder: (context, state) {
-          final thread = state.extra;
-          if (thread is! AdminSupportThread) {
-            return const _MissingRouteDataScreen(label: 'support-samtale');
+          final extra = state.extra;
+          if (extra is AdminSupportThreadArgs) {
+            return AdminSupportThreadScreen(
+              thread: extra.thread,
+              initialMessageId: extra.initialMessageId,
+            );
           }
-          return AdminSupportThreadScreen(thread: thread);
+          if (extra is AdminSupportThread) {
+            return AdminSupportThreadScreen(thread: extra);
+          }
+          return const _MissingRouteDataScreen(label: 'support-samtale');
         },
       ),
 
@@ -609,6 +620,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/feedback',
         name: AppRoutes.feedback,
         builder: (context, state) => const FeedbackScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        name: AppRoutes.notifications,
+        builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
         path: '/faq',

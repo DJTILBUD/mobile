@@ -598,7 +598,7 @@ class JobsRemoteDatasource {
   Future<void> addExtraHours(
     int quoteId, {
     required double extraHours,
-    required int pricePerHour,
+    required num pricePerHour,
     required int newTotalPrice,
   }) async {
     await _webApiPatch(
@@ -630,7 +630,7 @@ class JobsRemoteDatasource {
   Future<void> addExtJobExtraHours(
     int extJobId, {
     required double extraHours,
-    required int pricePerHour,
+    required num pricePerHour,
     required int newTotalPrice,
   }) async {
     await _webApiPatch(

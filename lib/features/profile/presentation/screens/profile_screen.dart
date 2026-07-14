@@ -17,6 +17,7 @@ import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_pr
 import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_reminder_provider.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/widgets/song_request_qr_dialog.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:dj_tilbud_app/features/notifications/presentation/widgets/notification_bell.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key, required this.role});
@@ -129,16 +130,16 @@ class ProfileScreen extends ConsumerWidget {
         ),
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
-        actions: [
-          IconButton(
-            icon: Icon(
-              isDark ? LucideIcons.sun : LucideIcons.moon,
-              color: _c.text.secondary,
-              size: 20,
-            ),
-            onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
+        leading: IconButton(
+          icon: Icon(
+            isDark ? LucideIcons.sun : LucideIcons.moon,
+            color: _c.text.secondary,
+            size: 20,
           ),
-        ],
+          tooltip: isDark ? 'Lyst tema' : 'Mørkt tema',
+          onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
+        ),
+        actions: const [NotificationBell()],
       ),
       floatingActionButton:
           coachContext.valueOrNull != null

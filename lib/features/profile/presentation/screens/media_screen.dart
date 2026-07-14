@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -88,9 +89,9 @@ class MediaScreen extends ConsumerWidget {
               const SizedBox(height: DSSpacing.s6),
               _MediaSection(
                 title: 'Performance videoer',
-                subtitle: 'Op til 4 klip (maks 10 sek. hver)',
+                subtitle: 'Op til 6 klip (maks 10 sek. hver)',
                 files: commonVideos,
-                maxCount: 4,
+                maxCount: 6,
                 fileType: UserFileType.commonVideo,
                 isVideo: true,
                 thumbnails: thumbnails,
@@ -296,10 +297,10 @@ class _MediaTile extends StatelessWidget {
                       ? Stack(
                         fit: StackFit.expand,
                         children: [
-                          Image.network(
-                            thumbnailUrl!,
+                          CachedNetworkImage(
+                            imageUrl: thumbnailUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder:
+                            errorWidget:
                                 (_, __, ___) => Center(
                                   child: Icon(
                                     LucideIcons.video,
@@ -331,10 +332,10 @@ class _MediaTile extends StatelessWidget {
                           color: _c.text.secondary,
                         ),
                       )
-                  : Image.network(
-                    file.url,
+                  : CachedNetworkImage(
+                    imageUrl: file.url,
                     fit: BoxFit.cover,
-                    errorBuilder:
+                    errorWidget:
                         (_, __, ___) => Center(
                           child: Icon(
                             LucideIcons.imageOff,
@@ -464,7 +465,14 @@ class _MixesSectionState extends ConsumerState<_MixesSection> {
   int? _deletingFileId;
 
   Future<void> _pickAndUpload() async {
-    final result = await FilePicker.pickFiles(type: FileType.audio);
+    // Use the document picker (FileType.custom) rather than FileType.audio: on iOS FileType.audio
+    // opens the media LIBRARY, which HARD-CRASHES the app when Info.plist has no
+    // NSAppleMusicUsageDescription. Picking by extension goes through the Files app instead — no
+    // media-library permission needed — and matches the formats we advertise (mp3, m4a, wav).
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['mp3', 'm4a', 'wav', 'aac'],
+    );
     final picked = result?.files.single;
     if (picked == null || picked.path == null) return;
 
