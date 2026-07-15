@@ -19,6 +19,7 @@ import 'package:dj_tilbud_app/shared/widgets/copy_hint_row.dart';
 import 'package:dj_tilbud_app/shared/widgets/chat_bubble_fab.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/event_address_section.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
 String _fmt(num n) =>
     NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
@@ -102,6 +103,11 @@ class _ServiceOfferDetailScreenState
                     .read(markServiceOfferContactedProvider.notifier)
                     .markContacted(widget.offer.id);
                 if (mounted && success) {
+                  AnalyticsService.logCustomerContacted(
+                    widget.offer.job.id,
+                    role: 'musician',
+                    isExtJob: widget.offer.isExtJob,
+                  );
                   setState(() {
                     _customerContacted = true;
                     _customerContactPlannedFor = null;
@@ -125,6 +131,12 @@ class _ServiceOfferDetailScreenState
                     .read(setServiceOfferPlannedContactProvider.notifier)
                     .setPlanned(widget.offer.id, date);
                 if (mounted && success) {
+                  AnalyticsService.logCustomerContacted(
+                    widget.offer.job.id,
+                    role: 'musician',
+                    isExtJob: widget.offer.isExtJob,
+                    planned: true,
+                  );
                   setState(
                     () => _customerContactPlannedFor = DateTime.parse(date),
                   );
@@ -327,6 +339,9 @@ class _ServiceOfferDetailScreenState
                   leadName: offer.job.leadName!,
                   role: 'saxofonist',
                   performerName: musicianName,
+                  // Works for ext jobs too: ExtJobModel.toJobModel maps
+                  // phone_number -> leadPhoneNumber on the derived Job.
+                  phoneNumber: offer.job.leadPhoneNumber,
                 ),
                 const SizedBox(height: DSSpacing.s3),
               ],
@@ -336,7 +351,7 @@ class _ServiceOfferDetailScreenState
                 label:
                     _customerContactPlannedFor != null
                         ? 'Ændr kontaktdato'
-                        : 'Kontakt kunden',
+                        : 'Kunde kontaktet',
                 variant:
                     _customerContactPlannedFor != null
                         ? DSButtonVariant.secondary

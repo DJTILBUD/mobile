@@ -232,4 +232,23 @@ enum JobStatus {
       _ => JobStatus.open,
     };
   }
+
+  /// The value as stored in Postgres. Inverse of [fromString].
+  ///
+  /// Use this, never `.name`, for anything that leaves the app (analytics, the
+  /// API): `.name` yields the Dart camelCase (`customerContacted`) while the DB,
+  /// the web-app and every other system use `customer_contacted`, so `.name`
+  /// values cannot be joined without a translation table.
+  String get dbValue => switch (this) {
+    JobStatus.open => 'open',
+    JobStatus.sent => 'sent',
+    JobStatus.closed => 'closed',
+    JobStatus.expired => 'expired',
+    JobStatus.reopened => 'reopened',
+    JobStatus.customerContacted => 'customer_contacted',
+    JobStatus.readyForBilling => 'ready_for_billing',
+    JobStatus.canceled => 'canceled',
+    JobStatus.anotherRound => 'another_round',
+    JobStatus.reSent => 're_sent',
+  };
 }

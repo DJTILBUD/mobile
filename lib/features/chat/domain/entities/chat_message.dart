@@ -12,6 +12,7 @@ class ChatMessage {
     this.senderAvatarUrl,
     this.replyToId,
     this.attachmentUrl,
+    this.editedAt,
   });
 
   final int id;
@@ -33,7 +34,14 @@ class ChatMessage {
   /// The message this one replies to (resolved from the loaded message list); null if not a reply.
   final int? replyToId;
 
+  /// When the sender last rewrote the text; null if never edited. Stamped by the DB
+  /// (guard_chat_message_update), never by a client, so it cannot be faked.
+  final DateTime? editedAt;
+
   bool get isRead => readAt != null;
+
+  /// Drives the "Redigeret" marker on the bubble.
+  bool get isEdited => editedAt != null;
 
   /// True for a reply from the DJTILBUD team on a support conversation.
   bool get isAdmin => senderType == 'admin';

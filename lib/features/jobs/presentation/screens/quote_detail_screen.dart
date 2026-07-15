@@ -20,6 +20,8 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/job_content_sec
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/sick_disclaimer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/copy_intro_message_card.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
+import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -236,16 +238,22 @@ class _TopStatusRow extends StatelessWidget {
 
 // ─── Job Hero Card ────────────────────────────────────────────────────────────
 
-class _JobHeroCard extends StatelessWidget {
+class _JobHeroCard extends ConsumerWidget {
   const _JobHeroCard({required this.quote});
 
   final DjQuote quote;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final _c = DSTheme.of(context);
     final job = quote.job;
     final dateStr = DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);
+    // The DJ-facing budget is tier- and sax-adjusted. The web-app renders this
+    // card's equivalent (dj/jobs/[id]/_components/JobInfo) on the won-quote page
+    // too, so the won view must show the SAME adjusted figure as the bidding
+    // view — never the raw customer budget.
+    final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
+    final budgetLabel = djAdjustedBudgetLabel(job, djTier);
 
     final hasExtra =
         (job.genres != null && job.genres!.isNotEmpty) ||
@@ -297,9 +305,9 @@ class _JobHeroCard extends StatelessWidget {
               label: '${job.guestsAmount} gæster',
             ),
           ],
-          if (job.budgetDisplay != 'Ikke angivet') ...[
+          if (budgetLabel != null) ...[
             const SizedBox(height: DSSpacing.s2),
-            _MetaRow(icon: LucideIcons.banknote, label: job.budgetDisplay),
+            _MetaRow(icon: LucideIcons.banknote, label: budgetLabel),
           ],
 
           if (hasExtra) ...[
@@ -884,6 +892,7 @@ class _WonSectionState extends ConsumerState<_WonSection> {
                     .read(markJobContactedProvider.notifier)
                     .markContacted(jobId);
                 if (mounted && success) {
+                  AnalyticsService.logCustomerContacted(jobId, role: 'dj');
                   DSToast.show(
                     context,
                     variant: DSToastVariant.success,
@@ -903,6 +912,11 @@ class _WonSectionState extends ConsumerState<_WonSection> {
                     .read(setJobPlannedContactProvider.notifier)
                     .setPlanned(jobId, date);
                 if (mounted && success) {
+                  AnalyticsService.logCustomerContacted(
+                    jobId,
+                    role: 'dj',
+                    planned: true,
+                  );
                   DSToast.show(
                     context,
                     variant: DSToastVariant.success,
@@ -1068,6 +1082,7 @@ class _WonSectionState extends ConsumerState<_WonSection> {
         .markReady(jobId);
     if (!mounted) return;
     if (success) {
+      AnalyticsService.logReadyForBilling(jobId, role: 'dj');
       DSToast.show(
         context,
         variant: DSToastVariant.success,
@@ -1239,6 +1254,7 @@ class _WonSectionState extends ConsumerState<_WonSection> {
                       leadName: job.leadName!,
                       role: 'DJ',
                       performerName: djName,
+                      phoneNumber: job.leadPhoneNumber,
                     ),
                     const SizedBox(height: DSSpacing.s3),
                   ],
@@ -1248,7 +1264,7 @@ class _WonSectionState extends ConsumerState<_WonSection> {
                     label:
                         job.customerContactPlannedFor != null
                             ? 'Ændr kontaktdato'
-                            : 'Kontakt kunden',
+                            : 'Kunde kontaktet',
                     variant:
                         job.customerContactPlannedFor != null
                             ? DSButtonVariant.secondary

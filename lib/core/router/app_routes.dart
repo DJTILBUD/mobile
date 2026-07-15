@@ -16,6 +16,7 @@ abstract class AppRoutes {
   static const designSystem = 'design-system';
   static const editProfile = 'edit-profile';
   static const reviews = 'reviews';
+  static const stats = 'stats';
   static const media = 'media';
   static const myContent = 'my-content';
   static const standardMessages = 'standard-messages';

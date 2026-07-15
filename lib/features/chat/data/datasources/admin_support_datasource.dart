@@ -41,6 +41,7 @@ class AdminSupportThread {
     this.lastMessageAt,
     this.lastMessageIsSystem = false,
     this.unreadCount = 0,
+    this.handled = true,
     this.matches = const [],
     this.matchCount = 0,
   });
@@ -55,6 +56,12 @@ class AdminSupportThread {
   final bool lastMessageIsSystem;
   final int unreadCount;
 
+  /// Team-wide "does this still need an answer?". Separate from [unreadCount], which only says
+  /// whether anyone has LOOKED and is cleared for the whole team by the first admin who opens it.
+  /// Set by an admin reply (DB trigger) or the manual toggle; cleared by any new user message.
+  /// Defaults to true so an older API response (no field) never shows a false "needs handling".
+  final bool handled;
+
   /// Search hits in this thread's messages (only populated when searching). Capped server-side;
   /// [matchCount] is the full number.
   final List<SupportMatch> matches;
@@ -62,19 +69,24 @@ class AdminSupportThread {
 
   bool get hasUnread => unreadCount > 0;
 
-  AdminSupportThread copyWith({int? unreadCount}) => AdminSupportThread(
-    id: id,
-    userName: userName,
-    userId: userId,
-    userRole: userRole,
-    userAvatarUrl: userAvatarUrl,
-    lastMessage: lastMessage,
-    lastMessageAt: lastMessageAt,
-    lastMessageIsSystem: lastMessageIsSystem,
-    unreadCount: unreadCount ?? this.unreadCount,
-    matches: matches,
-    matchCount: matchCount,
-  );
+  /// What the Support tab badge counts, mirroring the admin tool's sidebar.
+  bool get needsHandling => !handled;
+
+  AdminSupportThread copyWith({int? unreadCount, bool? handled}) =>
+      AdminSupportThread(
+        id: id,
+        userName: userName,
+        userId: userId,
+        userRole: userRole,
+        userAvatarUrl: userAvatarUrl,
+        lastMessage: lastMessage,
+        lastMessageAt: lastMessageAt,
+        lastMessageIsSystem: lastMessageIsSystem,
+        unreadCount: unreadCount ?? this.unreadCount,
+        handled: handled ?? this.handled,
+        matches: matches,
+        matchCount: matchCount,
+      );
 
   factory AdminSupportThread.fromJson(Map<String, dynamic> json) {
     return AdminSupportThread(
@@ -87,6 +99,7 @@ class AdminSupportThread {
       lastMessageAt: json['last_message_at'] as String?,
       lastMessageIsSystem: json['last_message_is_system'] as bool? ?? false,
       unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
+      handled: json['handled'] as bool? ?? true,
       matches:
           ((json['matches'] as List?) ?? const [])
               .map((m) => SupportMatch.fromJson(m as Map<String, dynamic>))
@@ -179,6 +192,24 @@ class AdminSupportDatasource {
     Map<String, dynamic> body,
   ) async {
     final response = await http.post(
+      Uri.parse('$_webAppBaseUrl$path'),
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(body),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw DatabaseException(_extractMessage(response.body));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> _patch(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    final response = await http.patch(
       Uri.parse('$_webAppBaseUrl$path'),
       headers: {
         'Authorization': 'Bearer $_accessToken',
@@ -298,6 +329,48 @@ class AdminSupportDatasource {
       return e.message;
     } catch (_) {
       return 'Noget gik galt. Prøv igen.';
+    }
+  }
+
+  /// Marks a support thread handled / unhandled. Returns null on success, or a Danish error.
+  ///
+  /// Handled is TEAM-WIDE ("does this still need an answer?"), separate from read state (which only
+  /// says whether anyone has looked, and clears for everyone the moment one admin opens the thread).
+  /// Replying already marks a thread handled via a DB trigger, and any new musician message re-opens
+  /// it — this is only the manual override. Mirrors the admin tool's toggle.
+  Future<String?> setHandled(int conversationId, bool handled) async {
+    try {
+      await _post('/api/chat/support/admin/$conversationId/handled', {
+        'handled': handled,
+      });
+      return null;
+    } on DatabaseException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Kunne ikke opdatere status. Prøv igen.';
+    }
+  }
+
+  /// Edits an ADMIN message in a support thread. Returns null on success, or a Danish error.
+  ///
+  /// Routes through the web-app API (the mobile app talks to the web-app, not the admin tool), which
+  /// scopes the update to `sender_type='admin'` — an admin can never rewrite the musician's own
+  /// words, even though that route runs on the service role. `edited_at` is stamped by the DB.
+  Future<String?> editMessage(
+    int conversationId,
+    int messageId,
+    String message,
+  ) async {
+    try {
+      await _patch(
+        '/api/chat/support/admin/$conversationId/messages/$messageId',
+        {'message': message},
+      );
+      return null;
+    } on DatabaseException catch (e) {
+      return e.message;
+    } catch (_) {
+      return 'Beskeden kunne ikke redigeres. Prøv igen.';
     }
   }
 

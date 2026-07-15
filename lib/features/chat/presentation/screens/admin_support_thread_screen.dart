@@ -12,6 +12,7 @@ import 'package:dj_tilbud_app/features/chat/domain/entities/chat_message.dart';
 import 'package:dj_tilbud_app/features/chat/domain/entities/job_link.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/admin_support_provider.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/widgets/chat_message_input.dart';
+import 'package:dj_tilbud_app/shared/widgets/conversation_avatar.dart';
 
 const _kQuickReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -47,6 +48,9 @@ class _AdminSupportThreadScreenState
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   bool _sending = false;
+
+  /// The admin message being edited; the composer rewrites it instead of sending.
+  ChatMessage? _editing;
   XFile? _pendingImage;
 
   // Composer "@" job picker: the active query + the index of its "@".
@@ -184,6 +188,32 @@ class _AdminSupportThreadScreenState
   Future<void> _send() async {
     final text = _controller.text.trim();
     final image = _pendingImage;
+
+    // Edit mode: rewrite instead of sending. Text-only (the DB pins attachment_url), so an
+    // empty text is a no-op rather than a delete.
+    final editing = _editing;
+    if (editing != null) {
+      if (text.isEmpty || _sending) return;
+      setState(() => _sending = true);
+      final err = await ref
+          .read(adminThreadMessagesProvider(_conversationId).notifier)
+          .editMessage(messageId: editing.id, message: text);
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        if (err == null) {
+          _editing = null;
+          _controller.clear();
+        }
+      });
+      if (err != null && mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(err)));
+      }
+      return;
+    }
+
     if ((text.isEmpty && image == null) || _sending) return;
     setState(() => _sending = true);
 
@@ -300,6 +330,24 @@ class _AdminSupportThreadScreenState
     );
   }
 
+  /// Puts the composer into edit mode, seeded with the existing text.
+  void _startEdit(ChatMessage msg) {
+    setState(() {
+      _editing = msg;
+      _controller.text = msg.message;
+      _controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: _controller.text.length),
+      );
+    });
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editing = null;
+      _controller.clear();
+    });
+  }
+
   void _copyMessage(ChatMessage msg) {
     Clipboard.setData(ClipboardData(text: msg.message));
     HapticFeedback.selectionClick();
@@ -360,6 +408,25 @@ class _AdminSupportThreadScreenState
                     onTap: () {
                       Navigator.of(ctx).pop();
                       _copyMessage(msg);
+                    },
+                  ),
+                ],
+                // Admin messages only. The DJTILBUD side is one shared voice, so any admin may
+                // edit any admin reply — but never the musician's own words (the web-app route
+                // scopes the update to sender_type='admin').
+                if (msg.isAdmin &&
+                    !msg.isSystemMessage &&
+                    msg.message.isNotEmpty) ...[
+                  Divider(height: 1, color: _c.border.subtle),
+                  ListTile(
+                    leading: Icon(
+                      Icons.edit_outlined,
+                      color: _c.text.secondary,
+                    ),
+                    title: const Text('Rediger besked'),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      _startEdit(msg);
                     },
                   ),
                 ],
@@ -443,29 +510,71 @@ class _AdminSupportThreadScreenState
               : AppBar(
                 backgroundColor: _c.bg.surface,
                 surfaceTintColor: _c.bg.surface,
+                // Tighter leading so the avatar sits close to the back chevron rather than being
+                // pushed in by the default 16pt title gap.
+                titleSpacing: 0,
                 title: Row(
                   children: [
+                    // The person you're writing with. Same widget (and so the same image/initials
+                    // fallback) as the conversation list, so one person reads identically in both.
+                    ConversationAvatar(
+                      name: widget.thread.userName,
+                      imageUrl: widget.thread.userAvatarUrl,
+                      size: 36,
+                    ),
+                    const SizedBox(width: DSSpacing.s3),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             widget.thread.userName,
                             style: DSTextStyle.headingSm.copyWith(
                               color: _c.text.primary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
-                            'Support',
-                            style: DSTextStyle.bodySm.copyWith(
-                              color: _c.text.muted,
-                            ),
+                          // Subtitle doubles as the status line: inside the thread there is no
+                          // row tint to lean on, so say it. Reads live off the threads list, so
+                          // replying (which handles it via the DB trigger) clears it without
+                          // leaving the screen.
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final live =
+                                  ref
+                                      .watch(adminSupportThreadsProvider)
+                                      .valueOrNull
+                                      ?.where((t) => t.id == _conversationId)
+                                      .firstOrNull;
+                              final needsHandling =
+                                  !(live?.handled ?? widget.thread.handled);
+                              return Text(
+                                needsHandling
+                                    ? 'Support · Mangler svar'
+                                    : 'Support',
+                                style: DSTextStyle.bodySm.copyWith(
+                                  color:
+                                      needsHandling
+                                          ? _c.state.warning
+                                          : _c.text.muted,
+                                  fontWeight:
+                                      needsHandling
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
+                // No handled toggle here: it lives in the conversation's long-press menu on the
+                // Support list, above "Marker som ulæst/læst".
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.search),
@@ -556,6 +665,48 @@ class _AdminSupportThreadScreenState
                 ],
               ),
             ),
+          if (_editing != null)
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                DSSpacing.s4,
+                DSSpacing.s2,
+                DSSpacing.s2,
+                0,
+              ),
+              child: Row(
+                children: [
+                  Container(width: 3, height: 32, color: _c.state.warning),
+                  const SizedBox(width: DSSpacing.s2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Redigerer besked',
+                          style: DSTextStyle.labelSm.copyWith(
+                            color: _c.text.secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          _editing!.message,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DSTextStyle.bodySm.copyWith(
+                            color: _c.text.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 18, color: _c.text.muted),
+                    onPressed: _cancelEdit,
+                  ),
+                ],
+              ),
+            ),
           ChatMessageInput(
             controller: _controller,
             focusNode: _focusNode,
@@ -563,7 +714,7 @@ class _AdminSupportThreadScreenState
             onSend: _send,
             onAttach: _pickImage,
             onChanged: (_) => _onComposerChanged(),
-            hint: 'Svar som DJTILBUD…',
+            hint: _editing != null ? 'Rediger besked…' : 'Svar som DJTILBUD…',
           ),
         ],
       ),
@@ -721,6 +872,21 @@ class _Bubble extends StatelessWidget {
                     baseStyle: DSTextStyle.bodyMd.copyWith(color: fg),
                     jobLinks: jobLinks,
                     highlight: searchTerm,
+                  ),
+                // "Redigeret" marker, mirroring the musician-side bubble in
+                // conversation_detail_screen (the two bubble widgets are independent, so this has
+                // to be kept in sync by hand). edited_at is DB-stamped, so it cannot be hidden.
+                if (message.isEdited)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Redigeret',
+                      textAlign: TextAlign.right,
+                      style: DSTextStyle.labelSm.copyWith(
+                        fontSize: 10,
+                        color: fg.withValues(alpha: 0.7),
+                      ),
+                    ),
                   ),
               ],
             ),

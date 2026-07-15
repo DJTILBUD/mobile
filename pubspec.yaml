@@ -1,7 +1,7 @@
 name: dj_tilbud_app
 description: "DJTilbud - Musician mobile app"
 publish_to: 'none'
-version: 1.0.32+58
+version: 1.0.33+59
 environment:
   sdk: ^3.7.2
 

@@ -233,17 +233,33 @@ class NotificationsService {
   }
 
   /// Public entry-point used by the in-app notification banner on tap.
+  /// [source] distinguishes a real push tap from a foreground banner tap and
+  /// from re-opening a historical row in the in-app notification centre. All
+  /// three land here, so without it the feed's re-tappable rows inflate the push
+  /// open rate — the metric the platform treats as canonical.
+  ///
+  /// NOTE: this only reaches GA4. The `NotificationLogs` insert below cannot
+  /// carry it without a new column (a backend change), so the admin dashboard's
+  /// open rate still conflates the three.
   static Future<void> navigateTo(
     Map<String, dynamic> data,
     GoRouter router, {
     bool keepCurrentStack = false,
+    String source = 'push',
   }) async {
     final type = data['type'] as String?;
     final role = data['role'] as String?;
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return;
 
-    AnalyticsService.logNotificationTapped(type ?? 'unknown', role: role);
+    // campaignAwareLogType, matching the NotificationLogs insert directly below.
+    // These two used to disagree: the raw type here meant GA4 attributed a
+    // second-wave campaign's opens to the plain new_job/new_ext_job type.
+    AnalyticsService.logNotificationTapped(
+      campaignAwareLogType(data, 'tapped'),
+      source: source,
+      role: role,
+    );
     unawaited(
       supabase
           .from('NotificationLogs')
@@ -282,9 +298,17 @@ class NotificationsService {
             final job = JobModel.fromJson(json).toEntity();
             goTab(homeTab);
             if (role == 'musician') {
-              router.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
+              router.pushNamed(
+                AppRoutes.instrumentalistOfferForm,
+                extra: job,
+                queryParameters: const {'source': 'notification'},
+              );
             } else {
-              router.pushNamed(AppRoutes.djQuoteForm, extra: job);
+              router.pushNamed(
+                AppRoutes.djQuoteForm,
+                extra: job,
+                queryParameters: const {'source': 'notification'},
+              );
             }
           } else {
             goTab(homeTab);
@@ -382,7 +406,11 @@ class NotificationsService {
                     .single();
             final job = ExtJobModel.fromJson(json).toJobEntity();
             goTab('/instrumentalist/home');
-            router.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
+            router.pushNamed(
+              AppRoutes.instrumentalistOfferForm,
+              extra: job,
+              queryParameters: const {'source': 'notification'},
+            );
           } else {
             goTab('/instrumentalist/home');
           }

@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/notifications/notifications_service.dart';
 import 'package:dj_tilbud_app/features/notifications/domain/entities/app_notification.dart';
 import 'package:dj_tilbud_app/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -18,6 +19,12 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   bool _unreadOnly = false;
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.logNotificationCentreOpened();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -240,6 +247,9 @@ class _NotificationTile extends ConsumerWidget {
       notification.data,
       router,
       keepCurrentStack: true,
+      // Not a push tap: this is a historical row being re-opened, and it stays
+      // re-tappable forever. Tagging it keeps it out of the push open rate.
+      source: 'in_app_feed',
     );
   }
 

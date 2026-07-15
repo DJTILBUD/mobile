@@ -1,10 +1,12 @@
-New: Notification Center 🔔
+New: Message your customer in one tap 💬
 
-All your notifications are now collected in one place, so you never miss a new job, a message, or an accepted offer.
+We write the intro message for you, so you can reach out within 24 hours without spending time on the wording.
 
-• Tap the bell at the top of your Profile to see every notification you've received
-• Tap a notification to jump straight to the job, chat, or offer it's about
-• The unread count shows on the app icon, the Profile tab, and the bell
-• Swipe to mark as read — or mark all read in one tap
+• Tap "Send besked" on a won job and your messaging app opens with the customer's number and the full text ready to send
+• Prefer mail or WhatsApp? The text can still be copied in one tap
+• You can now edit a message you've already sent. It's clearly marked "Redigeret"
+• A job's budget now reads the same everywhere, in both the list and the calendar
 
 Plus minor bug fixes and improvements.
+
+What to test: on a REAL device (the Simulator cannot open Messages), open a won job, tap "Send besked", and confirm the composer opens with both the customer's number and the message prefilled.

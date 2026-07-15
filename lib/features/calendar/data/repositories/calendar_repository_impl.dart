@@ -11,7 +11,10 @@ class CalendarRepositoryImpl implements CalendarRepository {
   final CalendarRemoteDatasource _datasource;
 
   @override
-  Future<List<CalendarEvent>> fetchDjEvents(String userId) async {
+  Future<List<CalendarEvent>> fetchDjEvents(
+    String userId, {
+    String? djTier,
+  }) async {
     try {
       final quotesData = await _datasource.fetchDjWonQuotes(userId);
       final extJobsData = await _datasource.fetchDjAssignedExtJobs(userId);
@@ -20,7 +23,9 @@ class CalendarRepositoryImpl implements CalendarRepository {
 
       for (final row in quotesData) {
         if (row['job'] != null) {
-          events.add(CalendarEventModel.fromDjQuoteJson(row).toEntity());
+          events.add(
+            CalendarEventModel.fromDjQuoteJson(row, djTier: djTier).toEntity(),
+          );
         }
       }
       for (final row in extJobsData) {
@@ -37,23 +42,25 @@ class CalendarRepositoryImpl implements CalendarRepository {
   @override
   Future<List<CalendarEvent>> fetchMusicianEvents(String userId) async {
     try {
-      final jobOffersData =
-          await _datasource.fetchMusicianWonJobOffers(userId);
-      final extJobOffersData =
-          await _datasource.fetchMusicianWonExtJobOffers(userId);
+      final jobOffersData = await _datasource.fetchMusicianWonJobOffers(userId);
+      final extJobOffersData = await _datasource.fetchMusicianWonExtJobOffers(
+        userId,
+      );
 
       final events = <CalendarEvent>[];
 
       for (final row in jobOffersData) {
         if (row['job'] != null) {
-          events
-              .add(CalendarEventModel.fromMusicianJobOfferJson(row).toEntity());
+          events.add(
+            CalendarEventModel.fromMusicianJobOfferJson(row).toEntity(),
+          );
         }
       }
       for (final row in extJobOffersData) {
         if (row['ext_job'] != null) {
           events.add(
-              CalendarEventModel.fromMusicianExtJobOfferJson(row).toEntity());
+            CalendarEventModel.fromMusicianExtJobOfferJson(row).toEntity(),
+          );
         }
       }
 
@@ -70,7 +77,7 @@ class CalendarRepositoryImpl implements CalendarRepository {
       final rows = await _datasource.fetchDjUnavailableDates(userId);
       return {
         for (final row in rows)
-          (row['unavailable_date'] as String): (row['id'] as num).toInt()
+          (row['unavailable_date'] as String): (row['id'] as num).toInt(),
       };
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
@@ -100,16 +107,25 @@ class CalendarRepositoryImpl implements CalendarRepository {
   Future<Map<String, int>> fetchMusicianUnavailableDates(String userId) async {
     try {
       final rows = await _datasource.fetchMusicianUnavailableDates(userId);
-      return {for (final row in rows) (row['unavailable_date'] as String): (row['id'] as num).toInt()};
+      return {
+        for (final row in rows)
+          (row['unavailable_date'] as String): (row['id'] as num).toInt(),
+      };
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
   }
 
   @override
-  Future<int> createMusicianUnavailableDate(String userId, String dateStr) async {
+  Future<int> createMusicianUnavailableDate(
+    String userId,
+    String dateStr,
+  ) async {
     try {
-      final row = await _datasource.createMusicianUnavailableDate(userId, dateStr);
+      final row = await _datasource.createMusicianUnavailableDate(
+        userId,
+        dateStr,
+      );
       return (row['id'] as num).toInt();
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);

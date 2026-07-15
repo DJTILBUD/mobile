@@ -35,10 +35,7 @@ class _InAppNotificationBannerState
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: DSMotion.slow,
-    );
+    _controller = AnimationController(vsync: this, duration: DSMotion.slow);
     _slide = Tween<Offset>(
       begin: const Offset(0, -1.2),
       end: Offset.zero,
@@ -84,7 +81,11 @@ class _InAppNotificationBannerState
     ref.read(inAppNotificationProvider.notifier).state = null;
     if (message != null) {
       final router = ref.read(routerProvider);
-      await NotificationsService.navigateTo(message.data, router);
+      await NotificationsService.navigateTo(
+        message.data,
+        router,
+        source: 'banner',
+      );
     }
   }
 
@@ -115,85 +116,88 @@ class _InAppNotificationBannerState
             child: FadeTransition(
               opacity: _fade,
               child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DSSpacing.s4,
-                vertical: DSSpacing.s2,
-              ),
-              child: GestureDetector(
-                onTap: _onTap,
-                onVerticalDragEnd: (details) {
-                  if ((details.primaryVelocity ?? 0) < -80) _dismiss();
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: c.bg.surface,
-                    borderRadius: BorderRadius.circular(DSRadius.lg),
-                    border: Border.all(color: c.border.subtle),
-                    boxShadow: DSShadow.md,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: DSSpacing.s3,
-                    vertical: DSSpacing.s3,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Type icon
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: _iconBg(c, type),
-                          borderRadius: BorderRadius.circular(DSRadius.md),
-                        ),
-                        child: Icon(
-                          _iconForType(type),
-                          size: 20,
-                          color: _iconFg(c, type),
-                        ),
-                      ),
-                      const SizedBox(width: DSSpacing.s3),
-                      // Title + body
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              title,
-                              style: DSTextStyle.labelLg
-                                  .copyWith(color: c.text.primary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (body != null && body.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                body,
-                                style: DSTextStyle.bodySm
-                                    .copyWith(color: c.text.secondary),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: DSSpacing.s2),
-                      // Dismiss button
-                      GestureDetector(
-                        onTap: _dismiss,
-                        behavior: HitTestBehavior.opaque,
-                        child: Padding(
-                          padding: const EdgeInsets.all(DSSpacing.s1),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DSSpacing.s4,
+                  vertical: DSSpacing.s2,
+                ),
+                child: GestureDetector(
+                  onTap: _onTap,
+                  onVerticalDragEnd: (details) {
+                    if ((details.primaryVelocity ?? 0) < -80) _dismiss();
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: c.bg.surface,
+                      borderRadius: BorderRadius.circular(DSRadius.lg),
+                      border: Border.all(color: c.border.subtle),
+                      boxShadow: DSShadow.md,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DSSpacing.s3,
+                      vertical: DSSpacing.s3,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Type icon
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: _iconBg(c, type),
+                            borderRadius: BorderRadius.circular(DSRadius.md),
+                          ),
                           child: Icon(
-                            LucideIcons.x,
-                            size: 16,
-                            color: c.text.muted,
+                            _iconForType(type),
+                            size: 20,
+                            color: _iconFg(c, type),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: DSSpacing.s3),
+                        // Title + body
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                style: DSTextStyle.labelLg.copyWith(
+                                  color: c.text.primary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (body != null && body.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  body,
+                                  style: DSTextStyle.bodySm.copyWith(
+                                    color: c.text.secondary,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: DSSpacing.s2),
+                        // Dismiss button
+                        GestureDetector(
+                          onTap: _dismiss,
+                          behavior: HitTestBehavior.opaque,
+                          child: Padding(
+                            padding: const EdgeInsets.all(DSSpacing.s1),
+                            child: Icon(
+                              LucideIcons.x,
+                              size: 16,
+                              color: c.text.muted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -201,54 +205,51 @@ class _InAppNotificationBannerState
           ),
         ),
       ),
-    ),
     );
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   IconData _iconForType(String type) => switch (type) {
-        'new_job' || 'another_round' => LucideIcons.listMusic,
-        'quote_won' || 'offer_won' => LucideIcons.checkCircle,
-        'quote_lost' || 'offer_lost' => LucideIcons.xCircle,
-        'chat_message' => LucideIcons.messageCircle,
-        'ext_job_assigned' => LucideIcons.star,
-        'ready_reminder' => LucideIcons.alarmClock,
-        _ => LucideIcons.bell,
-      };
+    'new_job' || 'another_round' => LucideIcons.listMusic,
+    'quote_won' || 'offer_won' => LucideIcons.checkCircle,
+    'quote_lost' || 'offer_lost' => LucideIcons.xCircle,
+    'chat_message' => LucideIcons.messageCircle,
+    'ext_job_assigned' => LucideIcons.star,
+    'ready_reminder' => LucideIcons.alarmClock,
+    _ => LucideIcons.bell,
+  };
 
   Color _iconBg(DSColors c, String type) => switch (type) {
-        'quote_won' || 'offer_won' =>
-          c.state.success.withValues(alpha: 0.15),
-        'quote_lost' || 'offer_lost' =>
-          c.state.danger.withValues(alpha: 0.12),
-        'chat_message' => c.brand.accent.withValues(alpha: 0.15),
-        'new_job' || 'another_round' || 'ext_job_assigned' =>
-          c.brand.primary.withValues(alpha: 0.35),
-        'ready_reminder' => c.state.warning.withValues(alpha: 0.20),
-        _ => c.bg.inputBg,
-      };
+    'quote_won' || 'offer_won' => c.state.success.withValues(alpha: 0.15),
+    'quote_lost' || 'offer_lost' => c.state.danger.withValues(alpha: 0.12),
+    'chat_message' => c.brand.accent.withValues(alpha: 0.15),
+    'new_job' ||
+    'another_round' ||
+    'ext_job_assigned' => c.brand.primary.withValues(alpha: 0.35),
+    'ready_reminder' => c.state.warning.withValues(alpha: 0.20),
+    _ => c.bg.inputBg,
+  };
 
   Color _iconFg(DSColors c, String type) => switch (type) {
-        'quote_won' || 'offer_won' => c.state.success,
-        'quote_lost' || 'offer_lost' => c.state.danger,
-        'chat_message' => c.brand.accent,
-        'new_job' || 'another_round' || 'ext_job_assigned' =>
-          c.brand.primaryActive,
-        'ready_reminder' => c.state.warning,
-        _ => c.text.secondary,
-      };
+    'quote_won' || 'offer_won' => c.state.success,
+    'quote_lost' || 'offer_lost' => c.state.danger,
+    'chat_message' => c.brand.accent,
+    'new_job' || 'another_round' || 'ext_job_assigned' => c.brand.primaryActive,
+    'ready_reminder' => c.state.warning,
+    _ => c.text.secondary,
+  };
 
   String _labelForType(String type) => switch (type) {
-        'new_job' => 'Ny opgave',
-        'another_round' => 'Ny runde',
-        'quote_won' => 'Tillykke! Tilbud vundet',
-        'quote_lost' => 'Tilbud ikke valgt',
-        'offer_won' => 'Tillykke! Tilbud vundet',
-        'offer_lost' => 'Tilbud ikke valgt',
-        'chat_message' => 'Ny besked',
-        'ext_job_assigned' => 'Ny opgave tildelt',
-        'ready_reminder' => 'Påmindelse',
-        _ => 'Notifikation',
-      };
+    'new_job' => 'Ny opgave',
+    'another_round' => 'Ny runde',
+    'quote_won' => 'Tillykke! Tilbud vundet',
+    'quote_lost' => 'Tilbud ikke valgt',
+    'offer_won' => 'Tillykke! Tilbud vundet',
+    'offer_lost' => 'Tilbud ikke valgt',
+    'chat_message' => 'Ny besked',
+    'ext_job_assigned' => 'Ny opgave tildelt',
+    'ready_reminder' => 'Påmindelse',
+    _ => 'Notifikation',
+  };
 }

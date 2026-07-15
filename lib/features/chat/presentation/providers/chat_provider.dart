@@ -291,6 +291,34 @@ class ConversationMessagesNotifier
     }
   }
 
+  /// Edits one of the current user's own messages. Returns null on success, or a Danish error.
+  ///
+  /// The DB is the guard (RLS + guard_chat_message_update), so this only has to report failure.
+  Future<String?> editMessage({
+    required int messageId,
+    required String senderId,
+    required String message,
+  }) async {
+    try {
+      final updated = await _repository.editMessage(
+        messageId: messageId,
+        senderId: senderId,
+        message: message,
+      );
+      // Swap the row in immediately rather than waiting on the realtime echo. The subscription
+      // listens to `all`, so the echo arrives too — replacing by id keeps that idempotent.
+      final current = state.valueOrNull;
+      if (current != null && mounted) {
+        state = AsyncData([
+          for (final m in current) m.id == updated.id ? updated : m,
+        ]);
+      }
+      return null;
+    } catch (e) {
+      return 'Beskeden kunne ikke redigeres. Prøv igen.';
+    }
+  }
+
   /// Uploads a chat image to S3 and returns its public URL (throws on failure).
   Future<String> uploadImage({
     required String userId,

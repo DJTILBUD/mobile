@@ -9,6 +9,7 @@ import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:dj_tilbud_app/app.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -97,6 +98,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       await RoleCache.save(role);
       await initOnboardingStatus();
 
+      AnalyticsService.logLoginSucceeded(
+        role: role == MusicianRole.dj ? 'dj' : 'musician',
+      );
+
       if (!mounted) return;
 
       switch (role) {
@@ -106,12 +111,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           context.goNamed(AppRoutes.instrumentalistHome);
       }
     } on NeedsProfileSetupException {
+      // Credentials were fine — the account just has no profile yet, so this is
+      // a successful login, not a failure.
+      AnalyticsService.logLoginSucceeded();
       if (!mounted) return;
       context.goNamed(AppRoutes.profileSetup);
     } on AppException catch (e) {
+      // A bounded slug, never the raw Danish message (unbounded cardinality).
+      AnalyticsService.logLoginFailed(reason: 'invalid_credentials');
       if (!mounted) return;
       setState(() => _errorMessage = e.message);
     } catch (e) {
+      AnalyticsService.logLoginFailed(reason: 'unexpected_error');
       debugPrint('Login error (${e.runtimeType}): $e');
       if (!mounted) return;
       setState(() => _errorMessage = 'Noget gik galt. Prøv igen senere.');

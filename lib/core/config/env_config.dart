@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// In debug builds: reads saved preference from SharedPreferences,
 /// falls back to dart-define ENV, falls back to 'local'.
-/// In release builds: always uses 'dev'.
+/// In release builds: always uses 'prod' (see [_resolveEnv]).
 class EnvConfig {
   const EnvConfig._();
 
@@ -32,6 +32,7 @@ class EnvConfig {
   }
 
   static String get env => dotenv.get('ENV', fallback: 'local');
+
   static String get supabaseUrl => dotenv.get('SUPABASE_URL');
   static String get supabaseAnonKey => dotenv.get('SUPABASE_ANON_KEY');
   static String get webAppUrl => dotenv.get('WEB_APP_URL');

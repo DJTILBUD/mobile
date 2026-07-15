@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
+import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_provider.dart';
@@ -64,9 +66,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required List<Job> newJobs,
     required List<CalendarEvent> sentEvents,
     required List<CalendarEvent> wonEvents,
+    required bool isDj,
+    required String? djTier,
   }) {
     return [
-      if (_showNew) ...newJobs.map(_jobToEvent),
+      if (_showNew)
+        ...newJobs.map(
+          (j) => _jobToEvent(
+            j,
+            // Same builders the job list uses, so a job's figure is identical
+            // in the list and here.
+            budgetDisplay:
+                isDj
+                    ? djAdjustedBudgetLabel(j, djTier)
+                    : musicianBudgetLabel(j),
+          ),
+        ),
       if (_showSent) ...sentEvents,
       if (_showWon) ...wonEvents,
     ];
@@ -84,9 +99,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ref.read(musicianUnavailableDatesProvider.notifier).toggle(dateStr);
       }
       if (wasUnavailable) {
-        AnalyticsService.logDateUnmarkedUnavailable();
+        AnalyticsService.logDateUnmarkedUnavailable(
+          role: isDj ? 'dj' : 'musician',
+          source: 'calendar',
+        );
       } else {
-        AnalyticsService.logDateMarkedUnavailable();
+        AnalyticsService.logDateMarkedUnavailable(
+          role: isDj ? 'dj' : 'musician',
+          source: 'calendar',
+        );
         ref.read(calendarReminderProvider.notifier).markHandled();
       }
     } else {
@@ -131,7 +152,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     switch (event.kind) {
       case CalendarEventKind.newJob:
         final job = jobById[event.jobId ?? event.id];
-        if (job != null) context.pushNamed(AppRoutes.djQuoteForm, extra: job);
+        if (job != null) {
+          context.pushNamed(
+            AppRoutes.djQuoteForm,
+            extra: job,
+            queryParameters: const {'source': 'calendar'},
+          );
+        }
       case CalendarEventKind.sent:
         final quote = pendingById[event.id];
         if (quote != null)
@@ -160,8 +187,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     switch (event.kind) {
       case CalendarEventKind.newJob:
         final job = jobById[event.id];
-        if (job != null)
-          context.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
+        if (job != null) {
+          context.pushNamed(
+            AppRoutes.instrumentalistOfferForm,
+            extra: job,
+            queryParameters: const {'source': 'calendar'},
+          );
+        }
       case CalendarEventKind.sent:
         final offer = sentById[event.id];
         if (offer != null)
@@ -187,6 +219,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final unavailableDays = unavailableMap.keys.toSet();
 
     // ── Data ──
+    // Drives the sax/tier-adjusted DJ budget label. Null for musicians, who use
+    // their own offer price instead.
+    final djTier = isDj ? ref.watch(djProfileProvider).valueOrNull?.tier : null;
+
     final newJobs =
         isDj
             ? (ref.watch(filteredDjJobsProvider).valueOrNull ?? <Job>[])
@@ -196,7 +232,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final sentEvents =
         isDj
             ? (ref.watch(pendingDjQuotesProvider).valueOrNull ?? <DjQuote>[])
-                .map(_quoteToEvent)
+                .map((q) => _quoteToEvent(q, djTier))
                 .toList()
             : (ref.watch(sentServiceOffersProvider).valueOrNull ??
                     <ServiceOffer>[])
@@ -257,6 +293,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       newJobs: newJobs,
       sentEvents: sentEvents,
       wonEvents: wonEvents,
+      isDj: isDj,
+      djTier: djTier,
     );
     final visibleEvents = _eventsForView(allEvents);
 
@@ -468,7 +506,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
 bool _isZeroTime(String t) => t.isEmpty || t.startsWith('00:00');
 
-CalendarEvent _jobToEvent(Job job) => CalendarEvent(
+/// [budgetDisplay] is passed in rather than read off the job, because the label
+/// is role-specific: a DJ sees the sax/tier-adjusted budget
+/// (`djAdjustedBudgetLabel`), a musician sees their own offer price. Never fall
+/// back to `job.budgetDisplay` here — that is the raw customer budget and would
+/// disagree with the job list.
+CalendarEvent _jobToEvent(Job job, {String? budgetDisplay}) => CalendarEvent(
   id: job.id,
   date: job.date,
   label: job.eventType,
@@ -479,11 +522,11 @@ CalendarEvent _jobToEvent(Job job) => CalendarEvent(
   location: job.city.isEmpty ? null : job.city,
   region: job.region.isEmpty ? null : job.region,
   guestsAmount: job.guestsAmount,
-  budgetDisplay: job.budgetDisplay == 'Ikke angivet' ? null : job.budgetDisplay,
+  budgetDisplay: budgetDisplay,
   jobId: job.id,
 );
 
-CalendarEvent _quoteToEvent(DjQuote quote) => CalendarEvent(
+CalendarEvent _quoteToEvent(DjQuote quote, String? djTier) => CalendarEvent(
   id: quote.id,
   date: quote.job.date,
   label: quote.job.eventType,
@@ -494,10 +537,7 @@ CalendarEvent _quoteToEvent(DjQuote quote) => CalendarEvent(
   location: quote.job.city.isEmpty ? null : quote.job.city,
   region: quote.job.region.isEmpty ? null : quote.job.region,
   guestsAmount: quote.job.guestsAmount,
-  budgetDisplay:
-      quote.job.budgetDisplay == 'Ikke angivet'
-          ? null
-          : quote.job.budgetDisplay,
+  budgetDisplay: djAdjustedBudgetLabel(quote.job, djTier),
   jobId: quote.jobId,
 );
 
@@ -513,10 +553,12 @@ CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
   location: offer.job.city.isEmpty ? null : offer.job.city,
   region: offer.job.region.isEmpty ? null : offer.job.region,
   guestsAmount: offer.job.guestsAmount > 0 ? offer.job.guestsAmount : null,
-  budgetDisplay:
-      offer.job.budgetDisplay == 'Ikke angivet'
-          ? null
-          : offer.job.budgetDisplay,
+  // An offer's figure is the musician's own payout, never the customer's
+  // budget. Mirrors "Din udbetaling" on ServiceOfferCard.
+  budgetDisplay: musicianOfferPayoutLabel(
+    priceDkk: offer.priceDkk,
+    musicianPayoutDkk: offer.musicianPayoutDkk,
+  ),
   jobId: offer.isExtJob ? null : offer.jobId,
   extJobId: offer.isExtJob ? offer.extJobId : null,
 );

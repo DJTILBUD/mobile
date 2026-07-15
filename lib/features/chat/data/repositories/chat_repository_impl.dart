@@ -41,6 +41,20 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<ChatMessage> editMessage({
+    required int messageId,
+    required String senderId,
+    required String message,
+  }) async {
+    final model = await _datasource.editMessage(
+      messageId: messageId,
+      senderId: senderId,
+      message: message,
+    );
+    return model.toEntity();
+  }
+
+  @override
   Future<String> uploadChatImage({
     required String userId,
     required String filePath,

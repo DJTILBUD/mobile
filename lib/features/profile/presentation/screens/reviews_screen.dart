@@ -85,29 +85,55 @@ class ReviewsScreen extends ConsumerWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(DSSpacing.s4),
-            itemCount: reviews.length,
-            itemBuilder: (context, index) {
-              final review = reviews[index];
-              return _ReviewCard(
-                review: review,
-                onEdit:
-                    () => _showUpsertDialog(
-                      context,
-                      ref,
-                      isDj: isDj,
-                      existing: review,
-                    ),
-                onDelete:
-                    () => _confirmDelete(
-                      context,
-                      ref,
-                      isDj: isDj,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  DSSpacing.s4,
+                  DSSpacing.s4,
+                  DSSpacing.s4,
+                  DSSpacing.s2,
+                ),
+                child: Text(
+                  reviews.length == 1
+                      ? '1 anmeldelse'
+                      : '${reviews.length} anmeldelser',
+                  style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(
+                    DSSpacing.s4,
+                    0,
+                    DSSpacing.s4,
+                    DSSpacing.s4,
+                  ),
+                  itemCount: reviews.length,
+                  itemBuilder: (context, index) {
+                    final review = reviews[index];
+                    return _ReviewCard(
                       review: review,
-                    ),
-              );
-            },
+                      onEdit:
+                          () => _showUpsertDialog(
+                            context,
+                            ref,
+                            isDj: isDj,
+                            existing: review,
+                          ),
+                      onDelete:
+                          () => _confirmDelete(
+                            context,
+                            ref,
+                            isDj: isDj,
+                            review: review,
+                          ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),

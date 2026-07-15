@@ -24,6 +24,7 @@ import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/event_address_section.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/screens/song_requests_screen.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
 class ExtJobDetailScreen extends ConsumerStatefulWidget {
   const ExtJobDetailScreen({super.key, required this.extJob});
@@ -87,6 +88,11 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
                     .read(markExtJobContactedProvider.notifier)
                     .markContacted(widget.extJob.id);
                 if (mounted && success) {
+                  AnalyticsService.logCustomerContacted(
+                    widget.extJob.id,
+                    role: 'dj',
+                    isExtJob: true,
+                  );
                   DSToast.show(
                     context,
                     variant: DSToastVariant.success,
@@ -107,6 +113,12 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
                     .read(setExtJobPlannedContactProvider.notifier)
                     .setPlanned(widget.extJob.id, date);
                 if (mounted && success) {
+                  AnalyticsService.logCustomerContacted(
+                    widget.extJob.id,
+                    role: 'dj',
+                    isExtJob: true,
+                    planned: true,
+                  );
                   DSToast.show(
                     context,
                     variant: DSToastVariant.success,
@@ -158,6 +170,11 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
         .markReady(widget.extJob.id);
     if (!mounted) return;
     if (success) {
+      AnalyticsService.logReadyForBilling(
+        widget.extJob.id,
+        role: 'dj',
+        isExtJob: true,
+      );
       DSToast.show(
         context,
         variant: DSToastVariant.success,
@@ -405,7 +422,7 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
                       label:
                           extJob.customerContactPlannedFor != null
                               ? 'Ændr kontaktdato'
-                              : 'Kontakt kunden',
+                              : 'Kunde kontaktet',
                       variant:
                           extJob.customerContactPlannedFor != null
                               ? DSButtonVariant.secondary

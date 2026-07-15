@@ -5,7 +5,7 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/standard_message.
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-/// Compact "Standardbeskeder" button that lets the musician load a saved
+/// Compact "Indsæt standardbesked" button that lets the musician load a saved
 /// [StandardMessage] into the pitch field. Self-hides when the user has no
 /// saved messages. Shared by the DJ quote form and the instrumentalist offer
 /// form so both load standard messages identically.
@@ -29,7 +29,7 @@ class StandardMessagePickerButton extends ConsumerWidget {
           Icon(LucideIcons.listChecks, size: 14, color: _c.brand.primaryActive),
           const SizedBox(width: 4),
           Text(
-            'Standardbeskeder',
+            'Indsæt standardbesked',
             style: DSTextStyle.labelSm.copyWith(
               fontWeight: FontWeight.w600,
               color: _c.brand.primaryActive,

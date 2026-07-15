@@ -344,6 +344,33 @@ class ChatRemoteDatasource {
     return msg;
   }
 
+  /// Rewrites a message the current user sent. Works in job chats and support chats alike.
+  ///
+  /// Direct Supabase update, matching how the rest of chat writes (the documented exception to the
+  /// "writes go through the web API" rule). Safety lives in the DB, not here: the RLS policy
+  /// "Senders can edit own messages" limits it to your own non-system messages, and the
+  /// guard_chat_message_update trigger pins every other column and stamps `edited_at`. The
+  /// `sender_id` filter is belt-and-braces so an attempt on someone else's message matches 0 rows
+  /// rather than leaning on the policy alone.
+  ///
+  /// Deliberately fires NO push: an edit is not new activity, and the last_message trigger is
+  /// AFTER INSERT only, so it also does not bump the conversation or re-open a handled thread.
+  Future<ChatMessageModel> editMessage({
+    required int messageId,
+    required String senderId,
+    required String message,
+  }) async {
+    final response =
+        await _client
+            .from('ChatMessages')
+            .update({'message': message.trim()})
+            .eq('id', messageId)
+            .eq('sender_id', senderId)
+            .select()
+            .single();
+    return ChatMessageModel.fromJson(response);
+  }
+
   Future<void> markMessagesAsRead({
     required int conversationId,
     required String currentUserId,

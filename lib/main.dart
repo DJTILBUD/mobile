@@ -21,7 +21,12 @@ import 'package:dj_tilbud_app/firebase_options.dart';
 Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AnalyticsService.logNotificationReceived(
-    message.data['type'] as String? ?? 'unknown',
+    // campaignAwareLogType, not the raw type: a "second wave" campaign is SENT
+    // as new_job/new_ext_job but must be LOGGED under second_wave_*. Passing the
+    // raw type here attributed campaign opens to the plain type, so the campaign
+    // funnel read "sent N, opened 0" in GA4 — the same trap the Supabase path
+    // already avoids.
+    NotificationsService.campaignAwareLogType(message.data, 'received'),
     role: message.data['role'] as String?,
   );
   await _logBackgroundReceivedToSupabase(message.data);
@@ -69,6 +74,15 @@ void main() async {
   await initSupabase();
   await initializeDateFormatting('da_DK');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // One Firebase project serves every env, so collection has to be gated here:
+  // otherwise a `flutter run` against local Supabase writes real events to the
+  // production GA4 property. Impersonation is included for the same reason the
+  // DeviceTokens writes guard on it — a support session would otherwise report a
+  // real user's behaviour from the developer's device. The flag is loaded above,
+  // before this runs.
+  await AnalyticsService.setEnabled(
+    EnvConfig.isProd && !NotificationsService.isImpersonating,
+  );
   FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
   await NotificationsService.initialize();
   // Force early subscription so background recoverSession() events

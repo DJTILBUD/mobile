@@ -14,6 +14,7 @@ class ChatMessageModel {
     this.senderAvatarUrl,
     this.replyToId,
     this.attachmentUrl,
+    this.editedAt,
   });
 
   final int id;
@@ -28,6 +29,7 @@ class ChatMessageModel {
   final String? senderAvatarUrl;
   final int? replyToId;
   final String? attachmentUrl;
+  final String? editedAt;
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
     return ChatMessageModel(
@@ -43,6 +45,7 @@ class ChatMessageModel {
       senderAvatarUrl: json['sender_avatar_url'] as String?,
       replyToId: (json['reply_to_id'] as num?)?.toInt(),
       attachmentUrl: json['attachment_url'] as String?,
+      editedAt: json['edited_at'] as String?,
     );
   }
 
@@ -60,6 +63,7 @@ class ChatMessageModel {
       senderAvatarUrl: senderAvatarUrl,
       replyToId: replyToId,
       attachmentUrl: attachmentUrl,
+      editedAt: editedAt != null ? DateTime.parse(editedAt!) : null,
     );
   }
 }

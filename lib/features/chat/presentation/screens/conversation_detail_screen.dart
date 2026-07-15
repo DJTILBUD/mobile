@@ -78,6 +78,9 @@ class _ConversationDetailScreenState
   // Image staged in the composer — uploaded to S3 only when the message is sent.
   XFile? _pendingImage;
   ChatMessage? _replyTo;
+
+  /// The message being edited. Mutually exclusive with [_replyTo] — the composer does one job.
+  ChatMessage? _editing;
   int? _highlightId; // message to flash after tapping a reply quote
   // One-shot: scroll to the bottom on the first loaded render only. New-message scrolls are driven
   // by the ref.listen below, so we must NOT re-scroll on every rebuild (that yanked the user back
@@ -189,8 +192,31 @@ class _ConversationDetailScreenState
 
   void _startReply(ChatMessage m) {
     _dismissReactionBar();
-    setState(() => _replyTo = m);
+    setState(() {
+      _editing = null;
+      _replyTo = m;
+    });
     _focusNode.requestFocus();
+  }
+
+  /// Puts the composer in edit mode, seeded with the existing text.
+  void _startEdit(ChatMessage m) {
+    setState(() {
+      _replyTo = null;
+      _editing = m;
+      _textController.text = m.message;
+      _textController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _textController.text.length),
+      );
+    });
+    _focusNode.requestFocus();
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editing = null;
+      _textController.clear();
+    });
   }
 
   void _react(ChatMessage m, String emoji) {
@@ -224,11 +250,31 @@ class _ConversationDetailScreenState
     HapticFeedback.mediumImpact();
     final _c = DSTheme.of(context);
     final size = MediaQuery.of(context).size;
-    const barWidth = 296.0;
-    final left = (globalPos.dx - barWidth / 2).clamp(
-      8.0,
-      size.width - barWidth - 8.0,
-    );
+
+    // Which optional actions the bar will show. Declared HERE and reused by the Row below, because
+    // barWidth has to match the rendered content: it is what keeps the bar on screen, and a
+    // hardcoded width silently drifted the moment an action was added (the edit icon then hung off
+    // the right edge, unreachable). Change an action => change the flags, and the width follows.
+    final canCopy = m.message.isNotEmpty;
+    final canEdit =
+        m.senderId == _currentUserId &&
+        !m.isSystemMessage &&
+        m.message.isNotEmpty;
+
+    // padding(16) + 6 emoji(26pt glyph + 8 pad) + divider(1 + 12 margin) + reply(24 + 8 pad).
+    const barBase = 265.0;
+    // Each optional icon: 22pt + 8 pad.
+    const barAction = 30.0;
+    final barWidth =
+        barBase + (canCopy ? barAction : 0) + (canEdit ? barAction : 0);
+
+    // Guard the clamp: on a narrow screen the bar can be wider than the space, which would make
+    // min > max and throw. Fall back to flush-left.
+    final maxLeft = size.width - barWidth - 8.0;
+    final left =
+        maxLeft <= 8.0
+            ? 8.0
+            : (globalPos.dx - barWidth / 2).clamp(8.0, maxLeft);
     final top = (globalPos.dy - 70).clamp(90.0, size.height - 140);
     final myEmoji = ref
         .read(conversationReactionsProvider(widget.conversation.id).notifier)
@@ -313,7 +359,7 @@ class _ConversationDetailScreenState
                             ),
                           ),
                         ),
-                        if (m.message.isNotEmpty)
+                        if (canCopy)
                           GestureDetector(
                             onTap: () {
                               _dismissReactionBar();
@@ -325,6 +371,26 @@ class _ConversationDetailScreenState
                               ),
                               child: Icon(
                                 Icons.copy,
+                                size: 22,
+                                color: _c.text.secondary,
+                              ),
+                            ),
+                          ),
+                        // Edit: your own text messages only. The DB enforces the same rule, so
+                        // this is the affordance, not the guard. Image-only messages have no text
+                        // to rewrite (an edit cannot touch attachment_url).
+                        if (canEdit)
+                          GestureDetector(
+                            onTap: () {
+                              _dismissReactionBar();
+                              _startEdit(m);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              child: Icon(
+                                Icons.edit_outlined,
                                 size: 22,
                                 color: _c.text.secondary,
                               ),
@@ -434,7 +500,11 @@ class _ConversationDetailScreenState
           final json =
               await supabase.from('Jobs').select().eq('id', target.id).single();
           final job = JobModel.fromJson(json).toEntity();
-          router.pushNamed(AppRoutes.djQuoteForm, extra: job);
+          router.pushNamed(
+            AppRoutes.djQuoteForm,
+            extra: job,
+            queryParameters: const {'source': 'chat'},
+          );
         case 'dj_ext_job':
           final json =
               await supabase
@@ -468,7 +538,11 @@ class _ConversationDetailScreenState
           final json =
               await supabase.from('Jobs').select().eq('id', target.id).single();
           final job = JobModel.fromJson(json).toEntity();
-          router.pushNamed(AppRoutes.instrumentalistOfferForm, extra: job);
+          router.pushNamed(
+            AppRoutes.instrumentalistOfferForm,
+            extra: job,
+            queryParameters: const {'source': 'chat'},
+          );
       }
     } catch (_) {
       messenger.showSnackBar(
@@ -494,6 +568,35 @@ class _ConversationDetailScreenState
   Future<void> _sendMessage() async {
     final text = _textController.text.trim();
     final image = _pendingImage;
+
+    // Edit mode: rewrite the existing message instead of sending a new one. Text-only (the DB
+    // pins attachment_url), so an empty text is a no-op rather than a delete.
+    final editing = _editing;
+    if (editing != null) {
+      if (text.isEmpty || _isSending) return;
+      setState(() {
+        _isSending = true;
+        _errorMsg = null;
+      });
+      final err = await ref
+          .read(conversationMessagesProvider(widget.conversation.id).notifier)
+          .editMessage(
+            messageId: editing.id,
+            senderId: _currentUserId,
+            message: text,
+          );
+      if (!mounted) return;
+      setState(() {
+        _isSending = false;
+        _errorMsg = err;
+        if (err == null) {
+          _editing = null;
+          _textController.clear();
+        }
+      });
+      return;
+    }
+
     if ((text.isEmpty && image == null) || _isSending) return;
 
     final replyToId = _replyTo?.id;
@@ -779,7 +882,50 @@ class _ConversationDetailScreenState
               ),
             ),
 
-          if (_replyTo != null)
+          if (_editing != null)
+            Container(
+              padding: const EdgeInsets.fromLTRB(
+                DSSpacing.s4,
+                DSSpacing.s2,
+                DSSpacing.s2,
+                0,
+              ),
+              child: Row(
+                children: [
+                  Container(width: 3, height: 32, color: _c.state.warning),
+                  const SizedBox(width: DSSpacing.s2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Redigerer besked',
+                          style: DSTextStyle.labelSm.copyWith(
+                            color: _c.text.secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          _editing!.message,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DSTextStyle.bodySm.copyWith(
+                            color: _c.text.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 18, color: _c.text.muted),
+                    onPressed: _cancelEdit,
+                  ),
+                ],
+              ),
+            ),
+
+          if (_replyTo != null && _editing == null)
             Container(
               padding: const EdgeInsets.fromLTRB(
                 DSSpacing.s4,
@@ -1501,6 +1647,25 @@ class _MessageBubble extends StatelessWidget {
                                               ? _c.brand.onPrimary
                                               : _c.text.primary,
                                       height: 1.4,
+                                    ),
+                                  ),
+                                // "Redigeret" marker. edited_at is stamped by the DB, never the
+                                // client, so it cannot be hidden by a crafted update.
+                                if (message.isEdited)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Text(
+                                      'Redigeret',
+                                      textAlign: TextAlign.right,
+                                      style: DSTextStyle.labelSm.copyWith(
+                                        fontSize: 10,
+                                        color:
+                                            isOwn
+                                                ? _c.brand.onPrimary.withValues(
+                                                  alpha: 0.7,
+                                                )
+                                                : _c.text.secondary,
+                                      ),
                                     ),
                                   ),
                               ],

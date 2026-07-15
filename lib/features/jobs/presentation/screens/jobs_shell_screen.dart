@@ -418,7 +418,10 @@ class _MusicianFilterTogglePill extends ConsumerWidget {
       padding: const EdgeInsets.only(right: 4, top: 14, bottom: 14),
       child: GestureDetector(
         onTap: () {
-          ref.read(musicianFiltersEnabledProvider.notifier).state = !enabled;
+          final newEnabled = !enabled;
+          ref.read(musicianFiltersEnabledProvider.notifier).state = newEnabled;
+          // Mirrors the DJ pill above; sax filter usage was invisible before.
+          AnalyticsService.logMusicianFiltersToggled(enabled: newEnabled);
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
@@ -542,9 +545,15 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
       final isCurrentlyUnavailable = unavailableMap.containsKey(dateStr);
       ref.read(djUnavailableDatesProvider.notifier).toggle(dateStr);
       if (isCurrentlyUnavailable) {
-        AnalyticsService.logDateUnmarkedUnavailable();
+        AnalyticsService.logDateUnmarkedUnavailable(
+          role: 'dj',
+          source: 'jobs_calendar',
+        );
       } else {
-        AnalyticsService.logDateMarkedUnavailable();
+        AnalyticsService.logDateMarkedUnavailable(
+          role: 'dj',
+          source: 'jobs_calendar',
+        );
         ref.read(calendarReminderProvider.notifier).markHandled();
       }
     } else {
@@ -894,9 +903,15 @@ class _InstrumentalistCalendarViewState
       final isCurrentlyUnavailable = unavailableMap.containsKey(dateStr);
       ref.read(musicianUnavailableDatesProvider.notifier).toggle(dateStr);
       if (isCurrentlyUnavailable) {
-        AnalyticsService.logDateUnmarkedUnavailable();
+        AnalyticsService.logDateUnmarkedUnavailable(
+          role: 'musician',
+          source: 'jobs_calendar',
+        );
       } else {
-        AnalyticsService.logDateMarkedUnavailable();
+        AnalyticsService.logDateMarkedUnavailable(
+          role: 'musician',
+          source: 'jobs_calendar',
+        );
         ref.read(calendarReminderProvider.notifier).markHandled();
       }
     } else {
@@ -1146,13 +1161,9 @@ class _InstrumentalistCalendarViewState
 
 /// Musician-facing payout label for a new job on the calendar.
 /// Mirrors the fixed offer price shown on the musician "Nye jobs" list.
-String _musicianBudgetLabel(Job job) {
-  final price = calculateMusicianOfferPrice(
-    job.requestedMusicianHours,
-    job.createdAt,
-  );
-  return '${NumberFormat('#,###', 'da_DK').format(price).replaceAll(',', '.')} kr.';
-}
+// Delegates to the shared builder in budget_utils so the musician sees the same
+// figure here, in the calendar tab and on the job list.
+String _musicianBudgetLabel(Job job) => musicianBudgetLabel(job);
 
 CalendarEvent _jobToEvent(Job job, {String? budgetDisplay}) => CalendarEvent(
   id: job.id,
@@ -1195,6 +1206,12 @@ CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
   location: offer.job.city.isEmpty ? null : offer.job.city,
   region: offer.job.region.isEmpty ? null : offer.job.region,
   guestsAmount: offer.job.guestsAmount > 0 ? offer.job.guestsAmount : null,
+  // The musician's own payout, matching "Din udbetaling" on ServiceOfferCard and
+  // the calendar tab, so one offer shows one figure everywhere.
+  budgetDisplay: musicianOfferPayoutLabel(
+    priceDkk: offer.priceDkk,
+    musicianPayoutDkk: offer.musicianPayoutDkk,
+  ),
   jobId: offer.isExtJob ? null : offer.jobId,
   extJobId: offer.isExtJob ? offer.extJobId : null,
 );

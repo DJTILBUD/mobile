@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/features/calendar/data/datasources/calendar_remote
 import 'package:dj_tilbud_app/features/calendar/data/repositories/calendar_repository_impl.dart';
 import 'package:dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart';
 import 'package:dj_tilbud_app/features/calendar/domain/repositories/calendar_repository.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 
 final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -14,20 +15,22 @@ final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
 
 class CalendarEventsNotifier
     extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
-  CalendarEventsNotifier(this._repository, this._role)
-      : super(const AsyncLoading()) {
+  CalendarEventsNotifier(this._repository, this._role, this._djTier)
+    : super(const AsyncLoading()) {
     _load();
   }
 
   final CalendarRepository _repository;
   final MusicianRole _role;
+  final String? _djTier;
 
   Future<void> _load() async {
     final userId = supabase.auth.currentUser!.id;
     try {
-      final events = _role == MusicianRole.dj
-          ? await _repository.fetchDjEvents(userId)
-          : await _repository.fetchMusicianEvents(userId);
+      final events =
+          _role == MusicianRole.dj
+              ? await _repository.fetchDjEvents(userId, djTier: _djTier)
+              : await _repository.fetchMusicianEvents(userId);
       state = AsyncData(events);
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -41,12 +44,21 @@ class CalendarEventsNotifier
 }
 
 final calendarEventsProvider = StateNotifierProvider.family<
-    CalendarEventsNotifier,
-    AsyncValue<List<CalendarEvent>>,
-    MusicianRole>((ref, role) {
+  CalendarEventsNotifier,
+  AsyncValue<List<CalendarEvent>>,
+  MusicianRole
+>((ref, role) {
+  // The DJ budget label is tier-adjusted, so the tier has to reach the model
+  // that builds it. Watching the profile means the events rebuild once the tier
+  // resolves, rather than being stuck on a null-tier (A-tier-looking) figure.
+  final djTier =
+      role == MusicianRole.dj
+          ? ref.watch(djProfileProvider).valueOrNull?.tier
+          : null;
   return CalendarEventsNotifier(
     ref.watch(calendarRepositoryProvider),
     role,
+    djTier,
   );
 });
 
@@ -110,8 +122,10 @@ class DjUnavailableDatesNotifier
       final next = Map<String, int>.from(current)..[dateStr] = -1;
       state = AsyncData(next);
       try {
-        final newId =
-            await _repository.createDjUnavailableDate(userId, dateStr);
+        final newId = await _repository.createDjUnavailableDate(
+          userId,
+          dateStr,
+        );
         final updated = Map<String, int>.from(state.valueOrNull ?? next)
           ..[dateStr] = newId;
         state = AsyncData(updated);
@@ -125,8 +139,9 @@ class DjUnavailableDatesNotifier
 }
 
 final djUnavailableDatesProvider = StateNotifierProvider<
-    DjUnavailableDatesNotifier,
-    AsyncValue<Map<String, int>>>((ref) {
+  DjUnavailableDatesNotifier,
+  AsyncValue<Map<String, int>>
+>((ref) {
   return DjUnavailableDatesNotifier(ref.watch(calendarRepositoryProvider));
 });
 
@@ -134,7 +149,8 @@ final djUnavailableDatesProvider = StateNotifierProvider<
 
 class MusicianUnavailableDatesNotifier
     extends StateNotifier<AsyncValue<Map<String, int>>> {
-  MusicianUnavailableDatesNotifier(this._repository) : super(const AsyncLoading()) {
+  MusicianUnavailableDatesNotifier(this._repository)
+    : super(const AsyncLoading()) {
     _load();
   }
 
@@ -167,11 +183,16 @@ class MusicianUnavailableDatesNotifier
       final next = Map<String, int>.from(current)..[dateStr] = -1;
       state = AsyncData(next);
       try {
-        final newId = await _repository.createMusicianUnavailableDate(userId, dateStr);
-        final updated = Map<String, int>.from(state.valueOrNull ?? next)..[dateStr] = newId;
+        final newId = await _repository.createMusicianUnavailableDate(
+          userId,
+          dateStr,
+        );
+        final updated = Map<String, int>.from(state.valueOrNull ?? next)
+          ..[dateStr] = newId;
         state = AsyncData(updated);
       } catch (_) {
-        final rollback = Map<String, int>.from(state.valueOrNull ?? next)..remove(dateStr);
+        final rollback = Map<String, int>.from(state.valueOrNull ?? next)
+          ..remove(dateStr);
         state = AsyncData(rollback);
       }
     }
@@ -179,7 +200,10 @@ class MusicianUnavailableDatesNotifier
 }
 
 final musicianUnavailableDatesProvider = StateNotifierProvider<
-    MusicianUnavailableDatesNotifier,
-    AsyncValue<Map<String, int>>>((ref) {
-  return MusicianUnavailableDatesNotifier(ref.watch(calendarRepositoryProvider));
+  MusicianUnavailableDatesNotifier,
+  AsyncValue<Map<String, int>>
+>((ref) {
+  return MusicianUnavailableDatesNotifier(
+    ref.watch(calendarRepositoryProvider),
+  );
 });

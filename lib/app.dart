@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,6 +41,7 @@ import 'package:dj_tilbud_app/core/design_system/showcase_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/profile_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/reviews_screen.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/screens/stats_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/media_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/my_content_screen.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/job_content_provider.dart';
@@ -121,6 +124,14 @@ final _onboardingNotifier = _OnboardingNotifier();
 /// Called by [OnboardingScreen] after persisting onboarding_completed_at to the DB.
 void markOnboardingComplete() => _onboardingNotifier.markComplete();
 
+/// Maps the role enum to the string the analytics events already use
+/// ('dj' | 'musician'), so the user property matches the per-event `role` param.
+String? _analyticsRole(MusicianRole? role) => switch (role) {
+  MusicianRole.dj => 'dj',
+  MusicianRole.instrumentalist => 'musician',
+  null => null,
+};
+
 /// Converts Supabase auth state stream into a [Listenable]
 /// so GoRouter can react to changes without being rebuilt.
 class _AuthNotifier extends ChangeNotifier {
@@ -130,12 +141,26 @@ class _AuthNotifier extends ChangeNotifier {
           event.event == AuthChangeEvent.initialSession) {
         if (event.session != null) {
           NotificationsService.registerToken();
+          // Identify the user so GA4 events can be joined to Supabase rows
+          // (AgentInteractions, NotificationLogs, Quotes). Skipped while
+          // impersonating, for the same reason registerToken is: the behaviour
+          // is the developer's, not that user's. AnalyticsService.setUser is
+          // also a no-op when collection is disabled.
+          if (!NotificationsService.isImpersonating) {
+            AnalyticsService.setUser(
+              userId: event.session!.user.id,
+              role: _analyticsRole(RoleCache.role),
+            );
+          }
           await _onboardingNotifier.checkStatus();
         }
       }
       if (event.event == AuthChangeEvent.signedOut) {
         RoleCache.clear();
         _onboardingNotifier.reset();
+        // Clear the GA4 identity too, or the device pseudo-ID persists and the
+        // next user signing in on this device is merged into the previous one.
+        AnalyticsService.clearUser();
         setAppIconBadge(
           0,
         ); // don't leave the previous user's unread count on the icon
@@ -308,6 +333,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
         branches: [
           StatefulShellBranch(
+            // Each branch has its OWN navigator, so the root observer never
+            // sees a tab switch: without this the feed/chat/profile tabs
+            // emitted no screen_view at all, i.e. the screens musicians spend
+            // most of their time on were missing from screen data.
+            observers: [AnalyticsService.observer],
             routes: [
               GoRoute(
                 path: '/dj/home',
@@ -319,6 +349,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            // Each branch has its OWN navigator, so the root observer never
+            // sees a tab switch: without this the feed/chat/profile tabs
+            // emitted no screen_view at all, i.e. the screens musicians spend
+            // most of their time on were missing from screen data.
+            observers: [AnalyticsService.observer],
             routes: [
               GoRoute(
                 path: '/dj/featured',
@@ -328,6 +363,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            // Each branch has its OWN navigator, so the root observer never
+            // sees a tab switch: without this the feed/chat/profile tabs
+            // emitted no screen_view at all, i.e. the screens musicians spend
+            // most of their time on were missing from screen data.
+            observers: [AnalyticsService.observer],
             routes: [
               GoRoute(
                 path: '/dj/chat',
@@ -337,6 +377,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            // Each branch has its OWN navigator, so the root observer never
+            // sees a tab switch: without this the feed/chat/profile tabs
+            // emitted no screen_view at all, i.e. the screens musicians spend
+            // most of their time on were missing from screen data.
+            observers: [AnalyticsService.observer],
             routes: [
               GoRoute(
                 path: '/dj/profile',
@@ -359,6 +404,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
         branches: [
           StatefulShellBranch(
+            // Each branch has its OWN navigator, so the root observer never
+            // sees a tab switch: without this the feed/chat/profile tabs
+            // emitted no screen_view at all, i.e. the screens musicians spend
+            // most of their time on were missing from screen data.
+            observers: [AnalyticsService.observer],
             routes: [
               GoRoute(
                 path: '/instrumentalist/home',
@@ -371,6 +421,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            // Each branch has its OWN navigator, so the root observer never
+            // sees a tab switch: without this the feed/chat/profile tabs
+            // emitted no screen_view at all, i.e. the screens musicians spend
+            // most of their time on were missing from screen data.
+            observers: [AnalyticsService.observer],
             routes: [
               GoRoute(
                 path: '/instrumentalist/chat',
@@ -380,6 +435,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            // Each branch has its OWN navigator, so the root observer never
+            // sees a tab switch: without this the feed/chat/profile tabs
+            // emitted no screen_view at all, i.e. the screens musicians spend
+            // most of their time on were missing from screen data.
+            observers: [AnalyticsService.observer],
             routes: [
               GoRoute(
                 path: '/instrumentalist/profile',
@@ -394,6 +454,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Detail / form routes (push on top, no bottom nav) ──
+      //
+      // Analytics is NOT logged in these builders. A builder re-runs on every
+      // router rebuild (refreshListenable fires on any auth/onboarding change,
+      // and MaterialApp.router rebuilds e.g. on a theme toggle), so logging here
+      // double-counted the funnel's entry events while `offer_submitted` could
+      // not — inflating drop-off. Each screen logs once from initState instead.
+      // `source` rides as a query param so the `extra`-is-a-Job checks still hold.
       GoRoute(
         path: '/job-detail',
         name: AppRoutes.jobDetail,
@@ -402,12 +469,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (job is! Job) {
             return const _MissingRouteDataScreen(label: 'job-detaljer');
           }
-          AnalyticsService.logJobViewed(
-            job.id,
-            job.eventType,
-            jobStatus: job.status.name,
+          return JobDetailScreen(
+            job: job,
+            source: state.uri.queryParameters['source'] ?? 'list',
           );
-          return JobDetailScreen(job: job);
         },
       ),
       GoRoute(
@@ -418,12 +483,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (job is! Job) {
             return const _MissingRouteDataScreen(label: 'tilbudsformular');
           }
-          AnalyticsService.logOfferFormOpened(
-            job.id,
-            job.eventType,
-            role: 'dj',
+          return DjQuoteFormScreen(
+            job: job,
+            source: state.uri.queryParameters['source'] ?? 'list',
           );
-          return DjQuoteFormScreen(job: job);
         },
       ),
       GoRoute(
@@ -434,12 +497,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (job is! Job) {
             return const _MissingRouteDataScreen(label: 'jobtilbudsformular');
           }
-          AnalyticsService.logOfferFormOpened(
-            job.id,
-            job.eventType,
-            role: 'musician',
+          return InstrumentalistOfferFormScreen(
+            job: job,
+            source: state.uri.queryParameters['source'] ?? 'list',
           );
-          return InstrumentalistOfferFormScreen(job: job);
         },
       ),
       GoRoute(
@@ -528,6 +589,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             return const _MissingRouteDataScreen(label: 'anmeldelser');
           }
           return ReviewsScreen(role: role);
+        },
+      ),
+      GoRoute(
+        path: '/stats',
+        name: AppRoutes.stats,
+        builder: (context, state) {
+          final role = state.extra;
+          if (role is! MusicianRole) {
+            return const _MissingRouteDataScreen(label: 'statistik');
+          }
+          return StatsScreen(role: role);
         },
       ),
       GoRoute(
@@ -720,6 +792,14 @@ class App extends ConsumerStatefulWidget {
 class _AppState extends ConsumerState<App> {
   bool _notificationsReady = false;
 
+  /// Held so it can be cancelled in [dispose]. Logout calls
+  /// `RestartWidget.restartApp`, which unmounts this State and mounts a fresh
+  /// one that subscribes again. Without the cancel the old closure stays live
+  /// and keeps logging: every foreground push would be counted twice (once per
+  /// dead listener), compounding with each logout/restart cycle. The duplicate
+  /// writes succeed because they use globals, not `ref`.
+  StreamSubscription<RemoteMessage>? _onMessageSub;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -730,10 +810,12 @@ class _AppState extends ConsumerState<App> {
       NotificationsService.handleInitialMessage(router);
       // Show in-app banner when the app is in the foreground.
       // Suppress chat_message notifications for the conversation already on screen.
-      FirebaseMessaging.onMessage.listen((message) {
+      _onMessageSub = FirebaseMessaging.onMessage.listen((message) {
         final type = message.data['type'] as String?;
         AnalyticsService.logNotificationReceived(
-          type ?? 'unknown',
+          // campaignAwareLogType, matching logReceivedToSupabase below — the raw
+          // type hid the second-wave campaign's opens in GA4.
+          NotificationsService.campaignAwareLogType(message.data, 'received'),
           role: message.data['role'] as String?,
         );
         NotificationsService.logReceivedToSupabase(message.data);
@@ -754,6 +836,12 @@ class _AppState extends ConsumerState<App> {
         ref.read(inAppNotificationProvider.notifier).state = message;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _onMessageSub?.cancel();
+    super.dispose();
   }
 
   @override

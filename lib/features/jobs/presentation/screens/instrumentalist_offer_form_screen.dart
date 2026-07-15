@@ -25,9 +25,17 @@ import 'package:dj_tilbud_app/shared/widgets/copy_hint_row.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
 class InstrumentalistOfferFormScreen extends ConsumerStatefulWidget {
-  const InstrumentalistOfferFormScreen({super.key, required this.job});
+  const InstrumentalistOfferFormScreen({
+    super.key,
+    required this.job,
+    this.source = 'list',
+  });
 
   final Job job;
+
+  /// Where the form was opened from: 'list' | 'notification' | 'calendar' |
+  /// 'chat'. This screen is the real funnel entry, so attribution lives here.
+  final String source;
 
   @override
   ConsumerState<InstrumentalistOfferFormScreen> createState() =>
@@ -41,33 +49,107 @@ class _InstrumentalistOfferFormScreenState
   int _pitchLength = 0;
   bool _usedAiDraft = false;
 
+  /// See the DJ form: stamped on open for time-on-form, and `_submitted` lets
+  /// dispose() tell "left after submitting" from "abandoned".
+  DateTime? _openedAt;
+  bool _submitted = false;
+
+  int? get _msSinceOpen =>
+      _openedAt == null
+          ? null
+          : DateTime.now().difference(_openedAt!).inMilliseconds;
+
   bool get _isDirty => _salesPitchController.text.isNotEmpty;
 
   @override
   void initState() {
     super.initState();
+    _openedAt = DateTime.now();
     _salesPitchController.addListener(() {
       setState(() => _pitchLength = _salesPitchController.text.length);
+    });
+    // In initState, not the route builder (builders re-run on router rebuilds),
+    // and post-frame so the conflict provider has resolved.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Same query the form's own block-card uses, so the logged conflict flag
+      // and what the sax actually sees can never disagree.
+      final conflict = ref.read(
+        dateConflictProvider(
+          SaxConflictQuery(
+            date: widget.job.date,
+            startTime: widget.job.musicianStartTime,
+            endTime: saxEndTime(
+              widget.job.musicianStartTime,
+              widget.job.requestedMusicianHours,
+            ),
+          ),
+        ),
+      );
+      AnalyticsService.logOfferFormOpened(
+        widget.job.id,
+        widget.job.eventType,
+        role: 'musician',
+        source: widget.source,
+        hasConflict: conflict.valueOrNull == true,
+        hasActiveOffer: widget.job.hasActiveOffer,
+        isExtJob: widget.job.isExtJob,
+      );
     });
   }
 
   Future<void> _onPopInvoked(bool didPop, _) async {
     if (didPop) return;
     final confirmed = await showUnsavedChangesDialog(context);
+    // Abandon is emitted from dispose() so the not-dirty pop is covered too.
     if (confirmed == true && mounted) {
-      AnalyticsService.logOfferFormAbandoned(widget.job.id, role: 'musician');
       Navigator.of(context).pop();
     }
   }
 
   @override
   void dispose() {
+    if (!_submitted) {
+      AnalyticsService.logOfferFormAbandoned(
+        widget.job.id,
+        role: 'musician',
+        wasDirty: _isDirty,
+        isExtJob: widget.job.isExtJob,
+        pitchLength: _pitchLength,
+        msOnForm: _msSinceOpen,
+      );
+    }
     _salesPitchController.dispose();
     super.dispose();
   }
 
+  /// See the DJ form: every early return logs why, so a submit success rate and
+  /// the reason a sax could not bid are measurable.
+  void _logSubmitFailed(String reason, {String errorSource = 'client'}) {
+    AnalyticsService.logOfferSubmitFailed(
+      widget.job.id,
+      role: 'musician',
+      reason: reason,
+      errorSource: errorSource,
+      isExtJob: widget.job.isExtJob,
+      msSinceFormOpen: _msSinceOpen,
+    );
+  }
+
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
+    AnalyticsService.logOfferSubmitAttempted(
+      widget.job.id,
+      role: 'musician',
+      isExtJob: widget.job.isExtJob,
+      pitchLength: _salesPitchController.text.trim().length,
+      usedAiDraft: _usedAiDraft,
+      msSinceFormOpen: _msSinceOpen,
+    );
+
+    if (!_formKey.currentState!.validate()) {
+      _logSubmitFailed(OfferSubmitFailure.invalidInput);
+      return;
+    }
 
     final job = widget.job;
     final customerPrice = calculateCustomerMusicianPrice(
@@ -92,6 +174,7 @@ class _InstrumentalistOfferFormScreenState
       ),
     );
     if (!billingComplete) {
+      _logSubmitFailed(OfferSubmitFailure.billingIncomplete);
       DSToast.show(
         context,
         variant: DSToastVariant.error,
@@ -115,12 +198,15 @@ class _InstrumentalistOfferFormScreenState
     if (!mounted) return;
 
     if (success) {
+      _submitted = true;
       AnalyticsService.logOfferSubmitted(
         job.id,
         job.eventType,
         role: 'musician',
         pitchLength: _salesPitchController.text.trim().length,
         usedAiDraft: _usedAiDraft,
+        isExtJob: job.isExtJob,
+        msSinceFormOpen: _msSinceOpen,
       );
       DSToast.show(
         context,
@@ -137,6 +223,10 @@ class _InstrumentalistOfferFormScreenState
       // Self-billing gate: the server blocks the offer until billing info is
       // complete. Surface its Danish message and deep-link to the billing screen.
       if (error is BillingInfoIncompleteException) {
+        _logSubmitFailed(
+          OfferSubmitFailure.billingIncomplete,
+          errorSource: 'server',
+        );
         final billingMessage =
             error.message.isNotEmpty
                 ? error.message
@@ -157,6 +247,10 @@ class _InstrumentalistOfferFormScreenState
           error is AppException && error.message.isNotEmpty
               ? error.message
               : 'Kunne ikke sende tilbud. Prøv igen.';
+      _logSubmitFailed(
+        OfferSubmitFailure.fromServerMessage(message),
+        errorSource: 'server',
+      );
       DSToast.show(context, variant: DSToastVariant.error, title: message);
     }
   }
@@ -582,37 +676,40 @@ class _InstrumentalistOfferFormScreenState
                 ),
                 const SizedBox(height: DSSpacing.s4),
 
+                // The label gets its own row; the two actions then share one row directly
+                // above the textarea ("Indsæt standardbesked" left, "Skriv med AI" right).
+                // The original layout also crammed the label into that row, which was too
+                // tight on narrow screens.
+                // Mirrors the same block in dj_quote_form_screen.dart.
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Besked til kunden',
+                    style: DSTextStyle.labelLg.copyWith(color: _c.text.primary),
+                  ),
+                ),
+                const SizedBox(height: DSSpacing.s2),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Besked til kunden',
-                      style: DSTextStyle.labelLg.copyWith(
-                        color: _c.text.primary,
-                      ),
+                    // Self-hides when the musician has no saved messages; the Row still
+                    // keeps "Skriv med AI" pinned right.
+                    StandardMessagePickerButton(
+                      onSelected:
+                          (text) => setState(() {
+                            _salesPitchController.text = text;
+                            _pitchLength = text.length;
+                          }),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        StandardMessagePickerButton(
-                          onSelected:
-                              (text) => setState(() {
-                                _salesPitchController.text = text;
-                                _pitchLength = text.length;
-                              }),
-                        ),
-                        const SizedBox(width: DSSpacing.s2),
-                        AgentAiButton(
-                          job: widget.job,
-                          isDj: false,
-                          onDraftAccepted: (draft) {
-                            setState(() {
-                              _salesPitchController.text = draft;
-                              _usedAiDraft = true;
-                            });
-                          },
-                        ),
-                      ],
+                    AgentAiButton(
+                      job: widget.job,
+                      isDj: false,
+                      onDraftAccepted: (draft) {
+                        setState(() {
+                          _salesPitchController.text = draft;
+                          _usedAiDraft = true;
+                        });
+                      },
                     ),
                   ],
                 ),

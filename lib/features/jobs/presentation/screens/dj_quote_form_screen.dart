@@ -33,9 +33,14 @@ String _fmt(num n) =>
     NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
 
 class DjQuoteFormScreen extends ConsumerStatefulWidget {
-  const DjQuoteFormScreen({super.key, required this.job});
+  const DjQuoteFormScreen({super.key, required this.job, this.source = 'list'});
 
   final Job job;
+
+  /// Where the form was opened from: 'list' | 'notification' | 'calendar' |
+  /// 'chat'. This screen is the real funnel entry (nothing routes to job-detail),
+  /// so this is where attribution lives.
+  final String source;
 
   @override
   ConsumerState<DjQuoteFormScreen> createState() => _DjQuoteFormScreenState();
@@ -60,6 +65,16 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
 
   bool _usedAiDraft = false;
 
+  /// Stamped on open so every funnel event can carry time-on-form. Submitted is
+  /// set so `dispose` can tell "left after submitting" from "abandoned".
+  DateTime? _openedAt;
+  bool _submitted = false;
+
+  int? get _msSinceOpen =>
+      _openedAt == null
+          ? null
+          : DateTime.now().difference(_openedAt!).inMilliseconds;
+
   bool get _isDirty =>
       _priceController.text.isNotEmpty ||
       _salesPitchController.text.isNotEmpty ||
@@ -70,24 +85,61 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   @override
   void initState() {
     super.initState();
+    _openedAt = DateTime.now();
     _salesPitchController.addListener(() {
       setState(() => _pitchLength = _salesPitchController.text.length);
     });
     _priceController.addListener(() => setState(() {}));
     _earlySetupPriceController.addListener(() => setState(() {}));
+    // Logged here rather than in the route builder (which re-runs on router
+    // rebuilds), and after the first frame so the conflict providers have
+    // resolved — has_conflict is the friction signal, so a premature `false`
+    // would be worse than useless.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final quotes = ref.read(djQuotesProvider).valueOrNull ?? const [];
+      final collision = dateCollisionMessage(
+        widget.job,
+        quotes,
+        ref.read(djExtJobsProvider).valueOrNull ?? const [],
+      );
+      AnalyticsService.logOfferFormOpened(
+        widget.job.id,
+        widget.job.eventType,
+        role: 'dj',
+        source: widget.source,
+        hasConflict: collision != null,
+        hasActiveOffer: quotes.any((q) => q.jobId == widget.job.id),
+        isExtJob: widget.job.isExtJob,
+        tier: ref.read(djProfileProvider).valueOrNull?.tier,
+      );
+    });
   }
 
   Future<void> _onPopInvoked(bool didPop, _) async {
     if (didPop) return;
     final confirmed = await showUnsavedChangesDialog(context);
+    // The abandon event is emitted from dispose() so it covers the not-dirty
+    // pop too; nothing to log here.
     if (confirmed == true && mounted) {
-      AnalyticsService.logOfferFormAbandoned(widget.job.id, role: 'dj');
       Navigator.of(context).pop();
     }
   }
 
   @override
   void dispose() {
+    // Fires even when nothing was typed: "opened it, read the budget, backed
+    // out" is the hesitation signal, and the dirty-only confirm dialog missed it.
+    if (!_submitted) {
+      AnalyticsService.logOfferFormAbandoned(
+        widget.job.id,
+        role: 'dj',
+        wasDirty: _isDirty,
+        isExtJob: widget.job.isExtJob,
+        pitchLength: _pitchLength,
+        msOnForm: _msSinceOpen,
+      );
+    }
     _priceController.dispose();
     _salesPitchController.dispose();
     _earlySetupPriceController.dispose();
@@ -161,13 +213,43 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   static String _fmtNum(int n) =>
       NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
 
+  /// Every early return in [_handleSubmit] logs why. Without this only the
+  /// success was ever emitted, so the submit success rate — and the reason a DJ
+  /// could not bid — were unmeasurable.
+  void _logSubmitFailed(String reason, {String errorSource = 'client'}) {
+    AnalyticsService.logOfferSubmitFailed(
+      widget.job.id,
+      role: 'dj',
+      reason: reason,
+      errorSource: errorSource,
+      isExtJob: widget.job.isExtJob,
+      msSinceFormOpen: _msSinceOpen,
+    );
+  }
+
   Future<void> _handleSubmit() async {
+    AnalyticsService.logOfferSubmitAttempted(
+      widget.job.id,
+      role: 'dj',
+      isExtJob: widget.job.isExtJob,
+      pitchLength: _salesPitchController.text.trim().length,
+      usedAiDraft: _usedAiDraft,
+      msSinceFormOpen: _msSinceOpen,
+    );
+
     final equipmentValid =
         _selectedEquipment.isNotEmpty || _noEquipmentSelected;
     if (!equipmentValid) {
       setState(() => _equipmentError = true);
     }
-    if (!_formKey.currentState!.validate() || !equipmentValid) return;
+    if (!_formKey.currentState!.validate() || !equipmentValid) {
+      _logSubmitFailed(
+        equipmentValid
+            ? OfferSubmitFailure.invalidInput
+            : OfferSubmitFailure.equipmentInvalid,
+      );
+      return;
+    }
 
     // Date-collision guard (server also enforces this; this avoids a wasted
     // round-trip and an unclear failure when reached via deep-link).
@@ -177,6 +259,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       ref.read(djExtJobsProvider).valueOrNull ?? [],
     );
     if (collisionMessage != null) {
+      _logSubmitFailed(OfferSubmitFailure.dateCollision);
       DSToast.show(
         context,
         variant: DSToastVariant.error,
@@ -192,6 +275,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     final withinFourHours = isWithinFirstFourHours(widget.job.createdAt);
 
     if (priceOverBudget && withinFourHours) {
+      _logSubmitFailed(OfferSubmitFailure.overBudgetFirst4h);
       DSToast.show(
         context,
         variant: DSToastVariant.error,
@@ -215,6 +299,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       ),
     );
     if (!billingComplete) {
+      _logSubmitFailed(OfferSubmitFailure.billingIncomplete);
       DSToast.show(
         context,
         variant: DSToastVariant.error,
@@ -247,12 +332,15 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     if (!mounted) return;
 
     if (success) {
+      _submitted = true;
       AnalyticsService.logOfferSubmitted(
         widget.job.id,
         widget.job.eventType,
         role: 'dj',
         pitchLength: _salesPitchController.text.trim().length,
         usedAiDraft: _usedAiDraft,
+        isExtJob: widget.job.isExtJob,
+        msSinceFormOpen: _msSinceOpen,
       );
       DSToast.show(
         context,
@@ -271,6 +359,10 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       // Self-billing gate: the server blocks the quote until billing info is
       // complete. Surface its Danish message and deep-link to the billing screen.
       if (error is BillingInfoIncompleteException) {
+        _logSubmitFailed(
+          OfferSubmitFailure.billingIncomplete,
+          errorSource: 'server',
+        );
         final message =
             error.message.isNotEmpty
                 ? error.message
@@ -284,6 +376,10 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
           error is AppException && error.message.isNotEmpty
               ? error.message
               : 'Kunne ikke afgive bud. Prøv igen.';
+      _logSubmitFailed(
+        OfferSubmitFailure.fromServerMessage(message),
+        errorSource: 'server',
+      );
       DSToast.show(context, variant: DSToastVariant.error, title: message);
     }
   }
@@ -302,7 +398,17 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     if (!mounted) return;
 
     if (success) {
-      AnalyticsService.logDateMarkedUnavailable();
+      AnalyticsService.logDateMarkedUnavailable(
+        role: 'dj',
+        source: 'quote_form',
+      );
+      // The DJ turned this job down by marking the date busy — the explicit
+      // "why didn't you bid?" signal, which was previously not emitted.
+      AnalyticsService.logJobDismissed(
+        widget.job.id,
+        role: 'dj',
+        method: 'marked_busy',
+      );
       DSToast.show(
         context,
         variant: DSToastVariant.info,
@@ -337,6 +443,14 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     if (!mounted) return;
 
     if (success) {
+      // The picker's reasons are the literal answer to "why didn't this DJ bid?".
+      // They were already written to the DB but never emitted to analytics.
+      AnalyticsService.logJobDismissed(
+        widget.job.id,
+        role: 'dj',
+        method: 'not_interested',
+        reasons: reasons.join(','),
+      );
       DSToast.show(
         context,
         variant: DSToastVariant.info,
@@ -619,35 +733,40 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
               ],
               const SizedBox(height: DSSpacing.s4),
 
+              // The label gets its own row; the two actions then share one row directly
+              // above the textarea ("Indsæt standardbesked" left, "Skriv med AI" right).
+              // The original layout also crammed the label into that row, which was too
+              // tight on narrow screens.
+              // Mirrors the same block in instrumentalist_offer_form_screen.dart.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Salgstale',
+                  style: DSTextStyle.labelLg.copyWith(color: _c.text.primary),
+                ),
+              ),
+              const SizedBox(height: DSSpacing.s2),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Salgstale',
-                    style: DSTextStyle.labelLg.copyWith(color: _c.text.primary),
+                  // Self-hides when the DJ has no saved messages; the Row still keeps
+                  // "Skriv med AI" pinned right.
+                  StandardMessagePickerButton(
+                    onSelected:
+                        (text) => setState(() {
+                          _salesPitchController.text = text;
+                          _pitchLength = text.length;
+                        }),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      StandardMessagePickerButton(
-                        onSelected:
-                            (text) => setState(() {
-                              _salesPitchController.text = text;
-                              _pitchLength = text.length;
-                            }),
-                      ),
-                      const SizedBox(width: DSSpacing.s2),
-                      AgentAiButton(
-                        job: widget.job,
-                        isDj: true,
-                        onDraftAccepted: (draft) {
-                          setState(() {
-                            _salesPitchController.text = draft;
-                            _usedAiDraft = true;
-                          });
-                        },
-                      ),
-                    ],
+                  AgentAiButton(
+                    job: widget.job,
+                    isDj: true,
+                    onDraftAccepted: (draft) {
+                      setState(() {
+                        _salesPitchController.text = draft;
+                        _usedAiDraft = true;
+                      });
+                    },
                   ),
                 ],
               ),

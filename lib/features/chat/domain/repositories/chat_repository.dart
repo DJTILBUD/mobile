@@ -19,6 +19,14 @@ abstract class ChatRepository {
     String? attachmentUrl,
   });
 
+  /// Rewrites a message the current user sent. Enforced in the DB (own, non-system messages
+  /// only); `edited_at` is stamped there, never by the client.
+  Future<ChatMessage> editMessage({
+    required int messageId,
+    required String senderId,
+    required String message,
+  });
+
   /// Uploads a chat image to S3 and returns its public URL (for `attachment_url`).
   Future<String> uploadChatImage({
     required String userId,

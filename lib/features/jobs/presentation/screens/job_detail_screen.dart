@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
@@ -10,13 +11,40 @@ import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_pr
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 
-class JobDetailScreen extends ConsumerWidget {
-  const JobDetailScreen({super.key, required this.job});
+/// NOTE: nothing currently routes here — `AppRoutes.jobDetail` is never pushed
+/// (musicians go straight from the feed/push/calendar into the offer form), so
+/// `job_viewed` does not fire in practice. The logging is wired correctly for the
+/// day the route is used; treat `offer_form_opened` as the funnel entry today.
+class JobDetailScreen extends ConsumerStatefulWidget {
+  const JobDetailScreen({super.key, required this.job, this.source = 'list'});
 
   final Job job;
 
+  /// 'list' | 'notification' | 'calendar' | 'chat'
+  final String source;
+
+  @override
+  ConsumerState<JobDetailScreen> createState() => _JobDetailScreenState();
+}
+
+class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   static final _numFmt = NumberFormat('#,###', 'da_DK');
   static String _fmt(int n) => _numFmt.format(n).replaceAll(',', '.');
+
+  Job get job => widget.job;
+
+  @override
+  void initState() {
+    super.initState();
+    // In initState, not the route builder: builders re-run on router rebuilds.
+    AnalyticsService.logJobViewed(
+      job.id,
+      job.eventType,
+      source: widget.source,
+      jobStatus: job.status.dbValue,
+      isExtJob: job.isExtJob,
+    );
+  }
 
   String _adjustedBudgetDisplay(String? djTier) {
     final noBudget = job.budgetStart == null && job.budgetEnd == null;
@@ -54,7 +82,7 @@ class JobDetailScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
     final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
     final dateStr = DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);

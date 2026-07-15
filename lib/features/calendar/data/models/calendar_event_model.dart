@@ -1,3 +1,4 @@
+import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
 import 'package:dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart';
 
 class CalendarEventModel {
@@ -30,7 +31,16 @@ class CalendarEventModel {
   final int? extJobId;
 
   /// Parses a Quote row with nested `job:Jobs(...)` data.
-  factory CalendarEventModel.fromDjQuoteJson(Map<String, dynamic> json) {
+  ///
+  /// [djTier] drives the tier part of the DJ-facing budget. The label goes
+  /// through `djBudgetLabelFromParts` — the same builder the job list and job
+  /// detail use — so a won job shows the identical figure on every surface.
+  /// Never format `budget_start`/`budget_end` raw here: that is the customer's
+  /// full budget, which a DJ must never see.
+  factory CalendarEventModel.fromDjQuoteJson(
+    Map<String, dynamic> json, {
+    String? djTier,
+  }) {
     final job = json['job'] as Map<String, dynamic>;
     return CalendarEventModel(
       id: (json['id'] as num).toInt(),
@@ -42,7 +52,15 @@ class CalendarEventModel {
       location: job['city'] as String?,
       region: job['region'] as String?,
       guestsAmount: (job['guests_amount'] as num?)?.toInt(),
-      budgetDisplay: _fmtBudget(job['budget_start'], job['budget_end']),
+      budgetDisplay: djBudgetLabelFromParts(
+        budgetStart: (job['budget_start'] as num?)?.toDouble(),
+        budgetEnd: (job['budget_end'] as num?)?.toDouble(),
+        djTier: djTier,
+        requestedSaxophonist: job['requested_saxophonist'] as bool? ?? false,
+        requestedMusicianHours:
+            (job['requested_musician_hours'] as num?)?.toDouble(),
+        jobCreatedAt: DateTime.tryParse(job['created_at'] as String? ?? ''),
+      ),
       jobId: (job['id'] as num).toInt(),
     );
   }
@@ -79,7 +97,13 @@ class CalendarEventModel {
       location: job['city'] as String?,
       region: job['region'] as String?,
       guestsAmount: (job['guests_amount'] as num?)?.toInt(),
-      budgetDisplay: _fmtBudget(job['budget_start'], job['budget_end']),
+      // The offer's own payout, NOT the job's budget — an offer has a customer
+      // price and a musician payout; the customer's budget is unrelated to it.
+      // Mirrors the "Din udbetaling" line on ServiceOfferCard.
+      budgetDisplay: musicianOfferPayoutLabel(
+        priceDkk: (json['price_dkk'] as num?)?.toInt() ?? 0,
+        musicianPayoutDkk: (json['musician_payout_dkk'] as num?)?.toInt(),
+      ),
       jobId: (job['id'] as num).toInt(),
     );
   }
@@ -99,7 +123,12 @@ class CalendarEventModel {
       location: extJob['location'] as String?,
       region: extJob['region'] as String?,
       guestsAmount: (extJob['guests_amount'] as num?)?.toInt(),
-      budgetDisplay: extJob['budget_target'] as String?,
+      // The offer's own payout, not the ext job's budget_target. Same rule as
+      // the internal-job offer above.
+      budgetDisplay: musicianOfferPayoutLabel(
+        priceDkk: (json['price_dkk'] as num?)?.toInt() ?? 0,
+        musicianPayoutDkk: (json['musician_payout_dkk'] as num?)?.toInt(),
+      ),
       extJobId: (extJob['id'] as num).toInt(),
     );
   }
@@ -134,17 +163,9 @@ class CalendarEventModel {
     return s.length >= 5 ? s.substring(0, 5) : s;
   }
 
-  static String? _fmtBudget(dynamic start, dynamic end) {
-    final s = (start as num?)?.toInt();
-    final e = (end as num?)?.toInt();
-    if (s == null && e == null) return null;
-    if (s != null && e != null && s != e)
-      return '${_fmtNum(s)} – ${_fmtNum(e)} kr.';
-    return '${_fmtNum(e ?? s!)} kr.';
-  }
-
-  static String _fmtNum(int n) => n.toString().replaceAllMapped(
-    RegExp(r'\B(?=(\d{3})+(?!\d))'),
-    (_) => '.',
-  );
+  // No raw-budget formatter here on purpose. Every money label on a calendar
+  // event comes from budget_utils: `djBudgetLabelFromParts` for a DJ's job
+  // (sax/tier-adjusted) and `musicianOfferPayoutLabel` for a musician's offer.
+  // Formatting `budget_start`/`budget_end` here is what made the calendar
+  // disagree with the job list.
 }

@@ -114,7 +114,7 @@ class _NotificationSettingsScreenState
         backgroundColor: c.bg.surface,
         surfaceTintColor: c.bg.surface,
         title: Text(
-          'Notifikationer',
+          'Notifikationsindstillinger',
           style: DSTextStyle.headingSm.copyWith(color: c.text.primary),
         ),
       ),

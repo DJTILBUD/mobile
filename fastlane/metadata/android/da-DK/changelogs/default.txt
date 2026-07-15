@@ -1,10 +1,10 @@
-Nyt: Notifikationscenter 🔔
+Nyt: Send beskeden til kunden med ét tryk 💬
 
-Nu samler vi alle dine notifikationer ét sted, så du aldrig går glip af et nyt job, en besked eller et accepteret tilbud.
+Vi skriver beskeden til kunden for dig, så du kan nå ud inden for 24 timer uden at bruge tid på ordene.
 
-• Tryk på klokken øverst på din profil for at se alle dine notifikationer
-• Tryk på en notifikation og hop direkte til jobbet, chatten eller tilbuddet
-• Antal ulæste vises på app-ikonet, på profil-fanen og på klokken
-• Swipe for at markere som læst – eller markér alle på én gang
+• Tryk "Send besked" på et vundet job, så åbner din beskedapp med kundens nummer og hele teksten klar
+• Vil du hellere sende via mail eller WhatsApp? Teksten kan stadig kopieres med ét tryk
+• Du kan nu rette en besked, du allerede har sendt. Den bliver tydeligt markeret "Redigeret"
+• Budgettet på et job vises nu ens overalt, både i listen og i kalenderen
 
 Desuden: mindre fejlrettelser og forbedringer.

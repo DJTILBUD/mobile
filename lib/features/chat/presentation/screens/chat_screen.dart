@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +11,7 @@ import 'package:dj_tilbud_app/features/chat/data/datasources/admin_support_datas
 import 'package:dj_tilbud_app/features/chat/presentation/screens/admin_support_thread_screen.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/widgets/new_support_message_sheet.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:dj_tilbud_app/shared/widgets/conversation_avatar.dart';
 
 class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
@@ -335,7 +335,7 @@ class _AdminThreadTile extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    _ConversationAvatar(
+                    ConversationAvatar(
                       name: thread.userName,
                       imageUrl: thread.userAvatarUrl,
                     ),
@@ -352,6 +352,42 @@ class _AdminThreadTile extends ConsumerWidget {
                     ),
                   ],
                 ),
+              ),
+              Divider(height: 1, color: c.border.subtle),
+              // Handled sits ABOVE read/unread on purpose: it is the one that means "does this
+              // still need an answer", and it is what the Support badge counts. Read only says
+              // whether anyone has looked, and clears for the whole team the moment one admin opens
+              // the thread. Coloured so the actionable state (needs handling) reads at a glance.
+              ListTile(
+                leading: Icon(
+                  thread.handled
+                      ? LucideIcons.rotateCcw
+                      : LucideIcons.checkCircle2,
+                  color: thread.handled ? c.text.secondary : c.state.success,
+                ),
+                title: Text(
+                  thread.handled
+                      ? 'Markér som ikke håndteret'
+                      : 'Markér som håndteret',
+                ),
+                subtitle: Text(
+                  thread.handled
+                      ? 'Sætter den tilbage i køen'
+                      : 'Fjerner den fra køen. Et svar gør det automatisk.',
+                  style: DSTextStyle.bodySm.copyWith(color: c.text.muted),
+                ),
+                onTap: () async {
+                  Navigator.of(sheetContext).pop();
+                  final err = await notifier.setThreadHandled(
+                    thread.id,
+                    !thread.handled,
+                  );
+                  if (err != null && context.mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(err)));
+                  }
+                },
               ),
               Divider(height: 1, color: c.border.subtle),
               if (thread.hasUnread)
@@ -401,6 +437,9 @@ class _AdminThreadTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final _c = DSTheme.of(context);
     final hasUnread = thread.hasUnread;
+    // Needs-handling wins the row tint over unread: unread clears for the whole team the
+    // moment anyone opens the thread, so it stops marking work. Mirrors the admin tool's inbox.
+    final needsHandling = thread.needsHandling;
     final term = searchTerm;
     final matches = thread.matches;
 
@@ -408,7 +447,12 @@ class _AdminThreadTile extends ConsumerWidget {
       onTap: () => _open(context),
       onLongPress: () => _showThreadMenu(context, ref),
       child: Container(
-        color: hasUnread ? _c.brand.primary.withValues(alpha: 0.06) : null,
+        color:
+            needsHandling
+                ? _c.state.warning.withValues(alpha: 0.10)
+                : hasUnread
+                ? _c.brand.primary.withValues(alpha: 0.06)
+                : null,
         padding: const EdgeInsets.symmetric(
           horizontal: DSSpacing.s4,
           vertical: DSSpacing.s3,
@@ -416,7 +460,7 @@ class _AdminThreadTile extends ConsumerWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _ConversationAvatar(
+            ConversationAvatar(
               name: thread.userName,
               imageUrl: thread.userAvatarUrl,
             ),
@@ -425,14 +469,44 @@ class _AdminThreadTile extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _HighlightedText(
-                    text: thread.userName,
-                    term: term,
-                    style: DSTextStyle.headingSm.copyWith(
-                      fontSize: 15,
-                      color: _c.text.primary,
-                      fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: _HighlightedText(
+                          text: thread.userName,
+                          term: term,
+                          style: DSTextStyle.headingSm.copyWith(
+                            fontSize: 15,
+                            color: _c.text.primary,
+                            fontWeight:
+                                hasUnread ? FontWeight.w800 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      // Mirrors the admin tool's inbox: says WHAT is wrong rather than relying
+                      // on the amber tint alone. Survives being read, unlike the unread bolding.
+                      if (needsHandling) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _c.state.warning.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(DSRadius.pill),
+                          ),
+                          child: Text(
+                            'Mangler svar',
+                            style: DSTextStyle.labelSm.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: _c.state.warning,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   // When searching, show the matching messages instead of the last-message preview.
@@ -619,7 +693,7 @@ class _ConversationTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Avatar
-            _ConversationAvatar(
+            ConversationAvatar(
               name: conversation.partnerName,
               imageUrl: conversation.partnerAvatarUrl,
               isSupport: conversation.isSupport,
@@ -772,76 +846,6 @@ class _ConversationTile extends StatelessWidget {
 }
 
 // ─── Conversation Avatar ──────────────────────────────────────────────────────
-
-class _ConversationAvatar extends StatelessWidget {
-  const _ConversationAvatar({
-    required this.name,
-    this.imageUrl,
-    this.isSupport = false,
-  });
-
-  final String name;
-  final String? imageUrl;
-  final bool isSupport;
-
-  static const _size = 48.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final _c = DSTheme.of(context);
-    if (isSupport) {
-      return Container(
-        width: _size,
-        height: _size,
-        decoration: BoxDecoration(
-          color: _c.brand.primary,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(Icons.support_agent, color: _c.brand.onPrimary, size: 26),
-      );
-    }
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: imageUrl!,
-          width: _size,
-          height: _size,
-          fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => _InitialsAvatar(name: name, c: _c),
-          placeholder: (_, __) => _InitialsAvatar(name: name, c: _c),
-        ),
-      );
-    }
-    return _InitialsAvatar(name: name, c: _c);
-  }
-}
-
-class _InitialsAvatar extends StatelessWidget {
-  const _InitialsAvatar({required this.name, required this.c});
-
-  final String name;
-  final DSColors c;
-  static const _size = 48.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: _size,
-      height: _size,
-      decoration: BoxDecoration(color: c.bg.inputBg, shape: BoxShape.circle),
-      child: Center(
-        child: Text(
-          name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: c.text.secondary,
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _ConversationListSkeleton extends StatelessWidget {
   const _ConversationListSkeleton();

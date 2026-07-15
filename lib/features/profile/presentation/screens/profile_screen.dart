@@ -236,6 +236,11 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.pushNamed(AppRoutes.editProfile, extra: role),
           ),
           _MenuItem(
+            icon: LucideIcons.barChart2,
+            label: 'Statistik',
+            onTap: () => context.pushNamed(AppRoutes.stats, extra: role),
+          ),
+          _MenuItem(
             icon: LucideIcons.star,
             label: 'Anmeldelser',
             onTap: () => context.pushNamed(AppRoutes.reviews, extra: role),
@@ -318,7 +323,7 @@ class ProfileScreen extends ConsumerWidget {
 
           _MenuItem(
             icon: LucideIcons.bell,
-            label: 'Notifikationer',
+            label: 'Notifikationsindstillinger',
             onTap:
                 () => context.pushNamed(
                   AppRoutes.notificationSettings,

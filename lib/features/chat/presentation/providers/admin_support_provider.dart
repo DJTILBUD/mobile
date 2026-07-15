@@ -158,6 +158,26 @@ class AdminSupportThreadsNotifier
     ]);
   }
 
+  /// Toggles a thread's handled state, then persists. Returns null on success, or a Danish error.
+  ///
+  /// Optimistic so the row un-tints and the Support tab badge drops instantly (the badge counts
+  /// unhandled, not unread). Failure re-fetches to undo. Mirrors the admin tool's toggle.
+  Future<String?> setThreadHandled(int conversationId, bool handled) async {
+    _patchHandled(conversationId, handled);
+    final err = await _ds.setHandled(conversationId, handled);
+    if (err != null) await _fetch();
+    return err;
+  }
+
+  void _patchHandled(int conversationId, bool handled) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    state = AsyncData([
+      for (final t in current)
+        if (t.id == conversationId) t.copyWith(handled: handled) else t,
+    ]);
+  }
+
   // A single user action emits several DB events (message insert + Conversations.last_message_at
   // update), and this subscription is unfiltered (any support chat, any thread). Coalesce a burst
   // into ONE refetch instead of one full inbox reload per event. The endpoint is already batched.
@@ -391,6 +411,67 @@ class AdminThreadMessagesNotifier
     }
     // On success the realtime INSERT echo strips the temp and appends the real row; if RLS strips
     // the payload, that handler falls back to a fetch which reconciles too.
+    return err;
+  }
+
+  /// Edits one of the team's own admin messages. Returns null on success, or a Danish error.
+  ///
+  /// Optimistically swaps the text in so the bubble updates instantly; the realtime UPDATE echo
+  /// reconciles (and carries the DB-stamped edited_at). On failure the old text is restored.
+  Future<String?> editMessage({
+    required int messageId,
+    required String message,
+  }) async {
+    final before = state.valueOrNull;
+    final previous =
+        before?.messages.where((m) => m.id == messageId).firstOrNull;
+
+    if (before != null && previous != null && mounted) {
+      state = AsyncData(
+        AdminThreadData(
+          messages: [
+            for (final m in before.messages)
+              if (m.id == messageId)
+                ChatMessage(
+                  id: m.id,
+                  conversationId: m.conversationId,
+                  senderId: m.senderId,
+                  senderType: m.senderType,
+                  message: message.trim(),
+                  createdAt: m.createdAt,
+                  readAt: m.readAt,
+                  isSystemMessage: m.isSystemMessage,
+                  senderName: m.senderName,
+                  senderAvatarUrl: m.senderAvatarUrl,
+                  replyToId: m.replyToId,
+                  attachmentUrl: m.attachmentUrl,
+                  // Show the marker immediately; the echo replaces this with the DB's stamp.
+                  editedAt: DateTime.now(),
+                )
+              else
+                m,
+          ],
+          reactionsByMessage: before.reactionsByMessage,
+        ),
+      );
+    }
+
+    final err = await _ds.editMessage(_conversationId, messageId, message);
+
+    if (err != null && previous != null) {
+      final now = state.valueOrNull;
+      if (now != null && mounted) {
+        state = AsyncData(
+          AdminThreadData(
+            messages: [
+              for (final m in now.messages)
+                if (m.id == messageId) previous else m,
+            ],
+            reactionsByMessage: now.reactionsByMessage,
+          ),
+        );
+      }
+    }
     return err;
   }
 
