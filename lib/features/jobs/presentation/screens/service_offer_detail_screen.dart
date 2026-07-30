@@ -17,6 +17,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/shared/widgets/copy_hint_row.dart';
 import 'package:dj_tilbud_app/shared/widgets/chat_bubble_fab.dart';
+import 'package:dj_tilbud_app/shared/widgets/partner_event_wishes_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/event_address_section.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
@@ -439,6 +440,14 @@ class _ServiceOfferDetailScreenState
         const SizedBox(height: DSSpacing.s4),
 
         _JobHeroCard(offer: offer),
+        const SizedBox(height: DSSpacing.s4),
+
+        // Til festen — kept LAST. Musician view: only "Sådan omtales parret" + "Særlige forhold".
+        PartnerEventWishesCard(
+          musicianView: true,
+          addressAs: offer.job.addressAs,
+          specialConditions: offer.job.specialConditions,
+        ),
         // Extra clearance so the floating chat bubble never covers the last card.
         const SizedBox(height: 96),
       ],
@@ -560,6 +569,15 @@ class _JobHeroCard extends StatelessWidget {
             _MetaRow(
               icon: LucideIcons.timer,
               label: '${job.musicianHoursDisplay} timers spilletid ønsket',
+            ),
+          ],
+          // Sax type (Party/Lounge) — shown on every sax offer (sent + won) so the musician always
+          // knows the vibe requested.
+          if (job.saxType != null) ...[
+            const SizedBox(height: DSSpacing.s2),
+            _MetaRow(
+              icon: LucideIcons.mic,
+              label: job.saxType == 'lounge' ? 'Lounge-sax' : 'Party-sax',
             ),
           ],
 

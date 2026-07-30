@@ -273,6 +273,63 @@ mirroring web's `VISIBLE_STATUSES` in `dj/udvalgte-jobs/page.tsx`. Without that 
 assigned-but-still-`sent` ext job (not yet a real booking) leaks into the list — the bug fixed here.
 Do NOT "fix" this by dropping `sent` at the datasource: that silently breaks the date-collision guard.
 
+## "Fast kunde" (recurring-customer) badge on Udvalgte jobs — name comes from the web API, NOT Supabase
+
+The "Udvalgte jobs" list (`featured_jobs_screen.dart`) + the ext-job detail (`ext_job_detail_screen.dart`)
+show a purple **"Fast kunde · <navn>"** pill (`shared/widgets/recurring_customer_badge.dart`) when the
+assigned ext job belongs to a recurring (venue) customer, so the DJ/musician sees they're playing for a
+fixed customer. Mirrors the web app's `dj/udvalgte-jobs` badge.
+
+- **The venue name is NOT a column mobile can read.** `ExtJobs.recurring_customer_id` is a column, but the
+  name lives on `RecurringCustomers`, which is **RLS-readable only by service_role/admin** — a DJ-role user
+  (mobile's own session) gets nothing from a direct read or a PostgREST embed. So the name is resolved
+  **server-side** by the DJ-scoped web endpoint `GET /api/internal-dj/ext-jobs?dj_id=<uid>` (it maps
+  `recurring_customer_id → account_name` with the service-role client and returns `recurring_customer_name`
+  per row). This is the same endpoint web's `useInternalDjExtJobs` uses.
+- **Wiring:** `djExtJobRecurringNamesProvider` (`jobs_provider.dart`) calls
+  `JobsRepository.fetchDjExtJobRecurringNames` → datasource `_webApiGet('/api/internal-dj/ext-jobs?dj_id=…')`
+  and returns a `Map<int,String>` keyed by **ext job id** (only ids that belong to a recurring customer are
+  in the map, so a lookup miss = "not a fixed customer"). The screens look up `map[extJob.id]`.
+- **Do NOT route this through `djExtJobsProvider`.** That provider's `fetchDjExtJobs` is a **direct** Supabase
+  read that intentionally includes `sent` (the date-collision guard needs it) and is shared with that guard;
+  the web endpoint returns only `closed`/`customer_contacted`/`ready_for_billing` and would break the guard.
+  The names map is a **separate, additive** provider so the shared list/guard path is untouched.
+- **Saxophonists get the badge too, via a SEPARATE endpoint.** The DJ endpoint checks `DjInfos`, so it 4xx's
+  for a musician. The sax path uses `GET /api/internal-musician/ext-job-recurring-names` (auth-derived) →
+  `musicianExtJobRecurringNamesProvider`. It resolves names for **every recurring ext job a sax can see on a
+  card** (role_type musician/dj_and_musician in open/sent/reopened/closed/customer_contacted/ready_for_billing),
+  so the **`RecurringCustomerBadge` shows on ALL sax cards**: the feed `JobCard` (musician view) + `ServiceOfferCard`
+  (sent/won/lost), wired in `jobs_shell_screen` (each tab watches the provider, passes `recurringName:
+  names[job.extJobId]` / `names[offer.extJobId]`), plus the detail screens. Because `ExtJobDetailScreen` is
+  **shared** by DJs and musicians, it **coalesces both maps** (`djNames[id] ?? musicianNames[id]`) — each is
+  empty for the other role, so watching both is safe. The DJ-only "Udvalgte jobs" **list**
+  (`featured_jobs_screen`) still watches only the DJ map (that route is DJ-only). Web parity:
+  `MusicianJobCard` + `ServiceOfferCard` fed by `useMusicianExtJobRecurringNames` in `instrumentalist/page.tsx`.
+
+## "🎶 Til festen" partner-booking card (`PartnerEventWishesCard`)
+
+`shared/widgets/partner_event_wishes_card.dart` — a purple card of the couple-facing partner-booking
+details (address_as, guest_age, first_dance_song, spotify_playlist_url, special_conditions, early_setup
++ a sax subsection), mirroring the web `src/components/PartnerEventWishesCard.tsx`. Self-hides when
+nothing is set. Kept as the **LAST card** on both screens. Shown to:
+- **DJs** on `featured_jobs/.../ext_job_detail_screen.dart` (from the `ExtJob` entity) — the full card;
+  the **playliste** value has a **Kopiér** button (`copyable: true` → Clipboard + "Link kopieret" toast).
+- **Won saxophonists** on `jobs/.../service_offer_detail_screen.dart` `_wonBody` (from `offer.job`) with
+  **`musicianView: true`** — which renders ONLY "Sådan omtales parret" + "Særlige forhold" (the DJ-oriented
+  playliste/brudevals/alder/opsætning + the sax subsection are hidden). Keep the web `musicianView` prop in sync.
+- **Sax type (Party/Lounge) is shown separately on EVERY sax offer** (sent + won + lost) via a `_MetaRow`
+  in `_JobHeroCard` (`service_offer_detail_screen`), independent of the partner "Til festen" card. Web
+  already shows it via `ExtJobInfo`.
+
+**The data plumbing was the work:** these are ExtJobs Phase-2 columns that the models didn't carry.
+Added to BOTH entity/model layers: `ExtJob`/`ExtJobModel` gained `address_as, guest_age,
+first_dance_song, spotify_playlist_url, special_conditions, early_setup` (+ surfaced the already-parsed
+`sax_type`/`musician_start_time` on the entity — `toEntity()` had been dropping them), and `Job`/`JobModel`
+gained the same six. **`ExtJobModel.toJobModel()` must forward all six** or the won-sax view (which sees an
+ext job as a `Job` via that mapper) shows an empty card. When you add another ExtJobs display column,
+thread it through: `ExtJobModel.fromJson` + `toEntity` (DJ path) AND `toJobModel` + `JobModel.fromJson`
+(sax offer path).
+
 ## Chat has TWO independent message-bubble implementations (no shared widget)
 
 The two chat UIs do **not** share a bubble widget — a change to one must be mirrored by hand:
@@ -505,6 +562,41 @@ A DJ may not bid on a date where they already have a won quote (or 2 pending quo
 ## "Nye jobs" empty state (filters too strict vs genuinely none)
 
 `_DjNewJobsTab` (`jobs_shell_screen.dart`) shows a smart empty state when the visible list is empty: if `newDjJobsProvider` (the **unfiltered** server list) still has jobs, the DJ's own `DjJobFilters` are hiding them → "Ingen jobs matcher dine filtre" with a **Justér filtre** CTA (→ `AppRoutes.djJobFilters`, `extra: djId` from `djProfileProvider`) + a one-tap **Slå filtre fra** (`djFiltersEnabledProvider.state = false`). If the raw list is also empty, it's genuinely none → softer "Vi giver dig besked" copy. The reusable `EmptyJobsView` now takes optional `title`/`actionLabel`/`onAction`/`secondaryLabel`/`onSecondary`. Web mirror: `web-app/src/app/dj/page.tsx` `NewJobsEmptyState`, driven by `useUnbidJobsFromMyRegions(false)` (unfiltered) vs the filtered list.
+
+## DJ job-length filter (`minHours` / `maxHours`)
+
+Mirrors the web app (source of truth: `web-app/src/helpers/djJobFilters.ts` +
+`jobDurationHours.ts`; migration `20260729000000`). A DJ sets a 1–12h range in
+`dj_job_filters_screen.dart`; jobs outside it are hidden from the feed and suppressed from
+push/email server-side.
+
+- **Duration is derived from `time_start`/`time_end`, never stored.** Dart mirror =
+  `features/jobs/domain/job_duration.dart` — **byte-for-byte with the TS helper, change both
+  together** (both have the same test suite; `test/features/jobs/job_duration_test.dart`).
+- **⚠️ DJ gigs run past midnight: `21:00 -> 02:00` is 5h, not -19h.** A naive subtraction breaks
+  the filter for most real jobs, in the direction that looks like "the filter does nothing".
+  `timeEnd <= timeStart` ⇒ +24h.
+- The comparison uses the **decimal** duration (5.5h is excluded by `maxHours = 5`), and an
+  unparseable duration is **never** excluded.
+- **Applied twice on purpose, same as the other DJ filters:** the server
+  (`GET /api/dj/biddable-jobs` → `selectBiddableJobsForDj`) already excludes them, and
+  `_isJobExcludedByFilters` in `jobs_provider.dart` re-applies client-side so the instant
+  "Filtre til/fra" pill works with no round trip.
+- `DjJobFiltersModel.toJson` is the upsert payload and is hand-listed — a field missing there
+  saves with no error then reverts on reload.
+- **The length is shown on the DJ card ONLY — never on a musician card.** `job_card.dart` is shared,
+  so the `isMusicianView` branch uses plain `job.timeDisplay` and only the `else` (DJ) branch uses
+  `Job.timeDisplayWithDuration` ("21.00 - 02.00 (5 timer)"). Job length is a **DJ** concept: it is
+  what the DJ-only `DjJobFilters` hours filter acts on, and it describes the DJ's window. A
+  saxophonist works their own window (`musician_start_time` + `requested_musician_hours`), so
+  printing the DJ's total next to "Saxofonist: 21.00" reads as if it were the sax's own hours.
+  On the DJ side it earns its place: without it, jobs vanish from the feed with no on-screen reason.
+  Web has the same split for free — the DJ feed uses `JobCard` (has the length) and the musician
+  feed uses `MusicianJobCard` (does not). The shared `OverviewJobsCalendar` is safe because the
+  musician calendar only ever populates `musicianJob`/`musicianExtJob`, which route to
+  `MusicianJobCard`; if you ever make it populate `job`, musicians would start seeing the length.
+- Note mobile's `DjJobFilters` entity is still a **partial** mirror — it has no `minAge`/`maxAge`,
+  which web's filter shape does have (web's form doesn't expose them either, but its API does).
 
 ## Saxophonist job filters (MusicianJobFilters) — separate from DJ filters
 

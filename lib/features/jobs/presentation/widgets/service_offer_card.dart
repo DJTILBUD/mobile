@@ -5,6 +5,7 @@ import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/shared/widgets/recurring_customer_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 
 class ServiceOfferCard extends StatelessWidget {
@@ -13,11 +14,15 @@ class ServiceOfferCard extends StatelessWidget {
     required this.offer,
     this.onTap,
     this.isPlayed = false,
+    this.recurringName,
   });
 
   final ServiceOffer offer;
   final VoidCallback? onTap;
   final bool isPlayed;
+
+  /// Recurring-customer (venue) name for an ext job — drives the "Fast kunde" chip. null = not recurring.
+  final String? recurringName;
 
   static DateTime? _deadline(ServiceOffer o) => o.job.customerDeadline;
 
@@ -91,6 +96,13 @@ class ServiceOfferCard extends StatelessWidget {
                                     id: offer.extJobId ?? offer.jobId ?? 0,
                                     isExtJob: offer.isExtJob,
                                   ),
+                                  if (recurringName != null) ...[
+                                    const SizedBox(height: 6),
+                                    RecurringCustomerBadge(
+                                      name: recurringName!,
+                                      compact: true,
+                                    ),
+                                  ],
                                   const SizedBox(height: 4),
                                   _MetaList(job: job, c: c),
                                 ],

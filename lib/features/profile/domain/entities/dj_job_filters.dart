@@ -9,6 +9,8 @@ class DjJobFilters {
     this.maxBudget,
     this.minGuests,
     this.maxGuests,
+    this.minHours,
+    this.maxHours,
   });
 
   final String djId;
@@ -31,6 +33,11 @@ class DjJobFilters {
   final int? minGuests;
   final int? maxGuests;
 
+  /// Job length bounds in whole hours (see `job_duration.dart`). `maxHours` is the one DJs
+  /// actually reach for: many will not play long gigs and would never bid on them.
+  final int? minHours;
+  final int? maxHours;
+
   bool get hasActiveFilters =>
       excludedEventTypes.isNotEmpty ||
       excludedRegions.isNotEmpty ||
@@ -39,7 +46,9 @@ class DjJobFilters {
       minBudget != null ||
       maxBudget != null ||
       minGuests != null ||
-      maxGuests != null;
+      maxGuests != null ||
+      minHours != null ||
+      maxHours != null;
 
   DjJobFilters copyWith({
     List<String>? excludedEventTypes,
@@ -50,6 +59,8 @@ class DjJobFilters {
     int? Function()? maxBudget,
     int? Function()? minGuests,
     int? Function()? maxGuests,
+    int? Function()? minHours,
+    int? Function()? maxHours,
   }) {
     return DjJobFilters(
       djId: djId,
@@ -61,6 +72,8 @@ class DjJobFilters {
       maxBudget: maxBudget != null ? maxBudget() : this.maxBudget,
       minGuests: minGuests != null ? minGuests() : this.minGuests,
       maxGuests: maxGuests != null ? maxGuests() : this.maxGuests,
+      minHours: minHours != null ? minHours() : this.minHours,
+      maxHours: maxHours != null ? maxHours() : this.maxHours,
     );
   }
 }

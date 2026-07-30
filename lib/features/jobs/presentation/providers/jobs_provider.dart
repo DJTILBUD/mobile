@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/job_duration.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_job_filters.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_job_filters.dart';
@@ -157,6 +158,41 @@ final djExtJobsProvider = FutureProvider<List<ExtJob>>((ref) async {
   return list;
 });
 
+/// Recurring-customer (venue) names for the current DJ's assigned ext jobs,
+/// keyed by ext job id. Powers the "Fast kunde · <navn>" badge on the
+/// "Udvalgte jobs" list + detail (mirrors the web app's udvalgte-jobs badge).
+/// Resolved via the DJ-scoped web API because `RecurringCustomers` is not
+/// RLS-readable by a DJ; failures (e.g. a non-DJ opening the shared ext-job
+/// detail via a push) degrade to an empty map so the badge simply doesn't show.
+final djExtJobRecurringNamesProvider = FutureProvider<Map<int, String>>((
+  ref,
+) async {
+  try {
+    return await ref
+        .watch(jobsRepositoryProvider)
+        .fetchDjExtJobRecurringNames(_currentUserId);
+  } catch (_) {
+    return <int, String>{};
+  }
+});
+
+/// Musician counterpart of [djExtJobRecurringNamesProvider] — venue names for the
+/// current sax's won/assigned ext jobs. The ext-job detail screen is shared by
+/// DJs and musicians, so it coalesces both maps; each degrades to empty for the
+/// wrong role (the DJ endpoint 404s for a musician, and vice-versa this one just
+/// returns no rows), so watching both is safe.
+final musicianExtJobRecurringNamesProvider = FutureProvider<Map<int, String>>((
+  ref,
+) async {
+  try {
+    return await ref
+        .watch(jobsRepositoryProvider)
+        .fetchMusicianExtJobRecurringNames();
+  } catch (_) {
+    return <int, String>{};
+  }
+});
+
 /// DJ jobs after applying profile-level hard constraints and saved filter
 /// preferences. Mirrors `useUnbidJobsFromMyRegions` from the web app.
 /// Whether the DJ's optional job filter preferences (DjJobFilters) should be
@@ -221,6 +257,15 @@ bool _isJobExcludedByFilters(Job job, DjJobFilters f) {
     return true;
   if (f.minGuests != null && job.guestsAmount < f.minGuests!) return true;
   if (f.maxGuests != null && job.guestsAmount > f.maxGuests!) return true;
+
+  // Job length. Mirrors web `isJobExcludedByDjFilters`: the duration helper handles the
+  // past-midnight wrap (21:00 -> 02:00 is 5h, not -19h), the comparison uses the true decimal
+  // length so a 5.5h job is excluded by maxHours = 5, and an unknown length is never excluded.
+  final durationHours = jobDurationHours(job.timeStart, job.timeEnd);
+  if (durationHours != null) {
+    if (f.minHours != null && durationHours < f.minHours!) return true;
+    if (f.maxHours != null && durationHours > f.maxHours!) return true;
+  }
 
   return false;
 }

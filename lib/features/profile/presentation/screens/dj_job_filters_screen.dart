@@ -57,6 +57,12 @@ const _budgetDivisions = 50; // step = 1000 DKK
 const _guestsMin = 0.0;
 const _guestsMax = 1000.0;
 const _guestsDivisions = 50; // step = 20 guests
+// Job length. 1-12h covers everything real (a typical gig is 4-6h). An end left at its extreme
+// stores NULL, so an untouched slider never starts hiding jobs. Mirrors HOURS_MIN/MAX in web's
+// DjJobFiltersForm.
+const _hoursMin = 1.0;
+const _hoursMax = 12.0;
+const _hoursDivisions = 11; // step = 1 hour
 
 class DjJobFiltersScreen extends ConsumerStatefulWidget {
   const DjJobFiltersScreen({super.key, required this.djId});
@@ -218,6 +224,25 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
           _filters = _filters!.copyWith(
             minGuests: () => lo == _guestsMin.toInt() ? null : lo,
             maxGuests: () => hi == _guestsMax.toInt() ? null : hi,
+          ),
+    );
+  }
+
+  // ── Hours slider ──
+
+  RangeValues get _hoursRange => RangeValues(
+    (_filters!.minHours ?? _hoursMin).toDouble().clamp(_hoursMin, _hoursMax),
+    (_filters!.maxHours ?? _hoursMax).toDouble().clamp(_hoursMin, _hoursMax),
+  );
+
+  void _onHoursChanged(RangeValues v) {
+    final lo = v.start.round();
+    final hi = v.end.round();
+    setState(
+      () =>
+          _filters = _filters!.copyWith(
+            minHours: () => lo == _hoursMin.toInt() ? null : lo,
+            maxHours: () => hi == _hoursMax.toInt() ? null : hi,
           ),
     );
   }
@@ -479,6 +504,22 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
           labelBuilder: (v) => '${v.toInt()}',
           noFilterLabel: 'Alle størrelser',
           onChanged: _onGuestsChanged,
+        ),
+        const SizedBox(height: DSSpacing.s4),
+
+        // ── Hours slider ──
+        _SectionHeader(
+          'Jobbets længde',
+          subtitle: 'Spiller du ikke lange jobs, så træk maksimum ned',
+        ),
+        DSRangeSlider(
+          values: _hoursRange,
+          min: _hoursMin,
+          max: _hoursMax,
+          divisions: _hoursDivisions,
+          labelBuilder: (v) => '${v.toInt()} t.',
+          noFilterLabel: 'Alle længder',
+          onChanged: _onHoursChanged,
         ),
       ],
     );

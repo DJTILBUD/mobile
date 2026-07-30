@@ -21,6 +21,8 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/job_content_sec
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/sick_disclaimer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/shared/widgets/recurring_customer_badge.dart';
+import 'package:dj_tilbud_app/shared/widgets/partner_event_wishes_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/event_address_section.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/screens/song_requests_screen.dart';
@@ -291,6 +293,12 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
     final isReadyForBilling = extJob.status == ExtJobStatus.readyForBilling;
     final isConfirmedReady = extJob.djReadyConfirmedAt != null;
     final canConfirmReady = _isWithin5Days(extJob.date);
+    // Recurring-customer (venue) name, resolved server-side. This screen is shared
+    // by DJs and musicians, so coalesce both role-scoped maps — each is empty for
+    // the other role. Absent (badge hidden) when it's not a fixed customer.
+    final recurringName =
+        ref.watch(djExtJobRecurringNamesProvider).valueOrNull?[extJob.id] ??
+        ref.watch(musicianExtJobRecurringNamesProvider).valueOrNull?[extJob.id];
 
     int completedSteps = 0;
     if (isContacted) completedSteps = 1;
@@ -321,6 +329,15 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
           ListView(
             padding: const EdgeInsets.all(DSSpacing.s4),
             children: [
+              // ── Fast kunde (recurring customer) badge — mirrors web udvalgte-jobs ──
+              if (recurringName != null) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: RecurringCustomerBadge(name: recurringName),
+                ),
+                const SizedBox(height: DSSpacing.s4),
+              ],
+
               // ── Aflyst-banner: a canceled ext job can still be opened via a stale push, so make
               // it unmistakable instead of rendering it as a live, active job. ──
               if (extJob.status == ExtJobStatus.canceled) ...[
@@ -504,6 +521,22 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
 
               // ── Job info card ────────────────────────────────────────────────
               _JobInfoCard(extJob: extJob),
+              const SizedBox(height: DSSpacing.s4),
+
+              // ── Til festen (partner-booking couple-facing details) — kept LAST ─
+              PartnerEventWishesCard(
+                addressAs: extJob.addressAs,
+                guestAge: extJob.guestAge,
+                firstDanceSong: extJob.firstDanceSong,
+                spotifyPlaylistUrl: extJob.spotifyPlaylistUrl,
+                specialConditions: extJob.specialConditions,
+                earlySetup: extJob.earlySetup,
+                wantsIc: extJob.wantsIc,
+                saxType: extJob.saxType,
+                musicianStartTime: extJob.musicianStartTime,
+                requestedMusicianHours: extJob.requestedMusicianHours,
+                musicianSpecialRequest: extJob.musicianSpecialRequest,
+              ),
 
               // Extra clearance so the floating chat bubble never covers the last card.
               const SizedBox(height: 96),

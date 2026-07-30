@@ -1,3 +1,5 @@
+import 'package:dj_tilbud_app/features/jobs/domain/job_duration.dart';
+
 class Job {
   const Job({
     required this.id,
@@ -38,6 +40,12 @@ class Job {
     this.musicianSpecialRequest,
     this.songRequestToken,
     this.postalCode,
+    this.guestAge,
+    this.addressAs,
+    this.firstDanceSong,
+    this.spotifyPlaylistUrl,
+    this.specialConditions,
+    this.earlySetup = false,
   });
 
   final int id;
@@ -99,6 +107,15 @@ class Job {
 
   /// UUID token used to generate the public song-request link for guests.
   final String? songRequestToken;
+
+  // Partner "Til festen" couple-facing event details (ext jobs booked via the partner portal). All
+  // nullable; earlySetup is a non-null bool (defaults false).
+  final String? guestAge;
+  final String? addressAs;
+  final String? firstDanceSong;
+  final String? spotifyPlaylistUrl;
+  final String? specialConditions;
+  final bool earlySetup;
 
   /// Postal code of the event location. Present on both Jobs and ExtJobs.
   final String? postalCode;
@@ -178,6 +195,19 @@ class Job {
 
   String get timeDisplay =>
       '${_stripSeconds(timeStart)} - ${_stripSeconds(timeEnd)}';
+
+  /// Job length label, e.g. "5 timer". Null when the times are unparseable.
+  /// Handles the past-midnight wrap via the shared `jobDurationHours` helper.
+  String? get durationDisplay =>
+      formatJobDuration(jobDurationHours(timeStart, timeEnd));
+
+  /// Time range plus length, e.g. "21.00 - 02.00 (5 timer)". Used on the DJ job card so the
+  /// hours filter is visible on the thing it filters: without it, jobs disappear from the feed
+  /// with no on-screen reason.
+  String get timeDisplayWithDuration {
+    final duration = durationDisplay;
+    return duration == null ? timeDisplay : '$timeDisplay ($duration)';
+  }
 
   /// requested_musician_hours formatted for display: whole numbers without decimals, halves with
   /// one decimal (1, 0.5, 1.5). Single source so the card and the detail/offer screens never round

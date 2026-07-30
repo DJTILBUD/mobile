@@ -39,6 +39,12 @@ class JobModel {
     this.musicianSpecialRequest,
     this.songRequestToken,
     this.postalCode,
+    this.guestAge,
+    this.addressAs,
+    this.firstDanceSong,
+    this.spotifyPlaylistUrl,
+    this.specialConditions,
+    this.earlySetup = false,
   });
 
   final int id;
@@ -78,6 +84,12 @@ class JobModel {
   final String? musicianSpecialRequest;
   final String? songRequestToken;
   final String? postalCode;
+  final String? guestAge;
+  final String? addressAs;
+  final String? firstDanceSong;
+  final String? spotifyPlaylistUrl;
+  final String? specialConditions;
+  final bool earlySetup;
 
   factory JobModel.fromJson(Map<String, dynamic> json) {
     return JobModel(
@@ -117,6 +129,12 @@ class JobModel {
       musicianSpecialRequest: json['musician_special_request'] as String?,
       songRequestToken: json['song_request_token'] as String?,
       postalCode: json['postal_code'] as String?,
+      guestAge: json['guest_age'] as String?,
+      addressAs: json['address_as'] as String?,
+      firstDanceSong: json['first_dance_song'] as String?,
+      spotifyPlaylistUrl: json['spotify_playlist_url'] as String?,
+      specialConditions: json['special_conditions'] as String?,
+      earlySetup: json['early_setup'] as bool? ?? false,
     );
   }
 
@@ -176,6 +194,12 @@ class JobModel {
       musicianSpecialRequest: musicianSpecialRequest,
       songRequestToken: songRequestToken,
       postalCode: postalCode,
+      guestAge: guestAge,
+      addressAs: addressAs,
+      firstDanceSong: firstDanceSong,
+      spotifyPlaylistUrl: spotifyPlaylistUrl,
+      specialConditions: specialConditions,
+      earlySetup: earlySetup,
     );
   }
 }

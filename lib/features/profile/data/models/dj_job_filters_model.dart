@@ -11,6 +11,8 @@ class DjJobFiltersModel {
     this.maxBudget,
     this.minGuests,
     this.maxGuests,
+    this.minHours,
+    this.maxHours,
   });
 
   final String djId;
@@ -22,6 +24,8 @@ class DjJobFiltersModel {
   final int? maxBudget;
   final int? minGuests;
   final int? maxGuests;
+  final int? minHours;
+  final int? maxHours;
 
   factory DjJobFiltersModel.fromJson(Map<String, dynamic> json) {
     List<String> _strList(String key) =>
@@ -41,6 +45,8 @@ class DjJobFiltersModel {
       maxBudget: (json['max_budget'] as num?)?.toInt(),
       minGuests: (json['min_guests'] as num?)?.toInt(),
       maxGuests: (json['max_guests'] as num?)?.toInt(),
+      minHours: (json['min_hours'] as num?)?.toInt(),
+      maxHours: (json['max_hours'] as num?)?.toInt(),
     );
   }
 
@@ -54,6 +60,10 @@ class DjJobFiltersModel {
         'max_budget': maxBudget,
         'min_guests': minGuests,
         'max_guests': maxGuests,
+        // toJson is the upsert payload: a field missing here saves with no error and then
+        // reverts on reload (the lossy hand-listed-mapper trap).
+        'min_hours': minHours,
+        'max_hours': maxHours,
       };
 
   DjJobFilters toEntity() => DjJobFilters(
@@ -66,6 +76,8 @@ class DjJobFiltersModel {
         maxBudget: maxBudget,
         minGuests: minGuests,
         maxGuests: maxGuests,
+        minHours: minHours,
+        maxHours: maxHours,
       );
 
   static DjJobFiltersModel fromEntity(DjJobFilters e) => DjJobFiltersModel(
@@ -78,5 +90,7 @@ class DjJobFiltersModel {
         maxBudget: e.maxBudget,
         minGuests: e.minGuests,
         maxGuests: e.maxGuests,
+        minHours: e.minHours,
+        maxHours: e.maxHours,
       );
 }

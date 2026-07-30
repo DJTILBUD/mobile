@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/shared/widgets/recurring_customer_badge.dart';
 
 class JobCard extends StatelessWidget {
   const JobCard({
@@ -16,6 +17,7 @@ class JobCard extends StatelessWidget {
     this.djTier,
     this.musicianPrice,
     this.isMusicianView = false,
+    this.recurringName,
   });
 
   final Job job;
@@ -24,6 +26,10 @@ class JobCard extends StatelessWidget {
   final String? djTier;
   final int? musicianPrice;
   final bool isMusicianView;
+
+  /// Recurring-customer (venue) name for an ext job — drives the "Fast kunde" chip. null = not a
+  /// recurring customer.
+  final String? recurringName;
 
   static String _saxTypeLabel(String saxType) {
     return switch (saxType) {
@@ -198,6 +204,11 @@ class JobCard extends StatelessWidget {
                               spacing: 6,
                               runSpacing: 4,
                               children: [
+                                if (recurringName != null)
+                                  RecurringCustomerBadge(
+                                    name: recurringName!,
+                                    compact: true,
+                                  ),
                                 if (isColliding)
                                   DSStatusBadge(
                                     label: 'Dato-konflikt',
@@ -385,7 +396,11 @@ class _MetaLine extends StatelessWidget {
               colors: c,
             ),
           ] else ...[
-            // DJ + musician (or internal sax job): label the DJ time clearly
+            // DJ + musician (or internal sax job): label the DJ time clearly.
+            // NO job length here on purpose. Length is a DJ concept (it drives the DJ-only
+            // DjJobFilters hours filter); a saxophonist works their own window
+            // (musician_start_time + requested_musician_hours), so showing the DJ's total next to
+            // their own start time reads as if it were theirs.
             _MetaItem(
               icon: LucideIcons.clock,
               label: 'DJ: ${job.timeDisplay}',
@@ -401,7 +416,12 @@ class _MetaLine extends StatelessWidget {
             ],
           ],
         ] else
-          _MetaItem(icon: LucideIcons.clock, label: job.timeDisplay, colors: c),
+          // DJ view only — the length is what the DJ's hours filter acts on, so it belongs here.
+          _MetaItem(
+            icon: LucideIcons.clock,
+            label: job.timeDisplayWithDuration,
+            colors: c,
+          ),
         if (job.guestsAmount > 0) ...[
           const SizedBox(height: 3),
           _MetaItem(

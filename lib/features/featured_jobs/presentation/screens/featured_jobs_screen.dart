@@ -14,6 +14,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/empty_jobs_view.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/shared/widgets/recurring_customer_badge.dart';
 
 /// Statuses for which an assigned ext job is shown under "Udvalgte jobs".
 /// Mirrors the web app's `VISIBLE_STATUSES` in `dj/udvalgte-jobs/page.tsx`.
@@ -35,6 +36,11 @@ class FeaturedJobsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final _c = DSTheme.of(context);
     final extJobsAsync = ref.watch(djExtJobsProvider);
+    // Recurring-customer (venue) names, keyed by ext job id. Loads independently
+    // of the job list; until it resolves the badge is simply absent.
+    final recurringNames =
+        ref.watch(djExtJobRecurringNamesProvider).valueOrNull ??
+        const <int, String>{};
 
     return DefaultTabController(
       length: 2,
@@ -56,7 +62,10 @@ class FeaturedJobsScreen extends ConsumerWidget {
           error:
               (error, _) => _ErrorView(
                 message: friendlyErrorMessage(error),
-                onRetry: () => ref.invalidate(djExtJobsProvider),
+                onRetry: () {
+                  ref.invalidate(djExtJobsProvider);
+                  ref.invalidate(djExtJobRecurringNamesProvider);
+                },
               ),
           data: (allExtJobs) {
             final extJobs =
@@ -91,13 +100,21 @@ class FeaturedJobsScreen extends ConsumerWidget {
               children: [
                 _JobList(
                   jobs: kommende,
+                  recurringNames: recurringNames,
                   emptyMessage: 'Ingen kommende udvalgte jobs.',
-                  onRefresh: () async => ref.invalidate(djExtJobsProvider),
+                  onRefresh: () async {
+                    ref.invalidate(djExtJobsProvider);
+                    ref.invalidate(djExtJobRecurringNamesProvider);
+                  },
                 ),
                 _JobList(
                   jobs: spillet,
+                  recurringNames: recurringNames,
                   emptyMessage: 'Du har ingen spillede jobs endnu.',
-                  onRefresh: () async => ref.invalidate(djExtJobsProvider),
+                  onRefresh: () async {
+                    ref.invalidate(djExtJobsProvider);
+                    ref.invalidate(djExtJobRecurringNamesProvider);
+                  },
                 ),
               ],
             );
@@ -113,11 +130,13 @@ class FeaturedJobsScreen extends ConsumerWidget {
 class _JobList extends StatelessWidget {
   const _JobList({
     required this.jobs,
+    required this.recurringNames,
     required this.emptyMessage,
     required this.onRefresh,
   });
 
   final List<ExtJob> jobs;
+  final Map<int, String> recurringNames;
   final String emptyMessage;
   final Future<void> Function() onRefresh;
 
@@ -146,6 +165,7 @@ class _JobList extends StatelessWidget {
               index: index,
               child: _ExtJobCard(
                 extJob: sorted[index],
+                recurringName: recurringNames[sorted[index].id],
                 onTap:
                     () => context.pushNamed(
                       AppRoutes.extJobDetail,
@@ -161,9 +181,14 @@ class _JobList extends StatelessWidget {
 // ─── Ext Job Card ────────────────────────────────────────────────────────────
 
 class _ExtJobCard extends StatelessWidget {
-  const _ExtJobCard({required this.extJob, required this.onTap});
+  const _ExtJobCard({
+    required this.extJob,
+    required this.onTap,
+    this.recurringName,
+  });
 
   final ExtJob extJob;
+  final String? recurringName;
   final VoidCallback onTap;
 
   @override
@@ -235,6 +260,13 @@ class _ExtJobCard extends StatelessWidget {
                                       JobIdBadge(id: extJob.id, isExtJob: true),
                                     ],
                                   ),
+                                  if (recurringName != null) ...[
+                                    const SizedBox(height: 6),
+                                    RecurringCustomerBadge(
+                                      name: recurringName!,
+                                      compact: true,
+                                    ),
+                                  ],
                                   const SizedBox(height: 4),
                                   _MetaList(extJob: extJob, c: _c),
                                 ],

@@ -14,6 +14,14 @@ abstract class JobsRepository {
   /// Fetches ext jobs (Udvalgte jobs) assigned to this DJ.
   Future<List<ExtJob>> fetchDjExtJobs(String userId);
 
+  /// Recurring-customer (venue) names for the DJ's assigned ext jobs, keyed by
+  /// ext job id (resolved server-side; a miss means "not a fixed customer").
+  Future<Map<int, String>> fetchDjExtJobRecurringNames(String userId);
+
+  /// Recurring-customer (venue) names for the current MUSICIAN's won/assigned
+  /// ext jobs, keyed by ext job id (the sax counterpart, resolved server-side).
+  Future<Map<int, String>> fetchMusicianExtJobRecurringNames();
+
   /// Fetches open jobs available for an instrumentalist.
   Future<List<Job>> fetchNewInstrumentalistJobs(String userId);
 

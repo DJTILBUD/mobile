@@ -51,10 +51,35 @@ class JobsRepositoryImpl implements JobsRepository {
   Future<List<ExtJob>> fetchDjExtJobs(String userId) async {
     try {
       final data = await _datasource.fetchDjExtJobs(userId);
-      return data.map((j) => ExtJobModel.fromJson(j).toEntity()).toList();
+      // wants_ic ("kontaktes af DJ'en inden festen?") lives on JobMetadata (RLS-blocked for DJs), so it
+      // isn't in the direct ExtJobs query. Enrich each row from the DJ-scoped web endpoint before
+      // parsing (fromJson reads 'wants_ic'). Degrades to no enrichment on failure so the list still loads.
+      Map<int, bool?> wantsIc = const {};
+      try {
+        wantsIc = await _datasource.fetchDjExtJobWantsContact(userId);
+      } catch (_) {
+        // Non-DJ caller / network hiccup — leave the operational fields hidden rather than fail the list.
+      }
+      return data.map((j) {
+        final id = j['id'] as int?;
+        if (id != null && wantsIc.containsKey(id)) {
+          j['wants_ic'] = wantsIc[id];
+        }
+        return ExtJobModel.fromJson(j).toEntity();
+      }).toList();
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
+  }
+
+  @override
+  Future<Map<int, String>> fetchDjExtJobRecurringNames(String userId) async {
+    return _datasource.fetchDjExtJobRecurringNames(userId);
+  }
+
+  @override
+  Future<Map<int, String>> fetchMusicianExtJobRecurringNames() async {
+    return _datasource.fetchMusicianExtJobRecurringNames();
   }
 
   @override

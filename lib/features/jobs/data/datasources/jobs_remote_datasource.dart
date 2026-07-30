@@ -184,6 +184,65 @@ class JobsRemoteDatasource {
         .order('date', ascending: false);
   }
 
+  /// Recurring-customer (venue) names for the DJ's assigned ext jobs, keyed by
+  /// ext job id. The name lives on `RecurringCustomers`, which DJ-role users
+  /// cannot read via RLS, so it is resolved **server-side** by the web app
+  /// (mirrors web `useInternalDjExtJobs` → `/api/internal-dj/ext-jobs`, which
+  /// enriches each row with `recurring_customer_name`). Only ids that actually
+  /// belong to a recurring customer end up in the map, so a lookup miss = "not a
+  /// fixed customer". The endpoint is DJ-scoped (checks `DjInfos`); for any other
+  /// caller it 4xx's and we surface an empty map at the provider.
+  Future<Map<int, String>> fetchDjExtJobRecurringNames(String userId) async {
+    final body = await _webApiGet('/api/internal-dj/ext-jobs?dj_id=$userId');
+    final jobs = (body['jobs'] as List<dynamic>?) ?? const [];
+    final names = <int, String>{};
+    for (final entry in jobs) {
+      final row = entry as Map<String, dynamic>;
+      final id = row['id'] as int?;
+      final name = row['recurring_customer_name'] as String?;
+      if (id != null && name != null && name.isNotEmpty) names[id] = name;
+    }
+    return names;
+  }
+
+  /// "Vil parret kontaktes af DJ'en inden festen?" (`JobMetadata.wants_ic`) for the DJ's assigned ext
+  /// jobs, keyed by ext job id. wants_ic lives on JobMetadata, which DJ-role users cannot read via RLS,
+  /// so it is resolved **server-side** by the same DJ-scoped endpoint that enriches `recurring_customer_name`
+  /// (`/api/internal-dj/ext-jobs`). An absent id = "not collected" (not a partner booking), so the
+  /// "Til festen" card omits the operational fields. Mirrors [fetchDjExtJobRecurringNames].
+  Future<Map<int, bool?>> fetchDjExtJobWantsContact(String userId) async {
+    final body = await _webApiGet('/api/internal-dj/ext-jobs?dj_id=$userId');
+    final jobs = (body['jobs'] as List<dynamic>?) ?? const [];
+    final map = <int, bool?>{};
+    for (final entry in jobs) {
+      final row = entry as Map<String, dynamic>;
+      final id = row['id'] as int?;
+      if (id != null && row.containsKey('wants_ic')) {
+        map[id] = row['wants_ic'] as bool?;
+      }
+    }
+    return map;
+  }
+
+  /// Recurring-customer (venue) names for the ext jobs the current MUSICIAN has
+  /// won / been assigned to, keyed by ext job id. The sax counterpart to
+  /// [fetchDjExtJobRecurringNames]: `RecurringCustomers` is not RLS-readable by a
+  /// musician either, so the name comes from the DJ-free web endpoint
+  /// `/api/internal-musician/ext-job-recurring-names` (derives the musician from
+  /// the auth token; scoped to their own won/assigned bookings).
+  Future<Map<int, String>> fetchMusicianExtJobRecurringNames() async {
+    final body = await _webApiGet(
+      '/api/internal-musician/ext-job-recurring-names',
+    );
+    final raw = (body['names'] as Map<String, dynamic>?) ?? const {};
+    final names = <int, String>{};
+    raw.forEach((key, value) {
+      final id = int.tryParse(key);
+      if (id != null && value is String && value.isNotEmpty) names[id] = value;
+    });
+    return names;
+  }
+
   /// Fetches jobs available for an instrumentalist to bid on.
   /// Mirrors web app useAvailableJobsForMusicians:
   /// - Wide status filter (open/sent/re_sent/reopened/another_round/closed/customer_contacted)

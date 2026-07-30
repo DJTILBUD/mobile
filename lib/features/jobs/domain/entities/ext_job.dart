@@ -22,9 +22,18 @@ class ExtJob {
     this.assignedMusicianName,
     this.roleType,
     this.requestedMusicianHours,
+    this.musicianStartTime,
+    this.saxType,
     this.region,
     this.notes,
     this.birthdayPersonAge,
+    this.guestAge,
+    this.addressAs,
+    this.firstDanceSong,
+    this.spotifyPlaylistUrl,
+    this.specialConditions,
+    this.earlySetup = false,
+    this.wantsIc,
     this.company,
     this.djReadyConfirmedAt,
     this.customerContactPlannedFor,
@@ -58,6 +67,22 @@ class ExtJob {
   final String? assignedMusicianName;
   final String? roleType;
   final double? requestedMusicianHours;
+
+  // Saxophonist window + partner "Til festen" event details (couple-facing fields the partner booking
+  // form collects). All nullable; earlySetup is a non-null bool (defaults false).
+  final String? musicianStartTime;
+  final String? saxType;
+  final String? guestAge;
+  final String? addressAs;
+  final String? firstDanceSong;
+  final String? spotifyPlaylistUrl;
+  final String? specialConditions;
+  final bool earlySetup;
+
+  /// "Vil parret kontaktes af DJ'en inden festen?" (JobMetadata.wants_ic). Null when not a partner
+  /// booking; true/false is the couple's explicit answer.
+  final bool? wantsIc;
+
   final String? region;
   final String? notes;
   final String? birthdayPersonAge;

@@ -1905,6 +1905,10 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
             child: ListView(children: [const SizedBox(height: 80), empty]),
           );
         }
+        // Recurring-customer (venue) names keyed by ext job id, so any recurring feed card shows "Fast kunde".
+        final recurringNames =
+            ref.watch(musicianExtJobRecurringNamesProvider).valueOrNull ??
+            const <int, String>{};
         return RefreshIndicator(
           color: _c.brand.primary,
           onRefresh: () => _refresh(ref),
@@ -1920,6 +1924,7 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
                   job: job,
                   isMusicianView: true,
                   isColliding: hasConflict,
+                  recurringName: recurringNames[job.extJobId],
                   musicianPrice: calculateMusicianOfferPrice(
                     job.requestedMusicianHours,
                     job.createdAt,
@@ -1973,6 +1978,9 @@ class _InstrumentalistWonOffersTabState
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
     final offersAsync = ref.watch(wonServiceOffersProvider);
+    final recurringNames =
+        ref.watch(musicianExtJobRecurringNamesProvider).valueOrNull ??
+        const <int, String>{};
 
     return offersAsync.when(
       loading: () => const SkeletonListView(),
@@ -2113,6 +2121,7 @@ class _InstrumentalistWonOffersTabState
                         child: ServiceOfferCard(
                           offer: o,
                           isPlayed: _showPlayed,
+                          recurringName: recurringNames[o.extJobId],
                           onTap:
                               () => context.pushNamed(
                                 AppRoutes.serviceOfferDetail,
@@ -2144,6 +2153,9 @@ class _InstrumentalistOffersTab extends ConsumerWidget {
       ServiceOfferStatus.won => ref.watch(wonServiceOffersProvider),
       ServiceOfferStatus.lost => ref.watch(expiredServiceOffersProvider),
     };
+    final recurringNames =
+        ref.watch(musicianExtJobRecurringNamesProvider).valueOrNull ??
+        const <int, String>{};
 
     return offersAsync.when(
       loading: () => const SkeletonListView(),
@@ -2178,6 +2190,7 @@ class _InstrumentalistOffersTab extends ConsumerWidget {
                   index: index,
                   child: ServiceOfferCard(
                     offer: sorted[index],
+                    recurringName: recurringNames[sorted[index].extJobId],
                     onTap:
                         () => context.pushNamed(
                           AppRoutes.serviceOfferDetail,

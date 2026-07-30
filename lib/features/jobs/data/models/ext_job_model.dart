@@ -26,6 +26,13 @@ class ExtJobModel {
     this.roleType,
     this.requestedMusicianHours,
     this.musicianStartTime,
+    this.guestAge,
+    this.addressAs,
+    this.firstDanceSong,
+    this.spotifyPlaylistUrl,
+    this.specialConditions,
+    this.earlySetup = false,
+    this.wantsIc,
     this.region,
     this.notes,
     this.birthdayPersonAge,
@@ -65,6 +72,13 @@ class ExtJobModel {
   final String? roleType;
   final double? requestedMusicianHours;
   final String? musicianStartTime;
+  final String? guestAge;
+  final String? addressAs;
+  final String? firstDanceSong;
+  final String? spotifyPlaylistUrl;
+  final String? specialConditions;
+  final bool earlySetup;
+  final bool? wantsIc;
   final String? region;
   final String? notes;
   final String? birthdayPersonAge;
@@ -113,6 +127,13 @@ class ExtJobModel {
       roleType: json['role_type'] as String?,
       requestedMusicianHours:
           (json['requested_musician_hours'] as num?)?.toDouble(),
+      guestAge: json['guest_age'] as String?,
+      addressAs: json['address_as'] as String?,
+      firstDanceSong: json['first_dance_song'] as String?,
+      spotifyPlaylistUrl: json['spotify_playlist_url'] as String?,
+      specialConditions: json['special_conditions'] as String?,
+      earlySetup: json['early_setup'] as bool? ?? false,
+      wantsIc: json['wants_ic'] as bool?,
       region: json['region'] as String?,
       notes: json['notes'] as String?,
       birthdayPersonAge: json['birthday_person_age'] as String?,
@@ -163,6 +184,15 @@ class ExtJobModel {
       assignedMusicianName: assignedMusicianName,
       roleType: roleType,
       requestedMusicianHours: requestedMusicianHours,
+      musicianStartTime: musicianStartTime,
+      saxType: saxType,
+      guestAge: guestAge,
+      addressAs: addressAs,
+      firstDanceSong: firstDanceSong,
+      spotifyPlaylistUrl: spotifyPlaylistUrl,
+      specialConditions: specialConditions,
+      earlySetup: earlySetup,
+      wantsIc: wantsIc,
       region: region,
       notes: notes,
       birthdayPersonAge: birthdayPersonAge,
@@ -219,6 +249,12 @@ class ExtJobModel {
       hasActiveOffer: hasActiveOffer,
       saxType: saxType,
       musicianSpecialRequest: musicianSpecialRequest,
+      guestAge: guestAge,
+      addressAs: addressAs,
+      firstDanceSong: firstDanceSong,
+      spotifyPlaylistUrl: spotifyPlaylistUrl,
+      specialConditions: specialConditions,
+      earlySetup: earlySetup,
       // Carry the decision-window fields so the offer detail screen (which sees an ext job as a
       // Job via this mapper) can render the customer countdown the same as a normal job.
       sentAt: sentAt,
