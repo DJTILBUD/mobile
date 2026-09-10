@@ -12,6 +12,7 @@ import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/chat/data/models/conversation_model.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/dj_quote_model.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/ext_job_model.dart';
+import 'package:dj_tilbud_app/features/notifications/data/notifications_datasource.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/job_model.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/service_offer_model.dart';
 
@@ -163,6 +164,20 @@ class NotificationsService {
     if (msg != null) await navigateTo(msg.data, router);
   }
 
+  /// Fires after a tapped notification's feed row has actually been marked read in the DB.
+  ///
+  /// `NotificationsNotifier` refetches on this. Realtime alone is NOT enough for the case
+  /// that matters most — a push tapped from a TERMINATED app: `navigateTo` runs during
+  /// launch, so the update can commit while the notifier has finished its first fetch but
+  /// its websocket is still connecting, and that event is simply lost. The badge would then
+  /// stay lit until the next resume. Emitting only after the write means a notifier created
+  /// later reads the correct value anyway, and one created earlier is told to refetch.
+  static final StreamController<void> _feedReadController =
+      StreamController<void>.broadcast();
+
+  /// Emits when a tapped notification was marked read — see [_feedReadController].
+  static Stream<void> get feedReadEvents => _feedReadController.stream;
+
   /// Extracts the primary reference ID from FCM data (job_id, offer_id, etc.).
   static String? extractReferenceId(Map<String, dynamic> data) {
     final type = data['type'] as String?;
@@ -241,6 +256,79 @@ class NotificationsService {
   /// NOTE: this only reaches GA4. The `NotificationLogs` insert below cannot
   /// carry it without a new column (a backend change), so the admin dashboard's
   /// open rate still conflates the three.
+  /// The role to route by: the payload's, else the role this device is signed in as.
+  ///
+  /// ⚠️ `data['role']` is NOT always present. `notify-admin-message` sends ONE
+  /// multicast to DJs and musicians at once when `target_audience = 'both'`, so it
+  /// deliberately omits `role` — it cannot be per-recipient. A bare
+  /// `data['role'] == 'musician'` test then reads as "dj", which pushed musicians
+  /// into the `/dj/*` shell and opened `AdminMessagesScreen(role: dj)` (wrong list,
+  /// and read-state keyed on `djId`). `RoleCache.role` is the app's own answer, loaded
+  /// in `main()` before `runApp`, so it is always available and always matches the
+  /// shell that is actually rendered. The payload still wins when it says something.
+  static String? effectiveRole(Map<String, dynamic> data) {
+    final fromPayload = data['role'] as String?;
+    if (fromPayload == 'dj' || fromPayload == 'musician') return fromPayload;
+    return switch (RoleCache.role) {
+      MusicianRole.dj => 'dj',
+      MusicianRole.instrumentalist => 'musician',
+      null => null,
+    };
+  }
+
+  /// Waits for Supabase to restore the persisted session, up to [timeout].
+  ///
+  /// ⚠️ On a COLD START from a tapped push, `Supabase.initialize` has returned but the
+  /// session is recovered asynchronously afterwards (this is why `main()` subscribes
+  /// the auth notifier "before recoverSession() fires its background events"). So
+  /// `currentUser` is routinely still null when `handleInitialMessage` fires, and
+  /// [navigateTo]'s `if (userId == null) return` silently DROPPED the whole deep link
+  /// — the app just opened on the home tab and the tap looked ignored. Waiting turns
+  /// that race into a short delay.
+  static Future<String?> _awaitUserId({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final existing = supabase.auth.currentUser?.id;
+    if (existing != null) return existing;
+    // Own the subscription rather than `firstWhere().timeout()`: a timed-out
+    // `firstWhere` leaves its listener attached to the broadcast stream forever.
+    final completer = Completer<String?>();
+    StreamSubscription<dynamic>? sub;
+    Timer? timer;
+    void finish(String? id) {
+      if (completer.isCompleted) return;
+      timer?.cancel();
+      unawaited(sub?.cancel());
+      completer.complete(id);
+    }
+
+    sub = supabase.auth.onAuthStateChange.listen((event) {
+      final id = event.session?.user.id;
+      if (id != null) finish(id);
+    }, onError: (_) => finish(supabase.auth.currentUser?.id));
+    timer = Timer(timeout, () => finish(supabase.auth.currentUser?.id));
+    return completer.future;
+  }
+
+  /// Waits until the router has actually parsed a route, up to [timeout].
+  ///
+  /// ⚠️ `GoRouter.push` builds on `routerDelegate.currentConfiguration` AS OF THE CALL,
+  /// and that is empty until the `Router` widget has mounted and processed its initial
+  /// location. Pushing onto an empty base produces a stack with NO shell underneath:
+  /// no bottom nav, `canPop()` false (so Android back exits the app), and the screen
+  /// DISAPPEARS on the next router refresh — which a cold start reliably fires when the
+  /// auth notifier sees the recovered session. Verified in a widget-test harness.
+  static Future<void> _awaitRouterReady(
+    GoRouter router, {
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (router.routerDelegate.currentConfiguration.matches.isEmpty &&
+        DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 16));
+    }
+  }
+
   static Future<void> navigateTo(
     Map<String, dynamic> data,
     GoRouter router, {
@@ -248,9 +336,17 @@ class NotificationsService {
     String source = 'push',
   }) async {
     final type = data['type'] as String?;
-    final role = data['role'] as String?;
-    final userId = supabase.auth.currentUser?.id;
+    // Both waits are no-ops on the common (warm) path — the session and the router are
+    // already there — and only do anything on a cold start from a tapped push.
+    final userId = await _awaitUserId();
     if (userId == null) return;
+    await _awaitRouterReady(router);
+    final role = effectiveRole(data);
+    // Analytics keeps the RAW payload role, not the resolved one, so `tapped` rows
+    // stay joinable with the `sent` rows the Edge Function wrote (a `both` admin
+    // message is sent with role = null; resolving it here would silently split one
+    // campaign across two roles in the funnel).
+    final loggedRole = data['role'] as String?;
 
     // campaignAwareLogType, matching the NotificationLogs insert directly below.
     // These two used to disagree: the raw type here meant GA4 attributed a
@@ -258,7 +354,7 @@ class NotificationsService {
     AnalyticsService.logNotificationTapped(
       campaignAwareLogType(data, 'tapped'),
       source: source,
-      role: role,
+      role: loggedRole,
     );
     unawaited(
       supabase
@@ -266,12 +362,29 @@ class NotificationsService {
           .insert({
             'user_id': userId,
             'notification_type': campaignAwareLogType(data, 'tapped'),
-            'role': role,
+            'role': loggedRole,
             'reference_id': extractReferenceId(data),
             'event': 'tapped',
           })
           .catchError((_) {}),
     );
+
+    // Tapping a notification IS reading it — clear the matching feed row(s) so the bell
+    // badge and the OS app-icon badge drop on their own. Every entry point runs this
+    // (push, foreground banner, and a row re-opened in the notification centre): the feed
+    // row already marks itself read on that last one, so the update simply matches nothing.
+    if (type != null) {
+      unawaited(
+        NotificationsDatasource(supabase)
+            .markReadForPush(
+              userId: userId,
+              type: type,
+              referenceId: extractReferenceId(data),
+            )
+            .then((_) => _feedReadController.add(null))
+            .catchError((_) {}),
+      );
+    }
 
     // Reset to the relevant shell tab before pushing the detail, so a push tapped
     // from OUTSIDE the app opens with the right tab underneath and Back returns to
@@ -471,13 +584,17 @@ class NotificationsService {
           break;
 
         case 'admin_message':
+          // `role` here is effectiveRole(data), NOT data['role'] — an admin message
+          // to `target_audience: 'both'` carries no role at all, and reading that as
+          // "dj" sent musicians into the DJ shell (see [effectiveRole]).
           final isMusician = role == 'musician';
           final profileTab =
               isMusician ? '/instrumentalist/profile' : '/dj/profile';
           goTab(profileTab);
-          // The adminMessages route requires a MusicianRole enum as `extra`;
-          // passing the raw `role` String fell through to the "Mangler data"
-          // screen (the bug that broke tapping this notification).
+          // The adminMessages route wants a MusicianRole enum as `extra`; passing the
+          // raw `role` String fell through to the "Mangler data" screen. It now also
+          // falls back to RoleCache when `extra` is lost entirely (see _roleFromExtra
+          // in app.dart), so this push is no longer the only thing keeping it alive.
           router.pushNamed(
             AppRoutes.adminMessages,
             extra: isMusician ? MusicianRole.instrumentalist : MusicianRole.dj,

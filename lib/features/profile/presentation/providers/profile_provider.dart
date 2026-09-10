@@ -164,19 +164,42 @@ class MarkAdminMessageReadNotifier extends StateNotifier<AsyncValue<void>> {
 
   final ProfileRepository _repository;
 
-  Future<void> mark({
+  /// Marks one admin message read. Returns whether the write succeeded.
+  ///
+  /// ⚠️ EVERY `state =` after an await is guarded by `mounted`, and the outcome
+  /// is RETURNED rather than published. This provider is `autoDispose` and
+  /// **nothing watches it** — `admin_messages_screen` only `ref.read`s the
+  /// notifier — so Riverpod disposes this instance as soon as `read` returns,
+  /// long before the Supabase round-trip finishes. The old unguarded
+  /// `state = await AsyncValue.guard(...)` therefore threw
+  /// *"Tried to use MarkAdminMessageReadNotifier after `dispose` was called"*
+  /// on **every** admin message a user opened. The DB write itself always went
+  /// through — only the state write was invalid — which is why the message did
+  /// get marked read while the app logged an unhandled exception.
+  ///
+  /// The general shape: an `autoDispose` StateNotifier that is only ever
+  /// `ref.read` (never `ref.watch`) has NO listener keeping it alive, so it
+  /// cannot safely publish anything after an await. Either watch it somewhere
+  /// (that is why the ready-for-billing notifiers survive — `quote_detail_screen`
+  /// watches them for the loading spinner) or return the result like this.
+  Future<bool> mark({
     required int messageId,
     required String userId,
     required bool isDj,
   }) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => _repository.markAdminMessageRead(
+    if (mounted) state = const AsyncLoading();
+    try {
+      await _repository.markAdminMessageRead(
         messageId: messageId,
         userId: userId,
         isDj: isDj,
-      ),
-    );
+      );
+      if (mounted) state = const AsyncData(null);
+      return true;
+    } catch (e, st) {
+      if (mounted) state = AsyncError(e, st);
+      return false;
+    }
   }
 }
 

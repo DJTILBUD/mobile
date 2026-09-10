@@ -36,6 +36,7 @@ class PaymentInfo {
     this.businessType,
     this.cvr,
     this.billingEmail,
+    this.cvrCompanyName,
   });
 
   final PaymentType payment;
@@ -50,10 +51,27 @@ class PaymentInfo {
   final String? cvr;
   final String? billingEmail;
 
+  /// Registered company name behind the CVR, looked up by the web-app when the
+  /// CVR is saved. Read-only on mobile: never sent back.
+  final String? cvrCompanyName;
+
   SelfBillingInfo toSelfBillingInfo() => SelfBillingInfo(
     businessType: businessType,
     cpr: cpr,
     cvr: cvr,
     billingEmail: billingEmail,
+  );
+
+  /// Input for the payment-type aware readiness rule (`isPaymentInfoComplete`).
+  PaymentReadinessInfo toReadinessInfo() => PaymentReadinessInfo(
+    payment: payment.toDbString(),
+    businessType: businessType,
+    cpr: cpr,
+    cvr: cvr,
+    billingEmail: billingEmail,
+    registrationNumber: registrationNumber,
+    accountNumber: accountNumber,
+    street: street,
+    cityPostalCode: cityPostalCode,
   );
 }

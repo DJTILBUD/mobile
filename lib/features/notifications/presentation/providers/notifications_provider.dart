@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dj_tilbud_app/core/notifications/app_badge.dart';
+import 'package:dj_tilbud_app/core/notifications/notifications_service.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_provider.dart';
 import 'package:dj_tilbud_app/features/notifications/data/notifications_datasource.dart';
@@ -29,8 +30,15 @@ class NotificationsNotifier
   final String _userId;
   RealtimeChannel? _channel;
   Timer? _debounce;
+  StreamSubscription<void>? _feedReadSub;
 
   Future<void> _init() async {
+    // Refetch when a tapped notification marks its own row read. Realtime would normally
+    // carry that UPDATE, but on a cold start from a push the write can land before the
+    // websocket is up — see NotificationsService.feedReadEvents.
+    _feedReadSub = NotificationsService.feedReadEvents.listen(
+      (_) => _coalescedFetch(),
+    );
     await _fetchSilent();
     _subscribe();
   }
@@ -45,9 +53,26 @@ class NotificationsNotifier
     try {
       final items = await _ds.fetch(_userId);
       _emit(items);
+      await _clearStaleBidInvitations(items);
     } catch (e, st) {
       if (mounted) state = AsyncError(e, st);
     }
+  }
+
+  /// "Nyt job" notifications whose job is already taken have nothing left to act
+  /// on, so they clear themselves instead of the user marking eight of them read
+  /// by hand. Runs after every fetch; a no-op when there is nothing unread of
+  /// that kind, and best-effort (a failure leaves the feed untouched).
+  Future<void> _clearStaleBidInvitations(List<AppNotification> items) async {
+    final cleared = await _ds.markStaleBidInvitationsRead(_userId, items);
+    if (cleared.isEmpty || !mounted) return;
+    final now = DateTime.now();
+    // Patch locally rather than re-fetching: the DB write already happened, and
+    // a second round trip would re-enter this method.
+    _emit([
+      for (final n in state.valueOrNull ?? items)
+        cleared.contains(n.id) && !n.isRead ? n.copyWith(readAt: now) : n,
+    ]);
   }
 
   /// Publish a new list AND mirror the unread count onto the OS app-icon badge.
@@ -119,6 +144,7 @@ class NotificationsNotifier
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _feedReadSub?.cancel();
     _debounce?.cancel();
     if (_channel != null) _client.removeChannel(_channel!);
     super.dispose();

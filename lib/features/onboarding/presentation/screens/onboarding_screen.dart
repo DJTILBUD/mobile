@@ -790,6 +790,7 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
         DSInput(
           controller: _fullNameCtrl,
           label: 'Fulde navn',
+          textCapitalization: TextCapitalization.words,
           validator: (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
         ),
         if (widget.isDj) ...[
@@ -797,6 +798,7 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
           DSInput(
             controller: _djNameCtrl,
             label: 'DJ / firma navn',
+            textCapitalization: TextCapitalization.words,
             validator:
                 (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
           ),

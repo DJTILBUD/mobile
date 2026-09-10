@@ -8,6 +8,7 @@ class UserFileModel {
     required this.createdAt,
     this.thumbnailVideoId,
     this.description,
+    this.sortOrder,
   });
 
   final int id;
@@ -16,6 +17,7 @@ class UserFileModel {
   final String createdAt;
   final int? thumbnailVideoId;
   final String? description;
+  final int? sortOrder;
 
   factory UserFileModel.fromJson(Map<String, dynamic> json) {
     return UserFileModel(
@@ -28,6 +30,11 @@ class UserFileModel {
               ? (json['thumbnail_video_id'] as num).toInt()
               : null,
       description: json['description'] as String?,
+      // Null for rows that predate the sort_order column / were never reordered.
+      sortOrder:
+          json['sort_order'] != null
+              ? (json['sort_order'] as num).toInt()
+              : null,
     );
   }
 
@@ -39,6 +46,7 @@ class UserFileModel {
       createdAt: DateTime.parse(createdAt),
       thumbnailVideoId: thumbnailVideoId,
       description: description,
+      sortOrder: sortOrder,
     );
   }
 }

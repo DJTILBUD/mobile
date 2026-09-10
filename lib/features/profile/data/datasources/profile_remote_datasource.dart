@@ -184,12 +184,48 @@ class ProfileRemoteDatasource {
 
   // ── User Files ──
 
+  /// Ordered by the performer's own gallery order.
+  ///
+  /// `nullsFirst: false` is load-bearing: `sort_order` is nullable (a fresh upload leaves it
+  /// null) and Postgres sorts NULLs FIRST on ASC, which would make every new upload jump to the
+  /// front of the gallery. `id` is the tiebreaker so a never-reordered gallery keeps insert
+  /// order — the same rule as web-app `UserFileRepository.getUserFilesByUserId`.
   Future<List<Map<String, dynamic>>> fetchUserFiles(String userId) async {
     return _client
         .from('UserFiles')
         .select()
         .eq('user_id', userId)
-        .order('created_at', ascending: true);
+        .order('sort_order', ascending: true, nullsFirst: false)
+        .order('id', ascending: true);
+  }
+
+  /// Persists the order of one gallery (`common`, `common_video` or `dj_mix`).
+  ///
+  /// Goes through the web-app API rather than a direct Supabase update because `UserFiles` has
+  /// INSERT and SELECT RLS policies but NO UPDATE policy — a direct update matches 0 rows and
+  /// silently "succeeds". The route re-checks ownership with the service role. Same reason
+  /// [deleteFile] already calls the web app.
+  Future<void> reorderFiles({
+    required UserFileType type,
+    required List<int> orderedIds,
+  }) async {
+    final token = _client.auth.currentSession?.accessToken;
+    if (token == null) {
+      throw Exception('Not authenticated');
+    }
+
+    final res = await http.patch(
+      Uri.parse('$_webAppBaseUrl/api/files/reorder'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'type': type.toDbString(), 'orderedIds': orderedIds}),
+    );
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('Could not save order (${res.statusCode}) ${res.body}');
+    }
   }
 
   Future<Map<String, dynamic>> uploadFile({
@@ -279,7 +315,18 @@ class ProfileRemoteDatasource {
     required String baseName,
   }) async {
     try {
-      final bytes = await VideoThumbnail.thumbnailData(
+      // ⚠️ Grab a frame ~1s in, NOT frame 0. `timeMs` defaults to 0, and the first frame of a
+      // phone clip is very often black (fade-in, autoexposure still settling), which is exactly
+      // how a profile ends up showing a pure black tile with a play badge. Falls back to frame 0
+      // for a clip too short to seek into, so a poster is still better than none.
+      var bytes = await VideoThumbnail.thumbnailData(
+        video: videoPath,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 720,
+        quality: 75,
+        timeMs: 1000,
+      );
+      bytes ??= await VideoThumbnail.thumbnailData(
         video: videoPath,
         imageFormat: ImageFormat.JPEG,
         maxWidth: 720,

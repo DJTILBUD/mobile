@@ -181,6 +181,26 @@ void authNotifierEarlyInit() => _authNotifier;
 /// correct without relying on an async re-evaluation after the first frame.
 Future<void> initOnboardingStatus() => _onboardingNotifier.checkStatus();
 
+/// The role for a route whose `extra` is nothing but the user's role.
+///
+/// ⚠️ `state.extra` is NOT durable. go_router carries no `extra` through a re-parse
+/// (there is no `extraCodec`), and a re-parse happens on things the user never asked
+/// for: the platform re-reporting the current route on an Android activity restore,
+/// a Router remount, a deep link pushed before the Router mounted. Every one of those
+/// used to drop the pushed screen into `_MissingRouteDataScreen` ("Mangler data") —
+/// which is what users hit after tapping an admin-message push.
+///
+/// The role is a GLOBAL app fact, not per-navigation data: `RoleCache.role` is loaded
+/// in `main()` before `runApp` and is exactly what the shell already renders. So a
+/// role-only route must never fail on a missing `extra` — resolve it from the cache
+/// instead. Only use this for role-only routes; a route that needs a real entity
+/// (Job/Quote/Conversation) still has nothing to fall back to.
+@visibleForTesting
+MusicianRole? roleFromExtra(Object? extra) {
+  if (extra is MusicianRole) return extra;
+  return RoleCache.role;
+}
+
 String _defaultHomePath() {
   final role = RoleCache.role;
   if (role == MusicianRole.dj) return '/dj/home';
@@ -573,8 +593,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/edit-profile',
         name: AppRoutes.editProfile,
         builder: (context, state) {
-          final role = state.extra;
-          if (role is! MusicianRole) {
+          final role = roleFromExtra(state.extra);
+          if (role == null) {
             return const _MissingRouteDataScreen(label: 'rediger profil');
           }
           return EditProfileScreen(role: role);
@@ -584,8 +604,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/reviews',
         name: AppRoutes.reviews,
         builder: (context, state) {
-          final role = state.extra;
-          if (role is! MusicianRole) {
+          final role = roleFromExtra(state.extra);
+          if (role == null) {
             return const _MissingRouteDataScreen(label: 'anmeldelser');
           }
           return ReviewsScreen(role: role);
@@ -595,8 +615,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/stats',
         name: AppRoutes.stats,
         builder: (context, state) {
-          final role = state.extra;
-          if (role is! MusicianRole) {
+          final role = roleFromExtra(state.extra);
+          if (role == null) {
             return const _MissingRouteDataScreen(label: 'statistik');
           }
           return StatsScreen(role: role);
@@ -627,8 +647,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/payment',
         name: AppRoutes.payment,
         builder: (context, state) {
-          final role = state.extra;
-          if (role is! MusicianRole) {
+          final role = roleFromExtra(state.extra);
+          if (role == null) {
             return const _MissingRouteDataScreen(label: 'betaling');
           }
           return PaymentScreen(role: role);
@@ -638,8 +658,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/dj/job-filters',
         name: AppRoutes.djJobFilters,
         builder: (context, state) {
-          final djId = state.extra;
-          if (djId is! String) {
+          // The id is always the signed-in user, so fall back to the session rather
+          // than failing on a dropped `extra` — same reasoning as [roleFromExtra].
+          final extra = state.extra;
+          final djId =
+              extra is String ? extra : supabase.auth.currentUser?.id;
+          if (djId == null) {
             return const _MissingRouteDataScreen(label: 'jobfiltre');
           }
           return DjJobFiltersScreen(djId: djId);
@@ -649,8 +673,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/instrumentalist/job-filters',
         name: AppRoutes.musicianJobFilters,
         builder: (context, state) {
-          final musicianId = state.extra;
-          if (musicianId is! String) {
+          final extra = state.extra;
+          final musicianId =
+              extra is String ? extra : supabase.auth.currentUser?.id;
+          if (musicianId == null) {
             return const _MissingRouteDataScreen(label: 'jobfiltre');
           }
           return MusicianJobFiltersScreen(musicianId: musicianId);
@@ -660,7 +686,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile-preview',
         name: AppRoutes.profilePreview,
         builder: (context, state) {
-          final role = (state.extra as MusicianRole?) ?? MusicianRole.dj;
+          // The old fallback was a hardcoded `MusicianRole.dj`, so a musician whose
+          // `extra` was dropped previewed the DJ profile instead of their own.
+          final role = roleFromExtra(state.extra) ?? MusicianRole.dj;
           return ProfilePreviewScreen(role: role);
         },
       ),
@@ -681,8 +709,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/admin-messages',
         name: AppRoutes.adminMessages,
         builder: (context, state) {
-          final role = state.extra;
-          if (role is! MusicianRole) {
+          final role = roleFromExtra(state.extra);
+          if (role == null) {
             return const _MissingRouteDataScreen(label: 'adminbeskeder');
           }
           return AdminMessagesScreen(role: role);
@@ -701,15 +729,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/faq',
         name: AppRoutes.faq,
-        builder:
-            (context, state) => FaqScreen(role: state.extra as MusicianRole),
+        builder: (context, state) {
+          // Was `state.extra as MusicianRole` — a hard cast, so a lost `extra`
+          // threw instead of degrading. See [roleFromExtra].
+          final role = roleFromExtra(state.extra);
+          if (role == null) {
+            return const _MissingRouteDataScreen(label: 'ofte stillede spørgsmål');
+          }
+          return FaqScreen(role: role);
+        },
       ),
       GoRoute(
         path: '/terms',
         name: AppRoutes.terms,
         builder: (context, state) {
-          final role = state.extra;
-          if (role is! MusicianRole) {
+          final role = roleFromExtra(state.extra);
+          if (role == null) {
             return const _MissingRouteDataScreen(label: 'handelsbetingelser');
           }
           return TermsScreen(role: role);
@@ -719,8 +754,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/notification-settings',
         name: AppRoutes.notificationSettings,
         builder: (context, state) {
-          final role = state.extra;
-          if (role is! MusicianRole) {
+          final role = roleFromExtra(state.extra);
+          if (role == null) {
             return const _MissingRouteDataScreen(
               label: 'notifikationsindstillinger',
             );
@@ -731,6 +766,67 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Height of [_KeyboardDismissBar].
+///
+/// ⚠️ SHARED BY THE BAR AND BY [ReserveKeyboardDismissBar]. The bar is painted in the app-level
+/// Stack, i.e. ABOVE the routed screen, so unless the same height is reserved out of `viewInsets`
+/// the bar sits directly on top of whatever the keyboard just scrolled into view. Change it in one
+/// place only. Scaled with the text scaler (and clamped) so a large accessibility text size cannot
+/// make the bar taller than the gap reserved for it.
+double keyboardDismissBarHeight(BuildContext context) =>
+    MediaQuery.textScalerOf(context).scale(40).clamp(40.0, 72.0);
+
+/// Reserves room for [_KeyboardDismissBar] by inflating `viewInsets.bottom` for everything below.
+///
+/// ⚠️ THIS IS WHAT STOPS THE "Luk" BAR COVERING FOCUSED INPUTS, app-wide. A `Scaffold` with the
+/// default `resizeToAvoidBottomInset: true` shrinks its body to `screen - viewInsets.bottom` and
+/// then scrolls the focused field to the bottom of that area — which is EXACTLY where the bar is
+/// painted (`bottom: keyboardHeight`). So every screen with a text field had its focused field
+/// partly hidden behind an opaque bar: the bottom of a tall sales-pitch box, a counter row, the
+/// last line of a message. Adding the bar's height here makes the Scaffold stop above the bar
+/// instead of under it, and it fixes every screen at once rather than per-screen.
+///
+/// Modal bottom sheets that pad themselves by `viewInsets.bottom` (the documented sheet pattern)
+/// pick the extra height up automatically and clear the bar too.
+///
+/// The visibility condition is duplicated from [_KeyboardDismissBar] deliberately and must stay
+/// identical: reserving space for a bar that is not drawn leaves a dead gap above the keyboard
+/// (which is why the chat screen, that suppresses the bar, must not reserve for it either).
+@visibleForTesting
+class ReserveKeyboardDismissBar extends ConsumerWidget {
+  const ReserveKeyboardDismissBar({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final media = MediaQuery.of(context);
+    final keyboardHeight = media.viewInsets.bottom;
+    final barVisible =
+        keyboardHeight > 0 && !ref.watch(suppressKeyboardDismissBarProvider);
+
+    // ⚠️ ALWAYS RETURN THE SAME TREE SHAPE — vary the value, never the wrapper. [child] is the
+    // `Router` itself (MaterialApp.router hands its builder the Router, not the routed screen).
+    // Returning `child` bare when the bar is hidden and `MediaQuery(child: child)` when it is
+    // shown put the Router at a different depth each time the keyboard opened, so Flutter
+    // unmounted it and mounted a fresh one, and the new Router re-parsed the stack from the URL.
+    // go_router does not carry `extra` through that (no `extraCodec`), so EVERY pushed screen came
+    // back with `extra == null` and fell into its `_MissingRouteDataScreen`: 'Siden "..." kunne
+    // ikke åbnes, fordi nødvendige data mangler', on every screen, the moment a field was tapped.
+    // That shipped as 1.0.37 and broke every user. Reserving 0 keeps the behaviour identical.
+    final reserved = barVisible ? keyboardDismissBarHeight(context) : 0.0;
+
+    return MediaQuery(
+      data: media.copyWith(
+        viewInsets: media.viewInsets.copyWith(
+          bottom: keyboardHeight + reserved,
+        ),
+      ),
+      child: child,
+    );
+  }
+}
 
 class _KeyboardDismissBar extends ConsumerWidget {
   const _KeyboardDismissBar();
@@ -751,10 +847,10 @@ class _KeyboardDismissBar extends ConsumerWidget {
         color: Colors.transparent,
         child: Container(
           color: c.bg.surface,
-          padding: const EdgeInsets.symmetric(
-            horizontal: DSSpacing.s4,
-            vertical: 6,
-          ),
+          // Exactly the reserved height (see keyboardDismissBarHeight) — an intrinsic height here
+          // would drift from the reservation and start covering content again.
+          height: keyboardDismissBarHeight(context),
+          padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -820,10 +916,10 @@ class _AppState extends ConsumerState<App> {
         );
         NotificationsService.logReceivedToSupabase(message.data);
         if (type == 'quote_won') {
-          ref.invalidate(firstWinEligibleProvider(MusicianRole.dj));
+          ref.invalidate(firstWinDecisionProvider(MusicianRole.dj));
         } else if (type == 'offer_won') {
           ref.invalidate(
-            firstWinEligibleProvider(MusicianRole.instrumentalist),
+            firstWinDecisionProvider(MusicianRole.instrumentalist),
           );
         }
         if (type == 'chat_message') {
@@ -877,7 +973,9 @@ class _AppState extends ConsumerState<App> {
             child: UpdateGate(
               child: Stack(
                 children: [
-                  child!,
+                  // Inflates viewInsets so every Scaffold below stops ABOVE the "Luk" bar
+                  // instead of being overlapped by it. See _ReserveKeyboardDismissBar.
+                  ReserveKeyboardDismissBar(child: child!),
                   const InAppNotificationBanner(),
                   const DevEnvBanner(),
                   const _KeyboardDismissBar(),

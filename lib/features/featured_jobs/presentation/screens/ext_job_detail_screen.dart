@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
-import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/shared/widgets/conversation_card.dart';
 import 'package:dj_tilbud_app/shared/widgets/copy_hint_row.dart';
 import 'package:dj_tilbud_app/shared/widgets/chat_bubble_fab.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/ready_for_billing_gate.dart';
+import 'package:dj_tilbud_app/shared/widgets/locked_info_banner.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/utils/extra_hours_options.dart';
@@ -27,6 +29,10 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_custome
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/event_address_section.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/screens/song_requests_screen.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/decline_extra_hours.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
+import 'package:dj_tilbud_app/shared/widgets/venue_photos_card.dart';
+import 'package:dj_tilbud_app/core/utils/planned_contact.dart';
 
 class ExtJobDetailScreen extends ConsumerStatefulWidget {
   const ExtJobDetailScreen({super.key, required this.extJob});
@@ -40,24 +46,9 @@ class ExtJobDetailScreen extends ConsumerStatefulWidget {
 class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
   DSColors get _c => DSTheme.of(context);
 
-  String _toastError(AppException? err) {
-    if (err == null) return 'Noget gik galt. Prøv igen.';
-    // The web ready-for-billing route authors its rejection reasons in Danish, so we
-    // match the Danish text. (The English forms are kept as a fallback in case a route
-    // ever returns them.) Without this, the Danish server message fell through to the
-    // generic "Noget gik galt" and the DJ couldn't see that the musician was the blocker.
-    final msg = err.message.toLowerCase();
-    if (msg.contains('musikere') ||
-        (msg.contains('musician') && msg.contains('contact'))) {
-      return 'Din instrumentalist skal også kontakte kunden, inden du kan lukke aftalen. Koordinér med dem og prøv igen.';
-    }
-    if (msg.contains('markeres som kontaktet') ||
-        msg.contains('customer_contacted') ||
-        msg.contains('customer-contacted')) {
-      return 'Du skal markere kunden som kontaktet, inden du kan lukke aftalen.';
-    }
-    return friendlyErrorMessage(err, fallback: 'Noget gik galt. Prøv igen.');
-  }
+  // One copy of the mapping, shared with the internal-job DJ screen
+  // (quote_detail_screen) so the two can never tell the DJ different things.
+  String _toastError(AppException? err) => readyForBillingErrorMessage(err);
 
   bool _isWithin5Days(DateTime eventDate) {
     final today = DateTime.now();
@@ -79,9 +70,12 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
       ),
       builder:
-          (_) => Padding(
+          // ⚠️ `sheetContext`, NOT the outer screen's `context`. A modal sheet is a separate route:
+          // reading viewInsets off the parent captures the value at push time (usually 0) and the
+          // sheet never rebuilds as the keyboard animates in, so the padding stays 0 forever.
+          (sheetContext) => Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
             ),
             child: ContactCustomerSheet(
               existingPlannedDate: plannedDate,
@@ -189,6 +183,8 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
         variant: DSToastVariant.error,
         title: _toastError(err is AppException ? err : null),
       );
+      // Refresh the offer list so a rejection the DJ just hit also disables the button.
+      ref.invalidate(serviceOffersForExtJobProvider(widget.extJob.id));
     }
   }
 
@@ -293,268 +289,379 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
     final isReadyForBilling = extJob.status == ExtJobStatus.readyForBilling;
     final isConfirmedReady = extJob.djReadyConfirmedAt != null;
     final canConfirmReady = _isWithin5Days(extJob.date);
+    // Same server rule as the internal-job screen: the assigned DJ cannot close the
+    // deal until every WINNING musician on this ext job has marked the customer
+    // contacted (`PUT /api/ext-jobs/[id]/ready-for-billing` → 400
+    // `musician_not_contacted`). Only the DJ is gated — a musician on this screen is
+    // the one being waited for. Fails open on an unloaded list; the server decides.
+    final wonExtOffers =
+        isAssignedDj
+            ? (ref
+                    .watch(serviceOffersForExtJobProvider(widget.extJob.id))
+                    .valueOrNull ??
+                const <ServiceOffer>[])
+            : const <ServiceOffer>[];
+    final musicianContactBlocked = isBlockedByMusicianContact(wonExtOffers);
     // Recurring-customer (venue) name, resolved server-side. This screen is shared
     // by DJs and musicians, so coalesce both role-scoped maps — each is empty for
     // the other role. Absent (badge hidden) when it's not a fixed customer.
     final recurringName =
         ref.watch(djExtJobRecurringNamesProvider).valueOrNull?[extJob.id] ??
         ref.watch(musicianExtJobRecurringNamesProvider).valueOrNull?[extJob.id];
+    // Venue photos from the team's site visit. DJ-only endpoint; a musician
+    // opening this shared screen just gets an empty map (card self-hides).
+    final venuePhotos =
+        ref.watch(djExtJobVenuePhotosProvider).valueOrNull?[extJob.id] ??
+        const <VenuePhoto>[];
 
     int completedSteps = 0;
     if (isContacted) completedSteps = 1;
     if (isReadyForBilling) completedSteps = 2;
     if (isConfirmedReady) completedSteps = 3;
 
-    return Scaffold(
-      backgroundColor: _c.bg.canvas,
-      appBar: AppBar(
-        title: Row(
+    final wishesCard = PartnerEventWishesCard(
+      addressAs: extJob.addressAs,
+      guestAge: extJob.guestAge,
+      firstDanceSong: extJob.firstDanceSong,
+      spotifyPlaylistUrl: extJob.spotifyPlaylistUrl,
+      specialConditions: extJob.specialConditions,
+      earlySetup: extJob.earlySetup,
+      wantsIc: extJob.wantsIc,
+      saxType: extJob.saxType,
+      musicianStartTime: extJob.musicianStartTime,
+      requestedMusicianHours: extJob.requestedMusicianHours,
+      musicianSpecialRequest: extJob.musicianSpecialRequest,
+    );
+    // A partner (recurring) booking always gets the "Stedet" tab, even before any
+    // photos exist, so the DJ learns where venue info lives. Other ext jobs only
+    // get it when there is something to show.
+    final showVenueTab =
+        extJob.isRecurringCustomer ||
+        venuePhotos.isNotEmpty ||
+        wishesCard.hasContent;
+
+    final jobTab = ListView(
+      padding: const EdgeInsets.all(DSSpacing.s4),
+      children: [
+        // ── Fast kunde (recurring customer) badge — mirrors web udvalgte-jobs ──
+        if (recurringName != null) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: RecurringCustomerBadge(name: recurringName),
+          ),
+          const SizedBox(height: DSSpacing.s4),
+        ],
+
+        // ── Aflyst-banner: a canceled ext job can still be opened via a stale push, so make
+        // it unmistakable instead of rendering it as a live, active job. ──
+        if (extJob.status == ExtJobStatus.canceled) ...[
+          _CanceledBanner(),
+          const SizedBox(height: DSSpacing.s4),
+        ],
+
+        // ── Kundens svarfrist (same widget as normal jobs) ──
+        // Shown while the offer is out to the customer (status 'sent'); decisionDeadline is
+        // null until sent_at is stamped, so it also self-hides defensively.
+        if (extJob.status == ExtJobStatus.sent &&
+            extJob.decisionDeadline != null) ...[
+          CustomerDeadlineBanner(deadline: extJob.decisionDeadline),
+          const SizedBox(height: DSSpacing.s4),
+        ],
+
+        // ── Process tracker ──────────────────────────────────────────────
+        _SectionCard(
+          title: 'Din proces',
           children: [
-            Expanded(
-              child: Text(
-                eventTypeLabel(extJob.displayEventType),
-                overflow: TextOverflow.ellipsis,
-              ),
+            ProcessTracker(
+              steps: const [
+                'Kontakt kunden',
+                'Send faktura',
+                'Bekræft klar',
+                'Spil jobbet',
+                'Optag content',
+              ],
+              completedSteps: completedSteps,
             ),
-            const SizedBox(width: 8),
-            JobIdBadge(id: extJob.id, isExtJob: true),
-            const SizedBox(width: 8),
           ],
         ),
-        backgroundColor: _c.bg.surface,
-        surfaceTintColor: _c.bg.surface,
-      ),
-      body: Stack(
-        children: [
-          ListView(
-            padding: const EdgeInsets.all(DSSpacing.s4),
-            children: [
-              // ── Fast kunde (recurring customer) badge — mirrors web udvalgte-jobs ──
-              if (recurringName != null) ...[
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: RecurringCustomerBadge(name: recurringName),
-                ),
-                const SizedBox(height: DSSpacing.s4),
-              ],
+        const SizedBox(height: DSSpacing.s4),
 
-              // ── Aflyst-banner: a canceled ext job can still be opened via a stale push, so make
-              // it unmistakable instead of rendering it as a live, active job. ──
-              if (extJob.status == ExtJobStatus.canceled) ...[
-                _CanceledBanner(),
-                const SizedBox(height: DSSpacing.s4),
-              ],
+        // ── Spillestedets adresse (kun synlig for den tildelte DJ/musiker) ──
+        if (!showVenueTab) EventAddressSection(extJobId: extJob.id),
 
-              // ── Kundens svarfrist (same widget as normal jobs) ──
-              // Shown while the offer is out to the customer (status 'sent'); decisionDeadline is
-              // null until sent_at is stamped, so it also self-hides defensively.
-              if (extJob.status == ExtJobStatus.sent &&
-                  extJob.decisionDeadline != null) ...[
-                CustomerDeadlineBanner(deadline: extJob.decisionDeadline),
-                const SizedBox(height: DSSpacing.s4),
-              ],
+        // ── Step 5: content capture (unlocked once ready confirmed) ──
+        if (isConfirmedReady) ...[
+          JobContentSection(extJobId: extJob.id),
+          const SizedBox(height: DSSpacing.s4),
+        ],
 
-              // ── Process tracker ──────────────────────────────────────────────
-              _SectionCard(
-                title: 'Din proces',
-                children: [
-                  ProcessTracker(
-                    steps: const [
-                      'Kontakt kunden',
-                      'Send faktura',
-                      'Bekræft klar',
-                      'Spil jobbet',
-                      'Optag content',
-                    ],
-                    completedSteps: completedSteps,
+        // ── Sygdom / sick-leave disclaimer ───────────────────────────────
+        const SickDisclaimer(role: 'dj'),
+        const SizedBox(height: DSSpacing.s4),
+
+        // ── Customer contact ─────────────────────────────────────────────
+        _SectionCard(
+          title: 'Kundekontakt',
+          children: [
+            _ContactRow(icon: LucideIcons.user, label: extJob.leadName),
+            if (extJob.email != null) ...[
+              const SizedBox(height: DSSpacing.s2),
+              _ContactRow(
+                icon: LucideIcons.mail,
+                label: extJob.email!,
+                onCopy: () {
+                  Clipboard.setData(ClipboardData(text: extJob.email!));
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.success,
+                    title: 'Email kopieret',
+                  );
+                },
+              ),
+            ],
+            if (extJob.phoneNumber != null) ...[
+              const SizedBox(height: DSSpacing.s2),
+              _ContactRow(
+                icon: LucideIcons.phone,
+                label: extJob.phoneNumber!,
+                onCopy: () {
+                  Clipboard.setData(ClipboardData(text: extJob.phoneNumber!));
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.success,
+                    title: 'Telefon kopieret',
+                  );
+                },
+              ),
+            ],
+
+            const SizedBox(height: DSSpacing.s4),
+            const Divider(height: 1),
+            const SizedBox(height: DSSpacing.s4),
+
+            // Step 1: Mark contacted (or set planned date)
+            if (isContacted)
+              _DoneButton(label: 'Kunden er kontaktet')
+            else ...[
+              if (extJob.customerContactPlannedFor != null)
+                _PlannedContactBanner(date: extJob.customerContactPlannedFor!),
+              DSButton(
+                // Once the planned date is today or has passed, the DJ should be calling now, so the
+                // button reverts to the primary "Kunde kontaktet" action instead of offering to reschedule.
+                label:
+                    extJob.customerContactPlannedFor != null &&
+                            !isPlannedContactDue(
+                              extJob.customerContactPlannedFor,
+                            )
+                        ? 'Ændr kontaktdato'
+                        : 'Kunde kontaktet',
+                variant:
+                    extJob.customerContactPlannedFor != null &&
+                            !isPlannedContactDue(
+                              extJob.customerContactPlannedFor,
+                            )
+                        ? DSButtonVariant.secondary
+                        : DSButtonVariant.primary,
+                expand: true,
+                onTap:
+                    () => _openContactSheet(extJob.customerContactPlannedFor),
+              ),
+            ],
+
+            // Step 2: Mark ready for billing
+            if (isContacted) ...[
+              const SizedBox(height: DSSpacing.s3),
+              if (isReadyForBilling)
+                _DoneButton(label: 'Faktura sendt')
+              else ...[
+                if (musicianContactBlocked) ...[
+                  LockedInfoBanner(
+                    icon: LucideIcons.users,
+                    label: musicianContactBlockedMessage(wonExtOffers),
                   ),
+                  const SizedBox(height: DSSpacing.s3),
                 ],
-              ),
-              const SizedBox(height: DSSpacing.s4),
-
-              // ── Spillestedets adresse (kun synlig for den tildelte DJ/musiker) ──
-              EventAddressSection(extJobId: extJob.id),
-
-              // ── Step 5: content capture (unlocked once ready confirmed) ──
-              if (isConfirmedReady) ...[
-                JobContentSection(extJobId: extJob.id),
-                const SizedBox(height: DSSpacing.s4),
+                DSButton(
+                  label: 'Luk aftale og send faktura',
+                  variant: DSButtonVariant.primary,
+                  expand: true,
+                  isLoading: billingLoading,
+                  enabled: !musicianContactBlocked,
+                  onTap:
+                      billingLoading || musicianContactBlocked
+                          ? null
+                          : _handleReadyForBilling,
+                ),
               ],
+            ],
 
-              // ── Sygdom / sick-leave disclaimer ───────────────────────────────
-              const SickDisclaimer(role: 'dj'),
-              const SizedBox(height: DSSpacing.s4),
+            // Step 3: Jeg er klar
+            if (isReadyForBilling) ...[
+              const SizedBox(height: DSSpacing.s3),
+              if (isConfirmedReady)
+                _DoneButton(label: 'Jeg er klar!')
+              else if (!canConfirmReady)
+                LockedInfoBanner(
+                  label: 'Du kan bekræfte "Jeg er klar" 5 dage før jobbet.',
+                )
+              else
+                DSButton(
+                  label: 'Jeg er klar!',
+                  variant: DSButtonVariant.primary,
+                  expand: true,
+                  isLoading: readyLoading,
+                  onTap: readyLoading ? null : _handleConfirmReady,
+                ),
+            ],
+          ],
+        ),
+        const SizedBox(height: DSSpacing.s4),
 
-              // ── Customer contact ─────────────────────────────────────────────
-              _SectionCard(
-                title: 'Kundekontakt',
-                children: [
-                  _ContactRow(icon: LucideIcons.user, label: extJob.leadName),
-                  if (extJob.email != null) ...[
-                    const SizedBox(height: DSSpacing.s2),
-                    _ContactRow(
-                      icon: LucideIcons.mail,
-                      label: extJob.email!,
-                      onCopy: () {
-                        Clipboard.setData(ClipboardData(text: extJob.email!));
-                        DSToast.show(
-                          context,
-                          variant: DSToastVariant.success,
-                          title: 'Email kopieret',
-                        );
-                      },
-                    ),
-                  ],
-                  if (extJob.phoneNumber != null) ...[
-                    const SizedBox(height: DSSpacing.s2),
-                    _ContactRow(
-                      icon: LucideIcons.phone,
-                      label: extJob.phoneNumber!,
-                      onCopy: () {
-                        Clipboard.setData(
-                          ClipboardData(text: extJob.phoneNumber!),
-                        );
-                        DSToast.show(
-                          context,
-                          variant: DSToastVariant.success,
-                          title: 'Telefon kopieret',
-                        );
-                      },
-                    ),
-                  ],
+        // ── Extra hours (DJ-only, post-event window) ─────────────────────
+        if (isAssignedDj) ...[
+          _ExtJobExtraHoursSection(extJob: extJob),
+          _ExtJobEarlySetupSection(extJob: extJob),
+          const SizedBox(height: DSSpacing.s4),
+        ],
 
-                  const SizedBox(height: DSSpacing.s4),
-                  const Divider(height: 1),
-                  const SizedBox(height: DSSpacing.s4),
+        // ── Instrumentalist on this job (only once both are confirmed) ────
+        if (extJob.assignedMusicianId != null &&
+            const {
+              ExtJobStatus.closed,
+              ExtJobStatus.customerContacted,
+              ExtJobStatus.readyForBilling,
+            }.contains(extJob.status)) ...[
+          _instrumentalistCard(extJob),
+          const SizedBox(height: DSSpacing.s4),
+        ],
 
-                  // Step 1: Mark contacted (or set planned date)
-                  if (isContacted)
-                    _DoneButton(label: 'Kunden er kontaktet')
-                  else ...[
-                    if (extJob.customerContactPlannedFor != null)
-                      _PlannedContactBanner(
-                        date: extJob.customerContactPlannedFor!,
-                      ),
-                    DSButton(
-                      label:
-                          extJob.customerContactPlannedFor != null
-                              ? 'Ændr kontaktdato'
-                              : 'Kunde kontaktet',
-                      variant:
-                          extJob.customerContactPlannedFor != null
-                              ? DSButtonVariant.secondary
-                              : DSButtonVariant.primary,
-                      expand: true,
-                      onTap:
-                          () => _openContactSheet(
-                            extJob.customerContactPlannedFor,
-                          ),
-                    ),
-                  ],
+        // ── Chat with instrumentalist ────────────────────────────────────
+        ConversationCard(extJobId: extJob.id),
+        const SizedBox(height: DSSpacing.s4),
 
-                  // Step 2: Mark ready for billing
-                  if (isContacted) ...[
-                    const SizedBox(height: DSSpacing.s3),
-                    if (isReadyForBilling)
-                      _DoneButton(label: 'Faktura sendt')
-                    else
-                      DSButton(
-                        label: 'Luk aftale og send faktura',
-                        variant: DSButtonVariant.primary,
-                        expand: true,
-                        isLoading: billingLoading,
-                        onTap: billingLoading ? null : _handleReadyForBilling,
-                      ),
-                  ],
+        // ── Song requests ─────────────────────────────────────────────────
+        _ExtJobSongRequestsRow(extJob: extJob),
+        const SizedBox(height: DSSpacing.s4),
 
-                  // Step 3: Jeg er klar
-                  if (isReadyForBilling) ...[
-                    const SizedBox(height: DSSpacing.s3),
-                    if (isConfirmedReady)
-                      _DoneButton(label: 'Jeg er klar!')
-                    else if (!canConfirmReady)
-                      _LockedInfo(
-                        label:
-                            'Du kan bekræfte "Jeg er klar" 5 dage før jobbet.',
-                      )
-                    else
-                      DSButton(
-                        label: 'Jeg er klar!',
-                        variant: DSButtonVariant.primary,
-                        expand: true,
-                        isLoading: readyLoading,
-                        onTap: readyLoading ? null : _handleConfirmReady,
-                      ),
-                  ],
-                ],
+        // ── Invoice badge ────────────────────────────────────────────────
+        InvoiceStatusBadge(extJobId: extJob.id),
+        const SizedBox(height: DSSpacing.s4),
+
+        // ── Job info card ────────────────────────────────────────────────
+        _JobInfoCard(extJob: extJob),
+        const SizedBox(height: DSSpacing.s4),
+
+        // ── Til festen: inline only when there is no "Stedet" tab ──────────
+        if (!showVenueTab) wishesCard,
+
+        // Extra clearance so the floating chat bubble never covers the last card.
+        const SizedBox(height: 96),
+      ],
+    );
+
+    // "Stedet": everything about the venue in one place (address, the team's
+    // photos, and the partner booking's wishes), so a DJ preparing for the night
+    // does not have to scroll past the process cards to find it.
+    final venueTab = ListView(
+      padding: const EdgeInsets.all(DSSpacing.s4),
+      children: [
+        if (recurringName != null) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: RecurringCustomerBadge(name: recurringName),
+          ),
+          const SizedBox(height: DSSpacing.s4),
+        ],
+        EventAddressSection(extJobId: extJob.id),
+        VenuePhotosCard(photos: venuePhotos),
+        wishesCard,
+        if (venuePhotos.isEmpty && !wishesCard.hasContent) _VenueEmptyState(),
+        const SizedBox(height: 96),
+      ],
+    );
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: _c.bg.canvas,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  eventTypeLabel(extJob.displayEventType),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              const SizedBox(height: DSSpacing.s4),
-
-              // ── Extra hours (DJ-only, post-event window) ─────────────────────
-              if (isAssignedDj) ...[
-                _ExtJobExtraHoursSection(extJob: extJob),
-                const SizedBox(height: DSSpacing.s4),
-              ],
-
-              // ── Instrumentalist on this job (only once both are confirmed) ────
-              if (extJob.assignedMusicianId != null &&
-                  const {
-                    ExtJobStatus.closed,
-                    ExtJobStatus.customerContacted,
-                    ExtJobStatus.readyForBilling,
-                  }.contains(extJob.status)) ...[
-                _instrumentalistCard(extJob),
-                const SizedBox(height: DSSpacing.s4),
-              ],
-
-              // ── Chat with instrumentalist ────────────────────────────────────
-              ConversationCard(extJobId: extJob.id),
-              const SizedBox(height: DSSpacing.s4),
-
-              // ── Song requests ─────────────────────────────────────────────────
-              _ExtJobSongRequestsRow(extJob: extJob),
-              const SizedBox(height: DSSpacing.s4),
-
-              // ── Invoice badge ────────────────────────────────────────────────
-              InvoiceStatusBadge(extJobId: extJob.id),
-              const SizedBox(height: DSSpacing.s4),
-
-              // ── Job info card ────────────────────────────────────────────────
-              _JobInfoCard(extJob: extJob),
-              const SizedBox(height: DSSpacing.s4),
-
-              // ── Til festen (partner-booking couple-facing details) — kept LAST ─
-              PartnerEventWishesCard(
-                addressAs: extJob.addressAs,
-                guestAge: extJob.guestAge,
-                firstDanceSong: extJob.firstDanceSong,
-                spotifyPlaylistUrl: extJob.spotifyPlaylistUrl,
-                specialConditions: extJob.specialConditions,
-                earlySetup: extJob.earlySetup,
-                wantsIc: extJob.wantsIc,
-                saxType: extJob.saxType,
-                musicianStartTime: extJob.musicianStartTime,
-                requestedMusicianHours: extJob.requestedMusicianHours,
-                musicianSpecialRequest: extJob.musicianSpecialRequest,
-              ),
-
-              // Extra clearance so the floating chat bubble never covers the last card.
-              const SizedBox(height: 96),
+              const SizedBox(width: 8),
+              JobIdBadge(id: extJob.id, isExtJob: true),
+              const SizedBox(width: 8),
             ],
           ),
-          // Floating "Beskeder" bubble (mirrors the web app + the musician
-          // won-offer view). Self-hides when no conversation exists for this
-          // ext job.
-          Positioned.fill(
-            child: SafeArea(
-              child: Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.all(DSSpacing.s4),
-                  child: ChatBubbleFab(extJobId: extJob.id),
+          backgroundColor: _c.bg.surface,
+          surfaceTintColor: _c.bg.surface,
+          bottom:
+              showVenueTab
+                  ? const DSTabBar(
+                    tabs: [
+                      DSTabItem(label: 'Job', icon: LucideIcons.clipboardList),
+                      DSTabItem(label: 'Stedet', icon: LucideIcons.mapPin),
+                    ],
+                  )
+                  : null,
+        ),
+        body: Stack(
+          children: [
+            showVenueTab ? TabBarView(children: [jobTab, venueTab]) : jobTab,
+            // Floating "Beskeder" bubble (mirrors the web app + the musician
+            // won-offer view). Self-hides when no conversation exists for this
+            // ext job.
+            Positioned.fill(
+              child: SafeArea(
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(DSSpacing.s4),
+                    child: ChatBubbleFab(extJobId: extJob.id),
+                  ),
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown on the "Stedet" tab of a partner booking before the team has uploaded
+/// any photos and the booking carries no wishes, so the tab never looks broken.
+class _VenueEmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final c = DSTheme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DSSpacing.s6),
+      decoration: BoxDecoration(
+        color: c.bg.surface,
+        borderRadius: BorderRadius.circular(DSRadius.md),
+        border: Border.all(color: c.border.subtle),
+      ),
+      child: Column(
+        children: [
+          Icon(LucideIcons.camera, size: 28, color: c.text.muted),
+          const SizedBox(height: DSSpacing.s3),
+          Text(
+            'Ingen oplysninger om stedet endnu',
+            style: DSTextStyle.labelLg.copyWith(color: c.text.primary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: DSSpacing.s1),
+          Text(
+            'Billeder og noter fra stedet vises her, når DJTILBUD har tilføjet dem.',
+            style: DSTextStyle.bodySm.copyWith(color: c.text.muted),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -860,41 +967,6 @@ class _DoneButton extends StatelessWidget {
 
 // ─── Locked Info ──────────────────────────────────────────────────────────────
 
-class _LockedInfo extends StatelessWidget {
-  const _LockedInfo({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final _c = DSTheme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: DSSpacing.s4,
-        vertical: DSSpacing.s3,
-      ),
-      decoration: BoxDecoration(
-        color: _c.bg.canvas,
-        borderRadius: BorderRadius.circular(DSRadius.md),
-        border: Border.all(color: _c.border.subtle),
-      ),
-      child: Row(
-        children: [
-          Icon(LucideIcons.alarmClock, size: 16, color: _c.text.muted),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: DSTextStyle.labelSm.copyWith(color: _c.text.muted),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ─── Contact Row ──────────────────────────────────────────────────────────────
 
 class _ContactRow extends StatelessWidget {
@@ -1195,7 +1267,15 @@ class _ExtJobExtraHoursSectionState
     return _SectionCard(
       title: 'Ekstra timer',
       children: [
-        if (!_windowOpen && hasHours) ...[
+        // Answered "nej" — nothing left to ask, so the card collapses to the
+        // confirmed row (with an undo) instead of showing the form forever.
+        if (widget.extJob.extraHoursDeclinedAt != null) ...[
+          DeclineExtraHours(
+            id: widget.extJob.id,
+            target: ExtraHoursDeclineTarget.extJob,
+            declinedAt: widget.extJob.extraHoursDeclinedAt,
+          ),
+        ] else if (!_windowOpen && hasHours) ...[
           _ExtJobExtraHoursSummary(
             hours: widget.extJob.extraHours!,
             pricePerHour: widget.extJob.extraHoursPricePerHour!,
@@ -1228,6 +1308,16 @@ class _ExtJobExtraHoursSectionState
             style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
           ),
           const SizedBox(height: DSSpacing.s3),
+          // Only while nothing is logged: "no extra hours" contradicts a saved
+          // amount, and the server rejects that combination too.
+          if (!hasHours) ...[
+            DeclineExtraHours(
+              id: widget.extJob.id,
+              target: ExtraHoursDeclineTarget.extJob,
+              declinedAt: widget.extJob.extraHoursDeclinedAt,
+            ),
+            const SizedBox(height: DSSpacing.s3),
+          ],
           HoursPickerField(
             value: _selectedHours,
             onChanged: (v) => setState(() => _selectedHours = v),
@@ -1484,6 +1574,310 @@ class _CanceledBanner extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Early setup on an ext job. Mirrors the web `AddExtEarlySetup.tsx` flow: the DJ
+// adds an agreed early-setup fee (+ optional start time) and the server folds it
+// into full_amount + honorar.
+//
+// Deliberately NO approval step (unlike internal quotes' early_setup_status):
+// ExtJobs has no status column, and the product decision is that the DJ and admin
+// both simply add it.
+//
+// Two differences from the extra-hours section above, both intentional:
+//  * The WINDOW is wider. Extra hours can only be logged on/after the event (they
+//    record what happened on the night); early setup is agreed IN ADVANCE, so it is
+//    editable any time up to 2 days after the event.
+//  * The PAYOUT SHARE has only two brackets (0.75 / 0.715), matching the server's
+//    `extDjPayoutShare`. The extra-hours section above uses the three-bracket
+//    internal `getFeeForJob` ladder, which does not apply to ext jobs.
+// ---------------------------------------------------------------------------
+class _ExtJobEarlySetupSection extends ConsumerStatefulWidget {
+  const _ExtJobEarlySetupSection({required this.extJob});
+
+  final ExtJob extJob;
+
+  @override
+  ConsumerState<_ExtJobEarlySetupSection> createState() =>
+      _ExtJobEarlySetupSectionState();
+}
+
+class _ExtJobEarlySetupSectionState
+    extends ConsumerState<_ExtJobEarlySetupSection> {
+  DSColors get _c => DSTheme.of(context);
+  final _priceController = TextEditingController();
+  TimeOfDay? _time;
+  bool _editing = false;
+
+  bool get _hasEarlySetup =>
+      widget.extJob.earlySetupPrice != null &&
+      widget.extJob.earlySetupPrice! > 0;
+
+  /// Open until the end of event date + 2 days. No lower bound: early setup is
+  /// agreed before the event. Mirrors `isBeforeBillingCutoff` on the server.
+  bool get _windowOpen {
+    final d = widget.extJob.date;
+    final cutoff = DateTime(d.year, d.month, d.day + 2, 23, 59, 59);
+    return DateTime.now().isBefore(cutoff);
+  }
+
+  /// Server mirror of `extDjPayoutShare`. Display-only estimate; the authoritative
+  /// honorar comes back from the API.
+  double get _djPayoutShare =>
+      widget.extJob.createdAt.toUtc().isBefore(DateTime.utc(2026, 7, 6))
+          ? 0.75
+          : 0.715;
+
+  @override
+  void initState() {
+    super.initState();
+    final price = widget.extJob.earlySetupPrice;
+    if (price != null) _priceController.text = price.round().toString();
+    _time = _parseNoteTime(widget.extJob.notes);
+  }
+
+  /// The early-setup TIME lives as a marked line inside `notes`, not a column.
+  /// Mirrors `readEarlySetupNoteTime` in the web-app.
+  static TimeOfDay? _parseNoteTime(String? notes) {
+    if (notes == null) return null;
+    for (final line in notes.split('\n')) {
+      if (!line.trimLeft().startsWith('Tidlig opsætning:')) continue;
+      final m = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(line);
+      if (m == null) return null;
+      return TimeOfDay(
+        hour: int.parse(m.group(1)!),
+        minute: int.parse(m.group(2)!),
+      );
+    }
+    return null;
+  }
+
+  static String _formatTime(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  @override
+  void dispose() {
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final price = int.tryParse(_priceController.text.trim());
+    if (price == null || price <= 0) {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Angiv en pris for tidlig opsætning.',
+      );
+      return;
+    }
+
+    final ok = await ref
+        .read(setExtJobEarlySetupProvider.notifier)
+        .set(
+          widget.extJob.id,
+          price: price,
+          time: _time == null ? null : _formatTime(_time!),
+        );
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _editing = false);
+      DSToast.show(
+        context,
+        variant: DSToastVariant.success,
+        title: 'Tidlig opsætning gemt',
+      );
+    } else {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Kunne ikke gemme tidlig opsætning. Prøv igen.',
+      );
+    }
+  }
+
+  Future<void> _delete() async {
+    final ok = await ref
+        .read(deleteExtJobEarlySetupProvider.notifier)
+        .delete(widget.extJob.id);
+    if (!mounted) return;
+    if (ok) {
+      setState(() {
+        _editing = false;
+        _time = null;
+        _priceController.clear();
+      });
+      DSToast.show(
+        context,
+        variant: DSToastVariant.success,
+        title: 'Tidlig opsætning fjernet',
+      );
+    } else {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Kunne ikke fjerne tidlig opsætning. Prøv igen.',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_windowOpen && !_hasEarlySetup) return const SizedBox.shrink();
+
+    // ⚠️ A recurring-customer (partner-portal) booking is priced by the venue's
+    // agreement, so the DJ may not add or change early setup - the server 403s. Show an
+    // already-agreed fee read-only (admin may have added one); otherwise hide the whole
+    // section rather than render a control that always fails.
+    if (widget.extJob.isRecurringCustomer) {
+      if (!_hasEarlySetup) return const SizedBox.shrink();
+      return _SectionCard(
+        title: 'Tidlig opsætning',
+        children: [
+          _ExtJobEarlySetupSummary(
+            price: widget.extJob.earlySetupPrice!,
+            time: _time == null ? null : _formatTime(_time!),
+            payoutShare: _djPayoutShare,
+          ),
+          const SizedBox(height: DSSpacing.s2),
+          Text(
+            'Dette er en fast kunde, så tidlig opsætning aftales gennem DJTILBUD.',
+            style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+          ),
+        ],
+      );
+    }
+
+    return _SectionCard(
+      title: 'Tidlig opsætning',
+      children: [
+        if (!_editing && _hasEarlySetup) ...[
+          _ExtJobEarlySetupSummary(
+            price: widget.extJob.earlySetupPrice!,
+            time: _time == null ? null : _formatTime(_time!),
+            payoutShare: _djPayoutShare,
+          ),
+          if (_windowOpen) ...[
+            const SizedBox(height: DSSpacing.s3),
+            Row(
+              children: [
+                Expanded(
+                  child: DSButton(
+                    label: 'Rediger',
+                    variant: DSButtonVariant.secondary,
+                    onTap: () => setState(() => _editing = true),
+                  ),
+                ),
+                const SizedBox(width: DSSpacing.s2),
+                Expanded(child: _ExtJobDeleteButton(onTap: _delete)),
+              ],
+            ),
+          ],
+        ] else ...[
+          Text(
+            'Har du aftalt tidlig opsætning med kunden? Tilføj prisen her — vi '
+            'fakturerer kunden, og din betaling justeres tilsvarende.',
+            style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          DSInput(
+            label: 'Pris for tidlig opsætning (DKK)',
+            controller: _priceController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _time == null
+                      ? 'Hvornår sætter du op? (valgfrit)'
+                      : 'Opsætning fra kl. ${_formatTime(_time!)}',
+                  style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                ),
+              ),
+              const SizedBox(width: DSSpacing.s2),
+              DSButton(
+                label: _time == null ? 'Vælg tid' : 'Skift',
+                variant: DSButtonVariant.secondary,
+                onTap: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: _time ?? const TimeOfDay(hour: 16, minute: 0),
+                  );
+                  if (picked != null) setState(() => _time = picked);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          Consumer(
+            builder: (context, ref, _) {
+              final isLoading =
+                  ref.watch(setExtJobEarlySetupProvider) is AsyncLoading;
+              return Row(
+                children: [
+                  if (_editing) ...[
+                    Expanded(
+                      child: DSButton(
+                        label: 'Annuller',
+                        variant: DSButtonVariant.secondary,
+                        onTap: () => setState(() => _editing = false),
+                      ),
+                    ),
+                    const SizedBox(width: DSSpacing.s2),
+                  ],
+                  Expanded(
+                    child: DSButton(
+                      label: isLoading ? 'Gemmer...' : 'Gem tidlig opsætning',
+                      variant: DSButtonVariant.primary,
+                      onTap: isLoading ? null : _save,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ExtJobEarlySetupSummary extends StatelessWidget {
+  const _ExtJobEarlySetupSummary({
+    required this.price,
+    required this.time,
+    required this.payoutShare,
+  });
+
+  final num price;
+  final String? time;
+  final double payoutShare;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DSTheme.of(context);
+    final payoutDelta = (price * payoutShare).round();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          time == null
+              ? 'Tidlig opsætning: +${price.round()} kr.'
+              : 'Tidlig opsætning fra kl. $time: +${price.round()} kr.',
+          style: DSTextStyle.labelMd.copyWith(color: c.text.primary),
+        ),
+        const SizedBox(height: DSSpacing.s1),
+        Text(
+          'Din betaling er justeret med +$payoutDelta kr.',
+          style: DSTextStyle.labelMd.copyWith(color: c.text.secondary),
+        ),
+      ],
     );
   }
 }

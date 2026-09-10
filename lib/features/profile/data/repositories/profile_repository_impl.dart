@@ -357,6 +357,18 @@ class ProfileRepositoryImpl implements ProfileRepository {
     }
   }
 
+  @override
+  Future<void> reorderFiles({
+    required UserFileType type,
+    required List<int> orderedIds,
+  }) async {
+    try {
+      await _datasource.reorderFiles(type: type, orderedIds: orderedIds);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
   // ── Standard Messages ──
 
   @override

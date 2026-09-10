@@ -1,10 +1,7 @@
-Nyt: Send beskeden til kunden med ét tryk 💬
+Ny fane "Stedet" på partnerjobs
 
-Vi skriver beskeden til kunden for dig, så du kan nå ud inden for 24 timer uden at bruge tid på ordene.
-
-• Tryk "Send besked" på et vundet job, så åbner din beskedapp med kundens nummer og hele teksten klar
-• Vil du hellere sende via mail eller WhatsApp? Teksten kan stadig kopieres med ét tryk
-• Du kan nu rette en besked, du allerede har sendt. Den bliver tydeligt markeret "Redigeret"
-• Budgettet på et job vises nu ens overalt, både i listen og i kalenderen
-
-Desuden: mindre fejlrettelser og forbedringer.
+• Jobs hos faste partnere som Kokkedal Slot har nu to faner: "Job" med din proces, kundekontakt og faktura, og "Stedet" med alt om lokationen
+• Under "Stedet" finder du billeder fra stedet, som DJTILBUD har taget ved besøg, hver med en kommentar til dig, fx hvor DJ'en står, og hvor strømmen er
+• Tryk på et billede for at se det i fuld størrelse, swipe mellem billederne og zoom med to fingre
+• Adressen og parrets ønsker til festen ("Til festen") ligger nu samlet på samme fane, så du ikke skal scrolle forbi proceskortene for at finde dem
+• Almindelige jobs ser ud som før

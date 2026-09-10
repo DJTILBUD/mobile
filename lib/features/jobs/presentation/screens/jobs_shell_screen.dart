@@ -30,6 +30,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/job_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/quote_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/service_offer_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/empty_jobs_view.dart';
+import 'package:dj_tilbud_app/features/first_win/domain/entities/first_win_decision.dart';
 import 'package:dj_tilbud_app/features/first_win/presentation/providers/first_win_provider.dart';
 import 'package:dj_tilbud_app/features/first_win/presentation/widgets/first_win_dialog.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
@@ -67,12 +68,19 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
 
   Future<void> _checkFirstWinGate() async {
     if (_firstWinShowing) return;
-    final eligible = await ref.read(
-      firstWinEligibleProvider(widget.role).future,
+    final decision = await ref.read(
+      firstWinDecisionProvider(widget.role).future,
     );
-    if (!eligible || !mounted || _firstWinShowing) return;
+    if (!decision.shouldShow || !mounted || _firstWinShowing) return;
     _firstWinShowing = true;
-    await showFirstWinDialog(context, ref, widget.role);
+    // The variant decides both which walkthrough renders and which
+    // Musicians.first_win_*_shown_at column the dismiss writes — pass it through.
+    await showFirstWinDialog(
+      context,
+      ref,
+      widget.role,
+      musicianVariant: decision.musicianVariant,
+    );
     if (mounted) _firstWinShowing = false;
   }
 
@@ -137,12 +145,12 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
     ) {
       if (!isDj) _checkAvailabilityGate(next);
     });
-    ref.listen<AsyncValue<bool>>(firstWinEligibleProvider(widget.role), (
-      _,
-      next,
-    ) {
-      if (next.valueOrNull == true) _checkFirstWinGate();
-    });
+    ref.listen<AsyncValue<FirstWinDecision>>(
+      firstWinDecisionProvider(widget.role),
+      (_, next) {
+        if (next.valueOrNull?.shouldShow == true) _checkFirstWinGate();
+      },
+    );
 
     if (_calendarMode) {
       if (isDj) {
@@ -1165,14 +1173,21 @@ class _InstrumentalistCalendarViewState
 // figure here, in the calendar tab and on the job list.
 String _musicianBudgetLabel(Job job) => musicianBudgetLabel(job);
 
+/// An ExtJob with no `start_time` is converted to a Job with the sentinel '00:00'
+/// (`ExtJobModel.toJobModel`), because `Job.timeStart` is non-nullable and the sax
+/// conflict rule needs a parseable value. So a display guard MUST treat a zero time
+/// as "not set", or a saxophonist's feed shows "00:00 - 00:00" on every ext job.
+/// Mirrors `_isZeroTime` in calendar_screen.dart — keep both in sync.
+bool _isZeroTime(String t) => t.isEmpty || t.startsWith('00:00');
+
 CalendarEvent _jobToEvent(Job job, {String? budgetDisplay}) => CalendarEvent(
   id: job.id,
   date: job.date,
   label: job.eventType,
   type: CalendarEventType.internal,
   kind: CalendarEventKind.newJob,
-  startTime: job.timeStart.isEmpty ? null : job.timeStart,
-  endTime: job.timeEnd.isEmpty ? null : job.timeEnd,
+  startTime: _isZeroTime(job.timeStart) ? null : job.timeStart,
+  endTime: _isZeroTime(job.timeEnd) ? null : job.timeEnd,
   location: job.city.isEmpty ? null : job.city,
   region: job.region.isEmpty ? null : job.region,
   guestsAmount: job.guestsAmount,
@@ -1186,8 +1201,8 @@ CalendarEvent _quoteToEvent(DjQuote quote) => CalendarEvent(
   label: quote.job.eventType,
   type: CalendarEventType.internal,
   kind: CalendarEventKind.sent,
-  startTime: quote.job.timeStart.isEmpty ? null : quote.job.timeStart,
-  endTime: quote.job.timeEnd.isEmpty ? null : quote.job.timeEnd,
+  startTime: _isZeroTime(quote.job.timeStart) ? null : quote.job.timeStart,
+  endTime: _isZeroTime(quote.job.timeEnd) ? null : quote.job.timeEnd,
   location: quote.job.city.isEmpty ? null : quote.job.city,
   region: quote.job.region.isEmpty ? null : quote.job.region,
   guestsAmount: quote.job.guestsAmount,
@@ -1201,8 +1216,8 @@ CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
   type:
       offer.isExtJob ? CalendarEventType.external : CalendarEventType.internal,
   kind: CalendarEventKind.sent,
-  startTime: offer.job.timeStart.isEmpty ? null : offer.job.timeStart,
-  endTime: offer.job.timeEnd.isEmpty ? null : offer.job.timeEnd,
+  startTime: _isZeroTime(offer.job.timeStart) ? null : offer.job.timeStart,
+  endTime: _isZeroTime(offer.job.timeEnd) ? null : offer.job.timeEnd,
   location: offer.job.city.isEmpty ? null : offer.job.city,
   region: offer.job.region.isEmpty ? null : offer.job.region,
   guestsAmount: offer.job.guestsAmount > 0 ? offer.job.guestsAmount : null,
@@ -1928,6 +1943,7 @@ class _InstrumentalistNewJobsTab extends ConsumerWidget {
                   musicianPrice: calculateMusicianOfferPrice(
                     job.requestedMusicianHours,
                     job.createdAt,
+                    job.date,
                   ),
                   onTap:
                       () => context.pushNamed(

@@ -18,6 +18,7 @@ class ServiceOfferModel {
     this.customerContacted = false,
     this.musicianReadyConfirmedAt,
     this.extraHours,
+    this.extraHoursDeclinedAt,
     this.musicianNotes,
     this.musicianFullName,
     this.musicianPhone,
@@ -25,6 +26,7 @@ class ServiceOfferModel {
     this.customerContactPlannedFor,
     this.specialRequestExtraFeeDkk = 0,
     this.specialRequestExtraFeeConfirmed = false,
+    this.specialRequestExtraFeeReason,
   });
 
   final int id;
@@ -41,6 +43,11 @@ class ServiceOfferModel {
   final bool customerContacted;
   final DateTime? musicianReadyConfirmedAt;
   final double? extraHours;
+
+  /// When the performer answered "Jeg spillede ikke ekstra timer". Non-null
+  /// hides the extra-hours card and suppresses the extra_hours_reminder push
+  /// (see `setExtraHoursDeclined` in the web app). Null = unanswered.
+  final DateTime? extraHoursDeclinedAt;
   final String? musicianNotes;
   final String? musicianFullName;
   final String? musicianPhone;
@@ -48,6 +55,7 @@ class ServiceOfferModel {
   final String? customerContactPlannedFor;
   final int specialRequestExtraFeeDkk;
   final bool specialRequestExtraFeeConfirmed;
+  final String? specialRequestExtraFeeReason;
 
   factory ServiceOfferModel.fromJson(Map<String, dynamic> json) {
     final jobJson = json['job'] as Map<String, dynamic>?;
@@ -83,6 +91,10 @@ class ServiceOfferModel {
           ? DateTime.parse(json['musician_ready_confirmed_at'] as String)
           : null,
       extraHours: (json['extra_hours'] as num?)?.toDouble(),
+      extraHoursDeclinedAt:
+          json['extra_hours_declined_at'] != null
+              ? DateTime.parse(json['extra_hours_declined_at'] as String)
+              : null,
       musicianNotes: json['musician_notes'] as String?,
       musicianFullName: musicianJson?['full_name'] as String?,
       musicianPhone: musicianJson?['phone'] as String?,
@@ -90,6 +102,8 @@ class ServiceOfferModel {
       customerContactPlannedFor: json['customer_contact_planned_for'] as String?,
       specialRequestExtraFeeDkk: (json['special_request_extra_fee_dkk'] as num?)?.toInt() ?? 0,
       specialRequestExtraFeeConfirmed: json['special_request_extra_fee_confirmed'] as bool? ?? false,
+      specialRequestExtraFeeReason:
+          json['special_request_extra_fee_reason'] as String?,
     );
   }
 
@@ -109,6 +123,7 @@ class ServiceOfferModel {
       customerContacted: customerContacted,
       musicianReadyConfirmedAt: musicianReadyConfirmedAt,
       extraHours: extraHours,
+      extraHoursDeclinedAt: extraHoursDeclinedAt,
       musicianNotes: musicianNotes,
       musicianFullName: musicianFullName,
       musicianPhone: musicianPhone,
@@ -118,6 +133,7 @@ class ServiceOfferModel {
           : null,
       specialRequestExtraFeeDkk: specialRequestExtraFeeDkk,
       specialRequestExtraFeeConfirmed: specialRequestExtraFeeConfirmed,
+      specialRequestExtraFeeReason: specialRequestExtraFeeReason,
     );
   }
 

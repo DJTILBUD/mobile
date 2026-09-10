@@ -9,6 +9,7 @@ import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
+import 'package:dj_tilbud_app/core/utils/customer_name.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/dj_fee.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/core/utils/equipment_description.dart';
@@ -26,6 +27,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/core/utils/birthday_person_age.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/offer_form_validation.dart';
 
 enum _JobAction { busy, notInterested }
 
@@ -48,6 +51,9 @@ class DjQuoteFormScreen extends ConsumerStatefulWidget {
 
 class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  // Owned so the submit handler can scroll a failed (and probably
+  // off-screen) field back into view — see _handleSubmit.
+  final _scrollController = ScrollController();
   final _priceController = TextEditingController();
   final _salesPitchController = TextEditingController();
   final _earlySetupPriceController = TextEditingController();
@@ -143,6 +149,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     _priceController.dispose();
     _salesPitchController.dispose();
     _earlySetupPriceController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -164,6 +171,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       djTier: djTier,
       maxBudget: job.budgetEnd,
       jobCreatedAt: job.createdAt,
+      eventDate: job.date,
     );
     final start = adjustBudgetForDjView(
       budget: job.budgetStart,
@@ -172,6 +180,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       djTier: djTier,
       maxBudget: job.budgetEnd,
       jobCreatedAt: job.createdAt,
+      eventDate: job.date,
     );
     if (raw == null) return null;
     if (start != null && start > raw) return start;
@@ -190,6 +199,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       djTier: djTier,
       maxBudget: job.budgetEnd,
       jobCreatedAt: job.createdAt,
+      eventDate: job.date,
     );
     if (adjEnd == null) return 'Ikke angivet';
 
@@ -201,6 +211,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
         djTier: djTier,
         maxBudget: job.budgetEnd,
         jobCreatedAt: job.createdAt,
+        eventDate: job.date,
       );
       if (adjStart != null) {
         final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
@@ -242,12 +253,40 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     if (!equipmentValid) {
       setState(() => _equipmentError = true);
     }
-    if (!_formKey.currentState!.validate() || !equipmentValid) {
+
+    // ⚠️ Validate the VALUES, not just the Form. This body is a lazy `ListView`,
+    // so a field scrolled out of the viewport is unmounted and unregisters
+    // itself from the Form — `validate()` then skips it and returns true. The
+    // price input sits far above this button, so a DJ who never typed a price
+    // used to get through with `_price == 0` and the customer received a 0 kr.
+    // bid. See offer_form_validation.dart for the full story.
+    final inputError = validateDjQuoteInput(
+      price: _price,
+      salesPitch: _salesPitchController.text,
+      equipmentSelected: equipmentValid,
+    );
+    // Still run the Form so whatever IS mounted paints its own inline error.
+    _formKey.currentState!.validate();
+    if (inputError != null) {
       _logSubmitFailed(
         equipmentValid
             ? OfferSubmitFailure.invalidInput
             : OfferSubmitFailure.equipmentInvalid,
       );
+      // The offending field is very likely off-screen (that is the whole bug),
+      // so say what is wrong AND scroll back up to it.
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: inputError,
+      );
+      if (_price <= 0 && _scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: DSMotion.normal,
+          curve: Curves.easeOut,
+        );
+      }
       return;
     }
 
@@ -290,20 +329,18 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     // web client gate; nudges to the payment screen instead of submitting.
     final paymentInfo = await ref.read(djPaymentInfoProvider.future);
     if (!mounted) return;
-    final billingComplete = isSelfBillingComplete(
-      SelfBillingInfo(
-        businessType: paymentInfo?.businessType,
-        cpr: paymentInfo?.cpr,
-        cvr: paymentInfo?.cvr,
-        billingEmail: paymentInfo?.billingEmail,
-      ),
+    // Payment-type aware, same function the web Redirecter enforces
+    // (isPaymentInfoComplete): B-income needs the DAC7 info, Invoice needs a
+    // registered business with a CVR, a billing email and a bank account.
+    final billingComplete = isPaymentInfoComplete(
+      paymentInfo?.toReadinessInfo(),
     );
     if (!billingComplete) {
       _logSubmitFailed(OfferSubmitFailure.billingIncomplete);
       DSToast.show(
         context,
         variant: DSToastVariant.error,
-        title: 'Udfyld dine faktureringsoplysninger, før du kan afgive bud.',
+        title: 'Udfyld dine betalingsoplysninger, før du kan afgive bud.',
       );
       context.pushNamed(AppRoutes.payment, extra: MusicianRole.dj);
       return;
@@ -540,8 +577,18 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
     final collisionMessage = dateCollisionMessage(job, quotes, extJobs);
 
+    // Supply/matching wave gate. The feed already hides wave-closed jobs, but this screen is
+    // reachable by push deep-link (notably an admin "Send påmindelse", whose audience is not
+    // wave-filtered), so it must guard independently — exactly like the collision check above.
+    // Defaults to OPEN while loading / on error so a slow lookup never blocks a real bid; the
+    // authoritative gate is the 403 from the quote route.
+    final isWaveOpen =
+        ref.watch(jobWaveOpenProvider(job.id)).valueOrNull ?? true;
+
     final isBlocked =
-        (priceOverBudget && withinFourHours) || collisionMessage != null;
+        (priceOverBudget && withinFourHours) ||
+        collisionMessage != null ||
+        !isWaveOpen;
 
     return PopScope(
       canPop: !_isDirty,
@@ -620,6 +667,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
         body: Form(
           key: _formKey,
           child: ListView(
+            controller: _scrollController,
             padding: const EdgeInsets.all(DSSpacing.s4),
             children: [
               _JobSummary(
@@ -628,6 +676,14 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
                 budgetDisplay: _adjustedBudgetDisplay(djTier),
               ),
               const SizedBox(height: DSSpacing.s6),
+
+              // Shown ABOVE the collision banner and before any input: the DJ should learn the
+              // job isn't open to them yet before writing a price and a sales pitch, not from a
+              // toast after tapping submit.
+              if (!isWaveOpen) ...[
+                const _WaveClosedBanner(),
+                const SizedBox(height: DSSpacing.s6),
+              ],
 
               if (collisionMessage != null) ...[
                 _CollisionBanner(message: collisionMessage),
@@ -880,6 +936,61 @@ class _CollisionBanner extends StatelessWidget {
   }
 }
 
+/// "Your wave hasn't opened yet" explainer.
+///
+/// Mirrors the web block card on `dj/jobs/[id]` and the 403 message from
+/// `POST /api/jobs/{id}/quotes` so a DJ gets the same explanation wherever they hit the gate.
+/// Deliberately describes the JOB's state and the mechanism ("flere runder", "åbner automatisk"),
+/// never the DJ's standing — this is a delay, not a judgement, and nothing is required of them.
+/// Styled `info`, not `danger`: nothing is wrong and there is no mistake to correct.
+class _WaveClosedBanner extends StatelessWidget {
+  const _WaveClosedBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(DSSpacing.s3),
+      decoration: BoxDecoration(
+        color: _c.state.info.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _c.state.info.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(LucideIcons.clock, size: 18, color: _c.state.info),
+          const SizedBox(width: DSSpacing.s2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Jobbet er ikke ledigt for dig lige nu',
+                  style: DSTextStyle.labelSm.copyWith(
+                    color: _c.state.info,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: DSSpacing.s1),
+                Text(
+                  'Vi sender nye jobs ud i flere runder, så der ikke kommer for mange tilbud '
+                  'på én gang. Jobbet åbner automatisk for dig senere, hvis det stadig mangler '
+                  'tilbud, og du skal ikke gøre noget.',
+                  style: DSTextStyle.bodySm.copyWith(
+                    color: _c.text.secondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EarlySetupSection extends StatelessWidget {
   const _EarlySetupSection({
     required this.offersEarlySetup,
@@ -993,7 +1104,10 @@ class _JobSummary extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  eventTypeLabel(job.eventType),
+                  // Birthday events carry the celebrant's age; a DJ/sax needs it to know what kind of
+                  // party this is. Mirrors web, which appends it to the job heading.
+                  '${eventTypeLabel(job.eventType)}'
+                  '${formatBirthdayPersonAge(job.birthdayPersonAge)}',
                   style: DSTextStyle.headingSm.copyWith(
                     fontWeight: FontWeight.w700,
                     color: _c.text.primary,
@@ -1005,6 +1119,14 @@ class _JobSummary extends StatelessWidget {
             ],
           ),
           const SizedBox(height: DSSpacing.s2),
+          // First name only — full name + contact details stay in the won view.
+          if (customerFirstName(job.leadName) != null) ...[
+            _SummaryRow(
+              LucideIcons.user,
+              'Kunde: ${customerFirstName(job.leadName)}',
+            ),
+            const SizedBox(height: DSSpacing.s1),
+          ],
           _SummaryRow(LucideIcons.calendar, dateStr),
           const SizedBox(height: DSSpacing.s1),
           _SummaryRow(LucideIcons.clock, job.timeDisplay),

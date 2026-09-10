@@ -12,6 +12,7 @@ class PaymentInfoModel {
     this.businessType,
     this.cvr,
     this.billingEmail,
+    this.cvrCompanyName,
   });
 
   final String payment;
@@ -23,6 +24,8 @@ class PaymentInfoModel {
   final String? businessType;
   final String? cvr;
   final String? billingEmail;
+  // Server-derived; parsed for display, deliberately absent from toJson().
+  final String? cvrCompanyName;
 
   factory PaymentInfoModel.fromJson(Map<String, dynamic> json) {
     return PaymentInfoModel(
@@ -35,6 +38,7 @@ class PaymentInfoModel {
       businessType: json['business_type'] as String?,
       cvr: json['cvr'] as String?,
       billingEmail: json['billing_email'] as String?,
+      cvrCompanyName: json['cvr_company_name'] as String?,
     );
   }
 
@@ -63,6 +67,7 @@ class PaymentInfoModel {
       businessType: BusinessEntityType.fromString(businessType),
       cvr: cvr,
       billingEmail: billingEmail,
+      cvrCompanyName: cvrCompanyName,
     );
   }
 }

@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/utils/customer_name.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart';
@@ -21,6 +23,9 @@ import 'package:dj_tilbud_app/shared/widgets/partner_event_wishes_card.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/event_address_section.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
+import 'package:dj_tilbud_app/core/utils/birthday_person_age.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/decline_extra_hours.dart';
+import 'package:dj_tilbud_app/core/utils/planned_contact.dart';
 
 String _fmt(num n) =>
     NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
@@ -43,6 +48,19 @@ class _ServiceOfferDetailScreenState
   late DateTime? _customerContactPlannedFor;
   late DateTime? _musicianReadyConfirmedAt;
 
+  /// The job/ext-job status, tracked locally so "Klar til fakturering" flips the
+  /// UI without a round-trip. Only advanced by [_handleReadyForBilling].
+  late JobStatus _jobStatus;
+
+  /// On a `musician_only` ext job there is no DJ, so the winning musician owns
+  /// closing the deal + triggering the invoice (mirrors the web
+  /// `instrumentalist/jobs/[job_id]/_components/LeadInfo.tsx` `isMusicianOnly`
+  /// branch and the `ready-for-billing` route's musician_only authorisation).
+  bool get _isMusicianOnly =>
+      _offer.isExtJob && _offer.job.roleType == 'musician_only';
+
+  bool get _isReadyForBilling => _jobStatus == JobStatus.readyForBilling;
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +68,7 @@ class _ServiceOfferDetailScreenState
     _customerContacted = widget.offer.customerContacted;
     _customerContactPlannedFor = widget.offer.customerContactPlannedFor;
     _musicianReadyConfirmedAt = widget.offer.musicianReadyConfirmedAt;
+    _jobStatus = widget.offer.job.status;
   }
 
   bool _isWithin5Days(DateTime eventDate) {
@@ -84,6 +103,65 @@ class _ServiceOfferDetailScreenState
     }
   }
 
+  /// Closes the deal on a `musician_only` ext job → `ready_for_billing`, which is
+  /// what actually sends the invoice. Without this the daily
+  /// `send_invoice_reminder` push ("husk lige at lukke aftalen og sende
+  /// fakturaen") had no matching action anywhere in the app and repeated forever.
+  Future<void> _handleReadyForBilling() async {
+    final extJobId = _offer.extJobId;
+    if (extJobId == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: const Text('Luk aftale og send faktura'),
+            content: const Text(
+              'Er kunden klar til at modtage en faktura? Kunden vil modtage en bekræftelse og en faktura.',
+            ),
+            actions: [
+              DSButton(
+                label: 'Annuller',
+                variant: DSButtonVariant.ghost,
+                size: DSButtonSize.sm,
+                onTap: () => Navigator.pop(ctx, false),
+              ),
+              DSButton(
+                label: 'Luk aftale',
+                variant: DSButtonVariant.tertiary,
+                size: DSButtonSize.sm,
+                onTap: () => Navigator.pop(ctx, true),
+              ),
+            ],
+          ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final success = await ref
+        .read(markMusicianExtJobReadyForBillingProvider.notifier)
+        .markReady(extJobId);
+    if (!mounted) return;
+    if (success) {
+      AnalyticsService.logReadyForBilling(
+        extJobId,
+        role: 'musician',
+        isExtJob: true,
+      );
+      setState(() => _jobStatus = JobStatus.readyForBilling);
+      DSToast.show(
+        context,
+        variant: DSToastVariant.success,
+        title: 'Aftale lukket — faktura sendt til kunden',
+      );
+    } else {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Noget gik galt. Prøv igen.',
+      );
+    }
+  }
+
   Future<void> _openContactSheet() async {
     await showModalBottomSheet<bool>(
       context: context,
@@ -93,9 +171,12 @@ class _ServiceOfferDetailScreenState
         borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
       ),
       builder:
-          (_) => Padding(
+          // ⚠️ `sheetContext`, NOT the outer screen's `context`. A modal sheet is a separate route:
+          // reading viewInsets off the parent captures the value at push time (usually 0) and the
+          // sheet never rebuilds as the keyboard animates in, so the padding stays 0 forever.
+          (sheetContext) => Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
             ),
             child: ContactCustomerSheet(
               existingPlannedDate: _customerContactPlannedFor,
@@ -267,6 +348,8 @@ class _ServiceOfferDetailScreenState
     final canConfirmReady = _isWithin5Days(offer.job.date);
     final readyLoading =
         ref.watch(confirmMusicianReadyProvider) is AsyncLoading;
+    final billingLoading =
+        ref.watch(markMusicianExtJobReadyForBillingProvider) is AsyncLoading;
     // The sax's own name for the copyable intro message.
     final musicianName =
         ref.watch(musicianProfileProvider).valueOrNull?.fullName ?? '';
@@ -333,7 +416,12 @@ class _ServiceOfferDetailScreenState
             ],
             const SizedBox(height: DSSpacing.s4),
             if (_customerContacted)
-              _DoneButton(label: 'Kunden er kontaktet')
+              _DoneButton(
+                label:
+                    _isMusicianOnly && _isReadyForBilling
+                        ? 'Faktura sendt'
+                        : 'Kunden er kontaktet',
+              )
             else ...[
               if (offer.job.leadName != null) ...[
                 CopyIntroMessageCard(
@@ -349,19 +437,45 @@ class _ServiceOfferDetailScreenState
               if (_customerContactPlannedFor != null)
                 _PlannedContactBanner(date: _customerContactPlannedFor!),
               DSButton(
+                // Once the planned date is today or has passed, the DJ should be calling now, so the
+                // button reverts to the primary "Kunde kontaktet" action instead of offering to reschedule.
                 label:
-                    _customerContactPlannedFor != null
+                    _customerContactPlannedFor != null &&
+                            !isPlannedContactDue(_customerContactPlannedFor)
                         ? 'Ændr kontaktdato'
                         : 'Kunde kontaktet',
                 variant:
-                    _customerContactPlannedFor != null
+                    _customerContactPlannedFor != null &&
+                            !isPlannedContactDue(_customerContactPlannedFor)
                         ? DSButtonVariant.secondary
                         : DSButtonVariant.primary,
                 expand: true,
                 onTap: _openContactSheet,
               ),
             ],
-            if (_customerContacted) ...[
+            // musician_only: the sax closes the deal themself. Mirrors the web
+            // "Klar til fakturering ✓" button (musician LeadInfo.tsx).
+            if (_isMusicianOnly &&
+                _customerContacted &&
+                !_isReadyForBilling) ...[
+              const SizedBox(height: DSSpacing.s3),
+              DSButton(
+                label: 'Klar til fakturering ✓',
+                variant: DSButtonVariant.primary,
+                expand: true,
+                isLoading: billingLoading,
+                onTap: billingLoading ? null : _handleReadyForBilling,
+              ),
+              const SizedBox(height: DSSpacing.s2),
+              Text(
+                'Når alt er aftalt med kunden, lukker du aftalen her — så sender vi fakturaen.',
+                style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+              ),
+            ],
+            // "Jeg er klar" comes AFTER the invoice step on a musician_only job
+            // (web gates it the same way) so the two CTAs can't compete.
+            if (_customerContacted &&
+                (!_isMusicianOnly || _isReadyForBilling)) ...[
               const SizedBox(height: DSSpacing.s3),
               DSButton(
                 label:
@@ -391,13 +505,32 @@ class _ServiceOfferDetailScreenState
           title: 'Din proces',
           children: [
             ProcessTracker(
-              steps: const ['Kontakt kunden', 'Bekræft klar', 'Spil jobbet'],
+              // musician_only has one extra step the sax owns themself — without
+              // it the tracker never mentioned the invoice the reminder push
+              // keeps asking for.
+              steps:
+                  _isMusicianOnly
+                      ? const [
+                        'Kontakt kunden',
+                        'Send faktura',
+                        'Bekræft klar',
+                        'Spil jobbet',
+                      ]
+                      : const ['Kontakt kunden', 'Bekræft klar', 'Spil jobbet'],
               completedSteps:
-                  isConfirmedReady
-                      ? 2
-                      : _customerContacted
-                      ? 1
-                      : 0,
+                  _isMusicianOnly
+                      ? (isConfirmedReady
+                          ? 3
+                          : _isReadyForBilling
+                          ? 2
+                          : _customerContacted
+                          ? 1
+                          : 0)
+                      : (isConfirmedReady
+                          ? 2
+                          : _customerContacted
+                          ? 1
+                          : 0),
             ),
           ],
         ),
@@ -509,7 +642,10 @@ class _JobHeroCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  eventTypeLabel(job.eventType),
+                  // Birthday events carry the celebrant's age; a DJ/sax needs it to know what kind of
+                  // party this is. Mirrors web, which appends it to the job heading.
+                  '${eventTypeLabel(job.eventType)}'
+                  '${formatBirthdayPersonAge(job.birthdayPersonAge)}',
                   style: DSTextStyle.headingMd.copyWith(color: _c.text.primary),
                 ),
               ),
@@ -523,6 +659,16 @@ class _JobHeroCard extends StatelessWidget {
           const SizedBox(height: DSSpacing.s3),
 
           // Meta rows
+          // First name only — the full name + contact details live in the won contact section
+          // below, but the musician must be able to tell whose job this is in every state
+          // (sent / won / lost).
+          if (customerFirstName(job.leadName) != null) ...[
+            _MetaRow(
+              icon: LucideIcons.user,
+              label: 'Kunde: ${customerFirstName(job.leadName)}',
+            ),
+            const SizedBox(height: DSSpacing.s2),
+          ],
           _MetaRow(icon: LucideIcons.calendar, label: dateStr),
           const SizedBox(height: DSSpacing.s2),
           // Time display mirrors the open job card (job_card.dart, musician view): musician_only
@@ -1162,9 +1308,12 @@ class _MusicianExtraHoursSectionState
   @override
   void initState() {
     super.initState();
-    final existing = widget.offer.extraHours;
+    // `extra_hours` is NOT NULL DEFAULT 0 on ServiceOffers, so "nothing logged"
+    // is 0, not null — prefilling "0.0" would make an untouched field look like
+    // a saved answer. See the `hasHours` note in build().
+    final existing = widget.offer.extraHours ?? 0;
     _hoursController = TextEditingController(
-      text: existing != null ? existing.toStringAsFixed(1) : '',
+      text: existing > 0 ? existing.toStringAsFixed(1) : '',
     );
   }
 
@@ -1234,7 +1383,28 @@ class _MusicianExtraHoursSectionState
     if (!inWindow) return const SizedBox.shrink();
 
     final isSaving = ref.watch(addMusicianExtraHoursProvider) is AsyncLoading;
-    final hasHours = widget.offer.extraHours != null;
+    // ⚠️ `> 0`, NOT `!= null`. Unlike Quotes/ExtJobs (nullable), the column is
+    // `ServiceOffers.extra_hours numeric NOT NULL DEFAULT 0`, so a musician who
+    // logged nothing still parses as 0.0 — never null. The old `!= null` check
+    // was therefore ALWAYS true, so every won offer read "Du registrerede 0.0
+    // ekstra timer." and offered only "Redigér" instead of the input. Web has
+    // always used `offer.extra_hours <= 0`; this matches it.
+    final hasHours = (widget.offer.extraHours ?? 0) > 0;
+
+    // Answered "nej" — nothing left to ask, so the section collapses to the
+    // confirmed row (with an undo) instead of showing the form on every job.
+    if (widget.offer.extraHoursDeclinedAt != null) {
+      return _Section(
+        title: 'Ekstra timer',
+        children: [
+          DeclineExtraHours(
+            id: widget.offer.id,
+            target: ExtraHoursDeclineTarget.serviceOffer,
+            declinedAt: widget.offer.extraHoursDeclinedAt,
+          ),
+        ],
+      );
+    }
 
     return _Section(
       title: 'Ekstra timer',
@@ -1245,6 +1415,16 @@ class _MusicianExtraHoursSectionState
               : 'Spillede du flere timer end aftalt? Registrér dem her.',
           style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
         ),
+        // Only while nothing is logged: "no extra hours" contradicts a saved
+        // amount, and the server rejects that combination too.
+        if (inWindow && !hasHours) ...[
+          const SizedBox(height: DSSpacing.s3),
+          DeclineExtraHours(
+            id: widget.offer.id,
+            target: ExtraHoursDeclineTarget.serviceOffer,
+            declinedAt: widget.offer.extraHoursDeclinedAt,
+          ),
+        ],
         if (inWindow) ...[
           if (_editing || !hasHours) ...[
             const SizedBox(height: DSSpacing.s3),
@@ -1293,23 +1473,35 @@ class _SpecialRequestFeeSectionState
     extends ConsumerState<_SpecialRequestFeeSection> {
   DSColors get _c => DSTheme.of(context);
   late final TextEditingController _feeController;
+  late final TextEditingController _reasonController;
   late int _currentFee;
+  late String? _currentReason;
   late bool _isConfirmed;
   bool _editing = false;
+
+  /// Mirrors SPECIAL_REQUEST_REASON_MIN/MAX_LENGTH in web-app `src/constants.ts`
+  /// — the route rejects anything shorter, so validate here to save a round trip.
+  static const _minReasonLength = 10;
+  static const _maxReasonLength = 500;
 
   @override
   void initState() {
     super.initState();
     _currentFee = widget.offer.specialRequestExtraFeeDkk;
+    _currentReason = widget.offer.specialRequestExtraFeeReason;
     _isConfirmed = widget.offer.specialRequestExtraFeeConfirmed;
     _feeController = TextEditingController(
       text: _currentFee > 0 ? _currentFee.toString() : '',
     );
+    _reasonController = TextEditingController(text: _currentReason ?? '');
+    // The submit button enables only once both fields are valid.
+    _reasonController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
     _feeController.dispose();
+    _reasonController.dispose();
     super.dispose();
   }
 
@@ -1323,12 +1515,22 @@ class _SpecialRequestFeeSectionState
       );
       return;
     }
+    final reason = _reasonController.text.trim();
+    if (reason.length < _minReasonLength) {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Skriv kort hvad tillægget dækker',
+      );
+      return;
+    }
     final ok = await ref
         .read(setSpecialRequestFeeProvider.notifier)
-        .set(widget.offer.id, feeDkk: fee);
+        .set(widget.offer.id, feeDkk: fee, reason: reason);
     if (ok && mounted) {
       setState(() {
         _currentFee = fee;
+        _currentReason = reason;
         _editing = false;
       });
       DSToast.show(
@@ -1346,8 +1548,12 @@ class _SpecialRequestFeeSectionState
     if (ok && mounted) {
       setState(() {
         _currentFee = 0;
+        // The route nulls the reason on withdraw — mirror it, or re-opening the
+        // form pre-fills a reason for a request that no longer exists.
+        _currentReason = null;
         _editing = false;
         _feeController.clear();
+        _reasonController.clear();
       });
       DSToast.show(
         context,
@@ -1362,6 +1568,7 @@ class _SpecialRequestFeeSectionState
     final isSaving = ref.watch(setSpecialRequestFeeProvider) is AsyncLoading;
     final isRemoving =
         ref.watch(removeSpecialRequestFeeProvider) is AsyncLoading;
+    final hasReason = _reasonController.text.trim().length >= _minReasonLength;
     final musicianCut =
         (_currentFee *
                 (widget.offer.job.createdAt.toUtc().isBefore(
@@ -1410,6 +1617,14 @@ class _SpecialRequestFeeSectionState
                           color: _c.state.success,
                         ),
                       ),
+                      if (_currentReason != null && _currentReason!.isNotEmpty)
+                        Text(
+                          '"$_currentReason"',
+                          style: DSTextStyle.bodySm.copyWith(
+                            color: _c.text.secondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -1455,6 +1670,14 @@ class _SpecialRequestFeeSectionState
                   '+${_fmt(_currentFee)} kr. ekstra til kunden · +${_fmt(musicianCut)} kr. til dig',
                   style: DSTextStyle.bodySm.copyWith(color: _c.text.secondary),
                 ),
+                if (_currentReason != null && _currentReason!.isNotEmpty)
+                  Text(
+                    '"$_currentReason"',
+                    style: DSTextStyle.bodySm.copyWith(
+                      color: _c.text.secondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 Text(
                   'Beløbet lægges til prisen, når vi har set det.',
                   style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
@@ -1503,6 +1726,23 @@ class _SpecialRequestFeeSectionState
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
         const SizedBox(height: DSSpacing.s3),
+        // Required: admin approves these by hand and otherwise has to write to
+        // the musician to find out what the money covers.
+        DSInput(
+          label: 'Hvad dækker tillægget?',
+          hint: 'F.eks. Kunden ønsker at jeg medbringer lydudstyr',
+          controller: _reasonController,
+          minLines: 3,
+          maxLines: 6,
+          maxLength: _maxReasonLength,
+          textInputAction: TextInputAction.newline,
+        ),
+        const SizedBox(height: DSSpacing.s1),
+        Text(
+          'Skriv kort hvad I har aftalt — så kan vi godkende tillægget uden at skulle spørge dig.',
+          style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+        ),
+        const SizedBox(height: DSSpacing.s3),
         Row(
           children: [
             Expanded(
@@ -1510,7 +1750,8 @@ class _SpecialRequestFeeSectionState
                 label: isSaving ? 'Gemmer...' : 'Registrer ekstra tillæg',
                 variant: DSButtonVariant.primary,
                 expand: true,
-                onTap: isSaving ? null : _save,
+                enabled: hasReason,
+                onTap: (isSaving || !hasReason) ? null : _save,
               ),
             ),
             if (_currentFee > 0) ...[

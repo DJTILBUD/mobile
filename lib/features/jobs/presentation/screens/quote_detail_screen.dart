@@ -5,10 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/utils/equipment_description.dart';
+import 'package:dj_tilbud_app/core/utils/customer_name.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/ready_for_billing_gate.dart';
+import 'package:dj_tilbud_app/core/error/app_exception.dart';
+import 'package:dj_tilbud_app/shared/widgets/locked_info_banner.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/utils/extra_hours_options.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/hours_picker_field.dart';
@@ -30,6 +34,9 @@ import 'package:dj_tilbud_app/shared/widgets/conversation_card.dart';
 import 'package:dj_tilbud_app/shared/widgets/chat_bubble_fab.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/event_address_section.dart';
+import 'package:dj_tilbud_app/core/utils/birthday_person_age.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/decline_extra_hours.dart';
+import 'package:dj_tilbud_app/core/utils/planned_contact.dart';
 
 class QuoteDetailScreen extends ConsumerStatefulWidget {
   const QuoteDetailScreen({super.key, required this.quote});
@@ -278,7 +285,10 @@ class _JobHeroCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  eventTypeLabel(job.eventType),
+                  // Birthday events carry the celebrant's age; a DJ/sax needs it to know what kind of
+                  // party this is. Mirrors web, which appends it to the job heading.
+                  '${eventTypeLabel(job.eventType)}'
+                  '${formatBirthdayPersonAge(job.birthdayPersonAge)}',
                   style: DSTextStyle.headingMd.copyWith(color: _c.text.primary),
                 ),
               ),
@@ -289,6 +299,15 @@ class _JobHeroCard extends ConsumerWidget {
           const SizedBox(height: DSSpacing.s3),
 
           // Meta rows
+          // First name only — the full name + contact details live in the won "Kundekontakt"
+          // section below, but the DJ must be able to tell whose job this is in every state.
+          if (customerFirstName(job.leadName) != null) ...[
+            _MetaRow(
+              icon: LucideIcons.user,
+              label: 'Kunde: ${customerFirstName(job.leadName)}',
+            ),
+            const SizedBox(height: DSSpacing.s2),
+          ],
           _MetaRow(icon: LucideIcons.calendar, label: dateStr),
           const SizedBox(height: DSSpacing.s2),
           _MetaRow(icon: LucideIcons.clock, label: job.timeDisplay),
@@ -861,6 +880,23 @@ class _WonSectionState extends ConsumerState<_WonSection> {
   DSColors get _c => DSTheme.of(context);
   bool _contactedOptimistically = false;
 
+  /// Mirrors the web-app's `getDjProcessStep` (`web-app/src/helpers/djProcessStep.ts`),
+  /// which is the source of truth for the "Din proces" stepper: after
+  /// `dj_ready_confirmed_at` is set, the DJ sits on step 4 ("Spil jobbet") only
+  /// while `eventDate > today`, and moves to step 5 ("Optag content") from the
+  /// event day onwards. Boundary is deliberately inclusive — the switch happens
+  /// ON the event day, not the day after.
+  bool _isEventDayReached(DateTime eventDate) {
+    final today = DateTime.now();
+    final todayMidnight = DateTime(today.year, today.month, today.day);
+    final eventMidnight = DateTime(
+      eventDate.year,
+      eventDate.month,
+      eventDate.day,
+    );
+    return !eventMidnight.isAfter(todayMidnight);
+  }
+
   bool _isWithin5Days(DateTime eventDate) {
     final today = DateTime.now();
     final todayMidnight = DateTime(today.year, today.month, today.day);
@@ -881,9 +917,12 @@ class _WonSectionState extends ConsumerState<_WonSection> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
       ),
       builder:
-          (_) => Padding(
+          // ⚠️ `sheetContext`, NOT the outer screen's `context`. A modal sheet is a separate route:
+          // reading viewInsets off the parent captures the value at push time (usually 0) and the
+          // sheet never rebuilds as the keyboard animates in, so the padding stays 0 forever.
+          (sheetContext) => Padding(
             padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
             ),
             child: ContactCustomerSheet(
               existingPlannedDate: plannedDate,
@@ -1089,11 +1128,18 @@ class _WonSectionState extends ConsumerState<_WonSection> {
         title: 'Aftale lukket — faktura sendt til kunden',
       );
     } else {
+      // Surface the route's own reason (e.g. a winning musician has not contacted
+      // the customer yet) instead of a bare "Noget gik galt" — see
+      // readyForBillingErrorMessage.
+      final err = ref.read(markJobReadyForBillingProvider).error;
       DSToast.show(
         context,
         variant: DSToastVariant.error,
-        title: 'Noget gik galt. Prøv igen.',
+        title: readyForBillingErrorMessage(err is AppException ? err : null),
       );
+      // The gate above is driven by the offer list; refetch it so a rejection the
+      // DJ just hit also disables the button.
+      ref.invalidate(serviceOffersForJobProvider(jobId));
     }
   }
 
@@ -1137,6 +1183,19 @@ class _WonSectionState extends ConsumerState<_WonSection> {
     final billingLoading =
         ref.watch(markJobReadyForBillingProvider) is AsyncLoading;
     final readyLoading = ref.watch(confirmDjReadyProvider) is AsyncLoading;
+    // The DJ cannot close the deal until every WINNING musician on the job has
+    // ticked "Kunden er kontaktet" — the server rejects it (400
+    // `musician_not_contacted`). Before this, the button was tappable and the
+    // rejection surfaced as a bare "Noget gik galt. Prøv igen.", so the DJ had no
+    // idea the saxophonist was the blocker. Mirrors web LeadInfo.tsx's
+    // `isBlockedByMusicianContact`. An unloaded/failed offer list leaves the button
+    // enabled (fails open) — the server is still the authority.
+    final wonOffers =
+        ref
+            .watch(serviceOffersForJobProvider(widget.quote.jobId))
+            .valueOrNull ??
+        const <ServiceOffer>[];
+    final musicianContactBlocked = isBlockedByMusicianContact(wonOffers);
     // The DJ's own name for the copyable intro message (falls back to full name).
     final djProfile = ref.watch(djProfileProvider).valueOrNull;
     final djName = djProfile?.companyOrDjName ?? djProfile?.fullName ?? '';
@@ -1176,7 +1235,12 @@ class _WonSectionState extends ConsumerState<_WonSection> {
         int completedSteps = 0;
         if (isContacted) completedSteps = 1;
         if (isReadyForBilling) completedSteps = 2;
-        if (isConfirmedReady) completedSteps = 3;
+        if (isConfirmedReady) {
+          // Once the event day arrives, "Spil jobbet" is behind the DJ and the
+          // remaining task is content capture. Without this the stepper stuck on
+          // step 4 forever, so a DJ who played weeks ago was still told to play.
+          completedSteps = _isEventDayReached(job.date) ? 4 : 3;
+        }
 
         return Column(
           children: [
@@ -1261,12 +1325,20 @@ class _WonSectionState extends ConsumerState<_WonSection> {
                   if (job.customerContactPlannedFor != null)
                     _PlannedContactBanner(date: job.customerContactPlannedFor!),
                   DSButton(
+                    // Once the planned date is today or has passed, the DJ should be calling now, so the
+                    // button reverts to the primary "Kunde kontaktet" action instead of offering to reschedule.
                     label:
-                        job.customerContactPlannedFor != null
+                        job.customerContactPlannedFor != null &&
+                                !isPlannedContactDue(
+                                  job.customerContactPlannedFor,
+                                )
                             ? 'Ændr kontaktdato'
                             : 'Kunde kontaktet',
                     variant:
-                        job.customerContactPlannedFor != null
+                        job.customerContactPlannedFor != null &&
+                                !isPlannedContactDue(
+                                  job.customerContactPlannedFor,
+                                )
                             ? DSButtonVariant.secondary
                             : DSButtonVariant.primary,
                     expand: true,
@@ -1283,20 +1355,29 @@ class _WonSectionState extends ConsumerState<_WonSection> {
                   const SizedBox(height: DSSpacing.s3),
                   if (isReadyForBilling)
                     _DoneButton(label: 'Faktura sendt')
-                  else
+                  else ...[
+                    if (musicianContactBlocked) ...[
+                      LockedInfoBanner(
+                        icon: LucideIcons.users,
+                        label: musicianContactBlockedMessage(wonOffers),
+                      ),
+                      const SizedBox(height: DSSpacing.s3),
+                    ],
                     DSButton(
                       label: 'Luk aftale og send faktura',
                       variant: DSButtonVariant.primary,
                       expand: true,
                       isLoading: billingLoading,
+                      enabled: !musicianContactBlocked,
                       onTap:
-                          billingLoading
+                          billingLoading || musicianContactBlocked
                               ? null
                               : () => _handleReadyForBilling(
                                 widget.quote.jobId,
                                 widget.quote,
                               ),
                     ),
+                  ],
                 ],
 
                 // Step 3: Jeg er klar (shown after ready for billing)
@@ -1757,7 +1838,15 @@ class _ExtraHoursSectionState extends ConsumerState<_ExtraHoursSection> {
             ],
           ),
           const SizedBox(height: DSSpacing.s3),
-          if (!_windowOpen && hasHours) ...[
+          // Answered "nej" — nothing left to ask, so the card collapses to the
+          // confirmed row (with an undo) instead of showing the form forever.
+          if (widget.quote.extraHoursDeclinedAt != null) ...[
+            DeclineExtraHours(
+              id: widget.quote.id,
+              target: ExtraHoursDeclineTarget.quote,
+              declinedAt: widget.quote.extraHoursDeclinedAt,
+            ),
+          ] else if (!_windowOpen && hasHours) ...[
             // Read-only summary
             _ExtraHoursSummary(
               hours: widget.quote.extraHours!,
@@ -1785,6 +1874,16 @@ class _ExtraHoursSectionState extends ConsumerState<_ExtraHoursSection> {
             ),
           ] else if (_windowOpen && (!hasHours || _editing)) ...[
             // Input form
+            // Only while nothing is logged: "no extra hours" contradicts a saved
+            // amount, and the server rejects that combination too.
+            if (!hasHours) ...[
+              DeclineExtraHours(
+                id: widget.quote.id,
+                target: ExtraHoursDeclineTarget.quote,
+                declinedAt: widget.quote.extraHoursDeclinedAt,
+              ),
+              const SizedBox(height: DSSpacing.s3),
+            ],
             HoursPickerField(
               value: _selectedHours,
               onChanged: (v) => setState(() => _selectedHours = v),

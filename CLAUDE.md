@@ -65,7 +65,7 @@ dart run build_runner build --delete-conflicting-outputs  # regen Riverpod/codeg
 
 Env files: `.env.local` (default), `.env.dev`, `.env.prod`, `.env.example` (only one in git).
 
-The "typecheck + tests" done-bar for this app = `flutter analyze` + `flutter test` (this folder already has a fuller "Definition of done" checklist at the bottom). Note: `build_runner` is **not** a dependency here — generated files are committed, so `dart run build_runner build` fails with "Could not find package build_runner" and is a no-op; don't treat that as a blocker.
+The "typecheck + tests" done-bar for this app = `flutter analyze` + `flutter test` (this folder already has a fuller "Definition of done" checklist at the bottom). Note: `build_runner` is **not** a dependency here — generated files are committed, so `dart run build_runner build` fails with "Could not find package build_runner" and is a no-op; don't treat that as a blocker. `mobile/test/` **does** exist now (unit + widget tests under `test/core/`, `test/features/`), so `flutter test` is a real gate — 90 tests, all green as of 2026-08-07. The other gate is `flutter analyze` (0 errors; the 338 `_c` info/warning lints are the documented baseline — quote the error count, not the issue count).
 
 ## Releasing (Android + iOS)
 
@@ -89,6 +89,7 @@ that bumps, which is what keeps the two stores on the same number.
 Release notes are read from files at run time — **update them before running**:
 `fastlane/metadata/android/<locale>/changelogs/default.txt` (Play), `fastlane/metadata/ios/<locale>/release_notes.txt`
 ("What's New"), `fastlane/metadata/testflight_changelog.txt` ("What to Test").
+**No emojis in release notes.** Notes shipped before 1.0.37 contain them (the 1.0.34 "Send besked" headline had one) so the existing files are NOT a style template — the user rejects emoji in store copy. Plain text plus `•` bullets. Play caps the changelog at 500 characters; the other two are 4000.
 
 Signing stays local (Android `key.properties`, iOS automatic signing). Credentials are gitignored and NOT in the repo — a Google Play service-account JSON
 (`fastlane/play-service-account.json`), an App Store Connect API key (`fastlane/AuthKey.p8` +
@@ -111,6 +112,40 @@ require the build number to strictly increase.
 5. The "Launch image is the default placeholder" warning is pre-existing and non-blocking.
 
 Claude cannot do the store uploads (needs store credentials + it's the irreversible outward-facing step) — hand the signed artifacts + release notes to the user.
+
+### Android target API level: pinned to 36, NOT `flutter.targetSdkVersion`
+
+Google Play requires target API 36 (Android 16) from **Aug 31 2026** or the app can no longer be
+updated. The Flutter SDK on this machine is **3.29.2, whose `flutter.targetSdkVersion` and
+`flutter.compileSdkVersion` are both 35**, so inheriting them would have silently shipped a
+non-compliant bundle. `android/app/build.gradle.kts` therefore hardcodes `compileSdk = 36` and
+`targetSdk = 36`. **Don't "clean this up" back to `flutter.*`** until the installed Flutter SDK
+actually defaults to >= 36 (Flutter 3.35+); verify with
+`grep targetSdkVersion $FLUTTER_ROOT/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy`.
+
+Two things that make this work and are easy to lose:
+- AGP here is **8.7.0**, which predates API 36 and prints a loud "compileSdk 36 has not been tested"
+  warning. `android/gradle.properties` carries `android.suppressUnsupportedCompileSdk=36` to silence
+  it. The build genuinely works on AGP 8.7 + Gradle 8.10.2 + JDK 17, with no AGP or Gradle upgrade.
+- The SDK platform must be installed locally:
+  `sdkmanager "platforms;android-36" "build-tools;36.0.0"`. A fresh machine will fail the build
+  without it.
+
+**Verify the shipped bundle, don't trust the config.** After building, the merged manifest is the
+proof:
+`grep -o 'targetSdkVersion[^/]*' build/app/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml`
+must print `targetSdkVersion="36"`.
+
+**Related Play requirement, 16 KB page size** (separate from target API, also enforced): every
+bundled `.so` must have LOAD segments aligned to >= 16 KB. Currently satisfied without extra work
+(`ndkVersion = "27.0.12077973"` aligns by default): `libflutter.so` and `libapp.so` are 0x10000
+(64 KB), `libdatastore_shared_counter.so` is 0x4000 (16 KB). Re-check after adding any plugin that
+ships prebuilt native code:
+`unzip -q app-release.aab -d out && llvm-readelf -l out/base/lib/arm64-v8a/*.so | awk '/LOAD/{print $NF}' | sort -u`
+
+Going from 35 to 36 carries **no new edge-to-edge work**: Android 15 (targetSdk 35) already enforced
+edge-to-edge, so the app has been running under it, and Android 16 only removes an opt-out flag this
+app never used. Still worth a smoke test on an Android 16 emulator before rollout.
 
 ## The 4 success dimensions
 
@@ -165,15 +200,54 @@ Notification routing lives in `core/notifications/notifications_service.dart`. T
 | `admin_message` | musician | `/instrumentalist/profile` → `adminMessages` |
 | `custom_notification` | any | no navigation (dismisses) |
 
-**Deep-link `extra` must match the route's expected TYPE, or you get the "Mangler data" screen.**
-`NotificationsService.navigateTo` reads `data['role']` as a **String** (`'dj'`/`'musician'`), but several
-routes expect a **`MusicianRole` enum** as `state.extra` (they do `if (state.extra is! MusicianRole) →
-_MissingRouteDataScreen`, title "Mangler data"). Passing the raw `role` String silently fell through to
-that screen — the bug that broke tapping the `admin_message` push (`AppRoutes.adminMessages`). Convert
-`role == 'musician' ? MusicianRole.instrumentalist : MusicianRole.dj` before `pushNamed(..., extra:)`.
-When adding a deep link, check what the GoRoute builder expects `extra` to be. (`AdminMessagesScreen`
-also now has pull-to-refresh + a retry — the `_CenteredScrollable` wrapper makes the loading/error/empty
-states pull-refreshable, `RefreshIndicator.onRefresh` invalidates + awaits `adminMessagesProvider`.)
+### Three separate things broke notification deep-links — all three are now guarded
+
+**1. `state.extra` is NOT durable, so a role-only route must never depend on it.** go_router carries
+no `extra` through a re-parse (there is no `extraCodec`), and a re-parse happens for reasons the user
+never asked for: the platform re-reporting the current route on an Android activity restore, a Router
+remount, a deep link pushed before the Router mounted. Every one of those dropped a pushed screen into
+`_MissingRouteDataScreen` ("Mangler data"). The role is a **global app fact**, not per-navigation data
+— `RoleCache.role` is loaded in `main()` before `runApp` and is exactly what the shell already renders
+— so **`app.dart`'s `roleFromExtra(state.extra)` resolves it from the cache** whenever `extra` is
+missing or the wrong type. Applied to `/admin-messages`, `/edit-profile`, `/reviews`, `/stats`,
+`/payment`, `/terms`, `/notification-settings`, `/faq`, `/profile-preview`, and to the two
+`/job-filters` routes (whose `extra` is the signed-in user's own id → `supabase.auth.currentUser`).
+`/faq` was a hard `state.extra as MusicianRole` cast, so it **threw** rather than degrading;
+`/profile-preview` fell back to a hardcoded `MusicianRole.dj`, so a musician previewed the DJ profile.
+Routes that need a real entity (Job/Quote/ExtJob/Conversation) keep `_MissingRouteDataScreen` — they
+have nothing to fall back to. **When adding a deep link, ask whether `extra` is derivable app state; if
+it is, derive it and do not gate the screen on it.**
+
+**2. `data['role']` is often ABSENT — use `NotificationsService.effectiveRole(data)`, never the raw
+key.** `notify-admin-message` sends ONE multicast to DJs and musicians when
+`target_audience = 'both'`, so it deliberately omits `role` (it cannot be per-recipient). A bare
+`data['role'] == 'musician'` test then reads as "dj", which pushed **musicians into the `/dj/*` shell**
+and opened `AdminMessagesScreen(role: dj)` — the wrong message list, with read-state keyed on `djId`.
+`effectiveRole` prefers the payload and falls back to `RoleCache`. **Analytics deliberately keeps the
+RAW payload role** (`loggedRole`) so `tapped` rows stay joinable with the `sent` rows the Edge Function
+wrote; resolving it there would split one `both` campaign across two roles in the funnel.
+
+**3. A cold start from a tapped push raced BOTH the session and the router.**
+`handleInitialMessage` fires from `App.didChangeDependencies`, before either is guaranteed:
+- **Session:** `Supabase.initialize` returns before `recoverSession()` restores the session (this is
+  why `main()` subscribes the auth notifier first). `navigateTo`'s `if (userId == null) return`
+  therefore **silently dropped the entire deep link** — the app just opened on home and the tap looked
+  ignored. `_awaitUserId()` (5s, via `auth.onAuthStateChange`) turns that race into a short delay.
+- **Router:** `GoRouter.push` builds on `routerDelegate.currentConfiguration` **as of the call**, which
+  is empty until the `Router` has parsed its initial location. Pushing onto an empty base does not
+  throw — it yields a stack with **no shell underneath**: no bottom nav, `canPop()` false (Android back
+  exits the app), and the screen **disappears** on the next router refresh, which a cold start reliably
+  fires when the auth notifier sees the recovered session. `_awaitRouterReady(router)` waits it out.
+  Pinned in `test/app/deep_link_router_readiness_test.dart`; both waits are no-ops on the warm path.
+
+Related, and still true: **`goTab(path)` immediately followed by `router.pushNamed(...)` only works
+because the redirect is synchronous** — `go()` merely queues route information, and it is the
+`SynchronousFuture` through the parser that lets `push` see the new tab as its base. Do not put an
+`await` between them, and do not make `redirect` async.
+
+(`AdminMessagesScreen` also has pull-to-refresh + a retry — the `_CenteredScrollable` wrapper makes the
+loading/error/empty states pull-refreshable, `RefreshIndicator.onRefresh` invalidates + awaits
+`adminMessagesProvider`.)
 
 **Foreground notifications:** system banners are suppressed. `inAppNotificationProvider` (StateProvider) holds the current `RemoteMessage?` and drives an in-app banner instead.
 
@@ -217,6 +291,15 @@ To view a production user's app for debugging, the `kDebugMode`-only floating de
 
 **Critical: `NotificationsService.setImpersonating(true)` is set BEFORE `verifyOTP`** so the resulting `signedIn` event skips `registerToken()`. Without this the impersonated (real prod) user's actual phone token would be deleted by the `_upsertToken` cleanup above, silently killing their push. The flag is **persisted** (SharedPreferences, loaded in `main()` before the auth listener subscribes) so a relaunch mid-impersonation still skips registration; `registerToken`/`_upsertToken`/`removeToken` all hard-return when it's set. After establishing the session the FAB calls `RestartWidget.restartApp` so the router cold-resolves into the impersonated user's home; the panel then shows "Logget ind som <email>" + a "Log ud" button (`signOut` clears the flag). The **notification-settings toggle** (`notification_settings_screen.dart`, `_toggle`) also bails when `isImpersonating` — it does `UPDATE DeviceTokens.disabled_notification_types WHERE user_id = <current>`, which would hit the real user's device rows. Rule of thumb: **any new code that writes `DeviceTokens` for the current user must guard on `NotificationsService.isImpersonating`.** Points the app at prod, so writes are real — view only. To enable: set `ADMIN_API_KEY` in the mobile `.env.<env>` to match **that env's deployed web-app** key (e.g. the Vercel prod value for `.env.prod`).
 
+**⚠️ SINGLE-QUOTE the key in `.env.<env>`, or it is silently mangled.** `flutter_dotenv`'s parser
+interpolates `$name` in unquoted AND double-quoted values (`_bashVar` in `parser.dart`, run after the
+quotes are stripped) and strips `#...` as a comment; only a single-quoted value is taken literally.
+Our keys contain `$`, so an unquoted key lost 3 characters on-device and every impersonation
+attempt on dev came back as `Token-fejl (401): Unauthorized.` while the very same value worked from
+curl. The tell is exactly that: the file's value is accepted by the server, the app's is not.
+`\$` also survives, which is how `.env.prod` had been written; single quotes are the simpler rule.
+Assets are bundled at build time, so a changed `.env.*` needs a full rebuild, not a hot restart.
+
 ## Job-content fields shown to musicians (what they may/may not see)
 
 Musicians must see **all** customer-facing job content; never `internal_notes`/`internal_note` (admin-only — these are NOT parsed into any mobile model). The relevant fields per source:
@@ -231,6 +314,15 @@ A musician can reach an ext job via **two** rendering paths — keep field displ
    `additionalInformation`, `musicianSpecialRequest`. **`new_ext_job` must route here, NOT to
    `ExtJobDetailScreen`** — the musician has not won yet (routing to the won view showed the customer's
    contact details and a "kontakt kunden" flow for a job they hadn't won; a real bug that was fixed).
+   **`sax_type` (Spiltype) must be on this screen too.** It was on the feed `JobCard` but not on the
+   screen the card opens, so a musician could see "Party-sax" in the list and then find no trace of it
+   after tapping in — the exact complaint that got reported. The shared
+   `presentation/widgets/sax_type_info.dart` (`saxTypeLabel()` + the tap-to-expand `SaxTypeDescription`)
+   is the one copy; mirrors the badge + tooltip in web
+   `instrumentalist/jobs/[job_id]/_components/JobInfo.tsx`. Note the description used to live as a
+   private widget inside `job_detail_screen.dart`, which **nothing routes to** (that file says so at the
+   top) — so it had never actually been on screen. When adding a musician-facing field, check it lands
+   on the *offer form*, not just the card or the dead detail screen.
 2. **`ext_job_assigned` notification → `ExtJobDetailScreen`** (takes a real `ExtJob` entity) — the WON /
    assigned fulfillment view (customer contact, process tracker). Shows `notes` + `musicianSpecialRequest`.
    Note: `ExtJobModel` parses `musician_special_request` but `toEntity()` must explicitly pass it through
@@ -306,6 +398,39 @@ fixed customer. Mirrors the web app's `dj/udvalgte-jobs` badge.
   (`featured_jobs_screen`) still watches only the DJ map (that route is DJ-only). Web parity:
   `MusicianJobCard` + `ServiceOfferCard` fed by `useMusicianExtJobRecurringNames` in `instrumentalist/page.tsx`.
 
+## "Billeder fra stedet" venue photos on the ext job detail (`VenuePhotosCard`)
+
+The team photographs a partner venue on a site visit and comments each photo in the admin tool; the
+DJ sees them on the ext job so they know where to stand and where the power is before arriving.
+Mirrors web `VenuePhotosSection` on `dj/udvalgte-jobs/[id]`.
+
+- **Same data path as the "Fast kunde" badge, and for the same reason.** The rows live in
+  `RecurringCustomerPhotos`, which a DJ cannot read via RLS, so they come from the DJ-scoped
+  `GET /api/internal-dj/ext-jobs?dj_id=<uid>` as `venue_photos: [{id, url, comment}]` per job.
+  `djExtJobVenuePhotosProvider` (`jobs_provider.dart`) → `fetchDjExtJobVenuePhotos` → a
+  `Map<int, List<VenuePhoto>>` keyed by **ext job id**; a job with no photos is absent, and any
+  failure degrades to an empty map so the card just does not render. **Do NOT route it through
+  `djExtJobsProvider`** (same rule as the badge: that read is direct Supabase and shared with the
+  date-collision guard).
+- Entity `features/jobs/domain/entities/venue_photo.dart` is the Dart mirror of the web
+  `VenuePhoto` type; `fromJson` returns null for a malformed row rather than throwing, so one bad
+  row never hides the rest.
+- Widget `shared/widgets/venue_photos_card.dart`: a horizontal thumbnail strip with the comment
+  under each, tap → `VenuePhotoViewerScreen` (PageView + `InteractiveViewer` pinch-zoom, caption
+  under the image, "n / total" in the app bar).
+- **The ext job detail is TABBED for partner bookings: "Job" and "Stedet".** `showVenueTab` =
+  `extJob.isRecurringCustomer || venuePhotos.isNotEmpty || wishesCard.hasContent`. The "Stedet"
+  tab holds everything about the venue in one place: the `RecurringCustomerBadge`,
+  `EventAddressSection`, `VenuePhotosCard`, `PartnerEventWishesCard`, and a `_VenueEmptyState`
+  when the first two data sources are empty (a partner booking gets the tab even before any photos
+  exist, so the DJ learns where venue info lives). The "Job" tab is the previous single scroll
+  minus those cards. When there is no venue tab, the address section and the wishes card render
+  inline exactly as before, so a plain ext job is unchanged. `DefaultTabController(length: 2)`
+  always wraps the Scaffold; the `DSTabBar` is only attached to the AppBar when the tab is shown.
+  The chat `ChatBubbleFab` overlay sits above the `TabBarView`, so it is visible on both tabs.
+- DJ-only for now: the sax names endpoint returns no photos, so a musician opening the shared
+  detail screen sees no card.
+
 ## "🎶 Til festen" partner-booking card (`PartnerEventWishesCard`)
 
 `shared/widgets/partner_event_wishes_card.dart` — a purple card of the couple-facing partner-booking
@@ -345,6 +470,135 @@ Both read the body from `ChatMessage.message` and copy via `Clipboard.setData` (
 `package:flutter/services.dart`; the conversation file already had it, the support file did not).
 Copy is gated on `message.isNotEmpty` so image-only bubbles don't offer it.
 
+## ⌨️ Keyboard avoidance — the three rules, and the global bar that broke all of them
+
+### Rule 1c: the conversation list is `reverse: true` — do not "fix" it back
+
+`conversation_detail_screen`'s `ListView.builder` is reversed, so **offset 0 is the bottom** and the
+newest message is pinned there by construction. It is walked backwards
+(`groups[groups.length - 1 - groupIndex]`) so index 0 is the newest day; inside a group the Column
+still renders top-to-bottom, so the date divider stays above its messages.
+
+It replaced a normal list that jumped to `maxScrollExtent` in a post-frame callback, which failed
+two ways users reported:
+
+- **Opening a conversation landed mid-history.** `maxScrollExtent` is an ESTIMATE while images are
+  still loading and while `ListView.builder` has only laid out the visible window, so the jump
+  landed short. No amount of re-jumping fixes that reliably; anchoring does.
+- **Opening the keyboard hid the newest message.** The Scaffold shrinks the viewport and a normal
+  list keeps its OFFSET, so the bottom of the conversation slid under the composer and you could
+  not see what you were replying to. Anchored at 0 the bottom stays put and the list shortens at
+  the top instead.
+
+⚠️ `_scrollToBottom` therefore targets **`minScrollExtent`**. Targeting `maxScrollExtent` on a
+reversed list flies the reader to the OLDEST message in the thread.
+
+### Rule 1b: a TALL field needs `scrollPadding`, or the user types through a slot
+
+Rule 1 (let the Scaffold resize) makes a focused field *visible*; it does not make it *usable*. The
+framework scrolls only far enough to reveal the **caret** plus `TextField.scrollPadding` (default
+20). On an empty textarea the caret is line 1, so a `minLines: 8` box (~192px — "Salgstale" on both
+quote forms) came to rest with ~60px of itself above the keyboard: the DJ wrote a 450-character
+pitch through a one-line slot at the bottom edge. Reported right after the 1.0.38 hotfix as "the
+keyboard takes up the space where the user is writing".
+
+`DSInput` now reserves roughly the field's own height below the caret for multiline fields
+(`_scrollPadding`, `20 + lines * 22` capped at 8 lines). `ensureVisible` clamps to the scroll
+extent, so over-asking just parks the field at the top of the viewport. Single-line fields keep the
+default — hoisting them would only leave a dead gap.
+
+- **⚠️ Testing this requires a TAP, not `requestFocus()`.** Programmatic focus goes through the
+  focus-traversal path, which reveals the WHOLE field and hides the bug entirely; a real tap runs
+  only `EditableText._showCaretOnScreen`, which reveals the caret plus `scrollPadding`. A test built
+  on `requestFocus()` passes against the broken code — this one did, twice, before it was caught.
+- **⚠️ And it requires `setSurfaceSize`.** A `MediaQuery` with a `size` does not change layout
+  constraints; the tree still lays out at the default 800x600, the shrunken Scaffold ends up
+  elsewhere, and the tap lands in dead space and focuses nothing.
+  `test/core/design_system/ds_input_keyboard_test.dart` does both and fails against the unfixed
+  input (field bottom 580 vs a 460 keyboard line, 72px of 192 visible).
+
+### ⚠️⚠️ RULE 0, LEARNED THE EXPENSIVE WAY: never change the SHAPE of the tree above the router
+
+`MaterialApp.router` hands its `builder` the **`Router` widget itself** as `child`, not the routed
+screen. So a wrapper in that builder that sometimes returns `child` and sometimes returns
+`Something(child: child)` moves the Router to a different depth. Flutter cannot match the elements,
+unmounts the Router, and mounts a fresh one — and a fresh `Router` re-parses the whole stack from
+the URL in `initState`. **go_router carries no `extra` through a re-parse** (there is no
+`extraCodec` configured), so every pushed route rebuilds with `extra == null`.
+
+Every job/profile/quote route in this app is pushed with `extra: <entity>` and falls back to
+`_MissingRouteDataScreen` when it is missing. So the effect is total:
+
+> Siden "tilbudsformular" kunne ikke åbnes, fordi nødvendige data mangler.
+
+**This shipped as 1.0.37 and broke every screen for every user.** `ReserveKeyboardDismissBar` did
+`if (!barVisible) return child;` before returning the wrapped version, so the shape flipped the
+instant a keyboard opened — on the quote form, on edit-profile, everywhere. The fix is to always
+return the wrapper and vary only the value (`reserved = barVisible ? barHeight : 0.0`).
+
+- **The diagnostic that cracked it:** chat was the ONLY screen that did not fail. Chat sets
+  `suppressKeyboardDismissBarProvider`, so `barVisible` stayed false there, so the shape never
+  toggled. A screen that behaves differently *because it opts out of the global widget* points
+  straight at that widget.
+- **A synthetic go_router harness will NOT reproduce it.** Pushing a route, toggling view insets and
+  asserting `extra` survives passes even against the broken code, because the Navigator's GlobalKey
+  carries the route stack in that setup. Assert the real contract instead:
+  `test/app/route_extra_survives_keyboard_test.dart` pins that the child's `State` is the SAME
+  instance across a keyboard toggle. That test fails against the 1.0.37 code and passes now.
+- **This applies to anything else placed in `MaterialApp.builder`** — a banner, a gate, a theme
+  wrapper. Conditional wrapping there is never cosmetic; it resets routing. `UpdateGate` is allowed
+  to swap in `ForceUpdateScreen` because blocking the whole app is the intent.
+
+
+Read this before touching any screen with a text input. There are exactly three shapes.
+
+**1. A `Scaffold` screen: keep the default `resizeToAvoidBottomInset: true` and do nothing else.**
+The Scaffold shrinks its body to the space above the keyboard and Flutter scrolls the focused field
+into it. Do NOT add `viewInsets` padding on top — that double-counts.
+
+**2. A modal bottom sheet: the sheet must lift ITSELF.** `ModalBottomSheetRoute` applies no
+`viewInsets` of its own (unlike a Scaffold), so nothing shrinks for you.
+- ✅ Wrap the sheet's root `Container` in `Padding(bottom: viewInsets.bottom)`, clamped via
+  `LayoutBuilder` so dragging the sheet down with the keyboard open can't leave it 0px tall.
+  Reference implementations: `agent_bottom_sheet.dart`, `edit_quote_bottom_sheet.dart`,
+  `profile_bio_bottom_sheet.dart`.
+- ❌ **Do NOT put the inset in the scroll view's `padding`.** It only adds empty scroll *content*;
+  the viewport still extends under the keyboard, so the field can be "scrolled into view" and STILL
+  sit behind it. This exact bug was in `edit_quote_bottom_sheet` (the quote sales pitch) and
+  `profile_bio_bottom_sheet` and is fixed; the comment "Add the keyboard inset so lower fields
+  scroll clear of it" is the fingerprint of it.
+- ❌ **Do NOT read `viewInsets` from the OUTER screen's `context` inside `builder:`.** A sheet is a
+  separate route, so the parent's value is captured at push time (0) and the sheet never rebuilds as
+  the keyboard animates in — the padding stays 0 forever. Use the builder's own context:
+  `builder: (sheetContext) => ... MediaQuery.viewInsetsOf(sheetContext).bottom`. Three call sites had
+  this (`quote_detail_screen`, `service_offer_detail_screen`, `ext_job_detail_screen`, all wrapping
+  `ContactCustomerSheet`).
+
+**3. ⚠️ THE GLOBAL "Luk" BAR — the one that made rule 1 look broken everywhere.**
+`_KeyboardDismissBar` (`app.dart`) is `Positioned(bottom: viewInsets.bottom)` in the **app-level
+`MaterialApp.builder` Stack**, i.e. painted ABOVE the routed screen. A Scaffold obeying rule 1
+shrinks to exactly `screen - keyboard` and scrolls the focused field to the bottom of that area —
+which is precisely where the opaque bar is drawn. So on EVERY screen with an input, the bottom strip
+of the focused field was hidden behind it: the last lines of a tall sales pitch, the character
+counter, the row of buttons under it. The chat screen only escaped it by suppressing the bar
+(`suppressKeyboardDismissBarProvider`), which is a per-screen workaround, not the fix.
+
+The fix is `_ReserveKeyboardDismissBar` in `app.dart`: it wraps the routed child in a `MediaQuery`
+whose `viewInsets.bottom` is inflated by `keyboardDismissBarHeight(context)`, so every Scaffold below
+stops ABOVE the bar and the bar sits in the reserved gap. One change, every screen.
+- **The height constant is shared** by the reservation and the bar's own `SizedBox`. If they drift,
+  the bar covers content again. It scales with the text scaler (clamped) so a large accessibility
+  size can't outgrow its gap.
+- **The visibility condition is duplicated and must stay identical** (`keyboard > 0 && !suppressed`).
+  Reserving for a bar that isn't drawn leaves a dead gap above the keyboard — which is why the chat
+  screen, which suppresses the bar, must not reserve for it either.
+- Sheets following rule 2 pick the extra height up automatically and clear the bar too.
+- **Regression tests: `test/app/keyboard_dismiss_bar_reservation_test.dart`.** The load-bearing one
+  pumps a real `Scaffold` under the reservation and asserts its body ends ABOVE the bar strip, so it
+  fails if the reservation is removed or drifts from the bar's height. `ReserveKeyboardDismissBar`
+  and `keyboardDismissBarHeight` are `@visibleForTesting`-public for this reason — do not re-privatise
+  them without moving the tests.
+
 ## Chat keyboard avoidance: use the Scaffold default, do NOT hand-roll `viewInsets`
 
 `conversation_detail_screen.dart` (musician + support chat) must keep the Scaffold's
@@ -360,6 +614,209 @@ manual override left the input hidden behind the keyboard. Do not reintroduce it
 `_KeyboardDismissBar` (`app.dart`, a "Luk" bar at `bottom: viewInsets.bottom`) is already suppressed
 on this screen via `suppressKeyboardDismissBarProvider` (set true in `initState`'s post-frame,
 false in `dispose`) so it can't overlay the composer — keep that.
+
+## Media tiles + the profile coach: two ways the UI lied to the user
+
+**A video with no thumbnail must never render as the ADD tile.** `media_screen`'s `_MediaTile` fell
+back to `Icon(LucideIcons.video)` on the plain bordered box when `thumbnailUrl == null` — the same
+icon, size and border as `_AddTile`'s "Tilføj video". An uploaded clip was therefore drawn as the
+add button with a delete badge on it ("how come the user can delete that?"). It now always renders
+dark with the play badge (`_NoVideoPreview`), so a missing preview reads as a video, not an empty
+slot. Thumbnail-less videos are NORMAL and will keep occurring: `_uploadThumbnail` is best-effort
+and returns null on any failure (generation, signed URL, S3 PUT) without surfacing anything, and
+the video row is inserted regardless.
+
+**Posters are grabbed at `timeMs: 1000`, not frame 0.** The default first frame of a phone clip is
+very often black (fade-in, autoexposure), which is how a gallery ends up showing a pure black tile.
+Falls back to frame 0 if the seek yields nothing. Both uploaders
+(`profile_remote_datasource`, `job_content_remote_datasource`) do this — keep them in sync. Only
+affects NEW uploads; existing black posters stay until re-uploaded.
+
+**The profile coach must render `AgentError`, not swallow it.** `_AssessmentText` returned
+`SizedBox.shrink()` on error while the gap section below still rendered (its condition is
+`AgentDone || AgentError`). So a DJ out of AI credits saw an empty sheet topped by "Din profil er
+komplet — godt klaret!" and read that green badge as the AI's verdict, when the AI had never run.
+`AgentError.message` is already user-ready Danish from `agent_provider` (the `AgentLimitException`
+branches), so it only needed rendering.
+
+- **The badge itself is honest and has nothing to do with credits.** Gaps come from
+  `widget.userContext` — profile image, `reviewCount >= 10`, `videoCount >= 1`, bio `>= 80` chars,
+  genres non-empty, `venuesAndEvents.length >= 3` — computed locally, never from the model. If it
+  says complete, those six are genuinely met.
+- **⚠️ `_dismissedGapTitles` can still make it lie within a session.** Dismissing every card with
+  its X empties the gap list and shows the complete badge. The set is in-memory only, so it clears
+  when the sheet is disposed, but the badge should arguably distinguish "nothing left" from
+  "nothing you haven't dismissed".
+
+## ⚠️ Archived jobs are invisible to DJs/musicians — enforced by RLS, not by each query
+
+An archived internal `Jobs` row is CRM-deleted. It is almost always the **internal duplicate of an
+ExtJob**, which links back to it via `ExtJobs.internal_job_id` (admin renders "Linked Archived Job").
+Archiving **keeps the job's status**, so no status filter excludes it — and the sax booking form
+writes a mirrored `Jobs` + `ExtJobs` pair by design, so these duplicates are routine, not rare.
+
+**The money bug this caused:** a DJ saw job #864 and E132 — the same booking — side by side, and
+`statEntriesProvider` (`_djEntries`) counted BOTH toward his earnings, so one job read as two payouts.
+He asked to be paid twice. Neither mobile nor web filtered `archived` on the DJ's quotes.
+
+**The rule now lives in the DB**: web-app migration `20260810000000_hide_archived_jobs_from_performers`
+adds `archived = false OR is_admin(auth.uid())` to both broad SELECT policies on `Jobs`, so a
+DJ/musician session physically cannot read one — every direct Supabase query in this app is covered,
+including future ones. The explicit filters below stay as defence in depth and because **PostgREST
+applies RLS to embeds**: an archived job now comes back as `job: null` inside a Quotes/ServiceOffers
+select, which the client must treat as "not visible" and drop (that is why `fetchServiceOffers` also
+drops a row whose `job_id` is set but whose `job` embed is null).
+
+Filter points (all now in place):
+- `fetchDjQuotes` — `Jobs!inner` + `.eq('job.archived', false)`. `Quotes.job_id` is NOT NULL so the
+  inner join is safe. One filter covers the won/sent/lost tabs, calendar, nav badges, the stats screen
+  AND the date-collision guard — a dead job should block nothing.
+- `fetchServiceOffers` — filtered **in Dart**, not with `Jobs!inner`: an ext-job offer has `job_id`
+  null, so an inner join on Jobs would silently drop every ext-job offer.
+- `fetchNewInstrumentalistJobs` — already had `.eq('archived', false)`.
+- "Nye jobs" for DJs is fixed **server-side** in web `src/domain/biddableJobs.ts` (the shared module
+  behind both `/api/dj/biddable-jobs` and web's `useUnbidJobsFromMyRegions`), so both platforms get it
+  from one change. There is a regression test there.
+
+**Do NOT filter the ExtJob side.** The ext job is the LIVE booking; the archived internal Job is the
+dead twin. Hiding the wrong one loses the real job.
+
+## First-win popup: musicians have TWO variants and the RPC REQUIRES `p_variant`
+
+`features/first_win/` mirrors web `src/hooks/useFirstWinPopup.ts` — keep them in sync. The DB RPC is
+**`mark_first_win_shown(p_role text, p_variant text DEFAULT NULL)`** (migration
+`20260522000002_musician_first_win_split`, and `…000003` dropped the old 1-arg overload).
+
+- **`p_variant` is mandatory for `p_role='musician'`.** The function `RAISE EXCEPTION 'Invalid
+  variant for musician: %'` when it is anything but `'with_dj'`/`'solo'` — NULL included. Mobile used
+  to call it with only `p_role`, so **every musician dismissal threw**, nothing was persisted, and the
+  walkthrough (checklist and all) reappeared on every single app launch. Reported by two saxophonists.
+  DJs were never affected: the `p_role='dj'` branch takes no variant. Send `MusicianVariant.rpcValue`,
+  never `.name` (`withDj` != `with_dj`) — there is a test pinning both strings.
+- **Musicians have two columns, and `Musicians.first_win_shown_at` is NOT one of them.** The live
+  columns are `first_win_with_dj_shown_at` + `first_win_solo_shown_at`. The legacy single column still
+  exists but nothing writes it any more, so reading it (which the old mobile datasource did) is a
+  second, independent way to make the popup immortal. `DjInfos.first_win_shown_at` is unchanged.
+  **This one, not the missing `p_variant`, is what actually bit the reported user** (Astrid, musician
+  `40695465-…`): she had already completed the solo walkthrough **on the web app** (`first_win_solo_shown_at`
+  = 2026-06-04), so web considered her done — but mobile read the dead legacy column, saw NULL, and
+  re-showed the *same* solo checklist on every launch, where the dismiss then also threw. Anyone who
+  dismissed on web is in this state. Diagnose with `first_win_shown_at IS NULL` + any won offer, NOT
+  with the two new columns.
+- **Only show a variant a real win backs.** `pendingMusicianVariant` returns null when the pending
+  column has no matching win — without that rule Astrid (solo column set, with_dj column NULL, and no
+  with-DJ win) would flip straight from the immortal solo popup to an unearned with_dj popup.
+- **The variant must be decided BEFORE showing the dialog and carried into the dismiss** — it picks
+  both the walkthrough AND the column written. `firstWinDecisionProvider` returns a `FirstWinDecision`
+  (`shouldShow` + `musicianVariant`); the pure `pendingMusicianVariant(...)` holds the with_dj-wins-
+  ties rule. `showFirstWinDialog` no longer defaults the variant: defaulting it to `solo` showed a sax
+  who won a job WITH a DJ the solo walkthrough, which tells them to agree invoicing with the customer
+  — the DJ's job on that booking.
+- **A failed dismiss now surfaces a toast** instead of popping as if it worked. The old `try/finally`
+  with no `catch` closed the dialog and swallowed the RPC error, which is why this looked like a UI
+  bug for months rather than a failing write.
+
+## "Luk aftale og send faktura" is BLOCKED until every winning musician has contacted the customer
+
+The DJ may not close a deal while a **winning `ServiceOffers` row on the same job has
+`customer_contacted = false`** — a sax player is routinely slower than the DJ, so this fires
+often. It is a **server rule**, enforced by `PUT /api/jobs/[job_id]/ready-for-billing` and
+`PUT /api/ext-jobs/[ext_job_id]/ready-for-billing`, which reject with **400 +
+`code: "musician_not_contacted"`** and a Danish user-facing `message`.
+
+**What was wrong** (reported from the field, job #2962): the internal-job route returned developer
+English, `quote_detail_screen` threw the message away and showed a bare **"Noget gik galt. Prøv
+igen."**, and the button was tappable in the first place — so the DJ had no way to learn that the
+saxophonist was the blocker. The web-app already had both halves (`LeadInfo.tsx`
+`isBlockedByMusicianContact` disables the button and prints the reason); mobile simply never
+mirrored it.
+
+- **The rule is `features/jobs/domain/ready_for_billing_gate.dart`** — `isBlockedByMusicianContact`
+  (there must BE a won offer AND at least one won offer un-contacted; a job with no musician is
+  never blocked), `musicianContactBlockedMessage` (names the instrument when every blocker shares
+  one, else neutral) and `readyForBillingErrorMessage` (maps the server reason to DJ-actionable
+  Danish). Unit-tested in `test/features/jobs/domain/ready_for_billing_gate_test.dart`. Both DJ
+  screens use this one copy — `ext_job_detail_screen`'s old private `_toastError` now delegates to
+  it, so the two screens can never tell the DJ different things. It matches the server's stable
+  **`code`** first and only falls back to sniffing the Danish copy: `JobsRemoteDatasource._errorFor`
+  now populates **`DatabaseException.code`** from the route's JSON body (every non-2xx from
+  `_webApiPut/_webApiPatch/_webApiDelete/_webApiGet` goes through it, not just POST), so
+  `code == 'musician_not_contacted'` is decidable without depending on wording that will be
+  reworded. Any new route that wants a client-legible rejection should send a `code`.
+- **⚠️ `fetchServiceOffersForJob`/`ForExtJob` MUST keep `customer_contacted` in the select.** The
+  DJ-view query hand-lists its columns and the repository hand-maps them, so dropping it anywhere
+  along that path silently defaults every offer to "not contacted" and blocks every DJ — the same
+  lossy-mapper trap as the web `mapUpdateJoinedDjInfo` one. `ServiceOffer.customerContacted`
+  already existed; only the DJ-view fetch was missing it.
+- **The client gate FAILS OPEN**: an unloaded or failed offer list leaves the button enabled. It only
+  decides tappability — the server is always the authority, so at worst the DJ taps into the (now
+  legible) rejection. Never invert this; a read error would otherwise freeze every close.
+- Blocked state = `LockedInfoBanner` (`shared/widgets/locked_info_banner.dart`, promoted from
+  ext_job_detail's private `_LockedInfo`) directly above a **disabled** `DSButton`. A disabled button
+  with no explanation reads as a bug, which is what sent DJs to support in the first place.
+- The ext-job gate is scoped to `isAssignedDj` — a musician on that screen is the person being
+  waited for, not the one being blocked.
+
+## Saxophonists on a `musician_only` ext job own "klar til fakturering" — give them the button
+
+`notify-process-reminder` sends the musician a **`send_invoice_reminder`** ("husk lige at lukke
+aftalen og sende fakturaen") for a **won `musician_only` ext job stuck in `customer_contacted`** —
+because on that job type there is no DJ, so the winning musician owns `ready_for_billing` (the web
+route `PUT /api/ext-jobs/[id]/ready-for-billing` authorises them explicitly). The reminder repeats
+**every day, with no interval damping** (unlike the contact nudge, which is every 2nd day) until the
+status advances.
+
+Mobile shipped that push for months with **no way to act on it** — `service_offer_detail_screen`
+`_wonBody` had only "Kunde kontaktet" + "Jeg er klar", so the sax was told daily to do something the
+app did not expose. (The `ServiceOfferCard` action chip already rendered `JobActionType.readyForBilling`,
+so the list promised an action the detail screen didn't have.) Reported verbatim as *"det kan jeg ikke
+se, hvordan jeg skal gøre"*.
+
+Now mirrored from web `instrumentalist/jobs/[job_id]/_components/LeadInfo.tsx`:
+- **"Klar til fakturering ✓"** when `musician_only && customer_contacted && status != ready_for_billing`
+  → `markMusicianExtJobReadyForBillingProvider` (same repository method the DJ screen uses, but it
+  refreshes `serviceOffersProvider` instead of `djExtJobsProvider`).
+- **"Jeg er klar" is gated behind it** on `musician_only` (`!isMusicianOnly || isReadyForBilling`), so
+  the two CTAs never compete — same order as web.
+- The `ProcessTracker` gains a **"Send faktura"** step on `musician_only` only.
+- **Gate on `customer_contacted`, NOT on the ext-job status.** Admin-assigned `musician_only` ext jobs
+  go `open → sent` and are never `closed`, so the server accepts `sent`/`closed`/`customer_contacted`
+  for this transition. `ServiceOfferAction.pendingAction` (the card chip) still gates on
+  `job.status == customerContacted` and therefore misses those — a known narrower condition.
+
+## AI sheet (`agent_bottom_sheet.dart`) keyboard avoidance — the sheet lifts, not the child
+
+Opposite rule to the chat screen above, because a **modal bottom sheet is NOT resized by the
+keyboard** (`ModalBottomSheetRoute` applies no `viewInsets` padding of its own — unlike a Scaffold).
+So the "Skriv til AI'en..." composer used to end up behind the keyboard even though it padded
+*itself* by `viewInsets.bottom`: that padding sat **inside** the `SingleChildScrollView`, so it only
+added empty scroll content and the scrollable's viewport still extended under the keyboard.
+
+The working shape:
+- The `DraggableScrollableSheet` builder wraps its `Container` in `Padding(bottom: viewInsets.bottom)`
+  (clamped via `LayoutBuilder` so dragging the sheet down with the keyboard open can't leave it 0px
+  tall). This lifts the **whole sheet body** above the keyboard.
+- The `_RefinementStrip` composer is **pinned outside the scroll view**, between the scrolling draft
+  and `_ActionBar` — a chat-composer layout. It must NOT re-apply `viewInsets` (double-counting).
+- Its `TextField` has a `FocusNode` whose listener calls `_expandForKeyboard()`, animating the sheet
+  to `_maxSheetSize` so the draft keeps as much room as possible once the keyboard is up.
+
+## Customer FIRST name is visible to DJs/musicians in every job state
+
+`Jobs.lead_name` / `ExtJobs.lead_name` is shown as **"Kunde: <first name>"** on every job surface —
+open, sent and won, for both roles. Full name + phone + email stay reserved for the won contact
+sections. One helper does the extraction: **`core/utils/customer_name.dart` → `customerFirstName()`**
+(first whitespace token, null for junk). Never `leadName.split(' ').first` inline — `lead_name` is
+`text NOT NULL` with no format constraint and the WordPress forms put `-` / blanks in it, which
+would render as a customer literally called "-" (same class of trap as `lead_phone_number`, see
+`phone_utils.dart`).
+
+Surfaces wired: `job_card` (open, both roles), `quote_card` (DJ sent/won), `service_offer_card`
+(sax sent/won/lost), `dj_quote_form_screen`, `instrumentalist_offer_form_screen`,
+`quote_detail_screen`, `service_offer_detail_screen`. `ext_job_detail_screen` is deliberately NOT in
+the list — it is a won-only view whose "Kundekontakt" card already shows the full name. Web parity:
+web already shows the **full** `lead_name` pre-win (`dj/jobs/[id]/_components/LeadInfo.tsx`), so
+mobile is the stricter of the two here.
 
 ## Notification center (in-app feed) — `features/notifications/`
 
@@ -380,6 +837,31 @@ filter, Nye/Tidligere grouping, per-type icon, unread dot).
   `unreadNotificationCountProvider` drives the bell badge.
 - **No backfill** — the feed only fills from notifications sent after deploy (the table didn't exist
   before). Tapping a seeded/old notification only navigates if the referenced row still exists.
+- **⚠️ Tapping a notification marks its feed row read — matched on `(type, reference_id)`, not on id.**
+  Until this landed, opening the app from a push navigated correctly but left the row unread, so the
+  red badge survived the tap on all three surfaces and only "Marker alle læst" cleared it (reported
+  as *"det lille røde 1 tal fjerner sig ikke"*). The fix is `navigateTo` → `NotificationsDatasource
+  .markReadForPush`. It cannot match by id: the sender builds the FCM data map, `await`s
+  `sendFcmPush`, and only then inserts the `UserNotifications` row (`_shared/notification_log.ts`),
+  so **no row id exists at send time**. It matches the pair the sender writes instead — `data.type`
+  and the id `extractReferenceId` pulls from the same payload.
+  - **This makes `NotificationsService.extractReferenceId` load-bearing for the badge**, not just for
+    the analytics funnel it was written for. A new notification type missing from its switch returns
+    null, and its badge silently never clears on tap. `test/core/notifications/extract_reference_id_test.dart`
+    pins every type.
+  - **All unread rows sharing the pair are cleared**, deliberately: three unread `chat_message` rows
+    for one conversation must all go read when that conversation opens, or the badge just counts down
+    to 2 instead of 0. With a null reference (broadcast `custom_notification`) only the newest row is
+    cleared, since the pair cannot separate two unrelated announcements.
+  - **⚠️ Realtime is NOT enough to refresh the badge here, so `NotificationsService.feedReadEvents`
+    exists.** On a push tapped from a TERMINATED app, `navigateTo` runs during launch: the UPDATE can
+    commit while `NotificationsNotifier` has finished its first fetch but its websocket is still
+    connecting, and that event is lost — badge stays lit until the next resume. The stream emits
+    *after* the write, so a notifier created later reads correct data anyway and one created earlier
+    is told to refetch. Ordering the other way (send push after inserting the row) would be the
+    server-side fix, but it would have to change every `notify-*` function.
+  - Every entry point runs it (push, foreground banner, and a row re-opened in the notification
+    centre). The centre already marks its own row read first, so there the update matches nothing.
 - **One unread count across three surfaces, all reading `unreadNotificationCountProvider`:** the OS
   **app-icon badge** (`app_badge_plus`, set by `NotificationsNotifier._emit` on every change +
   cleared on logout in `app.dart`), the **Profile bottom-nav tab badge** (`main_shell.dart` — this
@@ -433,6 +915,19 @@ The song-request QR is **per-DJ**, shown on the profile (`profile_screen.dart`, 
 - The old **per-event** QR on `song_requests_screen.dart` was removed (that screen now only lists requests). Its call sites in `quote_detail_screen.dart` and `ext_job_detail_screen.dart` no longer pass `songRequestToken`.
 - `Job`/`ExtJob` models still parse `song_request_token`, but it is no longer used in the UI.
 
+## Special-request extra fee: the reason is REQUIRED
+
+`_SpecialRequestFeeSection` asks "Hvad dækker tillægget?" and the submit button stays disabled until
+it has >= 10 characters (`_minReasonLength` / `_maxReasonLength` mirror
+`SPECIAL_REQUEST_REASON_MIN/MAX_LENGTH` in web `src/constants.ts` — the route rejects anything
+shorter, so validating here just saves a round trip). The text is sent as `reason` on
+`PATCH /api/service-offer/{id}/special-request-fee` and rendered back in both the pending and the
+confirmed card. Withdrawing the fee clears it locally because the route nulls it server-side.
+
+Why: admin approves each fee by hand and previously saw only the amount, so every request cost a
+round of messaging. `ServiceOffers.special_request_extra_fee_reason` (migration `20260810000002`) is
+nullable only for rows that predate it.
+
 ## Sax offer detail (`service_offer_detail_screen.dart`) — two gaps that were fixed
 
 - **`musicianSpecialRequest` text is rendered inside `_JobHeroCard`** (star + "Særligt ønske til
@@ -468,6 +963,33 @@ web-app source of truth `useFiles.createFile`):
   second) hit the `errorBuilder` and didn't recover. Switched to **`CachedNetworkImage`** (like
   `my_content_screen`/`profile_preview_screen`), which retries + caches only successful responses. Use
   `CachedNetworkImage` for any newly-uploaded S3 media, never `Image.network`.
+
+### Media order (`UserFiles.sort_order`) + the 15s event-video limit
+
+Both mirror the web app — see `web-app/CLAUDE.md` → "Profile media order" for the full rules.
+
+- **Reorder writes go through the WEB APP, never Supabase.** `UserFiles` has no UPDATE RLS policy, so
+  a direct `update({'sort_order': ...})` matches **0 rows and silently succeeds**.
+  `ProfileRemoteDatasource.reorderFiles` PATCHes `/api/files/reorder` with a Bearer token (same shape
+  as `deleteFile`, which already calls the web app). `orderedIds` must be the COMPLETE gallery — the
+  server 409s on a partial list.
+- **⚠️ `fetchUserFiles` orders `sort_order ASC, nullsFirst: false` then `id`.** Dropping
+  `nullsFirst: false` makes every new upload (which leaves `sort_order` null) jump to the FRONT of the
+  gallery, because Postgres sorts NULLs first on ASC. `sort_user_files.dart` is the Dart mirror of
+  `web-app/src/helpers/sortUserFiles.ts` (both unit-tested — change together).
+- `UserFile.sortOrder` is **optional** in the constructor on purpose: `job_content_remote_datasource`
+  builds `UserFile(...)` by hand from raw rows, and a required field would break it.
+- **Reordering UI is `LongPressDraggable` + `DragTarget` inside the existing `Wrap`**
+  (`media_screen.dart` `_MediaSection`) — not `ReorderableListView`, which would force each gallery
+  into a single-axis list and lose the wrap layout. Only `common`/`commonVideo` are draggable
+  (`_canReorder`); `profile`/`profileVideo` are singletons. `_localFiles` holds the optimistic order
+  and is cleared on failure so the UI snaps back rather than showing a phantom order.
+- **⚠️ Profile video length is now ENFORCED on mobile** (`validate_profile_video.dart`,
+  `kCommonVideoMaxSeconds` = **15**, `kProfileVideoMaxSeconds` = 60). Before this, the "maks 10 sek."
+  text in `media_screen` was a **label only** — `pickVideo` had no `maxDuration` and nothing validated,
+  so a 60s clip uploaded fine while the web app rejected it. There is no server-side ffprobe anywhere
+  in the platform, so the client is the only gate on both platforms. Keep the constants in sync with
+  `web-app/src/constants.ts` (`commonVideoMaxLengthSeconds` / `profileVideoMaxLengthSeconds`).
 
 ## DJ content capture (feature 52)
 
@@ -555,7 +1077,79 @@ side is UI mirroring only.
   has the won-conflict block-card), so this is a mobile-only UX addition to mirror back to web later.
 - This is distinct from the DJ `date_collision.dart` (Quotes) rule below, which is unchanged.
 
+## ⚠️ A push deep-link fetches a BARE row — every "can I still act on this?" flag is missing
+
+`NotificationsService.navigateTo` opens a job by doing `supabase.from('Jobs'|'ExtJobs').select()
+.eq('id', ...).single()` and pushing the form. That row has **no joins**, so every field the browse
+feed synthesises client-side is absent and silently defaults.
+
+**The bug this caused (reported by a saxophonist):** `has_active_offer` is NOT a column — the feed
+datasource injects it after joining `ServiceOffers` (`fetchNewInstrumentalistJobs` /
+`fetchInstrumentalistExtJobs`, `{...j, 'has_active_offer': ...}`). `JobModel.fromJson` reads
+`json['has_active_offer'] as bool? ?? false`, so on the deep-link path it was ALWAYS false and the
+"Jobbet er desværre optaget" banner could never render. The deep link also never checked `status`.
+Net effect: tapping an old `new_ext_job` push opened a normal, fully enabled form on a job that was
+already `ready_for_billing` with another sax booked; the musician wrote a price and a sales pitch
+and the first sign of trouble was the server rejecting the insert.
+
+- The rule is the pure, unit-tested `features/jobs/domain/musician_job_availability.dart`
+  (`resolveMusicianJobAvailability`), mirroring the feed queries + web `useExtJobsForMusicians` /
+  `useAvailableJobsForMusicians`. It returns `biddable` / `wonByAnother` / `alreadyBid` /
+  `closedForOffers`. Consumed via `musicianJobAvailabilityProvider(job)` in
+  `instrumentalist_offer_form_screen`, which renders a hard block card and **hides "Send tilbud"**.
+- **⚠️ A won offer is NOT the only way a job gets taken** — an admin-assigned musician leaves
+  `assigned_musician_id` set with no offer row at all, so both are checked. That is the same
+  resolution order the billing snapshot and iCal feed use. `assignedMusicianId` had to be threaded
+  onto `Job`/`JobModel` and forwarded in `ExtJobModel.toJobModel()` for this.
+- **⚠️ It fails CLOSED on an unknown/null status** — the opposite polarity to the feed's filters,
+  and deliberate: this only guards the deep-link path, where the alternative is letting someone
+  write an offer the server will reject anyway. Loading/lookup errors still default to `biddable`,
+  because the server rejection remains the authoritative gate.
+- `closed`/`customer_contacted` DO still accept sax offers (a booked DJ doesn't fill the sax slot);
+  `ready_for_billing`/`canceled`/`expired` do not. Internal jobs use their own status set.
+- **When you add any new "can I act on this?" signal to a feed row, check the deep-link path too** —
+  it will NOT have it. Same root cause as the wave-gate banner below.
+
+## Supply/matching wave gate: the quote form must guard independently
+
+A DJ only sees a job once their cascade wave has opened. The feed is already correct with no Dart
+involved (`GET /api/dj/biddable-jobs` runs the shared `selectBiddableJobsForDj`), but the QUOTE FORM
+is reachable by **push deep-link** for a job the feed hides — most importantly an admin
+"Send påmindelse", whose audience was not wave-filtered until `excludeWaveClosedDjs` shipped.
+
+Before this, such a DJ saw a normal, fully-enabled form, wrote a price and a sales pitch, tapped
+submit and got a toast — the first and only signal that they could never bid. (The toast did at
+least carry the server's Danish reason: this screen reads `AppException.message` directly rather
+than `friendlyErrorMessage()`, which would have swallowed it into a generic "Noget gik galt".)
+
+- `jobWaveOpenProvider(jobId)` -> `JobsRepository.fetchJobWaveOpen` -> `GET /api/dj/jobs/{id}/wave-status`.
+  Mobile cannot read `JobDjScores` (no RLS path; web reads its own rows), so the server resolves it —
+  the same "resolve it server-side, key by job id" trick as `wants_ic` and the recurring-customer name.
+- **⚠️ FAILS OPEN at every layer** (datasource catch, provider default, `?? true` at the call site).
+  A slow or failed lookup must never block a real bid; the authoritative gate is the 403 from
+  `POST /api/jobs/{id}/quotes`. This mirrors `helpers/jobWaveVisibility.ts` — never hide on absence
+  of evidence.
+- `_WaveClosedBanner` renders ABOVE the collision banner and before any input, and folds into
+  `isBlocked` so submit is disabled. Styled `info`, not `danger`: nothing is wrong and there is
+  nothing for the DJ to fix. Keep the copy in sync with the web card on `dj/jobs/[id]` and the 403
+  body, and keep it about the JOB's state, never the DJ's standing.
+- There are **no app links / associated domains configured**, so a pasted web URL cannot open the
+  app — push is the only way in. Chat `@job:` chips are already safe (`resolveJobLink` reuses the
+  wave-gated selector).
+
 ## Date-collision guard (no double-booking a date)
+
+**⚠️ A colliding job no longer reaches the feed at all.** The shared server-side selector
+(`web-app/src/domain/biddableJobs.ts`) now FILTERS colliding jobs out of `/api/dj/biddable-jobs`,
+so "Nye jobs" simply never contains one. Previously they were returned and sorted last, and
+`JobCard` rendered a dimmed, untappable "Dato-konflikt" badge — which the DJ could not act on and,
+because `onTap` is nulled, could not tap to read the explanation on the quote form. That shipped as
+a support question ("why does it say Dato-konflikt?"). This needed **no mobile release**.
+
+The client-side pieces below stay as defence in depth: `jobs_shell_screen`'s per-row
+`isDateColliding` still guards a stale cache, and the **quote form must keep its own check** because
+it is reachable by push deep-link, which bypasses the feed entirely.
+
 
 A DJ may not bid on a date where they already have a won quote (or 2 pending quotes, or a confirmed external job). The rule mirrors the web `collidingQuote` helper and now lives in **`lib/features/jobs/domain/date_collision.dart`** (`isDateColliding` → bool for the job list; `dateCollisionMessage` → Danish reason for the form banner). Used in two places: the job list (`jobs_shell_screen.dart` dims the card + nulls `onTap`) **and** the DJ quote form (`dj_quote_form_screen.dart` shows a `_CollisionBanner` + disables submit). The form must guard independently because it's reachable via **push deep-link**, bypassing the list. This is a client mirror only — the **authoritative** enforcement is server-side in the web `POST /api/jobs/[job_id]/quotes` route (returns 409, surfaced via the submit-error toast). Keep all three (web helper, mobile helper, both screens) in sync.
 
@@ -633,6 +1227,140 @@ Two non-obvious wiring facts:
   `offer.job.customerDeadline` is null and the countdown silently hides for ext-job offers (the bug that
   made the banner missing on the post-bid screen). The `if (!offer.isExtJob)` gate around the banner was
   removed for the same reason.
+
+## Payment info readiness is payment-type aware (mirror of the web-app, self-billing phase 0)
+
+`features/profile/domain/self_billing_complete.dart` mirrors `web-app/src/helpers/selfBillingComplete.ts`
+function for function: `isPaymentInfoComplete(PaymentInfo.toReadinessInfo())` is what the two bid
+gates (`dj_quote_form_screen`, `instrumentalist_offer_form_screen`) enforce, exactly like the web
+Redirecter. Invoice needs a registered business (`sole_trader` or `aps`; **Invoice + Privat is never
+complete**), CVR, billing email and bank; B-income needs CPR, bank and address. `payment_screen.dart`
+hides the Privat card under Invoice (`_BusinessTypeSelector.allowPrivate`), warns on a legacy private
+row, requires the CVR under Invoice, and shows the server-derived `cvrCompanyName` read-only (parsed
+from `cvr_company_name`, never sent back). Tests: `test/features/profile/domain/self_billing_complete_test.dart`
+mirrors the web test file; add cases to both.
+
+## ⚠️ `Form.validate()` SKIPS fields the lazy `ListView` has unmounted — validate VALUES
+
+Both bid forms lay their body out as `Form(child: ListView(children: [...]))`. A `ListView` is
+lazy in **element** creation even with the non-builder constructor, so a field scrolled out of the
+viewport is deactivated, and `FormFieldState.deactivate()` **unregisters it from the enclosing
+`Form`**. `_formKey.currentState!.validate()` only walks the fields currently registered, so it
+silently SKIPS the unmounted ones and returns `true`.
+
+**The bug this caused (reported as "Man kan afgive bud på job uden at angive en pris (0 kr.)"):**
+on `dj_quote_form_screen` the price input sits far above the submit button — payout box, equipment
+picker and an 8-line salgstale field are in between, well past the default 250px `cacheExtent` — so
+by the time the DJ taps "Afgiv bud" it is unmounted. A DJ who never typed a price passed validation
+with `_price` falling back to `0`, and the customer got a 0 kr. bid.
+
+- **The values are now checked by the pure `features/jobs/domain/offer_form_validation.dart`**
+  (`validateDjQuoteInput` / `validateMusicianOfferInput`), which reads the controllers, not the
+  tree, so it cannot be skipped. `Form.validate()` is still called so whatever IS mounted paints
+  its inline error. Unit-tested in `test/features/jobs/domain/offer_form_validation_test.dart`.
+- On failure the DJ gets a toast naming the problem **and** the form scrolls back to the top —
+  the offending field is by definition probably off-screen, so an inline-only error is invisible.
+- Server-side this is now also unbypassable: `POST /api/jobs/[job_id]/quotes` rejects a
+  non-positive `price_dkk`, and the DB has `chk_quotes_price_positive` (migration
+  `20260612000001`). The client fix is about the DJ seeing WHY, not about the data.
+- **Any new required field on a long form needs the same treatment.** Rule of thumb: if the field
+  can be scrolled off-screen before submit, `Form.validate()` is not a guarantee.
+
+## "Nyt job" notifications self-expire once the job is taken
+
+`features/notifications/domain/stale_bid_notifications.dart` — reported by a DJ: *"Kan man ikke
+gøre, så appen fjerner notifikationer på jobs, når de er taget? Det er irriterende at skulle markere
+fx 8 stk som læst."*
+
+- Only the three **bid invitations** expire (`new_job`, `another_round`, `new_ext_job`). Every other
+  type is about a job the user is already ON, so clearing it would hide something actionable.
+  `isBidInvitationStale` returns false for anything outside that set.
+- Resolved **client-side on every feed fetch** (`NotificationsNotifier._clearStaleBidInvitations` →
+  `NotificationsDatasource.markStaleBidInvitationsRead`), because nothing server-side walks
+  `UserNotifications` when a job closes — the row is written per recipient at send time and there is
+  no trigger. It only ever marks rows **read**, never deletes: the row stays under "Alle", and a
+  wrong call is recoverable.
+- **It fails CLOSED in the safe direction.** A failed status lookup returns an empty set and leaves
+  the feed untouched — a read error must never look like "every job is gone". An **unreadable** job
+  row IS treated as stale, because for a performer that means archived (RLS hides it) or deleted.
+- **DJs and saxophonists have different biddable-status sets on the SAME `Jobs` table**
+  (`kJobStatusesOpenToQuotes` vs `kJobStatusesOpenToOffers` — a `closed` job still takes sax offers,
+  because a booked DJ does not fill the sax slot). It branches on `data.role`; an unknown role uses
+  the wider musician set so it under-clears. For `new_ext_job` a win shows up **two** ways
+  (`assigned_musician_id` OR a won `ServiceOffers` row) and both are checked, same resolution order
+  as `resolveMusicianJobAvailability`.
+
+## "Jeg spillede ikke ekstra timer" — the answer is SERVER-side, per payee
+
+`ExtraHours` cards used to have only two outcomes: log hours, or ignore them (and the day-after
+`extra_hours_reminder` push) forever. Reported by a DJ who wanted a CTA to say no. The answer is
+`extra_hours_declined_at` (migration `20260821000002`), set via
+`PUT /api/{quotes|ext-jobs|service-offer}/{id}/extra-hours/declined` with `{declined: bool}`.
+
+- **It must be server-side.** A local dismissal could hide the card but could never stop the push —
+  `notify-extra-hours-reminder` filters `extra_hours_declined_at IS NULL` in all four buckets — and
+  would not carry over to the web app.
+- **One column per PAYEE row** (`Quotes` = DJ internal, `ExtJobs` = assigned DJ, `ServiceOffers` =
+  musician), so a DJ declining on a `dj_and_musician` job does not silence the saxophonist.
+- **Only offered while nothing is logged.** "I played no extra hours" contradicts an invoiceable
+  amount; the server rejects that with `code: extra_hours_logged` rather than silently clearing it.
+- Mobile: shared `features/jobs/presentation/widgets/decline_extra_hours.dart` +
+  `declineExtraHoursProvider` (one notifier, an `ExtraHoursDeclineTarget` picks the row and the list
+  to refresh). Used on all three screens. Web mirror: `src/components/DeclineExtraHours.tsx`.
+- **⚠️ `ServiceOffers.extra_hours` is `NOT NULL DEFAULT 0`; `Quotes`/`ExtJobs` are nullable.** So on
+  the musician screen "nothing logged" is **0, never null**. `_MusicianExtraHoursSection`'s old
+  `extraHours != null` check was therefore ALWAYS true: every won offer read *"Du registrerede 0.0
+  ekstra timer."* and offered only "Redigér" instead of the input, and the initState prefill wrote
+  "0.0" into an untouched field. Both now use `> 0`, matching web's `offer.extra_hours <= 0`. Do
+  not null-check that column.
+
+## Birthday age is part of the lead, not just the won view
+
+`Jobs.birthday_person_age` / `ExtJobs.birthday_person_age` is free text from the WordPress forms
+("50", but also "halvtreds"). `core/utils/birthday_person_age.dart` `formatBirthdayPersonAge()`
+mirrors web's `useFormatBirthdayPersonAge` — digits get " år", anything else is printed verbatim,
+and it returns a **suffix** ("`, 50 år`") so call sites can concatenate unconditionally.
+
+Reported by a DJ/sax: *"kan man ikke se Birthday Person Age inde på leadet"*. The field was parsed
+into every model and rendered only on `ext_job_detail_screen` (won view) and `job_detail_screen`
+(which **nothing routes to** — see the note at the top of that file), i.e. never on a lead. It is
+now appended to the event-type heading on all four job surfaces: `dj_quote_form_screen`,
+`instrumentalist_offer_form_screen`, `quote_detail_screen` and `service_offer_detail_screen`. Web
+parity: only the DJ pages show it (`dj/jobs/[id]`, `dj/quotes/[id]`); the instrumentalist pages are
+still a gap.
+
+## ⚠️ An `autoDispose` StateNotifier that is only `ref.read` cannot publish state after an await
+
+`ref.read(someProvider.notifier)` creates **no listener**. On an `autoDispose`
+`StateNotifierProvider` that nothing `ref.watch`es, Riverpod therefore disposes the notifier on the
+next scheduler pass — typically while the Supabase round-trip it just started is still in flight.
+The write that lands afterwards throws:
+
+> Bad state: Tried to use MarkAdminMessageReadNotifier after `dispose` was called.
+
+**This fired on EVERY admin message a user opened.** `admin_messages_screen._toggle` did a
+fire-and-forget `ref.read(markAdminMessageReadProvider.notifier).mark(...)` and then immediately
+`ref.invalidate(adminMessagesProvider)`, and that invalidate is what triggered the dispose pass. The
+DB write always landed — only the state write was invalid — so the message really did get marked
+read while the app logged an unhandled exception.
+
+- **Verified behaviour (probe test, Riverpod 2):** after disposal `_ref.invalidate(...)` /
+  `_ref.read(...)` still work fine; **only `state =` throws**. So guarding the state writes is the
+  complete fix — the refresh inside a notifier does not need a guard.
+- **The fix pattern:** guard every `state =` after an await with `mounted`, and **return** the
+  outcome (`Future<bool>`) instead of publishing it, because the caller would be reading a
+  *different, freshly created* notifier instance by then. `MarkAdminMessageReadNotifier` does this;
+  `RejectDjJobNotifier` and `DeleteExtJobEarlySetupNotifier` had the same shape and are now guarded
+  too. Regression test: `test/features/profile/presentation/mark_admin_message_read_test.dart`
+  (fails against the unguarded version).
+- **Why most notifiers here are safe:** the screen `ref.watch`es them for a loading spinner
+  (`billingLoading = ref.watch(markJobReadyForBillingProvider) is AsyncLoading`), which is a real
+  listener and keeps them alive. **The audit is "is this provider `watch`ed anywhere?"** — if not,
+  it needs the guard.
+- **Also await before refreshing.** The old code invalidated the list alongside the un-awaited mark,
+  so the refetch could land before the UPDATE and return the message still unread — the card flipped
+  back to the unread style. `_toggle` now awaits, then invalidates, and toasts on failure (it was
+  previously silent).
 
 ## Things Claude must NOT do
 

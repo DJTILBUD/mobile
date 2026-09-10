@@ -85,7 +85,6 @@ class _ConversationDetailScreenState
   // One-shot: scroll to the bottom on the first loaded render only. New-message scrolls are driven
   // by the ref.listen below, so we must NOT re-scroll on every rebuild (that yanked the user back
   // down while they read history whenever a reaction/typing/job-link resolve triggered a rebuild).
-  bool _didInitialScroll = false;
   OverlayEntry? _reactionBar;
   // In-conversation search: filter this chat to messages containing the term.
   bool _searchOpen = false;
@@ -170,16 +169,20 @@ class _ConversationDetailScreenState
         .markAsRead(_currentUserId);
   }
 
+  /// The list is `reverse: true`, so the newest message sits at offset 0, NOT at
+  /// `maxScrollExtent`. Scrolling to `maxScrollExtent` here would fly the reader to the OLDEST
+  /// message in the conversation.
   void _scrollToBottom({bool animate = true}) {
     if (!_scrollController.hasClients) return;
+    final newest = _scrollController.position.minScrollExtent;
     if (animate) {
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        newest,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     } else {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      _scrollController.jumpTo(newest);
     }
   }
 
@@ -808,14 +811,9 @@ class _ConversationDetailScreenState
                   );
                 }
 
-                // Initial load only: jump to the bottom once. Subsequent scrolls come from the
-                // ref.listen (new message) so an unrelated rebuild never yanks the reader down.
-                if (!searching && !_didInitialScroll) {
-                  _didInitialScroll = true;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _scrollToBottom(animate: false);
-                  });
-                }
+                // No initial scroll needed: the list is `reverse: true`, so it opens at the
+                // newest message by construction. The old post-frame jump to `maxScrollExtent`
+                // is exactly what landed short while images were still loading.
 
                 // Resolve every job-link token in the conversation, per viewer.
                 final refsCsv = (messages
@@ -1177,12 +1175,27 @@ class _MessageList extends StatelessWidget {
 
     final byId = {for (final m in messages) m.id: m};
 
+    // ⚠️ REVERSED, and it must stay that way. In a reversed list offset 0 IS the bottom, so the
+    // newest message is pinned there by construction. That fixes two things that a normal list
+    // could not do reliably:
+    //   1. Opening the conversation lands on the newest message. The old code jumped to
+    //      `maxScrollExtent` in a post-frame callback, but that extent is an ESTIMATE while
+    //      images are still loading and while `ListView.builder` has only laid out the visible
+    //      items — so the jump landed short and the reader opened mid-history.
+    //   2. Opening the keyboard keeps the newest message visible. The Scaffold shrinks the
+    //      viewport, and a normal list keeps its OFFSET, so the bottom of the conversation slid
+    //      under the composer and you could not see what you were replying to. Anchored at 0,
+    //      the bottom stays put and the list just gets shorter at the top.
+    // Because index 0 must be the NEWEST, the group list is walked backwards. Inside a group the
+    // Column still renders top-to-bottom, so the date divider stays above its messages and the
+    // messages stay chronological.
     return ListView.builder(
       controller: scrollController,
+      reverse: true,
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: groups.length,
       itemBuilder: (context, groupIndex) {
-        final group = groups[groupIndex];
+        final group = groups[groups.length - 1 - groupIndex];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

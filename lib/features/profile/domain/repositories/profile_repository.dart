@@ -68,6 +68,14 @@ abstract class ProfileRepository {
   });
   Future<void> deleteFile(int fileId);
 
+  /// Persists the display order of one gallery. [orderedIds] must be the COMPLETE set of the
+  /// user's files of that [type] — the server rejects a partial list rather than leaving the
+  /// omitted rows with stale positions.
+  Future<void> reorderFiles({
+    required UserFileType type,
+    required List<int> orderedIds,
+  });
+
   // DJ job filters
   Future<DjJobFilters?> fetchDjJobFilters(String userId);
   Future<void> saveDjJobFilters(DjJobFilters filters);

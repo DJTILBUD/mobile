@@ -48,7 +48,9 @@ class PartnerEventWishesCard extends StatelessWidget {
   // Off-palette purple (matches RecurringCustomerBadge) — there's no DS purple token.
   static const _purple = Color(0xFF9333EA);
 
-  bool get _hasAny =>
+  /// Whether the card would render anything at all (the detail screen uses it
+  /// to decide whether the "Stedet" tab has content).
+  bool get hasContent =>
       musicianView
           ? (_has(addressAs) || _has(specialConditions))
           : (_has(addressAs) ||
@@ -66,7 +68,7 @@ class PartnerEventWishesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!_hasAny) return const SizedBox.shrink();
+    if (!hasContent) return const SizedBox.shrink();
     final c = DSTheme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final labelColor =

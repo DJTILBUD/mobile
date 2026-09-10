@@ -5,6 +5,7 @@ import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/job_duration.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/musician_job_availability.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_job_filters.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_job_filters.dart';
@@ -17,6 +18,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/repositories/jobs_repository.dart';
 import 'package:dj_tilbud_app/features/jobs/data/datasources/jobs_remote_datasource.dart';
 import 'package:dj_tilbud_app/features/jobs/data/repositories/jobs_repository_impl.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 
 final jobsRepositoryProvider = Provider<JobsRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -175,6 +177,22 @@ final djExtJobRecurringNamesProvider = FutureProvider<Map<int, String>>((
     return <int, String>{};
   }
 });
+
+/// Venue photos (+ the team's comment each) for the current DJ's assigned ext
+/// jobs, keyed by ext job id. Same endpoint and same degrade-to-empty rule as
+/// [djExtJobRecurringNamesProvider]; a separate provider for the same reason
+/// that one is (the shared `djExtJobsProvider` read must stay untouched).
+final djExtJobVenuePhotosProvider = FutureProvider<Map<int, List<VenuePhoto>>>(
+  (ref) async {
+    try {
+      return await ref
+          .watch(jobsRepositoryProvider)
+          .fetchDjExtJobVenuePhotos(_currentUserId);
+    } catch (_) {
+      return <int, List<VenuePhoto>>{};
+    }
+  },
+);
 
 /// Musician counterpart of [djExtJobRecurringNamesProvider] — venue names for the
 /// current sax's won/assigned ext jobs. The ext-job detail screen is shared by
@@ -645,6 +663,12 @@ class RejectDjJobNotifier extends StateNotifier<AsyncValue<void>> {
   final JobsRepository _repository;
   final Ref _ref;
 
+  // ⚠️ `state =` after the await is guarded by `mounted`: this provider is
+  // autoDispose and NOTHING watches it (call sites only `ref.read` it and use
+  // the returned bool), so Riverpod disposes this instance while the request is
+  // still in flight and the write throws "Tried to use ... after `dispose` was
+  // called". `_ref` is safe after disposal — only `state` is not. Same bug that
+  // fired on every admin message opened; see MarkAdminMessageReadNotifier.
   Future<bool> reject(int jobId, {List<String> reasons = const []}) async {
     state = const AsyncLoading();
     try {
@@ -653,11 +677,11 @@ class RejectDjJobNotifier extends StateNotifier<AsyncValue<void>> {
         jobId: jobId,
         reasons: reasons,
       );
-      state = const AsyncData(null);
+      if (mounted) state = const AsyncData(null);
       _ref.read(newDjJobsProvider.notifier).silentRefresh();
       return true;
     } catch (e, st) {
-      state = AsyncError(e, st);
+      if (mounted) state = AsyncError(e, st);
       return false;
     }
   }
@@ -1097,6 +1121,58 @@ final deleteExtraHoursProvider = StateNotifierProvider.autoDispose<
   AsyncValue<void>
 >((ref) => DeleteExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref));
 
+// ─── "Jeg spillede ikke ekstra timer" ─────────────────────────────────────────
+//
+// One notifier per payee row, because each refreshes a different list. Setting
+// it hides the extra-hours card AND stops the daily extra_hours_reminder push
+// for that performer on that job; `declined: false` undoes it.
+
+class DeclineExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
+  DeclineExtraHoursNotifier(this._repository, this._ref)
+    : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  /// [target] picks which row is written — see [JobsRepository].
+  Future<bool> setDeclined(
+    int id, {
+    required bool declined,
+    required ExtraHoursDeclineTarget target,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      switch (target) {
+        case ExtraHoursDeclineTarget.quote:
+          await _repository.setQuoteExtraHoursDeclined(id, declined: declined);
+          _ref.read(djQuotesProvider.notifier).silentRefresh();
+        case ExtraHoursDeclineTarget.extJob:
+          await _repository.setExtJobExtraHoursDeclined(id, declined: declined);
+          _ref.invalidate(djExtJobsProvider);
+        case ExtraHoursDeclineTarget.serviceOffer:
+          await _repository.setServiceOfferExtraHoursDeclined(
+            id,
+            declined: declined,
+          );
+          _ref.read(serviceOffersProvider.notifier).silentRefresh();
+      }
+      state = const AsyncData(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+/// Which row carries the answer. Mirrors the web service's `target`.
+enum ExtraHoursDeclineTarget { quote, extJob, serviceOffer }
+
+final declineExtraHoursProvider = StateNotifierProvider.autoDispose<
+  DeclineExtraHoursNotifier,
+  AsyncValue<void>
+>((ref) => DeclineExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref));
+
 class AddExtJobExtraHoursNotifier extends StateNotifier<AsyncValue<void>> {
   AddExtJobExtraHoursNotifier(this._repository, this._ref)
     : super(const AsyncData(null));
@@ -1160,6 +1236,70 @@ final deleteExtJobExtraHoursProvider = StateNotifierProvider.autoDispose<
 >(
   (ref) =>
       DeleteExtJobExtraHoursNotifier(ref.watch(jobsRepositoryProvider), ref),
+);
+
+/// Early setup on an ext job. Mirrors the extra-hours notifiers exactly: the fee is
+/// folded into full_amount + honorar by the web API, so on success we invalidate
+/// [djExtJobsProvider] rather than patching local state (the totals changed server-side).
+class SetExtJobEarlySetupNotifier extends StateNotifier<AsyncValue<void>> {
+  SetExtJobEarlySetupNotifier(this._repository, this._ref)
+    : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<bool> set(int extJobId, {required num price, String? time}) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.setExtJobEarlySetup(extJobId, price: price, time: time);
+      state = const AsyncData(null);
+      _ref.invalidate(djExtJobsProvider);
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+final setExtJobEarlySetupProvider = StateNotifierProvider.autoDispose<
+  SetExtJobEarlySetupNotifier,
+  AsyncValue<void>
+>((ref) => SetExtJobEarlySetupNotifier(ref.watch(jobsRepositoryProvider), ref));
+
+class DeleteExtJobEarlySetupNotifier extends StateNotifier<AsyncValue<void>> {
+  DeleteExtJobEarlySetupNotifier(this._repository, this._ref)
+    : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  // ⚠️ `state =` after the await is guarded by `mounted`: this provider is
+  // autoDispose and NOTHING watches it (call sites only `ref.read` it and use
+  // the returned bool), so Riverpod disposes this instance while the request is
+  // still in flight and the write throws "Tried to use ... after `dispose` was
+  // called". `_ref` is safe after disposal — only `state` is not. Same bug that
+  // fired on every admin message opened; see MarkAdminMessageReadNotifier.
+  Future<bool> delete(int extJobId) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.deleteExtJobEarlySetup(extJobId);
+      if (mounted) state = const AsyncData(null);
+      _ref.invalidate(djExtJobsProvider);
+      return true;
+    } catch (e, st) {
+      if (mounted) state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+final deleteExtJobEarlySetupProvider = StateNotifierProvider.autoDispose<
+  DeleteExtJobEarlySetupNotifier,
+  AsyncValue<void>
+>(
+  (ref) =>
+      DeleteExtJobEarlySetupNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
 class EditDjQuoteNotifier extends StateNotifier<AsyncValue<DjQuote?>> {
@@ -1230,6 +1370,44 @@ final confirmMusicianReadyProvider = StateNotifierProvider.autoDispose<
   (ref) => ConfirmMusicianReadyNotifier(ref.watch(jobsRepositoryProvider), ref),
 );
 
+/// Musician-side "klar til fakturering" on a `musician_only` ext job — the same
+/// endpoint the DJ uses ([markExtJobReadyForBillingProvider]), but refreshing the
+/// musician's offers instead of the DJ's ext jobs. On a `musician_only` job there
+/// is no DJ to advance the status, so the winning musician owns it (the web route
+/// authorises them explicitly).
+class MarkMusicianExtJobReadyForBillingNotifier
+    extends StateNotifier<AsyncValue<void>> {
+  MarkMusicianExtJobReadyForBillingNotifier(this._repository, this._ref)
+    : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<bool> markReady(int extJobId) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.markExtJobReadyForBilling(extJobId);
+      state = const AsyncData(null);
+      _ref.read(serviceOffersProvider.notifier).silentRefresh();
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+}
+
+final markMusicianExtJobReadyForBillingProvider =
+    StateNotifierProvider.autoDispose<
+      MarkMusicianExtJobReadyForBillingNotifier,
+      AsyncValue<void>
+    >(
+      (ref) => MarkMusicianExtJobReadyForBillingNotifier(
+        ref.watch(jobsRepositoryProvider),
+        ref,
+      ),
+    );
+
 // ─── Save DJ Notes ────────────────────────────────────────────────────────────
 
 class SaveDjNotesNotifier extends StateNotifier<AsyncValue<void>> {
@@ -1274,11 +1452,60 @@ final dateConflictProvider = FutureProvider.autoDispose
           );
     });
 
+// ─── Musician job availability (offer form) ──────────────────────────────────
+
+/// Whether the current musician may still bid on this job.
+///
+/// Only consumed by the offer form, which is reachable by push deep-link for a job the feed
+/// correctly hides (another sax won it, admin assigned one, or it moved past accepting offers).
+/// Defaults to [MusicianJobAvailability.biddable] while loading and on any error — the server's
+/// rejection is the authoritative gate, so a slow lookup must not block a legitimate offer.
+final musicianJobAvailabilityProvider = FutureProvider.autoDispose
+    .family<MusicianJobAvailability, Job>((ref, job) async {
+      final offers = await ref
+          .watch(jobsRepositoryProvider)
+          .fetchOffersForJob(
+            jobId: job.isExtJob ? null : job.id,
+            extJobId: job.isExtJob ? job.extJobId : null,
+          );
+
+      return resolveMusicianJobAvailability(
+        status: job.status.dbValue,
+        isExtJob: job.isExtJob,
+        assignedMusicianId: job.assignedMusicianId,
+        currentMusicianId: _currentUserId,
+        offers: offers,
+      );
+    });
+
+// ─── Supply/matching wave gate (DJ) ──────────────────────────────────────────
+
+/// Whether this job's cascade wave has opened for the current DJ.
+///
+/// Only consumed by the DJ quote form, which is reachable by push deep-link (an admin
+/// "Send påmindelse" in particular) even for a job the feed correctly hides. Defaults to OPEN
+/// while loading and on any error, so a slow or failed lookup never blocks a legitimate bid.
+final jobWaveOpenProvider = FutureProvider.autoDispose.family<bool, int>((
+  ref,
+  jobId,
+) async {
+  return ref.watch(jobsRepositoryProvider).fetchJobWaveOpen(jobId);
+});
+
 // ─── Service offers for a job (DJ view) ─────────────────────────────────────
 
 final serviceOffersForJobProvider = FutureProvider.autoDispose
     .family<List<ServiceOffer>, int>((ref, jobId) {
       return ref.watch(jobsRepositoryProvider).fetchServiceOffersForJob(jobId);
+    });
+
+/// Ext-job counterpart — the assigned DJ needs the winning musicians'
+/// `customer_contacted` to know whether the deal can be closed yet.
+final serviceOffersForExtJobProvider = FutureProvider.autoDispose
+    .family<List<ServiceOffer>, int>((ref, extJobId) {
+      return ref
+          .watch(jobsRepositoryProvider)
+          .fetchServiceOffersForExtJob(extJobId);
     });
 
 // ─── Song requests for a job (DJ view) ───────────────────────────────────────
@@ -1347,10 +1574,18 @@ class SetSpecialRequestFeeNotifier extends StateNotifier<AsyncValue<void>> {
   SetSpecialRequestFeeNotifier(this._repository) : super(const AsyncData(null));
   final JobsRepository _repository;
 
-  Future<bool> set(int offerId, {required int feeDkk}) async {
+  Future<bool> set(
+    int offerId, {
+    required int feeDkk,
+    required String reason,
+  }) async {
     state = const AsyncLoading();
     try {
-      await _repository.setSpecialRequestFee(offerId, feeDkk: feeDkk);
+      await _repository.setSpecialRequestFee(
+        offerId,
+        feeDkk: feeDkk,
+        reason: reason,
+      );
       state = const AsyncData(null);
       return true;
     } catch (e) {

@@ -48,6 +48,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   }
 
   bool get _isAps => _businessType == BusinessEntityType.aps;
+  bool get _isInvoice => _paymentType == PaymentType.invoice;
+
+  // Self-billing pays against a CVR, so Invoice + Privat is not a valid combination.
+  bool get _invoiceWithPrivate =>
+      _isInvoice && _businessType == BusinessEntityType.private_;
+
+  // Registered company name looked up by the web-app when the CVR was saved. Only
+  // meaningful while the field still shows that CVR.
+  String? _cvrCompanyName;
+  String? _cvrCompanyNameFor;
 
   String _fingerprint() => [
     _paymentType.name,
@@ -77,6 +87,8 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       _businessType = info.businessType ?? BusinessEntityType.private_;
       _cprCtrl.text = info.cpr ?? '';
       _cvrCtrl.text = info.cvr ?? '';
+      _cvrCompanyName = info.cvrCompanyName;
+      _cvrCompanyNameFor = info.cvr;
       _billingEmailCtrl.text = info.billingEmail ?? '';
       _regNumCtrl.text = info.registrationNumber?.toString() ?? '';
       _accountCtrl.text = info.accountNumber ?? '';
@@ -102,6 +114,25 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     // always shown, so always run the form validators. The B-income bank fields
     // only attach validators when that branch is rendered.
     if (!_formKey.currentState!.validate()) return;
+    // Value-level checks on top (Form.validate skips fields the lazy ListView has
+    // unmounted, see CLAUDE.md): Invoice needs a registered business and a CVR.
+    if (_invoiceWithPrivate) {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title:
+            'Fakturering kræver et CVR. Vælg Enkeltmandsvirksomhed eller ApS, eller skift til b-honorar.',
+      );
+      return;
+    }
+    if (_isInvoice && _cvrCtrl.text.trim().isEmpty) {
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Udfyld dit CVR-nummer for at kunne fakturere.',
+      );
+      return;
+    }
     setState(() => _saving = true);
 
     try {
@@ -226,27 +257,45 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                   const SizedBox(height: DSSpacing.s2),
                   _BusinessTypeSelector(
                     value: _businessType,
+                    allowPrivate: !_isInvoice,
                     onChanged: (v) {
                       setState(() => _businessType = v);
                     },
                   ),
+                  if (_invoiceWithPrivate) ...[
+                    const SizedBox(height: DSSpacing.s3),
+                    Text(
+                      'Fakturering kræver et CVR-nummer. Vælg Enkeltmandsvirksomhed eller ApS, '
+                      'eller vælg b-honorar nedenfor, hvis du ikke har et CVR.',
+                      style: DSTextStyle.bodySm.copyWith(color: _c.state.warning),
+                    ),
+                  ],
                   const SizedBox(height: DSSpacing.s4),
                   DSInput(
                     controller: _cvrCtrl,
                     label:
-                        _businessType.requiresCvr
+                        _businessType.requiresCvr || _isInvoice
                             ? 'CVR-nummer'
                             : 'CVR-nummer (valgfrit)',
                     hint: '12345678',
                     keyboardType: TextInputType.number,
                     validator: (v) {
-                      if (_businessType.requiresCvr &&
+                      if ((_businessType.requiresCvr || _isInvoice) &&
                           (v == null || v.trim().isEmpty)) {
                         return 'Påkrævet for virksomhed';
                       }
                       return null;
                     },
                   ),
+                  if (_cvrCompanyName != null &&
+                      _cvrCompanyNameFor != null &&
+                      _cvrCtrl.text.trim() == _cvrCompanyNameFor) ...[
+                    const SizedBox(height: DSSpacing.s2),
+                    Text(
+                      'Registreret navn: $_cvrCompanyName',
+                      style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+                    ),
+                  ],
                   const SizedBox(height: DSSpacing.s4),
                   DSInput(
                     controller: _billingEmailCtrl,
@@ -293,6 +342,14 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                       setState(() => _paymentType = v);
                     },
                   ),
+                  if (_isInvoice) ...[
+                    const SizedBox(height: DSSpacing.s3),
+                    Text(
+                      'Ved fakturering udsteder DJTILBUD afregningsbilag (selvfakturering) på dine vegne '
+                      'jf. handelsbetingelserne, og beløbet overføres til din bankkonto nedenfor.',
+                      style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+                    ),
+                  ],
                   const SizedBox(height: DSSpacing.s6),
 
                   if (_paymentType == PaymentType.invoice) ...[
@@ -339,6 +396,16 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                           const SizedBox(height: DSSpacing.s1),
                           Text(
                             'CVR: 46181786',
+                            style: DSTextStyle.labelMd.copyWith(
+                              color: _c.text.secondary,
+                            ),
+                          ),
+                          const SizedBox(height: DSSpacing.s1),
+                          // Danish invoicing requires our postal address on the
+                          // performer's invoice to us. Keep in sync with the web
+                          // app's InvoiceBillingInfoCard, which shows the same block.
+                          Text(
+                            'Adresse: Gammel kongevej 140b kl, 1850 Frederiksberg',
                             style: DSTextStyle.labelMd.copyWith(
                               color: _c.text.secondary,
                             ),
@@ -487,23 +554,33 @@ class _PaymentTypeSelector extends StatelessWidget {
 }
 
 class _BusinessTypeSelector extends StatelessWidget {
-  const _BusinessTypeSelector({required this.value, required this.onChanged});
+  const _BusinessTypeSelector({
+    required this.value,
+    required this.onChanged,
+    this.allowPrivate = true,
+  });
 
   final BusinessEntityType value;
   final ValueChanged<BusinessEntityType> onChanged;
+
+  /// Hidden under payment type Invoice: self-billing needs a CVR, so a private
+  /// person picks b-honorar instead (mirrors the web-app payment forms).
+  final bool allowPrivate;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _TypeCard(
-          label: 'Privat',
-          subtitle: 'Privatperson · kun CPR',
-          selected: value == BusinessEntityType.private_,
-          onTap: () => onChanged(BusinessEntityType.private_),
-        ),
-        const SizedBox(height: DSSpacing.s3),
+        if (allowPrivate) ...[
+          _TypeCard(
+            label: 'Privat',
+            subtitle: 'Privatperson · kun CPR',
+            selected: value == BusinessEntityType.private_,
+            onTap: () => onChanged(BusinessEntityType.private_),
+          ),
+          const SizedBox(height: DSSpacing.s3),
+        ],
         _TypeCard(
           label: 'Enkeltmandsvirksomhed',
           subtitle: 'CVR + CPR',

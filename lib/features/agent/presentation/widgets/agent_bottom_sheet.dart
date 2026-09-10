@@ -8,6 +8,10 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+/// Max fraction of the screen the sheet may take. Also the size it snaps to when the refine
+/// input is focused, so the composer has as much room as possible above the keyboard.
+const double _maxSheetSize = 0.95;
+
 class AgentBottomSheet extends ConsumerStatefulWidget {
   const AgentBottomSheet({
     super.key,
@@ -27,6 +31,7 @@ class AgentBottomSheet extends ConsumerStatefulWidget {
 class _AgentBottomSheetState extends ConsumerState<AgentBottomSheet> {
   bool _started = false;
   DateTime? _requestStartTime;
+  final _sheetController = DraggableScrollableController();
 
   @override
   void didChangeDependencies() {
@@ -37,163 +42,249 @@ class _AgentBottomSheetState extends ConsumerState<AgentBottomSheet> {
     }
   }
 
+  @override
+  void dispose() {
+    _sheetController.dispose();
+    super.dispose();
+  }
+
+  /// Grow the sheet to full height when the refine input takes focus. The sheet keeps its own
+  /// height when the keyboard opens (a modal bottom sheet is NOT resized by the keyboard), so
+  /// without this the composer + action bar end up behind the keyboard.
+  void _expandForKeyboard() {
+    if (!_sheetController.isAttached) return;
+    if (_sheetController.size >= _maxSheetSize - 0.01) return;
+    _sheetController.animateTo(
+      _maxSheetSize,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+    );
+  }
+
   void _kickOff() {
     _requestStartTime = DateTime.now();
     final jobContext = jobToContext(widget.job);
 
     if (widget.isDj) {
-      ref.read(djProfileProvider.future).then((profile) {
-        if (!mounted) return;
-        ref.read(agentSessionProvider.notifier).generateDraft(
-              jobContext: jobContext,
-              userContext: djToUserContext(profile),
-              userRole: 'dj',
-            );
-      }).catchError((_) {
-        if (!mounted) return;
-        ref.read(agentSessionProvider.notifier).generateDraft(
-              jobContext: jobContext,
-              userContext: {'instrument': 'dj'},
-              userRole: 'dj',
-            );
-      });
+      ref
+          .read(djProfileProvider.future)
+          .then((profile) {
+            if (!mounted) return;
+            ref
+                .read(agentSessionProvider.notifier)
+                .generateDraft(
+                  jobContext: jobContext,
+                  userContext: djToUserContext(profile),
+                  userRole: 'dj',
+                );
+          })
+          .catchError((_) {
+            if (!mounted) return;
+            ref
+                .read(agentSessionProvider.notifier)
+                .generateDraft(
+                  jobContext: jobContext,
+                  userContext: {'instrument': 'dj'},
+                  userRole: 'dj',
+                );
+          });
     } else {
-      ref.read(musicianProfileProvider.future).then((profile) {
-        if (!mounted) return;
-        ref.read(agentSessionProvider.notifier).generateDraft(
-              jobContext: jobContext,
-              userContext: musicianToUserContext(profile),
-              userRole: 'musician',
-            );
-      }).catchError((_) {
-        if (!mounted) return;
-        ref.read(agentSessionProvider.notifier).generateDraft(
-              jobContext: jobContext,
-              userContext: {'instrument': 'saxofon'},
-              userRole: 'musician',
-            );
-      });
+      ref
+          .read(musicianProfileProvider.future)
+          .then((profile) {
+            if (!mounted) return;
+            ref
+                .read(agentSessionProvider.notifier)
+                .generateDraft(
+                  jobContext: jobContext,
+                  userContext: musicianToUserContext(profile),
+                  userRole: 'musician',
+                );
+          })
+          .catchError((_) {
+            if (!mounted) return;
+            ref
+                .read(agentSessionProvider.notifier)
+                .generateDraft(
+                  jobContext: jobContext,
+                  userContext: {'instrument': 'saxofon'},
+                  userRole: 'musician',
+                );
+          });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final agentState = ref.watch(agentSessionProvider);
 
     ref.listen<AgentState>(agentSessionProvider, (prev, next) {
       if (next is AgentDone && prev is! AgentDone) {
-        final latencyMs = _requestStartTime != null
-            ? DateTime.now().difference(_requestStartTime!).inMilliseconds
-            : 0;
-        AnalyticsService.logAiDraftReceived(widget.job.id, latencyMs: latencyMs);
+        final latencyMs =
+            _requestStartTime != null
+                ? DateTime.now().difference(_requestStartTime!).inMilliseconds
+                : 0;
+        AnalyticsService.logAiDraftReceived(
+          widget.job.id,
+          latencyMs: latencyMs,
+        );
         ref.invalidate(agentUsageProvider);
       }
     });
 
+    // A modal bottom sheet is not resized by the keyboard, so shrink the sheet's own content by
+    // the keyboard inset — everything below (composer + action bar) then sits above it.
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+
     return DraggableScrollableSheet(
+      controller: _sheetController,
       initialChildSize: 0.75,
       minChildSize: 0.4,
-      maxChildSize: 0.92,
+      maxChildSize: _maxSheetSize,
       expand: false,
       builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: _c.bg.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              // Drag handle
-              const SizedBox(height: DSSpacing.s3),
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: _c.border.subtle,
-                    borderRadius: BorderRadius.circular(2),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Never eat more than the sheet has: dragging the sheet down while the keyboard is
+            // open would otherwise leave the content 0px tall.
+            final inset = keyboardInset.clamp(
+              0.0,
+              (constraints.maxHeight - 260).clamp(0.0, double.infinity),
+            );
+            return Padding(
+              padding: EdgeInsets.only(bottom: inset),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _c.bg.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
                   ),
                 ),
-              ),
-              const SizedBox(height: DSSpacing.s4),
-
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
-                child: Row(
+                child: Column(
                   children: [
-                    Icon(LucideIcons.sparkles, size: 18, color: _c.brand.primaryActive),
-                    const SizedBox(width: DSSpacing.s2),
-                    Text(
-                      'Salgstale',
-                      style: DSTextStyle.headingMd.copyWith(fontSize: 17, fontWeight: FontWeight.w700, color: _c.text.primary, letterSpacing: -0.3),
+                    // Drag handle
+                    const SizedBox(height: DSSpacing.s3),
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: _c.border.subtle,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s4),
+
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DSSpacing.s4,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.sparkles,
+                            size: 18,
+                            color: _c.brand.primaryActive,
+                          ),
+                          const SizedBox(width: DSSpacing.s2),
+                          Text(
+                            'Salgstale',
+                            style: DSTextStyle.headingMd.copyWith(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: _c.text.primary,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s2),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DSSpacing.s4,
+                      ),
+                      child: Text(
+                        'Genererer et udkast baseret på jobbet og din profil...',
+                        style: DSTextStyle.labelMd.copyWith(
+                          fontWeight: FontWeight.w400,
+                          color: _c.text.secondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s4),
+
+                    Divider(height: 1, color: _c.border.subtle),
+
+                    // Content area
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(DSSpacing.s4),
+                        child: switch (agentState) {
+                          AgentIdle() => const _LoadingDots(),
+                          AgentStreaming(:final text) => _DraftText(
+                            text: text,
+                            streaming: true,
+                          ),
+                          AgentDone(:final text) => _DraftText(
+                            text: text,
+                            streaming: false,
+                          ),
+                          AgentError(:final message) => _ErrorView(
+                            message: message,
+                          ),
+                        },
+                      ),
+                    ),
+
+                    // Refine composer — pinned below the scrolling draft (NOT inside the scroll view),
+                    // so it stays visible while the musician types with the keyboard open.
+                    if (agentState is AgentDone)
+                      _RefinementStrip(
+                        onRefine:
+                            (message) => ref
+                                .read(agentSessionProvider.notifier)
+                                .refineWith(message),
+                        onInputFocused: _expandForKeyboard,
+                      ),
+
+                    // Action buttons
+                    if (agentState is AgentDone || agentState is AgentError)
+                      _ActionBar(
+                        agentState: agentState,
+                        onAccept: () {
+                          if (agentState is AgentDone) {
+                            AnalyticsService.logAiDraftAccepted(
+                              widget.job.id,
+                              role: widget.isDj ? 'dj' : 'musician',
+                            );
+                            widget.onDraftAccepted(agentState.text);
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        onRetry: () {
+                          ref.read(agentSessionProvider.notifier).reset();
+                          _kickOff();
+                        },
+                      ),
+
+                    SizedBox(
+                      height:
+                          inset > 0
+                              ? DSSpacing.s2
+                              : MediaQuery.of(context).padding.bottom +
+                                  DSSpacing.s4,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: DSSpacing.s2),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
-                child: Text(
-                  'Genererer et udkast baseret på jobbet og din profil...',
-                  style: DSTextStyle.labelMd.copyWith(fontWeight: FontWeight.w400, color: _c.text.secondary),
-                ),
-              ),
-              const SizedBox(height: DSSpacing.s4),
-
-              Divider(height: 1, color: _c.border.subtle),
-
-              // Content area
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(DSSpacing.s4),
-                  child: switch (agentState) {
-                    AgentIdle() => const _LoadingDots(),
-                    AgentStreaming(:final text) => _DraftText(text: text, streaming: true),
-                    AgentDone(:final text) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _DraftText(text: text, streaming: false),
-                        const SizedBox(height: DSSpacing.s4),
-                        _RefinementStrip(
-                          onRefine: (message) => ref
-                              .read(agentSessionProvider.notifier)
-                              .refineWith(message),
-                        ),
-                      ],
-                    ),
-                    AgentError(:final message) => _ErrorView(message: message),
-                  },
-                ),
-              ),
-
-              // Action buttons
-              if (agentState is AgentDone || agentState is AgentError)
-                _ActionBar(
-                  agentState: agentState,
-                  onAccept: () {
-                    if (agentState is AgentDone) {
-                      AnalyticsService.logAiDraftAccepted(
-                        widget.job.id,
-                        role: widget.isDj ? 'dj' : 'musician',
-                      );
-                      widget.onDraftAccepted(agentState.text);
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  onRetry: () {
-                    ref.read(agentSessionProvider.notifier).reset();
-                    _kickOff();
-                  },
-                ),
-
-              SizedBox(height: MediaQuery.of(context).padding.bottom + DSSpacing.s4),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -230,14 +321,17 @@ class _LoadingDotsState extends State<_LoadingDots>
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (_, __) {
         final dots = '.' * ((_controller.value * 4).toInt() % 4);
         return Text(
           'Tænker$dots',
-          style: DSTextStyle.labelMd.copyWith(fontSize: 15, color: _c.text.secondary),
+          style: DSTextStyle.labelMd.copyWith(
+            fontSize: 15,
+            color: _c.text.secondary,
+          ),
         );
       },
     );
@@ -252,7 +346,7 @@ class _DraftText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -267,7 +361,11 @@ class _DraftText extends StatelessWidget {
           ),
           child: Text(
             text,
-            style: DSTextStyle.labelMd.copyWith(fontSize: 15, color: _c.text.primary, height: 1.55),
+            style: DSTextStyle.labelMd.copyWith(
+              fontSize: 15,
+              color: _c.text.primary,
+              height: 1.55,
+            ),
           ),
         ),
         if (!streaming) ...[
@@ -297,7 +395,7 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -305,12 +403,19 @@ class _ErrorView extends StatelessWidget {
         const SizedBox(height: DSSpacing.s2),
         Text(
           'Kunne ikke generere udkast',
-          style: DSTextStyle.labelMd.copyWith(fontSize: 15, fontWeight: FontWeight.w600, color: _c.text.primary),
+          style: DSTextStyle.labelMd.copyWith(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: _c.text.primary,
+          ),
         ),
         const SizedBox(height: DSSpacing.s1),
         Text(
           message,
-          style: DSTextStyle.labelMd.copyWith(fontWeight: FontWeight.w400, color: _c.text.secondary),
+          style: DSTextStyle.labelMd.copyWith(
+            fontWeight: FontWeight.w400,
+            color: _c.text.secondary,
+          ),
         ),
       ],
     );
@@ -320,9 +425,15 @@ class _ErrorView extends StatelessWidget {
 // ── Refinement strip ──────────────────────────────────────────────────────────
 
 class _RefinementStrip extends StatefulWidget {
-  const _RefinementStrip({required this.onRefine});
+  const _RefinementStrip({
+    required this.onRefine,
+    required this.onInputFocused,
+  });
 
   final void Function(String message) onRefine;
+
+  /// Fired when the text field gains focus, so the sheet can grow before the keyboard covers it.
+  final VoidCallback onInputFocused;
 
   @override
   State<_RefinementStrip> createState() => _RefinementStripState();
@@ -330,9 +441,19 @@ class _RefinementStrip extends StatefulWidget {
 
 class _RefinementStripState extends State<_RefinementStrip> {
   final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) widget.onInputFocused();
+    });
+  }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -350,80 +471,114 @@ class _RefinementStripState extends State<_RefinementStrip> {
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
 
-    return Padding(
-      // Lift the refine/input bar above the keyboard when it opens.
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+    return Container(
+      // Pinned bar: AgentBottomSheet already lifts the whole sheet above the keyboard, so this
+      // must NOT add viewInsets padding of its own (that would double-count the inset).
+      padding: const EdgeInsets.fromLTRB(
+        DSSpacing.s4,
+        DSSpacing.s3,
+        DSSpacing.s4,
+        DSSpacing.s3,
+      ),
+      decoration: BoxDecoration(
+        color: _c.bg.surface,
+        border: Border(top: BorderSide(color: _c.border.subtle)),
+      ),
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Vil du ændre noget?',
-          style: DSTextStyle.bodySm.copyWith(color: _c.text.muted, fontSize: 12),
-        ),
-        const SizedBox(height: DSSpacing.s2),
-        Wrap(
-          spacing: DSSpacing.s2,
-          runSpacing: DSSpacing.s2,
-          children: [
-            _Chip(
-              label: 'Kortere',
-              onTap: () => _sendChip('Gør pitchen kortere.'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Vil du ændre noget?',
+            style: DSTextStyle.bodySm.copyWith(
+              color: _c.text.muted,
+              fontSize: 12,
             ),
-            _Chip(
-              label: 'Varmere tone',
-              onTap: () => _sendChip('Giv pitchen en varmere, mere personlig tone.'),
-            ),
-            _Chip(
-              label: 'Skift vinkel',
-              onTap: () => _sendChip('Skriv en pitch med et helt nyt åbning og en anderledes vinkel.'),
-            ),
-          ],
-        ),
-        const SizedBox(height: DSSpacing.s3),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendCustom(),
-                style: DSTextStyle.labelMd.copyWith(fontSize: 14, color: _c.text.primary),
-                decoration: InputDecoration(
-                  hintText: 'Skriv til AI\'en...',
-                  hintStyle: DSTextStyle.labelMd.copyWith(fontSize: 14, color: _c.text.muted),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  filled: true,
-                  fillColor: _c.bg.canvas,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(DSRadius.md),
-                    borderSide: BorderSide(color: _c.border.subtle),
+          ),
+          const SizedBox(height: DSSpacing.s2),
+          Wrap(
+            spacing: DSSpacing.s2,
+            runSpacing: DSSpacing.s2,
+            children: [
+              _Chip(
+                label: 'Kortere',
+                onTap: () => _sendChip('Gør pitchen kortere.'),
+              ),
+              _Chip(
+                label: 'Varmere tone',
+                onTap:
+                    () => _sendChip(
+                      'Giv pitchen en varmere, mere personlig tone.',
+                    ),
+              ),
+              _Chip(
+                label: 'Skift vinkel',
+                onTap:
+                    () => _sendChip(
+                      'Skriv en pitch med et helt nyt åbning og en anderledes vinkel.',
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: DSSpacing.s3),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  textCapitalization: TextCapitalization.sentences,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _sendCustom(),
+                  style: DSTextStyle.labelMd.copyWith(
+                    fontSize: 14,
+                    color: _c.text.primary,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(DSRadius.md),
-                    borderSide: BorderSide(color: _c.border.subtle),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(DSRadius.md),
-                    borderSide: BorderSide(color: _c.brand.primaryActive),
+                  decoration: InputDecoration(
+                    hintText: 'Skriv til AI\'en...',
+                    hintStyle: DSTextStyle.labelMd.copyWith(
+                      fontSize: 14,
+                      color: _c.text.muted,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    filled: true,
+                    fillColor: _c.bg.canvas,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DSRadius.md),
+                      borderSide: BorderSide(color: _c.border.subtle),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DSRadius.md),
+                      borderSide: BorderSide(color: _c.border.subtle),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(DSRadius.md),
+                      borderSide: BorderSide(color: _c.brand.primaryActive),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: DSSpacing.s2),
-            GestureDetector(
-              onTap: _sendCustom,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _c.brand.primaryActive,
-                  borderRadius: BorderRadius.circular(DSRadius.md),
+              const SizedBox(width: DSSpacing.s2),
+              GestureDetector(
+                onTap: _sendCustom,
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _c.brand.primaryActive,
+                    borderRadius: BorderRadius.circular(DSRadius.md),
+                  ),
+                  child: Icon(
+                    LucideIcons.arrowRight,
+                    size: 16,
+                    color: _c.brand.onPrimary,
+                  ),
                 ),
-                child: Icon(LucideIcons.arrowRight, size: 16, color: _c.brand.onPrimary),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -475,10 +630,14 @@ class _ActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(
-          DSSpacing.s4, DSSpacing.s3, DSSpacing.s4, DSSpacing.s3),
+        DSSpacing.s4,
+        DSSpacing.s3,
+        DSSpacing.s4,
+        DSSpacing.s3,
+      ),
       decoration: BoxDecoration(
         color: _c.bg.surface,
         border: Border(top: BorderSide(color: _c.border.subtle)),

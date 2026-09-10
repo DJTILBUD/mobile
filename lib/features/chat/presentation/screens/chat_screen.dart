@@ -249,6 +249,7 @@ class _AdminSupportTabState extends ConsumerState<_AdminSupportTab> {
               child: DSInput(
                 controller: _searchController,
                 hint: 'Søg i support (navn eller besked)',
+                textCapitalization: TextCapitalization.none,
                 iconLeft: LucideIcons.search,
                 onChanged: _onChanged,
                 textInputAction: TextInputAction.search,

@@ -1,12 +1,12 @@
-New: Message your customer in one tap 💬
+Venue tab on partner ext jobs
 
-We write the intro message for you, so you can reach out within 24 hours without spending time on the wording.
+• The ext job detail is now tabbed for recurring-customer (partner) bookings: "Job" keeps the process tracker, customer contact, extra hours, chat, song requests, invoice status and the job info card; "Stedet" holds the venue badge, the event address, the new venue photos and the "Til festen" card
+• Venue photos come from the admin tool (recurring customer -> Billeder tab), each with a comment. They are served by GET /api/internal-dj/ext-jobs as venue_photos per job, same endpoint as the "Fast kunde" name
+• A partner booking with no photos yet shows an empty state on the tab; a non-partner ext job has no tab bar and looks exactly as before
 
-• Tap "Send besked" on a won job and your messaging app opens with the customer's number and the full text ready to send
-• Prefer mail or WhatsApp? The text can still be copied in one tap
-• You can now edit a message you've already sent. It's clearly marked "Redigeret"
-• A job's budget now reads the same everywhere, in both the list and the calendar
-
-Plus minor bug fixes and improvements.
-
-What to test: on a REAL device (the Simulator cannot open Messages), open a won job, tap "Send besked", and confirm the composer opens with both the customer's number and the message prefilled.
+What to test:
+1. PARTNER JOB: open an ext job assigned to you that belongs to a recurring customer (e.g. Kokkedal). The app bar must show two tabs, "Job" and "Stedet". "Job" must contain everything it did before except the address and the "Til festen" card.
+2. PHOTOS: have an admin upload two photos with comments on that account (admin -> Faste kunder -> account -> Billeder). Pull to refresh or reopen the job. "Stedet" must show a horizontal strip with the comment under each thumbnail. Tap one: full-screen viewer, swipe to the next, pinch to zoom, comment under the image, "1 / 2" in the app bar.
+3. EMPTY STATE: on a partner account with no photos and a booking without wishes, "Stedet" must show "Ingen oplysninger om stedet endnu", not a blank screen.
+4. NORMAL EXT JOB: open a non-partner ext job. No tab bar, address and notes inline as before.
+5. CHAT BUBBLE: the floating "Beskeder" bubble must be visible on both tabs.

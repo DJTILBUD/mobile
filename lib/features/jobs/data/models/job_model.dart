@@ -35,6 +35,7 @@ class JobModel {
     this.musicianStartTime,
     this.roleType,
     this.hasActiveOffer = false,
+    this.assignedMusicianId,
     this.saxType,
     this.musicianSpecialRequest,
     this.songRequestToken,
@@ -80,6 +81,7 @@ class JobModel {
   final String? musicianStartTime;
   final String? roleType;
   final bool hasActiveOffer;
+  final String? assignedMusicianId;
   final String? saxType;
   final String? musicianSpecialRequest;
   final String? songRequestToken;
@@ -125,6 +127,7 @@ class JobModel {
       musicianStartTime: _formatTime(json['musician_start_time']),
       roleType: json['role_type'] as String?,
       hasActiveOffer: json['has_active_offer'] as bool? ?? false,
+      assignedMusicianId: json['assigned_musician_id'] as String?,
       saxType: json['sax_type'] as String?,
       musicianSpecialRequest: json['musician_special_request'] as String?,
       songRequestToken: json['song_request_token'] as String?,
@@ -190,6 +193,7 @@ class JobModel {
       musicianStartTime: musicianStartTime,
       roleType: roleType,
       hasActiveOffer: hasActiveOffer,
+      assignedMusicianId: assignedMusicianId,
       saxType: saxType,
       musicianSpecialRequest: musicianSpecialRequest,
       songRequestToken: songRequestToken,

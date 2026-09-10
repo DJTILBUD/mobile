@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
+import 'package:dj_tilbud_app/features/first_win/domain/entities/first_win_decision.dart';
 import 'package:dj_tilbud_app/features/first_win/presentation/providers/first_win_provider.dart';
 
-/// Which musician walkthrough to show. Mirrors the web app's MusicianVariant.
-/// (The DJ role ignores this.)
-enum MusicianVariant { solo, withDj }
+export 'package:dj_tilbud_app/features/first_win/domain/entities/first_win_decision.dart'
+    show MusicianVariant;
 
 class _Step {
   const _Step({
@@ -147,11 +147,17 @@ const _musicianSoloSteps = <_Step>[
 /// Shows the first-win celebration dialog. Marks the popup as shown only after
 /// the user dismisses the final step, so cancelling mid-walkthrough (or closing
 /// with the X) lets it reappear next time. Idempotent via the RPC's IS NULL guard.
+///
+/// [musicianVariant] must come from `firstWinDecisionProvider` — it decides both
+/// which walkthrough is rendered AND which `Musicians.first_win_*_shown_at`
+/// column the dismiss writes. Defaulting it here (the old behaviour) showed a
+/// saxophonist who won a job WITH a DJ the solo walkthrough, which tells them to
+/// agree invoicing with the customer — something the DJ owns on that job.
 Future<void> showFirstWinDialog(
   BuildContext context,
   WidgetRef ref,
   MusicianRole role, {
-  MusicianVariant musicianVariant = MusicianVariant.solo,
+  required MusicianVariant? musicianVariant,
 }) async {
   await showDialog<void>(
     context: context,
@@ -165,7 +171,7 @@ class _FirstWinDialog extends ConsumerStatefulWidget {
   const _FirstWinDialog({required this.role, required this.musicianVariant});
 
   final MusicianRole role;
-  final MusicianVariant musicianVariant;
+  final MusicianVariant? musicianVariant;
 
   @override
   ConsumerState<_FirstWinDialog> createState() => _FirstWinDialogState();
@@ -207,10 +213,29 @@ class _FirstWinDialogState extends ConsumerState<_FirstWinDialog> {
       return;
     }
     setState(() => _finishing = true);
+    var persisted = true;
     try {
-      await markFirstWinShown(ref, widget.role);
+      await markFirstWinShown(
+        ref,
+        widget.role,
+        variant: widget.musicianVariant,
+      );
+    } catch (_) {
+      // Never trap the user in the walkthrough — close it either way. But say so:
+      // a silent failure here is exactly what made the popup return on every
+      // launch with no clue as to why.
+      persisted = false;
     } finally {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+        if (!persisted) {
+          DSToast.show(
+            context,
+            variant: DSToastVariant.error,
+            title: 'Kunne ikke gemme. Guiden vises igen næste gang.',
+          );
+        }
+      }
     }
   }
 

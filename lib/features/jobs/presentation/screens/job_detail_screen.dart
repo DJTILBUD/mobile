@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/sax_type_info.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
@@ -61,6 +62,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       djTier: djTier,
       maxBudget: job.budgetEnd,
       jobCreatedAt: job.createdAt,
+      eventDate: job.date,
     );
     if (adjEnd == null) return 'Ikke angivet';
 
@@ -72,6 +74,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         djTier: djTier,
         maxBudget: job.budgetEnd,
         jobCreatedAt: job.createdAt,
+        eventDate: job.date,
       );
       if (adjStart != null) {
         final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
@@ -342,15 +345,10 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
                       _InfoRow(
                         icon: LucideIcons.music,
                         label: 'Spiltype',
-                        value:
-                            job.saxType == 'lounge'
-                                ? 'Lounge'
-                                : job.saxType == 'party'
-                                ? 'Party'
-                                : '${job.saxType![0].toUpperCase()}${job.saxType!.substring(1)}',
+                        value: saxTypeLabel(job.saxType!),
                       ),
                       const SizedBox(height: DSSpacing.s2),
-                      _SaxTypeDescription(saxType: job.saxType!),
+                      SaxTypeDescription(saxType: job.saxType!),
                     ],
                     if (job.requestedMusicianHours != null) ...[
                       const SizedBox(height: DSSpacing.s2),
@@ -549,82 +547,6 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SaxTypeDescription extends StatefulWidget {
-  const _SaxTypeDescription({required this.saxType});
-  final String saxType;
-
-  @override
-  State<_SaxTypeDescription> createState() => _SaxTypeDescriptionState();
-}
-
-class _SaxTypeDescriptionState extends State<_SaxTypeDescription> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = DSTheme.of(context);
-
-    final (IconData icon, Color color, String description) = switch (widget
-        .saxType) {
-      'lounge' => (
-        LucideIcons.coffee,
-        c.state.info,
-        'Du spiller blød baggrundsmusik – jazz, bossa nova og rolige melodier. Du er ikke centrum for opmærksomhed, men sætter stemningen diskret.',
-      ),
-      'party' => (
-        LucideIcons.partyPopper,
-        c.state.warning,
-        'Du er centrum for opmærksomhed – spil kendte hits, bring energi og dansevibes til festen. Tænd for salen og giv den gas.',
-      ),
-      _ => (LucideIcons.music, c.text.muted, ''),
-    };
-
-    if (description.isEmpty) return const SizedBox.shrink();
-
-    return GestureDetector(
-      onTap: () => setState(() => _expanded = !_expanded),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(DSSpacing.s3),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(DSRadius.sm),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: DSSpacing.s2),
-            Expanded(
-              child:
-                  _expanded
-                      ? Text(
-                        description,
-                        style: DSTextStyle.bodySm.copyWith(
-                          color: c.text.secondary,
-                        ),
-                      )
-                      : Text(
-                        'Tryk for at læse mere',
-                        style: DSTextStyle.bodySm.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-            ),
-            Icon(
-              _expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-              size: 14,
-              color: color,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

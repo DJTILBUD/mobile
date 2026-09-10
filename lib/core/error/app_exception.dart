@@ -25,7 +25,13 @@ class NeedsProfileSetupException extends AppException {
 }
 
 class DatabaseException extends AppException {
-  const DatabaseException(super.message);
+  const DatabaseException(super.message, {this.code});
+
+  /// The web API's stable, machine-readable rejection code (e.g.
+  /// `customer_not_contacted`), when the route sends one. Prefer matching on
+  /// this over the Danish `message` — the text is user-facing copy and will be
+  /// reworded; the code will not. Null for raw DB/PostgREST errors.
+  final String? code;
 
   @override
   String toString() => 'Kunne ikke hente data. Prøv igen.';

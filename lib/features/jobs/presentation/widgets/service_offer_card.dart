@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/core/utils/customer_name.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -259,6 +260,15 @@ class _MetaList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // First name only — full name + contact details stay on the detail screen's won section.
+        if (customerFirstName(job.leadName) != null) ...[
+          _MetaItem(
+            icon: LucideIcons.user,
+            label: 'Kunde: ${customerFirstName(job.leadName)}',
+            c: c,
+          ),
+          const SizedBox(height: 3),
+        ],
         _MetaItem(icon: LucideIcons.mapPin, label: job.region, c: c),
         const SizedBox(height: 3),
         // Time mirrors the open job card (job_card.dart, musician view): a musician_only job shows

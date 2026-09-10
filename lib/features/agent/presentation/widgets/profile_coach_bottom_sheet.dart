@@ -335,8 +335,61 @@ class _AssessmentText extends StatelessWidget {
       );
     }
 
+    // ⚠️ SHOW THE ERROR. This used to `return const SizedBox.shrink()`, which made the AI failure
+    // completely invisible — and the gap section below still renders on AgentError, so a DJ who
+    // had run out of AI credits saw an empty sheet topped by "Din profil er komplet — godt
+    // klaret!" and reasonably read that green badge as the AI's verdict. The AI had never spoken.
+    // `AgentError.message` is already user-ready Danish (e.g. "Du har brugt dine 5 AI-udkast for
+    // i dag. Prøv igen i morgen."), so it just needs rendering. Styled `info`, not `danger`:
+    // being out of credits is not a fault, and the refresh button in the header stays available.
     if (agentState is AgentError) {
-      return const SizedBox.shrink();
+      return Container(
+        padding: const EdgeInsets.all(DSSpacing.s3),
+        decoration: BoxDecoration(
+          color: _c.state.info.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(DSRadius.md),
+          border: Border.all(color: _c.state.info.withValues(alpha: 0.50)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(LucideIcons.info, size: 18, color: _c.state.info),
+            const SizedBox(width: DSSpacing.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI-analysen kunne ikke hentes',
+                    style: DSTextStyle.labelMd.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: _c.text.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    (agentState as AgentError).message,
+                    style: DSTextStyle.bodySm.copyWith(
+                      color: _c.text.secondary,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  // Without this the checklist below reads as the AI's conclusion.
+                  Text(
+                    'Tjeklisten nedenfor er stadig opdateret — den bygger på din profil, '
+                    'ikke på AI.',
+                    style: DSTextStyle.bodySm.copyWith(
+                      color: _c.text.muted,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     final text = agentState is AgentStreaming

@@ -33,6 +33,9 @@ class ExtJob {
     this.spotifyPlaylistUrl,
     this.specialConditions,
     this.earlySetup = false,
+    this.earlySetupPrice,
+    this.recurringCustomerId,
+    this.channel,
     this.wantsIc,
     this.company,
     this.djReadyConfirmedAt,
@@ -41,6 +44,7 @@ class ExtJob {
     this.musicianSpecialRequest,
     this.extraHours,
     this.extraHoursPricePerHour,
+    this.extraHoursDeclinedAt,
     this.sentAt,
     this.deadlineExtendedUntil,
   });
@@ -79,6 +83,27 @@ class ExtJob {
   final String? specialConditions;
   final bool earlySetup;
 
+  /// Agreed early-setup fee in DKK, added by the DJ or admin. When non-null it is
+  /// ALREADY included in [fullAmount] and the DJ's honorar (the web-app route owns
+  /// that fold). [earlySetup] alone is only the CUSTOMER's request, with no price.
+  final num? earlySetupPrice;
+
+  /// Set when this ext job belongs to a RecurringCustomers account (a partner-portal
+  /// booking). Together with [channel] it drives [isRecurringCustomer].
+  final int? recurringCustomerId;
+
+  /// `recurring` / `recurring_managed` also mark a recurring booking; older or
+  /// self-serve rows may carry only the channel.
+  final String? channel;
+
+  /// Mirrors the web-app `isRecurringCustomerExtJob` helper. A recurring booking is
+  /// priced by the VENUE'S agreement, so the DJ must not add or change an
+  /// early-setup fee on it (the server 403s). Keep in sync with the web helper.
+  bool get isRecurringCustomer =>
+      recurringCustomerId != null ||
+      channel == 'recurring' ||
+      channel == 'recurring_managed';
+
   /// "Vil parret kontaktes af DJ'en inden festen?" (JobMetadata.wants_ic). Null when not a partner
   /// booking; true/false is the couple's explicit answer.
   final bool? wantsIc;
@@ -102,6 +127,11 @@ class ExtJob {
   /// this is folded into [fullAmount] and (× DJ share) into [honorar]
   /// server-side. Used here to recompute the expected total before saving.
   final num? extraHoursPricePerHour;
+
+  /// When the performer answered "Jeg spillede ikke ekstra timer". Non-null
+  /// hides the extra-hours card and suppresses the extra_hours_reminder push
+  /// (see `setExtraHoursDeclined` in the web app). Null = unanswered.
+  final DateTime? extraHoursDeclinedAt;
 
   /// When the offer was sent to the customer (DJ/musician assigned, status -> sent).
   /// Baseline for the 7-day decision countdown, mirroring Jobs.sent_at. Null = not yet sent.

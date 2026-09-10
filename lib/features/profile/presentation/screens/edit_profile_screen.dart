@@ -312,13 +312,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(DSSpacing.s6),
                 children: [
-                  _buildTextField('Fulde navn', _fullNameCtrl, required: true),
+                  _buildTextField(
+                    'Fulde navn',
+                    _fullNameCtrl,
+                    required: true,
+                    textCapitalization: TextCapitalization.words,
+                  ),
                   if (isDj) ...[
                     const SizedBox(height: DSSpacing.s4),
                     _buildTextField(
                       'DJ / firma navn',
                       _djNameCtrl,
                       required: true,
+                      textCapitalization: TextCapitalization.words,
                     ),
                   ],
                   const SizedBox(height: DSSpacing.s4),
@@ -460,7 +466,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                   if (isDj) ...[
                     const SizedBox(height: DSSpacing.s4),
-                    _buildTextField('SoundCloud URL', _soundcloudCtrl),
+                    _buildTextField(
+                      'SoundCloud URL',
+                      _soundcloudCtrl,
+                      keyboardType: TextInputType.url,
+                    ),
                   ],
 
                   const SizedBox(height: DSSpacing.s6),
@@ -507,6 +517,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     int maxLines = 1,
     int? maxLength,
     TextInputType? keyboardType,
+    TextCapitalization? textCapitalization,
   }) {
     return DSInput(
       label: label,
@@ -515,6 +526,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       maxLength: maxLength,
       showCounter: maxLength != null,
       keyboardType: keyboardType,
+      textCapitalization: textCapitalization,
       validator:
           required
               ? (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null

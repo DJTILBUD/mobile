@@ -3,6 +3,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/song_request.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 
 abstract class JobsRepository {
   /// Fetches all open jobs for a DJ (not filtered by region — only job filters apply).
@@ -17,6 +18,10 @@ abstract class JobsRepository {
   /// Recurring-customer (venue) names for the DJ's assigned ext jobs, keyed by
   /// ext job id (resolved server-side; a miss means "not a fixed customer").
   Future<Map<int, String>> fetchDjExtJobRecurringNames(String userId);
+
+  /// Venue photos (with the team's comment each) for the DJ's assigned ext
+  /// jobs, keyed by ext job id. Only partner (recurring) venues have any.
+  Future<Map<int, List<VenuePhoto>>> fetchDjExtJobVenuePhotos(String userId);
 
   /// Recurring-customer (venue) names for the current MUSICIAN's won/assigned
   /// ext jobs, keyed by ext job id (the sax counterpart, resolved server-side).
@@ -135,6 +140,25 @@ abstract class JobsRepository {
   /// Removes extra hours from an ext job.
   Future<void> deleteExtJobExtraHours(int extJobId);
 
+  /// "Jeg spillede ikke ekstra timer" — records that the performer had no extra
+  /// hours on this job, which hides the extra-hours card and stops the daily
+  /// `extra_hours_reminder` push for them. Pass `declined: false` to undo.
+  /// One method per payee row: quote (DJ internal), ext job (DJ external),
+  /// service offer (musician).
+  Future<void> setQuoteExtraHoursDeclined(int quoteId, {required bool declined});
+  Future<void> setExtJobExtraHoursDeclined(int extJobId, {required bool declined});
+  Future<void> setServiceOfferExtraHoursDeclined(
+    int offerId, {
+    required bool declined,
+  });
+
+  /// Sets the agreed early-setup fee (+ optional HH:MM time) on an ext job.
+  /// The fee is folded into full_amount + honorar server-side.
+  Future<void> setExtJobEarlySetup(int extJobId, {required num price, String? time});
+
+  /// Removes early setup from an ext job.
+  Future<void> deleteExtJobEarlySetup(int extJobId);
+
   /// Saves private DJ notes on a won quote.
   Future<void> saveDjNotes(int quoteId, String notes);
 
@@ -147,8 +171,24 @@ abstract class JobsRepository {
     String? endTime,
   });
 
+  /// Every ServiceOffers row on one job, for the musician availability rule. Returns an empty
+  /// list on failure (the server rejection stays the real gate).
+  Future<List<({String? musicianId, String? status})>> fetchOffersForJob({
+    int? jobId,
+    int? extJobId,
+  });
+
+  /// Has this job's supply/matching wave opened for the current DJ?
+  ///
+  /// Display aid for the quote form only (the feed is already gated server-side, and the real
+  /// gate is the 403 from the quote route). Fails OPEN on any error.
+  Future<bool> fetchJobWaveOpen(int jobId);
+
   /// Fetches service offers for a given internal job (for DJ view).
   Future<List<ServiceOffer>> fetchServiceOffersForJob(int jobId);
+
+  /// Ext-job counterpart of [fetchServiceOffersForJob] (assigned-DJ view).
+  Future<List<ServiceOffer>> fetchServiceOffersForExtJob(int extJobId);
 
   /// Fetches song requests submitted by guests for a given job.
   Future<List<SongRequest>> fetchSongRequestsForJob(int jobId);
@@ -169,7 +209,11 @@ abstract class JobsRepository {
   /// Adds or updates extra hours on a won musician service offer.
   Future<void> addMusicianExtraHours(int offerId, {required double extraHours});
 
-  Future<void> setSpecialRequestFee(int offerId, {required int feeDkk});
+  Future<void> setSpecialRequestFee(
+    int offerId, {
+    required int feeDkk,
+    required String reason,
+  });
 
   Future<void> removeSpecialRequestFee(int offerId);
 

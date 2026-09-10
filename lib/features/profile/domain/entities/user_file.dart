@@ -56,6 +56,7 @@ class UserFile {
     required this.createdAt,
     this.thumbnailVideoId,
     this.description,
+    this.sortOrder,
   });
 
   final int id;
@@ -68,4 +69,24 @@ class UserFile {
 
   /// Optional caption/title. Used by dj_mix rows (the mix label).
   final String? description;
+
+  /// Display position within this user's gallery of the same [type] (lower = earlier).
+  ///
+  /// Nullable and optional on purpose: it is null for rows uploaded before the user ever
+  /// reordered that gallery, and [sortUserFiles] sorts nulls LAST so a fresh upload appends
+  /// instead of jumping to the front. Optional in the constructor so the ad-hoc `UserFile(...)`
+  /// built in job_content_remote_datasource keeps compiling.
+  final int? sortOrder;
+
+  UserFile copyWith({int? sortOrder}) {
+    return UserFile(
+      id: id,
+      url: url,
+      type: type,
+      createdAt: createdAt,
+      thumbnailVideoId: thumbnailVideoId,
+      description: description,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
 }

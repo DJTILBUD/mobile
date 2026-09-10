@@ -33,6 +33,16 @@ String friendlyErrorMessage(Object? error, {String? fallback}) {
     // Auth messages are authored in Danish (see auth_repository_impl).
     return error.message.isNotEmpty ? error.message : generic;
   }
+  if (error is AgentException) {
+    // Unlike other AppExceptions, an AgentException's message is NOT guaranteed
+    // to be authored Danish text — the datasource forwards it straight from the
+    // agent-assist Edge Function's SSE "error" event, which in turn can be the
+    // raw Anthropic API error body (e.g. `401 {"type":"error","error":{...,
+    // "message":"API key is invalid."}}`). Surfacing that verbatim leaked a raw
+    // JSON blob to a musician's screen when the server-side API key was revoked.
+    // Always use the generic/fallback text here instead.
+    return generic;
+  }
   if (error is AppException) {
     return error.message.isNotEmpty ? error.message : generic;
   }

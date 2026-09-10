@@ -16,6 +16,7 @@ class DjQuote {
     this.djReadyConfirmedAt,
     this.extraHours,
     this.extraHoursPricePerHour,
+    this.extraHoursDeclinedAt,
     this.djNotes,
     this.djPayoutOverride,
   });
@@ -35,6 +36,11 @@ class DjQuote {
   final DateTime? djReadyConfirmedAt;
   final double? extraHours;
   final num? extraHoursPricePerHour;
+
+  /// When the performer answered "Jeg spillede ikke ekstra timer". Non-null
+  /// hides the extra-hours card and suppresses the extra_hours_reminder push
+  /// (see `setExtraHoursDeclined` in the web app). Null = unanswered.
+  final DateTime? extraHoursDeclinedAt;
   final String? djNotes;
 
   /// Admin-negotiated payout that REPLACES the standard 75% calculation.

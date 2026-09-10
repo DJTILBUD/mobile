@@ -32,6 +32,9 @@ class ExtJobModel {
     this.spotifyPlaylistUrl,
     this.specialConditions,
     this.earlySetup = false,
+    this.earlySetupPrice,
+    this.recurringCustomerId,
+    this.channel,
     this.wantsIc,
     this.region,
     this.notes,
@@ -46,6 +49,7 @@ class ExtJobModel {
     this.postalCode,
     this.extraHours,
     this.extraHoursPricePerHour,
+    this.extraHoursDeclinedAt,
     this.sentAt,
     this.deadlineExtendedUntil,
   });
@@ -78,6 +82,9 @@ class ExtJobModel {
   final String? spotifyPlaylistUrl;
   final String? specialConditions;
   final bool earlySetup;
+  final num? earlySetupPrice;
+  final int? recurringCustomerId;
+  final String? channel;
   final bool? wantsIc;
   final String? region;
   final String? notes;
@@ -92,6 +99,10 @@ class ExtJobModel {
   final String? postalCode;
   final double? extraHours;
   final num? extraHoursPricePerHour;
+
+  /// When the assigned DJ answered "Jeg spillede ikke ekstra timer". Non-null
+  /// hides the extra-hours card and suppresses the extra_hours_reminder push.
+  final String? extraHoursDeclinedAt;
   final String? sentAt;
   final String? deadlineExtendedUntil;
 
@@ -133,6 +144,9 @@ class ExtJobModel {
       spotifyPlaylistUrl: json['spotify_playlist_url'] as String?,
       specialConditions: json['special_conditions'] as String?,
       earlySetup: json['early_setup'] as bool? ?? false,
+      earlySetupPrice: (json['early_setup_price'] as num?)?.toDouble(),
+      recurringCustomerId: (json['recurring_customer_id'] as num?)?.toInt(),
+      channel: json['channel'] as String?,
       wantsIc: json['wants_ic'] as bool?,
       region: json['region'] as String?,
       notes: json['notes'] as String?,
@@ -150,6 +164,7 @@ class ExtJobModel {
       songRequestToken: json['song_request_token'] as String?,
       postalCode: json['postal_code'] as String?,
       extraHours: (json['extra_hours'] as num?)?.toDouble(),
+      extraHoursDeclinedAt: json['extra_hours_declined_at'] as String?,
       extraHoursPricePerHour:
           (json['extra_hours_price_per_hour'] as num?)?.toDouble(),
       sentAt: json['sent_at'] as String?,
@@ -192,6 +207,9 @@ class ExtJobModel {
       spotifyPlaylistUrl: spotifyPlaylistUrl,
       specialConditions: specialConditions,
       earlySetup: earlySetup,
+      earlySetupPrice: earlySetupPrice,
+      recurringCustomerId: recurringCustomerId,
+      channel: channel,
       wantsIc: wantsIc,
       region: region,
       notes: notes,
@@ -206,6 +224,10 @@ class ExtJobModel {
       musicianSpecialRequest: musicianSpecialRequest,
       extraHours: extraHours,
       extraHoursPricePerHour: extraHoursPricePerHour,
+      extraHoursDeclinedAt:
+          extraHoursDeclinedAt != null
+              ? DateTime.parse(extraHoursDeclinedAt!)
+              : null,
       sentAt: sentAt != null ? DateTime.parse(sentAt!) : null,
       deadlineExtendedUntil:
           deadlineExtendedUntil != null
@@ -247,6 +269,10 @@ class ExtJobModel {
       musicianStartTime: musicianStartTime,
       roleType: roleType,
       hasActiveOffer: hasActiveOffer,
+      // Carried through so the offer form can tell "admin already assigned a musician" apart from
+      // "still open" on a deep-linked ext job (the feed filters these out, so it only shows up
+      // there). ⚠️ ExtJobModel.toJobModel must forward every field the offer form reads.
+      assignedMusicianId: assignedMusicianId,
       saxType: saxType,
       musicianSpecialRequest: musicianSpecialRequest,
       guestAge: guestAge,

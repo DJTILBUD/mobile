@@ -12,6 +12,7 @@ import 'package:dj_tilbud_app/features/jobs/data/models/job_model.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/dj_quote_model.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/service_offer_model.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/ext_job_model.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 
 class JobsRepositoryImpl implements JobsRepository {
   JobsRepositoryImpl(this._datasource);
@@ -75,6 +76,13 @@ class JobsRepositoryImpl implements JobsRepository {
   @override
   Future<Map<int, String>> fetchDjExtJobRecurringNames(String userId) async {
     return _datasource.fetchDjExtJobRecurringNames(userId);
+  }
+
+  @override
+  Future<Map<int, List<VenuePhoto>>> fetchDjExtJobVenuePhotos(
+    String userId,
+  ) async {
+    return _datasource.fetchDjExtJobVenuePhotos(userId);
   }
 
   @override
@@ -388,6 +396,73 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
+  Future<void> setQuoteExtraHoursDeclined(
+    int quoteId, {
+    required bool declined,
+  }) async {
+    try {
+      await _datasource.setQuoteExtraHoursDeclined(
+        quoteId,
+        declined: declined,
+      );
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> setExtJobExtraHoursDeclined(
+    int extJobId, {
+    required bool declined,
+  }) async {
+    try {
+      await _datasource.setExtJobExtraHoursDeclined(
+        extJobId,
+        declined: declined,
+      );
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> setServiceOfferExtraHoursDeclined(
+    int offerId, {
+    required bool declined,
+  }) async {
+    try {
+      await _datasource.setServiceOfferExtraHoursDeclined(
+        offerId,
+        declined: declined,
+      );
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> setExtJobEarlySetup(
+    int extJobId, {
+    required num price,
+    String? time,
+  }) async {
+    try {
+      await _datasource.setExtJobEarlySetup(extJobId, price: price, time: time);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
+  Future<void> deleteExtJobEarlySetup(int extJobId) async {
+    try {
+      await _datasource.deleteExtJobEarlySetup(extJobId);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  @override
   @override
   Future<void> saveDjNotes(int quoteId, String notes) async {
     try {
@@ -417,44 +492,85 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
+  Future<List<({String? musicianId, String? status})>> fetchOffersForJob({
+    int? jobId,
+    int? extJobId,
+  }) {
+    // The datasource already swallows errors and returns []; wrapping it would only turn a
+    // best-effort lookup into an exception that blocks the form.
+    return _datasource.fetchOffersForJob(jobId: jobId, extJobId: extJobId);
+  }
+
+  @override
+  Future<bool> fetchJobWaveOpen(int jobId) async {
+    // The datasource already swallows errors and returns true; no try/catch here would change
+    // that, and turning a failed lookup into an exception would block the form.
+    return _datasource.fetchJobWaveOpen(jobId);
+  }
+
+  @override
   Future<List<ServiceOffer>> fetchServiceOffersForJob(int jobId) async {
     try {
       final data = await _datasource.fetchServiceOffersForJob(jobId);
-      // These rows have no joined job data — build a minimal ServiceOffer
-      return data.map((row) {
-        return ServiceOffer(
-          id: (row['id'] as num).toInt(),
-          musicianId: row['musician_id'] as String,
-          priceDkk: (row['price_dkk'] as num?)?.toInt() ?? 0,
-          instrument: row['instrument'] as String? ?? '',
-          status: ServiceOfferStatus.fromString(row['status'] as String),
-          createdAt: DateTime.parse(row['created_at'] as String),
-          job: Job(
-            id: 0,
-            eventType: '',
-            date: DateTime.now(),
-            timeStart: '00:00',
-            timeEnd: '00:00',
-            city: '',
-            region: '',
-            guestsAmount: 0,
-            status: JobStatus.open,
-            createdAt: DateTime.now(),
-          ),
-          musicianPayoutDkk: (row['musician_payout_dkk'] as num?)?.toInt(),
-          salesPitch: row['sales_pitch'] as String?,
-          musicianFullName:
-              (row['musician'] as Map<String, dynamic>?)?['full_name']
-                  as String?,
-          musicianPhone:
-              (row['musician'] as Map<String, dynamic>?)?['phone'] as String?,
-          musicianEmail:
-              (row['musician'] as Map<String, dynamic>?)?['email'] as String?,
-        );
-      }).toList();
+      return _serviceOffersFromDjViewRows(data, jobId: jobId);
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
+  }
+
+  @override
+  Future<List<ServiceOffer>> fetchServiceOffersForExtJob(int extJobId) async {
+    try {
+      final data = await _datasource.fetchServiceOffersForExtJob(extJobId);
+      return _serviceOffersFromDjViewRows(data, extJobId: extJobId);
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
+  /// Maps the DJ-view offer rows (no joined job data) to a minimal [ServiceOffer].
+  ///
+  /// `customerContacted` MUST be carried through: the ready-for-billing gate on both
+  /// DJ screens reads it to decide whether the DJ may close the deal yet. Dropping it
+  /// here silently defaults every offer to "not contacted".
+  List<ServiceOffer> _serviceOffersFromDjViewRows(
+    List<Map<String, dynamic>> data, {
+    int? jobId,
+    int? extJobId,
+  }) {
+    return data.map((row) {
+      return ServiceOffer(
+        id: (row['id'] as num).toInt(),
+        jobId: jobId,
+        extJobId: extJobId,
+        musicianId: row['musician_id'] as String,
+        priceDkk: (row['price_dkk'] as num?)?.toInt() ?? 0,
+        instrument: row['instrument'] as String? ?? '',
+        status: ServiceOfferStatus.fromString(row['status'] as String),
+        createdAt: DateTime.parse(row['created_at'] as String),
+        job: Job(
+          id: 0,
+          eventType: '',
+          date: DateTime.now(),
+          timeStart: '00:00',
+          timeEnd: '00:00',
+          city: '',
+          region: '',
+          guestsAmount: 0,
+          status: JobStatus.open,
+          createdAt: DateTime.now(),
+        ),
+        musicianPayoutDkk: (row['musician_payout_dkk'] as num?)?.toInt(),
+        salesPitch: row['sales_pitch'] as String?,
+        customerContacted: row['customer_contacted'] == true,
+        musicianFullName:
+            (row['musician'] as Map<String, dynamic>?)?['full_name'] as String?,
+        musicianPhone:
+            (row['musician'] as Map<String, dynamic>?)?['phone'] as String?,
+        musicianEmail:
+            (row['musician'] as Map<String, dynamic>?)?['email'] as String?,
+      );
+    }).toList();
   }
 
   @override
@@ -498,9 +614,17 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
-  Future<void> setSpecialRequestFee(int offerId, {required int feeDkk}) async {
+  Future<void> setSpecialRequestFee(
+    int offerId, {
+    required int feeDkk,
+    required String reason,
+  }) async {
     try {
-      await _datasource.setSpecialRequestFee(offerId, feeDkk: feeDkk);
+      await _datasource.setSpecialRequestFee(
+        offerId,
+        feeDkk: feeDkk,
+        reason: reason,
+      );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }

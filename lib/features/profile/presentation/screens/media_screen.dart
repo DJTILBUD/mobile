@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
+import 'package:dj_tilbud_app/features/profile/domain/sort_user_files.dart';
+import 'package:dj_tilbud_app/features/profile/domain/validate_profile_video.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -35,16 +37,17 @@ class MediaScreen extends ConsumerWidget {
             ),
         error: (e, _) => Center(child: Text('Fejl: $e')),
         data: (files) {
-          final profileImages =
-              files.where((f) => f.type == UserFileType.profile).toList();
-          final commonImages =
-              files.where((f) => f.type == UserFileType.common).toList();
-          final profileVideos =
-              files.where((f) => f.type == UserFileType.profileVideo).toList();
-          final commonVideos =
-              files.where((f) => f.type == UserFileType.commonVideo).toList();
-          final mixes =
-              files.where((f) => f.type == UserFileType.djMix).toList();
+          // The provider already returns sort_order-ordered rows, but sorting again here keeps
+          // the screen correct if a caller ever hands it an unordered list (and makes the
+          // ordering rule explicit at the point the galleries are built).
+          List<UserFile> ofType(UserFileType type) =>
+              sortUserFiles(files.where((f) => f.type == type).toList());
+
+          final profileImages = ofType(UserFileType.profile);
+          final commonImages = ofType(UserFileType.common);
+          final profileVideos = ofType(UserFileType.profileVideo);
+          final commonVideos = ofType(UserFileType.commonVideo);
+          final mixes = ofType(UserFileType.djMix);
 
           // Build videoId -> thumbnailUrl map from thumbnail rows
           final thumbnails = <int, String>{
@@ -79,7 +82,7 @@ class MediaScreen extends ConsumerWidget {
               const SizedBox(height: DSSpacing.s6),
               _MediaSection(
                 title: 'Profilvideo',
-                subtitle: 'Personlig video hilsen (maks 60 sek.)',
+                subtitle: 'Personlig video hilsen (maks $kProfileVideoMaxSeconds sek.)',
                 files: profileVideos,
                 maxCount: 1,
                 fileType: UserFileType.profileVideo,
@@ -89,7 +92,7 @@ class MediaScreen extends ConsumerWidget {
               const SizedBox(height: DSSpacing.s6),
               _MediaSection(
                 title: 'Performance videoer',
-                subtitle: 'Op til 6 klip (maks 10 sek. hver)',
+                subtitle: 'Op til 6 klip (maks $kCommonVideoMaxSeconds sek. hver)',
                 files: commonVideos,
                 maxCount: 6,
                 fileType: UserFileType.commonVideo,
@@ -134,6 +137,61 @@ class _MediaSectionState extends ConsumerState<_MediaSection> {
   bool _isUploading = false;
   int? _deletingFileId;
 
+  /// Local copy of the gallery so a drag reorders instantly instead of waiting for the round
+  /// trip. Re-synced from the widget whenever the server order changes (see didUpdateWidget).
+  List<UserFile>? _localFiles;
+
+  List<UserFile> get _files => _localFiles ?? widget.files;
+
+  /// Only `common` / `common_video` / `dj_mix` are reorderable — the profile image and profile
+  /// video are singletons. Matches REORDERABLE_TYPES in the web-app reorder route.
+  bool get _canReorder =>
+      _files.length > 1 &&
+      (widget.fileType == UserFileType.common ||
+          widget.fileType == UserFileType.commonVideo);
+
+  @override
+  void didUpdateWidget(covariant _MediaSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Drop the optimistic copy once the server's order matches it (or an upload/delete changed
+    // the set), so the widget's list becomes the source of truth again. Comparing ids rather
+    // than list identity avoids clobbering an in-flight drag on an unrelated rebuild.
+    final incoming = widget.files.map((f) => f.id).join(',');
+    final previous = oldWidget.files.map((f) => f.id).join(',');
+    if (incoming != previous) {
+      _localFiles = null;
+    }
+  }
+
+  Future<void> _reorder(int fromIndex, int toIndex) async {
+    final next = List<UserFile>.of(_files);
+    final moved = next.removeAt(fromIndex);
+    next.insert(toIndex, moved);
+
+    setState(() => _localFiles = next);
+
+    try {
+      await ref
+          .read(profileRepositoryProvider)
+          .reorderFiles(
+            type: widget.fileType,
+            orderedIds: next.map((f) => f.id).toList(),
+          );
+      ref.invalidate(userFilesProvider);
+    } catch (e) {
+      // Snap back to the server's order rather than leaving a phantom order on screen.
+      if (mounted) {
+        setState(() => _localFiles = null);
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: 'Rækkefølgen blev ikke gemt',
+          description: friendlyErrorMessage(e, fallback: 'Prøv igen.'),
+        );
+      }
+    }
+  }
+
   Future<void> _pickAndUpload() async {
     final picker = ImagePicker();
     final XFile? picked =
@@ -145,6 +203,25 @@ class _MediaSectionState extends ConsumerState<_MediaSection> {
             );
 
     if (picked == null) return;
+
+    // Length is enforced HERE because nothing server-side can check it (no ffprobe anywhere in
+    // the platform), and the web app has always enforced the same limits. Without this the
+    // "maks 15 sek." label below is a suggestion, not a rule, and the two platforms disagree
+    // about what a valid profile contains.
+    if (widget.isVideo) {
+      final error = await validateProfileVideo(picked.path, widget.fileType);
+      if (error != null) {
+        if (mounted) {
+          DSToast.show(
+            context,
+            variant: DSToastVariant.error,
+            title: 'Videoen kan ikke uploades',
+            description: error,
+          );
+        }
+        return;
+      }
+    }
 
     setState(() => _isUploading = true);
     try {
@@ -193,6 +270,7 @@ class _MediaSectionState extends ConsumerState<_MediaSection> {
     setState(() => _deletingFileId = file.id);
     try {
       await ref.read(profileRepositoryProvider).deleteFile(file.id);
+      _localFiles = null;
       ref.invalidate(userFilesProvider);
       if (mounted)
         DSToast.show(
@@ -236,21 +314,75 @@ class _MediaSectionState extends ConsumerState<_MediaSection> {
           widget.subtitle,
           style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
         ),
+        if (_canReorder) ...[
+          const SizedBox(height: DSSpacing.s1),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(LucideIcons.gripVertical, size: 14, color: _c.text.muted),
+              const SizedBox(width: DSSpacing.s1),
+              Flexible(
+                child: Text(
+                  'Hold inde og træk for at ændre rækkefølgen',
+                  style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+                ),
+              ),
+            ],
+          ),
+        ],
         const SizedBox(height: DSSpacing.s3),
         Wrap(
           spacing: DSSpacing.s3,
           runSpacing: DSSpacing.s3,
           children: [
-            ...widget.files.map(
-              (f) => _MediaTile(
+            ...List.generate(_files.length, (index) {
+              final f = _files[index];
+              final tile = _MediaTile(
                 file: f,
                 isVideo: widget.isVideo,
                 thumbnailUrl: widget.thumbnails[f.id],
                 isDeleting: _deletingFileId == f.id,
                 onDelete: busy ? null : () => _deleteFile(f),
-              ),
-            ),
-            if (widget.files.length < widget.maxCount)
+              );
+
+              // A single-item gallery has nothing to reorder, so it stays a plain tile with no
+              // long-press affordance (otherwise the hint would promise something impossible).
+              if (!_canReorder) return tile;
+
+              return DragTarget<int>(
+                onWillAcceptWithDetails: (details) => details.data != index,
+                onAcceptWithDetails:
+                    (details) => _reorder(details.data, index),
+                builder: (context, candidate, rejected) {
+                  final isHovered = candidate.isNotEmpty;
+                  return LongPressDraggable<int>(
+                    data: index,
+                    // The dragged tile is rendered by `feedback`, so hide the original to avoid
+                    // showing the same image twice.
+                    childWhenDragging: Opacity(opacity: 0.25, child: tile),
+                    feedback: Material(
+                      color: Colors.transparent,
+                      child: Opacity(opacity: 0.9, child: tile),
+                    ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 120),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(DSRadius.md),
+                        border: Border.all(
+                          color:
+                              isHovered
+                                  ? _c.brand.primary
+                                  : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: tile,
+                    ),
+                  );
+                },
+              );
+            }),
+            if (_files.length < widget.maxCount)
               _AddTile(
                 isVideo: widget.isVideo,
                 isLoading: _isUploading,
@@ -293,45 +425,39 @@ class _MediaTile extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child:
               isVideo
-                  ? thumbnailUrl != null
-                      ? Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          CachedNetworkImage(
-                            imageUrl: thumbnailUrl!,
-                            fit: BoxFit.cover,
-                            errorWidget:
-                                (_, __, ___) => Center(
-                                  child: Icon(
-                                    LucideIcons.video,
-                                    size: 32,
-                                    color: _c.text.secondary,
-                                  ),
-                                ),
+                  // ⚠️ A video ALWAYS renders as a dark tile with a play badge, whether or not it
+                  // has a thumbnail. It used to fall back to `Icon(LucideIcons.video)` on the plain
+                  // bordered box — the exact same icon, size and border as `_AddTile`'s "Tilføj
+                  // video". So an uploaded video with no thumbnail row was drawn as the ADD BUTTON
+                  // with a delete badge on it, and users could not tell what it was or why it could
+                  // be deleted. Missing preview must never read as "empty slot".
+                  ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (thumbnailUrl != null)
+                        CachedNetworkImage(
+                          imageUrl: thumbnailUrl!,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => const _NoVideoPreview(),
+                        )
+                      else
+                        const _NoVideoPreview(),
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Colors.black45,
+                            shape: BoxShape.circle,
                           ),
-                          Center(
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.black45,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.play_arrow,
-                                size: 20,
-                                color: Colors.white,
-                              ),
-                            ),
+                          child: const Icon(
+                            Icons.play_arrow,
+                            size: 20,
+                            color: Colors.white,
                           ),
-                        ],
-                      )
-                      : Center(
-                        child: Icon(
-                          LucideIcons.video,
-                          size: 32,
-                          color: _c.text.secondary,
                         ),
-                      )
+                      ),
+                    ],
+                  )
                   : CachedNetworkImage(
                     imageUrl: file.url,
                     fit: BoxFit.cover,
@@ -380,6 +506,29 @@ class _MediaTile extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Background for a video whose thumbnail row is missing or fails to load.
+///
+/// Deliberately DARK: it has to read as "a video with no preview yet", never as an empty slot.
+/// The tile is stacked under the same play badge every other video tile gets, so a thumbnail-less
+/// clip is visually a sibling of the ones that do have previews — which is what it is.
+class _NoVideoPreview extends StatelessWidget {
+  const _NoVideoPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black87,
+      child: Center(
+        child: Icon(
+          LucideIcons.video,
+          size: 28,
+          color: Colors.white.withValues(alpha: 0.55),
+        ),
+      ),
     );
   }
 }
@@ -537,6 +686,7 @@ class _MixesSectionState extends ConsumerState<_MixesSection> {
             content: TextField(
               controller: controller,
               autofocus: true,
+              textCapitalization: TextCapitalization.sentences,
               maxLength: 80,
               decoration: const InputDecoration(
                 hintText: 'F.eks. Bryllup i Aarhus, august 2025',

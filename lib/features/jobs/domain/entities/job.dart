@@ -26,6 +26,7 @@ class Job {
     this.customerNote,
     this.isExtJob = false,
     this.extJobId,
+    this.assignedMusicianId,
     this.quoteSendMode,
     this.isPaused = false,
     this.assignedDjName,
@@ -72,6 +73,11 @@ class Job {
   final String? customerNote;
   final bool isExtJob;
   final int? extJobId;
+
+  /// ExtJobs only: the musician admin assigned directly. A self-serve win leaves this NULL (the
+  /// won ServiceOffer is the source of truth there), so both must be checked when deciding whether
+  /// a job is still open to offers — see resolveMusicianJobAvailability.
+  final String? assignedMusicianId;
 
   /// 'first_quote_only' → high-season priority (Højsæson-prioritet)
   final String? quoteSendMode;
@@ -145,6 +151,7 @@ class Job {
     customerNote: customerNote,
     isExtJob: isExtJob,
     extJobId: extJobId,
+    assignedMusicianId: assignedMusicianId,
     quoteSendMode: quoteSendMode,
     isPaused: isPaused,
     assignedDjName: assignedDjName,

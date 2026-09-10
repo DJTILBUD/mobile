@@ -259,6 +259,7 @@ class _NewSupportMessageSheetState
           child: DSInput(
             controller: _searchController,
             hint: 'Søg efter DJ eller musiker',
+            textCapitalization: TextCapitalization.none,
             iconLeft: LucideIcons.search,
             onChanged: _onSearchChanged,
             textInputAction: TextInputAction.search,

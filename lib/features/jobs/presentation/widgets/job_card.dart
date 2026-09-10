@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
+import 'package:dj_tilbud_app/core/utils/customer_name.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -379,6 +380,15 @@ class _MetaLine extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // First name only — full name + contact details stay on the won view.
+        if (customerFirstName(job.leadName) != null) ...[
+          _MetaItem(
+            icon: LucideIcons.user,
+            label: 'Kunde: ${customerFirstName(job.leadName)}',
+            colors: c,
+          ),
+          const SizedBox(height: 3),
+        ],
         _MetaItem(icon: LucideIcons.mapPin, label: locationLabel, colors: c),
         const SizedBox(height: 3),
         if (isMusicianView) ...[

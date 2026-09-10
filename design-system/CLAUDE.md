@@ -55,6 +55,24 @@ final c = DSTheme.of(context);
 | `ds_navigation_bar.dart` | Bottom navigation bar |
 | `ds_toast.dart` | Toast/snackbar notifications |
 
+### `DSInput` auto-capitalises by default
+
+Flutter's `TextField`/`TextFormField` default to `TextCapitalization.none`, so every field in the app
+used to force the musician to hit shift manually — no capital at the start of a sentence and none
+after a `.` (a real user complaint). **`DSInput` now derives `textCapitalization` itself** and every
+field gets it for free:
+
+- `TextCapitalization.sentences` — the default for ordinary text.
+- `TextCapitalization.none` — auto-selected when `obscureText` is true, or when `keyboardType` is
+  email / url / phone / number / datetime / visiblePassword (matched by `TextInputType.index`, so
+  `numberWithOptions(...)` variants are covered too). This is why a URL field should set
+  `keyboardType: TextInputType.url` rather than opting out by hand.
+- Pass `textCapitalization:` explicitly to override — `words` for name fields (`Fulde navn`,
+  `DJ / firma navn`), `none` for search boxes.
+
+**A raw `TextField` gets none of this** — the few that exist outside the DS (agent chat input, the
+mix-title dialog) set `textCapitalization` themselves. One more reason to use `DSInput`.
+
 ## Playbook (showcase screen)
 
 `lib/core/design_system/showcase_screen.dart` renders every component in both light and dark mode with all variants. **Before building a new UI element, check the showcase first** — if a DS component covers the use case, use it. If you build something new that should become reusable, add it to the design system and showcase.

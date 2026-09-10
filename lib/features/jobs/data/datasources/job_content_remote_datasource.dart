@@ -366,7 +366,18 @@ class JobContentRemoteDatasource {
     required String baseName,
   }) async {
     try {
-      final bytes = await VideoThumbnail.thumbnailData(
+      // ⚠️ Grab a frame ~1s in, NOT frame 0. `timeMs` defaults to 0, and the first frame of a
+      // phone clip is very often black (fade-in, autoexposure still settling), which is exactly
+      // how a profile ends up showing a pure black tile with a play badge. Falls back to frame 0
+      // for a clip too short to seek into, so a poster is still better than none.
+      var bytes = await VideoThumbnail.thumbnailData(
+        video: videoPath,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 720,
+        quality: 75,
+        timeMs: 1000,
+      );
+      bytes ??= await VideoThumbnail.thumbnailData(
         video: videoPath,
         imageFormat: ImageFormat.JPEG,
         maxWidth: 720,

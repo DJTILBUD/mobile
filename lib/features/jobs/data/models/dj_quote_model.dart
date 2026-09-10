@@ -16,6 +16,7 @@ class DjQuoteModel {
     this.djReadyConfirmedAt,
     this.extraHours,
     this.extraHoursPricePerHour,
+    this.extraHoursDeclinedAt,
     this.djNotes,
     this.djPayoutOverride,
   });
@@ -33,6 +34,11 @@ class DjQuoteModel {
   final DateTime? djReadyConfirmedAt;
   final double? extraHours;
   final num? extraHoursPricePerHour;
+
+  /// When the performer answered "Jeg spillede ikke ekstra timer". Non-null
+  /// hides the extra-hours card and suppresses the extra_hours_reminder push
+  /// (see `setExtraHoursDeclined` in the web app). Null = unanswered.
+  final DateTime? extraHoursDeclinedAt;
   final String? djNotes;
   final int? djPayoutOverride;
 
@@ -59,6 +65,10 @@ class DjQuoteModel {
           : null,
       extraHours: (json['extra_hours'] as num?)?.toDouble(),
       extraHoursPricePerHour: (json['extra_hours_price_per_hour'] as num?)?.toDouble(),
+      extraHoursDeclinedAt:
+          json['extra_hours_declined_at'] != null
+              ? DateTime.parse(json['extra_hours_declined_at'] as String)
+              : null,
       djNotes: json['dj_notes'] as String?,
       djPayoutOverride: (json['dj_payout_override'] as num?)?.toInt(),
     );
@@ -79,6 +89,7 @@ class DjQuoteModel {
       djReadyConfirmedAt: djReadyConfirmedAt,
       extraHours: extraHours,
       extraHoursPricePerHour: extraHoursPricePerHour,
+      extraHoursDeclinedAt: extraHoursDeclinedAt,
       djNotes: djNotes,
       djPayoutOverride: djPayoutOverride,
     );

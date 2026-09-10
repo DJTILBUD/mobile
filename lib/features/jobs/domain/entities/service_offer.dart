@@ -16,6 +16,7 @@ class ServiceOffer {
     this.customerContacted = false,
     this.musicianReadyConfirmedAt,
     this.extraHours,
+    this.extraHoursDeclinedAt,
     this.musicianNotes,
     this.musicianFullName,
     this.musicianPhone,
@@ -23,6 +24,7 @@ class ServiceOffer {
     this.customerContactPlannedFor,
     this.specialRequestExtraFeeDkk = 0,
     this.specialRequestExtraFeeConfirmed = false,
+    this.specialRequestExtraFeeReason,
   });
 
   final int id;
@@ -39,6 +41,11 @@ class ServiceOffer {
   final bool customerContacted;
   final DateTime? musicianReadyConfirmedAt;
   final double? extraHours;
+
+  /// When the performer answered "Jeg spillede ikke ekstra timer". Non-null
+  /// hides the extra-hours card and suppresses the extra_hours_reminder push
+  /// (see `setExtraHoursDeclined` in the web app). Null = unanswered.
+  final DateTime? extraHoursDeclinedAt;
   final String? musicianNotes;
   // Populated when fetched from the DJ's perspective (fetchServiceOffersForJob)
   final String? musicianFullName;
@@ -47,6 +54,10 @@ class ServiceOffer {
   final DateTime? customerContactPlannedFor;
   final int specialRequestExtraFeeDkk;
   final bool specialRequestExtraFeeConfirmed;
+
+  /// Why the musician asked for the fee. Required on new requests (the web route
+  /// rejects a blank one); null only on rows predating migration 20260810000002.
+  final String? specialRequestExtraFeeReason;
 
   bool get isExtJob => extJobId != null;
 }

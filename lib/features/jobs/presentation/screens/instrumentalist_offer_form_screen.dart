@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
+import 'package:dj_tilbud_app/core/utils/customer_name.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/core/utils/musician_price.dart';
@@ -14,7 +15,9 @@ import 'package:dj_tilbud_app/features/agent/presentation/widgets/agent_ai_butto
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/musician_job_availability.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/sax_type_info.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/standard_message_picker_button.dart';
 import 'package:dj_tilbud_app/features/profile/domain/self_billing_complete.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
@@ -23,6 +26,8 @@ import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/shared/widgets/copy_hint_row.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
+import 'package:dj_tilbud_app/core/utils/birthday_person_age.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/offer_form_validation.dart';
 
 class InstrumentalistOfferFormScreen extends ConsumerStatefulWidget {
   const InstrumentalistOfferFormScreen({
@@ -146,8 +151,22 @@ class _InstrumentalistOfferFormScreenState
       msSinceFormOpen: _msSinceOpen,
     );
 
-    if (!_formKey.currentState!.validate()) {
+    // ⚠️ Validate the VALUE, not just the Form — this body is a lazy `ListView`,
+    // so a field scrolled out of the viewport unregisters itself and
+    // `validate()` silently skips it. Same trap as the DJ quote form; see
+    // offer_form_validation.dart.
+    final inputError = validateMusicianOfferInput(
+      salesPitch: _salesPitchController.text,
+    );
+    // Still run the Form so a mounted field paints its own inline error.
+    _formKey.currentState!.validate();
+    if (inputError != null) {
       _logSubmitFailed(OfferSubmitFailure.invalidInput);
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: inputError,
+      );
       return;
     }
 
@@ -155,30 +174,30 @@ class _InstrumentalistOfferFormScreenState
     final customerPrice = calculateCustomerMusicianPrice(
       job.requestedMusicianHours,
       job.createdAt,
+      job.date,
     );
     final musicianPayout = calculateMusicianOfferPrice(
       job.requestedMusicianHours,
       job.createdAt,
+      job.date,
     );
     // Self-billing constraint (client-side): a musician must complete their billing info
     // (business type, CVR/CPR and billing email) before they can send an offer. Mirrors the
     // web client gate; nudges to the payment screen instead of submitting.
     final paymentInfo = await ref.read(musicianPaymentInfoProvider.future);
     if (!mounted) return;
-    final billingComplete = isSelfBillingComplete(
-      SelfBillingInfo(
-        businessType: paymentInfo?.businessType,
-        cpr: paymentInfo?.cpr,
-        cvr: paymentInfo?.cvr,
-        billingEmail: paymentInfo?.billingEmail,
-      ),
+    // Payment-type aware, same function the web Redirecter enforces
+    // (isPaymentInfoComplete): B-income needs the DAC7 info, Invoice needs a
+    // registered business with a CVR, a billing email and a bank account.
+    final billingComplete = isPaymentInfoComplete(
+      paymentInfo?.toReadinessInfo(),
     );
     if (!billingComplete) {
       _logSubmitFailed(OfferSubmitFailure.billingIncomplete);
       DSToast.show(
         context,
         variant: DSToastVariant.error,
-        title: 'Udfyld dine faktureringsoplysninger, før du kan sende tilbud.',
+        title: 'Udfyld dine betalingsoplysninger, før du kan sende tilbud.',
       );
       context.pushNamed(AppRoutes.payment, extra: MusicianRole.instrumentalist);
       return;
@@ -368,6 +387,17 @@ class _InstrumentalistOfferFormScreenState
     );
     final hasConflict = conflictAsync.valueOrNull == true;
     final hasActiveOffer = job.hasActiveOffer;
+
+    // Is the job still open to offers at all? The feed excludes everything that isn't, but this
+    // screen is reachable by PUSH DEEP-LINK, where a `new_ext_job` notification stays tappable long
+    // after another sax won it or it moved past accepting offers. Without this the musician saw a
+    // normal, fully enabled form and only found out when the server rejected the insert.
+    // Defaults to `biddable` while loading / on error — the server rejection is the real gate.
+    final availability =
+        ref.watch(musicianJobAvailabilityProvider(job)).valueOrNull ??
+        MusicianJobAvailability.biddable;
+    final unavailableMessage = musicianJobAvailabilityMessage(availability);
+    final isUnavailable = unavailableMessage != null;
     // Other sent/won offers the sax already holds on this date (drives the multi-offer notice).
     final sameDateOffers = _sameDateOffers(
       ref.watch(serviceOffersProvider).valueOrNull ?? const <ServiceOffer>[],
@@ -375,10 +405,12 @@ class _InstrumentalistOfferFormScreenState
     final musicianPayout = calculateMusicianOfferPrice(
       job.requestedMusicianHours,
       job.createdAt,
+      job.date,
     );
     final customerPrice = calculateCustomerMusicianPrice(
       job.requestedMusicianHours,
       job.createdAt,
+      job.date,
     );
     String fmt(int n) =>
         NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
@@ -414,8 +446,56 @@ class _InstrumentalistOfferFormScreenState
           child: ListView(
             padding: const EdgeInsets.all(DSSpacing.s4),
             children: [
-              // Taken by another musician
-              if (hasActiveOffer) ...[
+              // Hard block: the job no longer accepts an offer from this musician.
+              if (isUnavailable) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(DSSpacing.s4),
+                  decoration: BoxDecoration(
+                    color: _c.state.danger.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(DSRadius.md),
+                    border: Border.all(
+                      color: _c.state.danger.withValues(alpha: 0.55),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.ban,
+                            size: 16,
+                            color: _c.state.danger,
+                          ),
+                          const SizedBox(width: DSSpacing.s2),
+                          Expanded(
+                            child: Text(
+                              'Jobbet er ikke længere ledigt',
+                              style: DSTextStyle.headingSm.copyWith(
+                                color: _c.text.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: DSSpacing.s2),
+                      Text(
+                        unavailableMessage,
+                        style: DSTextStyle.bodyMd.copyWith(
+                          color: _c.text.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: DSSpacing.s4),
+              ],
+
+              // Taken by another musician (soft notice: someone else has bid, but the slot is
+              // still winnable). Suppressed when the hard block above already applies.
+              if (!isUnavailable && hasActiveOffer) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(DSSpacing.s4),
@@ -460,7 +540,7 @@ class _InstrumentalistOfferFormScreenState
               ],
 
               // Date conflict warning
-              if (!hasActiveOffer && hasConflict) ...[
+              if (!isUnavailable && !hasActiveOffer && hasConflict) ...[
                 Container(
                   padding: const EdgeInsets.all(DSSpacing.s3),
                   decoration: BoxDecoration(
@@ -512,7 +592,10 @@ class _InstrumentalistOfferFormScreenState
                       children: [
                         Expanded(
                           child: Text(
-                            eventTypeLabel(job.eventType),
+                            // Birthday events carry the celebrant's age; a DJ/sax needs it to know what kind of
+                            // party this is. Mirrors web, which appends it to the job heading.
+                            '${eventTypeLabel(job.eventType)}'
+                            '${formatBirthdayPersonAge(job.birthdayPersonAge)}',
                             style: DSTextStyle.headingSm.copyWith(
                               fontWeight: FontWeight.w700,
                               color: _c.text.primary,
@@ -527,6 +610,14 @@ class _InstrumentalistOfferFormScreenState
                       ],
                     ),
                     const SizedBox(height: DSSpacing.s2),
+                    // First name only — full name + contact details stay in the won view.
+                    if (customerFirstName(job.leadName) != null) ...[
+                      _InfoRow(
+                        LucideIcons.user,
+                        'Kunde: ${customerFirstName(job.leadName)}',
+                      ),
+                      const SizedBox(height: DSSpacing.s1),
+                    ],
                     _InfoRow(LucideIcons.calendar, dateStr),
                     const SizedBox(height: DSSpacing.s1),
                     // Mirrors the open job card (job_card.dart, musician view).
@@ -566,6 +657,17 @@ class _InstrumentalistOfferFormScreenState
                         LucideIcons.timer,
                         '${job.musicianHoursDisplay} timers musik ønsket',
                       ),
+                    ],
+                    // Spiltype — visible on the feed card, so it must be here
+                    // too. Mirrors web `instrumentalist/jobs/[job_id]` JobInfo.
+                    if (job.saxType != null && job.saxType!.isNotEmpty) ...[
+                      const SizedBox(height: DSSpacing.s1),
+                      _InfoRow(
+                        LucideIcons.music,
+                        'Spiltype: ${saxTypeLabel(job.saxType!)}',
+                      ),
+                      const SizedBox(height: DSSpacing.s2),
+                      SaxTypeDescription(saxType: job.saxType!),
                     ],
                     if (job.leadRequest != null &&
                         job.leadRequest!.isNotEmpty) ...[
@@ -718,7 +820,11 @@ class _InstrumentalistOfferFormScreenState
                   hint:
                       'Fortæl kunden om din erfaring, hvorfor du er den rette til jobbet...',
                   controller: _salesPitchController,
-                  maxLines: 5,
+                  // Grows with the text instead of scrolling inside a 5-line box.
+                  // 15 lines covers the 450-char cap, so it effectively never scrolls.
+                  // Same numbers as the DJ salgstale field in dj_quote_form_screen.dart.
+                  minLines: 8,
+                  maxLines: 15,
                   maxLength: 450,
                   showCounter: true,
                   textInputAction: TextInputAction.newline,
@@ -743,7 +849,7 @@ class _InstrumentalistOfferFormScreenState
                 const SizedBox(height: DSSpacing.s6),
               ],
 
-              if (!hasActiveOffer && !hasConflict)
+              if (!isUnavailable && !hasActiveOffer && !hasConflict)
                 DSButton(
                   label: 'Send tilbud',
                   variant: DSButtonVariant.primary,

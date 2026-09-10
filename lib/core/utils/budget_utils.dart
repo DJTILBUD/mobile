@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/utils/musician_price.dart';
+import 'package:dj_tilbud_app/core/utils/sax_high_season.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 
 // Fee brackets by job creation date: 20% before 2025-10-15, 25% until
@@ -33,6 +34,33 @@ bool _isBTierDeductionActive(
   return ageMs < _bTierDeductionWindowMs;
 }
 
+/// What the saxophonist costs the customer, FOR THE PURPOSE OF THE DJ-FACING BUDGET.
+///
+/// Mirrors `saxCostForDjBudget` in web-app/src/helpers/adjustBudgetForDjView.ts. Two deliberate
+/// departures from [calculateCustomerMusicianPrice], both long-standing behaviour that predates
+/// season pricing and both pinned by test/core/utils/budget_utils_test.dart:
+///
+/// 1. **The pre-2026-07-06 legacy table is never used here.** The customer price helper drops to
+///    3900/4200/5000 for an old job, but this deduction has always applied the current table to
+///    every job regardless of age. A date branch here made mobile show a HIGHER budget than the web
+///    for jobs created before 2026-07-06 — the exact drift that test file exists to catch.
+/// 2. **Hours are capped at the 1.5 tier.** The old code matched `>= 1.5` and deducted a flat 5190,
+///    so a 2-hour sax deducts the 1.5-hour price.
+///
+/// The SEASON gate, by contrast, DOES apply: a high-season sax genuinely costs the customer
+/// ~1.000-1.300 kr. more, and that money was never the DJ's to bid for.
+int _saxCostForDjBudget(
+  double requestedMusicianHours,
+  DateTime? jobCreatedAt,
+  DateTime? eventDate,
+) {
+  final cappedHours =
+      requestedMusicianHours > 1.5 ? 1.5 : requestedMusicianHours;
+  return isSaxSeasonPricingActive(jobCreatedAt, eventDate)
+      ? calculateCustomerMusicianPrice(cappedHours, jobCreatedAt, eventDate)
+      : calculateCustomerMusicianPrice(cappedHours);
+}
+
 /// Mirrors `adjustBudgetForDjView` from the web app.
 /// Returns null when [budget] is null or zero.
 double? adjustBudgetForDjView({
@@ -42,25 +70,23 @@ double? adjustBudgetForDjView({
   String? djTier,
   double? maxBudget,
   DateTime? jobCreatedAt,
+  DateTime? eventDate,
 }) {
   if (budget == null || budget == 0) return null;
 
   var adjusted = budget;
 
   if (requestedSaxophonist && requestedMusicianHours != null && budget > 7000) {
-    // Sax cost deducted from the DJ-facing budget. Flat values, NOT keyed on
-    // created_at: the web-app's adjustBudgetForDjView applies these to every job
-    // regardless of age (its "fee increase" commit bumped 3900/4200/5000 to
-    // 4090/4350/5190 outright and added no date branch). A date branch here made
-    // mobile show a higher budget than the web for jobs created before
-    // 2026-07-06. Keep these three numbers byte-identical to the web helper.
-    if (requestedMusicianHours == 0.5) {
-      adjusted -= 4090;
-    } else if (requestedMusicianHours == 1) {
-      adjusted -= 4350;
-    } else if (requestedMusicianHours >= 1.5) {
-      adjusted -= 5190;
-    }
+    // Sax cost deducted from the DJ-facing budget. Sourced from calculateCustomerMusicianPrice,
+    // never from literals here — this used to hardcode 4090/4350/5190 (copies of the standard
+    // table), which silently under-deducted once high-season sax pricing existed and showed DJs
+    // ~1.000-1.300 kr. more than was actually available to them.
+    adjusted -=
+        _saxCostForDjBudget(
+          requestedMusicianHours,
+          jobCreatedAt,
+          eventDate,
+        ).toDouble();
   }
 
   if (adjusted > 7500) adjusted -= 500;
@@ -93,6 +119,7 @@ String? djBudgetLabelFromParts({
   bool requestedSaxophonist = false,
   double? requestedMusicianHours,
   DateTime? jobCreatedAt,
+  DateTime? eventDate,
   bool isExtJob = false,
 }) {
   final noBudget = budgetStart == null && budgetEnd == null;
@@ -109,6 +136,7 @@ String? djBudgetLabelFromParts({
     djTier: djTier,
     maxBudget: budgetEnd,
     jobCreatedAt: jobCreatedAt,
+    eventDate: eventDate,
   );
   if (adjEnd == null) return null;
 
@@ -120,6 +148,7 @@ String? djBudgetLabelFromParts({
       djTier: djTier,
       maxBudget: budgetEnd,
       jobCreatedAt: jobCreatedAt,
+      eventDate: eventDate,
     );
     if (adjStart != null) {
       final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
@@ -140,6 +169,7 @@ String? djAdjustedBudgetLabel(Job job, String? djTier) =>
       requestedSaxophonist: job.requestedSaxophonist,
       requestedMusicianHours: job.requestedMusicianHours,
       jobCreatedAt: job.createdAt,
+      eventDate: job.date,
       isExtJob: job.isExtJob,
     );
 
@@ -150,6 +180,7 @@ String musicianBudgetLabel(Job job) {
   final price = calculateMusicianOfferPrice(
     job.requestedMusicianHours,
     job.createdAt,
+    job.date,
   );
   return '${_fmtKr(price)} kr.';
 }

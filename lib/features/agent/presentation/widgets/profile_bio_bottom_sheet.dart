@@ -26,8 +26,7 @@ class ProfileBioBottomSheet extends ConsumerStatefulWidget {
       _ProfileBioBottomSheetState();
 }
 
-class _ProfileBioBottomSheetState
-    extends ConsumerState<ProfileBioBottomSheet> {
+class _ProfileBioBottomSheetState extends ConsumerState<ProfileBioBottomSheet> {
   _Phase _phase = _Phase.questions;
 
   final _strengthsCtrl = TextEditingController();
@@ -43,8 +42,7 @@ class _ProfileBioBottomSheetState
   }
 
   void _generate() {
-    if (_strengthsCtrl.text.trim().isEmpty &&
-        _eventsCtrl.text.trim().isEmpty) {
+    if (_strengthsCtrl.text.trim().isEmpty && _eventsCtrl.text.trim().isEmpty) {
       return;
     }
 
@@ -52,7 +50,9 @@ class _ProfileBioBottomSheetState
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(agentSessionProvider.notifier).generateProfileBio(
+      ref
+          .read(agentSessionProvider.notifier)
+          .generateProfileBio(
             userContext: widget.userContext,
             userRole: widget.userRole,
             strengths: _strengthsCtrl.text.trim(),
@@ -68,74 +68,100 @@ class _ProfileBioBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
+    // A modal bottom sheet is NOT resized by the keyboard, so lift the WHOLE sheet. Same shape as
+    // agent_bottom_sheet.dart / edit_quote_bottom_sheet.dart.
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.65,
       minChildSize: 0.4,
       maxChildSize: 0.92,
       expand: false,
       builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: _c.bg.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(DSRadius.lg),
-            ),
-          ),
-          child: Column(
-            children: [
-              // Drag handle
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: DSSpacing.s3),
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: _c.border.subtle,
-                    borderRadius: BorderRadius.circular(DSRadius.pill),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final inset = keyboardInset.clamp(
+              0.0,
+              (constraints.maxHeight - 260).clamp(0.0, double.infinity),
+            );
+            return Padding(
+              padding: EdgeInsets.only(bottom: inset),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _c.bg.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(DSRadius.lg),
                   ),
                 ),
-              ),
-
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
-                child: Row(
+                child: Column(
                   children: [
-                    Icon(LucideIcons.sparkles,
-                        size: 18, color: _c.brand.primaryActive),
-                    const SizedBox(width: DSSpacing.s2),
-                    Text(
-                      'Profilbeskrivelse',
-                      style: DSTextStyle.headingSm.copyWith(fontWeight: FontWeight.w700, color: _c.text.primary),
+                    // Drag handle
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: DSSpacing.s3,
+                      ),
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: _c.border.subtle,
+                          borderRadius: BorderRadius.circular(DSRadius.pill),
+                        ),
+                      ),
+                    ),
+
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DSSpacing.s4,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.sparkles,
+                            size: 18,
+                            color: _c.brand.primaryActive,
+                          ),
+                          const SizedBox(width: DSSpacing.s2),
+                          Text(
+                            'Profilbeskrivelse',
+                            style: DSTextStyle.headingSm.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: _c.text.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    Divider(color: _c.border.subtle, height: 1),
+
+                    // Content — switches between phases
+                    Expanded(
+                      child:
+                          _phase == _Phase.questions
+                              ? _QuestionsPhase(
+                                isDj: widget.isDj,
+                                strengthsCtrl: _strengthsCtrl,
+                                eventsCtrl: _eventsCtrl,
+                                onGenerate: _generate,
+                                scrollController: scrollController,
+                              )
+                              : _GeneratingPhase(
+                                scrollController: scrollController,
+                                onAccepted: (draft) {
+                                  widget.onDraftAccepted(draft);
+                                  Navigator.of(context).pop();
+                                },
+                                onRetry: _retry,
+                              ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: DSSpacing.s1),
-              Divider(color: _c.border.subtle, height: 1),
-
-              // Content — switches between phases
-              Expanded(
-                child: _phase == _Phase.questions
-                    ? _QuestionsPhase(
-                        isDj: widget.isDj,
-                        strengthsCtrl: _strengthsCtrl,
-                        eventsCtrl: _eventsCtrl,
-                        onGenerate: _generate,
-                        scrollController: scrollController,
-                      )
-                    : _GeneratingPhase(
-                        scrollController: scrollController,
-                        onAccepted: (draft) {
-                          widget.onDraftAccepted(draft);
-                          Navigator.of(context).pop();
-                        },
-                        onRetry: _retry,
-                      ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -161,13 +187,18 @@ class _QuestionsPhase extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final role = isDj ? 'DJ' : 'musiker';
     return ListView(
       controller: scrollController,
-      // Add the keyboard inset so the inputs scroll clear of it.
-      padding: EdgeInsets.fromLTRB(DSSpacing.s4, DSSpacing.s4, DSSpacing.s4,
-          DSSpacing.s4 + MediaQuery.of(context).viewInsets.bottom),
+      // ⚠️ NO viewInsets here — padding inside the scroll view only adds empty scroll content
+      // while the viewport still extends under the keyboard. The sheet itself is lifted instead.
+      padding: const EdgeInsets.fromLTRB(
+        DSSpacing.s4,
+        DSSpacing.s4,
+        DSSpacing.s4,
+        DSSpacing.s4,
+      ),
       children: [
         Text(
           'To hurtige spørgsmål, så teksten lyder som dig.',
@@ -177,13 +208,17 @@ class _QuestionsPhase extends StatelessWidget {
 
         Text(
           'Hvad er dine stærkeste sider som $role?',
-          style: DSTextStyle.labelLg.copyWith(fontWeight: FontWeight.w600, color: _c.text.primary),
+          style: DSTextStyle.labelLg.copyWith(
+            fontWeight: FontWeight.w600,
+            color: _c.text.primary,
+          ),
         ),
         const SizedBox(height: DSSpacing.s2),
         DSInput(
-          hint: isDj
-              ? 'F.eks. "Jeg er god til at læse stemningen og holde folk på gulvet"'
-              : 'F.eks. "Jeg er god til at improvisere og tilpasse mig musikken"',
+          hint:
+              isDj
+                  ? 'F.eks. "Jeg er god til at læse stemningen og holde folk på gulvet"'
+                  : 'F.eks. "Jeg er god til at improvisere og tilpasse mig musikken"',
           controller: strengthsCtrl,
           maxLines: 3,
           textInputAction: TextInputAction.newline,
@@ -192,7 +227,10 @@ class _QuestionsPhase extends StatelessWidget {
 
         Text(
           'Hvad slags events elsker du mest at spille til?',
-          style: DSTextStyle.labelLg.copyWith(fontWeight: FontWeight.w600, color: _c.text.primary),
+          style: DSTextStyle.labelLg.copyWith(
+            fontWeight: FontWeight.w600,
+            color: _c.text.primary,
+          ),
         ),
         const SizedBox(height: DSSpacing.s2),
         DSInput(
@@ -206,7 +244,8 @@ class _QuestionsPhase extends StatelessWidget {
         ListenableBuilder(
           listenable: Listenable.merge([strengthsCtrl, eventsCtrl]),
           builder: (context, _) {
-            final hasInput = strengthsCtrl.text.trim().isNotEmpty ||
+            final hasInput =
+                strengthsCtrl.text.trim().isNotEmpty ||
                 eventsCtrl.text.trim().isNotEmpty;
             return DSButton(
               label: 'Generer udkast',
@@ -220,7 +259,10 @@ class _QuestionsPhase extends StatelessWidget {
         Center(
           child: Text(
             'AI kan lave fejl — læs udkastet igennem før du bruger det.',
-            style: DSTextStyle.bodySm.copyWith(fontSize: 11, color: _c.text.muted),
+            style: DSTextStyle.bodySm.copyWith(
+              fontSize: 11,
+              color: _c.text.muted,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -245,7 +287,7 @@ class _GeneratingPhase extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final agentState = ref.watch(agentSessionProvider);
 
     return ListView(
@@ -264,7 +306,11 @@ class _GeneratingPhase extends ConsumerWidget {
               agentState is AgentStreaming
                   ? agentState.text
                   : (agentState as AgentDone).text,
-              style: DSTextStyle.labelMd.copyWith(fontSize: 15, color: _c.text.primary, height: 1.6),
+              style: DSTextStyle.labelMd.copyWith(
+                fontSize: 15,
+                color: _c.text.primary,
+                height: 1.6,
+              ),
             ),
           ),
           if (agentState is AgentStreaming)
@@ -310,7 +356,9 @@ class _GeneratingPhase extends ConsumerWidget {
             decoration: BoxDecoration(
               color: _c.state.danger.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(DSRadius.md),
-              border: Border.all(color: _c.state.danger.withValues(alpha: 0.55)),
+              border: Border.all(
+                color: _c.state.danger.withValues(alpha: 0.55),
+              ),
             ),
             child: Text(
               agentState.message,

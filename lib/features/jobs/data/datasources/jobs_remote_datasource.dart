@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
 import 'package:dj_tilbud_app/core/config/env_config.dart';
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 
 class JobsRemoteDatasource {
   JobsRemoteDatasource(this._client);
@@ -36,7 +37,7 @@ class JobsRemoteDatasource {
       body: body != null ? jsonEncode(body) : null,
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw DatabaseException(_extractMessage(response.body));
+      throw _errorFor(response.body);
     }
   }
 
@@ -70,7 +71,7 @@ class JobsRemoteDatasource {
       body: body != null ? jsonEncode(body) : null,
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw DatabaseException(_extractMessage(response.body));
+      throw _errorFor(response.body);
     }
   }
 
@@ -84,7 +85,7 @@ class JobsRemoteDatasource {
       },
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw DatabaseException(_extractMessage(response.body));
+      throw _errorFor(response.body);
     }
   }
 
@@ -95,7 +96,7 @@ class JobsRemoteDatasource {
       headers: {'Authorization': 'Bearer $_accessToken'},
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw DatabaseException(_extractMessage(response.body));
+      throw _errorFor(response.body);
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -130,7 +131,10 @@ class JobsRemoteDatasource {
     if (code == 'billing_info_incomplete') {
       return BillingInfoIncompleteException(message);
     }
-    return DatabaseException(message);
+    // Carry `code` through: the job-process routes reject with stable codes
+    // (`customer_not_contacted`, `musician_not_contacted`) next to the Danish
+    // message, and matching a code beats sniffing user-facing copy.
+    return DatabaseException(message, code: code);
   }
 
   /// Fetches the jobs a DJ should see in "Nye jobs".
@@ -157,11 +161,26 @@ class JobsRemoteDatasource {
   }
 
   /// Fetches all quotes by this DJ, with joined Job data.
+  ///
+  /// **Archived jobs are excluded.** An archived `Jobs` row is CRM-deleted —
+  /// typically the internal duplicate of an `ExtJobs` row that links back to it
+  /// via `ExtJobs.internal_job_id` (admin shows it as "Linked Archived Job").
+  /// Archiving does NOT change the job's status, so no status filter excludes
+  /// it. Without this the DJ sees the SAME booking twice — once here and once as
+  /// the assigned ext job — and, worse, `statEntriesProvider` counts BOTH toward
+  /// their earnings, so one job reads as two payouts. Reported by a DJ who saw
+  /// job #864 and E132 (the same booking) side by side.
+  ///
+  /// `Jobs!inner` makes this a real inner join so the `job.archived` filter
+  /// applies; `Quotes.job_id` is NOT NULL, so no legitimate row can be dropped.
+  /// This feeds the won/sent/lost tabs, the calendar, the nav badges, the stats
+  /// screen AND the date-collision guard — all of which should ignore a dead job.
   Future<List<Map<String, dynamic>>> fetchDjQuotes(String userId) async {
     return _client
         .from('Quotes')
-        .select('*, job:Jobs(*)')
+        .select('*, job:Jobs!inner(*)')
         .eq('dj_id', userId)
+        .eq('job.archived', false)
         .order('created_at', ascending: false);
   }
 
@@ -205,11 +224,92 @@ class JobsRemoteDatasource {
     return names;
   }
 
+  /// Venue photos for the DJ's assigned ext jobs, keyed by ext job id. The team
+  /// photographs a partner venue on a site visit (where to stand, where the
+  /// power is) and comments each photo in the admin tool; the rows live in
+  /// `RecurringCustomerPhotos`, which a DJ cannot read via RLS, so the same
+  /// DJ-scoped web endpoint as [fetchDjExtJobRecurringNames] attaches them per
+  /// job as `venue_photos`. A job with no photos is simply absent from the map.
+  Future<Map<int, List<VenuePhoto>>> fetchDjExtJobVenuePhotos(
+    String userId,
+  ) async {
+    final body = await _webApiGet('/api/internal-dj/ext-jobs?dj_id=$userId');
+    final jobs = (body['jobs'] as List<dynamic>?) ?? const [];
+    final photosByJob = <int, List<VenuePhoto>>{};
+    for (final entry in jobs) {
+      final row = entry as Map<String, dynamic>;
+      final id = row['id'] as int?;
+      final raw = row['venue_photos'];
+      if (id == null || raw is! List) continue;
+      final photos = raw
+          .whereType<Map<String, dynamic>>()
+          .map(VenuePhoto.fromJson)
+          .whereType<VenuePhoto>()
+          .toList();
+      if (photos.isNotEmpty) photosByJob[id] = photos;
+    }
+    return photosByJob;
+  }
+
   /// "Vil parret kontaktes af DJ'en inden festen?" (`JobMetadata.wants_ic`) for the DJ's assigned ext
   /// jobs, keyed by ext job id. wants_ic lives on JobMetadata, which DJ-role users cannot read via RLS,
   /// so it is resolved **server-side** by the same DJ-scoped endpoint that enriches `recurring_customer_name`
   /// (`/api/internal-dj/ext-jobs`). An absent id = "not collected" (not a partner booking), so the
   /// "Til festen" card omits the operational fields. Mirrors [fetchDjExtJobRecurringNames].
+  /// Every `ServiceOffers` row on one job, as the pairs
+  /// [resolveMusicianJobAvailability] needs.
+  ///
+  /// Exists for the PUSH DEEP-LINK path. The browse feed joins offers in bulk and injects the
+  /// synthetic `has_active_offer` key, but `NotificationsService.navigateTo` fetches a bare row by
+  /// id — so `has_active_offer` was absent, `JobModel.fromJson` defaulted it to `false`, and the
+  /// "taken by another musician" banner could never render on a deep-linked job.
+  ///
+  /// Returns an empty list on failure: the offer form falls back to "biddable", and the server's
+  /// rejection remains the authoritative gate. Blocking the form on a failed lookup would be worse.
+  Future<List<({String? musicianId, String? status})>> fetchOffersForJob({
+    int? jobId,
+    int? extJobId,
+  }) async {
+    assert(
+      (jobId == null) != (extJobId == null),
+      'pass exactly one of jobId / extJobId',
+    );
+    try {
+      final rows = await _client
+          .from('ServiceOffers')
+          .select('musician_id, status')
+          .eq(jobId != null ? 'job_id' : 'ext_job_id', jobId ?? extJobId!);
+      return rows
+          .map(
+            (o) => (
+              musicianId: o['musician_id'] as String?,
+              status: o['status'] as String?,
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Has this job's supply/matching wave opened for the current DJ?
+  ///
+  /// The feed already excludes wave-closed jobs server-side (`/api/dj/biddable-jobs` runs the
+  /// shared selector), so this is only needed on the quote form, which is reachable by PUSH
+  /// DEEP-LINK — notably an admin "Send påmindelse", whose audience is not wave-filtered.
+  ///
+  /// ⚠️ FAILS OPEN: any error reports `true`. This only drives an explanatory card; the real gate
+  /// is the 403 from `POST /api/jobs/{id}/quotes`. Blocking the form on a failed lookup would stop
+  /// legitimate bids on a marketplace where fill rate is the hard guardrail.
+  Future<bool> fetchJobWaveOpen(int jobId) async {
+    try {
+      final body = await _webApiGet('/api/dj/jobs/$jobId/wave-status');
+      return body['open'] as bool? ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
   Future<Map<int, bool?>> fetchDjExtJobWantsContact(String userId) async {
     final body = await _webApiGet('/api/internal-dj/ext-jobs?dj_id=$userId');
     final jobs = (body['jobs'] as List<dynamic>?) ?? const [];
@@ -446,14 +546,35 @@ class JobsRemoteDatasource {
   }
 
   /// Fetches all service offers by this musician (both regular and ext jobs).
+  ///
+  /// Offers on an **archived** internal job are dropped, for the same reason as
+  /// [fetchDjQuotes]: the archived `Jobs` row is a CRM-deleted duplicate whose
+  /// live twin is an `ExtJobs` row, and counting both double-counts the booking
+  /// (including in the earnings screen). Saxophonists are the *original* case of
+  /// this — the saxophone form writes an internal `Jobs` row AND a mirrored
+  /// `ExtJobs` row linked by `ExtJobs.internal_job_id`.
+  ///
+  /// Filtered in Dart, NOT with `Jobs!inner`: an ext-job offer has `job_id` null,
+  /// so an inner join on Jobs would silently drop every ext-job offer.
   Future<List<Map<String, dynamic>>> fetchServiceOffers(String userId) async {
-    return _client
+    final rows = await _client
         .from('ServiceOffers')
         .select(
           '*, job:Jobs!ServiceOffers_job_id_fkey(*), ext_job:ExtJobs!ServiceOffers_ext_job_id_fkey(*)',
         )
         .eq('musician_id', userId)
         .order('created_at', ascending: false);
+
+    return rows.where((row) {
+      // An ext-job offer has no internal job — nothing to check.
+      if (row['job_id'] == null) return true;
+      final job = row['job'] as Map<String, dynamic>?;
+      // `job == null` on an offer that HAS a job_id means the row was hidden by
+      // RLS (migration 20260810000000 blocks archived Jobs for non-admins), so
+      // treat "not visible" exactly like "archived" — never keep an offer whose
+      // job we cannot read, or the model gets a half-built entity.
+      return job != null && job['archived'] != true;
+    }).toList();
   }
 
   /// Creates a DJ quote.
@@ -707,6 +828,75 @@ class JobsRemoteDatasource {
     await _webApiDelete('/api/ext-jobs/$extJobId/extra-hours');
   }
 
+  // ── "Jeg spillede ikke ekstra timer" ────────────────────────────────────────
+  //
+  // The performer answers the extra-hours question with a NO instead of leaving
+  // it open. Server-side (`_services/setExtraHoursDeclined`) it sets
+  // `extra_hours_declined_at` on the PAYEE row, which hides the card on both
+  // clients AND makes `notify-extra-hours-reminder` skip them for that job — the
+  // whole point, and something a local-only dismissal could never do.
+  //
+  // Routed through the web API rather than a direct update for the usual reason:
+  // the window check, the ownership check and the "you already logged hours"
+  // rejection live in the route, and RLS would silently no-op a direct write.
+  // Pass `declined: false` to undo.
+
+  /// DJ, internal job (Quotes).
+  Future<void> setQuoteExtraHoursDeclined(
+    int quoteId, {
+    required bool declined,
+  }) async {
+    await _webApiPut(
+      '/api/quotes/$quoteId/extra-hours/declined',
+      body: {'declined': declined},
+    );
+  }
+
+  /// Assigned DJ, external job (ExtJobs).
+  Future<void> setExtJobExtraHoursDeclined(
+    int extJobId, {
+    required bool declined,
+  }) async {
+    await _webApiPut(
+      '/api/ext-jobs/$extJobId/extra-hours/declined',
+      body: {'declined': declined},
+    );
+  }
+
+  /// Musician, either job type (ServiceOffers).
+  Future<void> setServiceOfferExtraHoursDeclined(
+    int offerId, {
+    required bool declined,
+  }) async {
+    await _webApiPut(
+      '/api/service-offer/$offerId/extra-hours/declined',
+      body: {'declined': declined},
+    );
+  }
+
+  /// Sets the agreed early-setup fee (and optional `HH:MM` start time) on an ext job.
+  ///
+  /// Routed through the web API for the same reason as extra hours: the route folds
+  /// the fee into `full_amount` and `honorar` using the job's creation-date payout
+  /// share, idempotently. A direct Supabase update would set the price without
+  /// touching the totals, so the DJ's honorar would not match the invoice.
+  /// The TIME is written into `ExtJobs.notes` server-side, not a column.
+  Future<void> setExtJobEarlySetup(
+    int extJobId, {
+    required num price,
+    String? time,
+  }) async {
+    await _webApiPatch(
+      '/api/ext-jobs/$extJobId/early-setup',
+      body: {'early_setup_price': price, 'early_setup_time': time},
+    );
+  }
+
+  /// Clears early setup from an ext job (restores base full_amount + honorar).
+  Future<void> deleteExtJobEarlySetup(int extJobId) async {
+    await _webApiDelete('/api/ext-jobs/$extJobId/early-setup');
+  }
+
   /// Saves private DJ notes on a quote.
   Future<void> saveDjNotes(int quoteId, String notes) async {
     final userId = _client.auth.currentUser!.id;
@@ -824,13 +1014,34 @@ class JobsRemoteDatasource {
 
   /// Fetches service offers for a given internal job (for DJ view).
   /// Joins Musicians so the DJ can see contact info for won offers.
+  ///
+  /// `customer_contacted` is part of the select on purpose: the DJ cannot close the
+  /// deal until every WINNING musician has contacted the customer (enforced by
+  /// `PUT /api/jobs/[job_id]/ready-for-billing`), so the screen needs the flag to
+  /// gate the button instead of letting the DJ tap into a server rejection.
   Future<List<Map<String, dynamic>>> fetchServiceOffersForJob(int jobId) async {
     return _client
         .from('ServiceOffers')
         .select(
-          'id, musician_id, price_dkk, musician_payout_dkk, instrument, status, sales_pitch, created_at, musician:Musicians(full_name, phone, email)',
+          'id, musician_id, price_dkk, musician_payout_dkk, instrument, status, sales_pitch, created_at, customer_contacted, musician:Musicians(full_name, phone, email)',
         )
         .eq('job_id', jobId)
+        .inFilter('status', ['sent', 'won', 'lost'])
+        .order('created_at', ascending: false);
+  }
+
+  /// Same as [fetchServiceOffersForJob] but for an ext job — the assigned DJ needs the
+  /// winning musicians' `customer_contacted` for the identical ready-for-billing gate in
+  /// `PUT /api/ext-jobs/[ext_job_id]/ready-for-billing`.
+  Future<List<Map<String, dynamic>>> fetchServiceOffersForExtJob(
+    int extJobId,
+  ) async {
+    return _client
+        .from('ServiceOffers')
+        .select(
+          'id, musician_id, price_dkk, musician_payout_dkk, instrument, status, sales_pitch, created_at, customer_contacted, musician:Musicians(full_name, phone, email)',
+        )
+        .eq('ext_job_id', extJobId)
         .inFilter('status', ['sent', 'won', 'lost'])
         .order('created_at', ascending: false);
   }
@@ -921,10 +1132,17 @@ class JobsRemoteDatasource {
   /// Routed through the web API (NOT a direct Supabase update) so the route's
   /// guards run: offer must be `sent`/`won`, fee must be 1–50000, and an
   /// already-confirmed fee cannot be changed.
-  Future<void> setSpecialRequestFee(int offerId, {required int feeDkk}) async {
+  /// [reason] is REQUIRED by the route (min 10 chars after trimming) — admin
+  /// approves these by hand and otherwise has to chase the musician to find out
+  /// what the money covers.
+  Future<void> setSpecialRequestFee(
+    int offerId, {
+    required int feeDkk,
+    required String reason,
+  }) async {
     await _webApiPatch(
       '/api/service-offer/$offerId/special-request-fee',
-      body: {'fee_dkk': feeDkk},
+      body: {'fee_dkk': feeDkk, 'reason': reason},
     );
   }
 

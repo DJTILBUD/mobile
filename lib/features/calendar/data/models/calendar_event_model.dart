@@ -60,6 +60,8 @@ class CalendarEventModel {
         requestedMusicianHours:
             (job['requested_musician_hours'] as num?)?.toDouble(),
         jobCreatedAt: DateTime.tryParse(job['created_at'] as String? ?? ''),
+        // The EVENT date, which is what makes a booking high season (sax_high_season.dart).
+        eventDate: DateTime.tryParse(job['date'] as String? ?? ''),
       ),
       jobId: (job['id'] as num).toInt(),
     );

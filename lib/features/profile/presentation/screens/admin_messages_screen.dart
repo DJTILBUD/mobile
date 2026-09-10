@@ -128,19 +128,29 @@ class _MessageCard extends ConsumerStatefulWidget {
 class _MessageCardState extends ConsumerState<_MessageCard> {
   bool _expanded = false;
 
-  void _toggle() {
+  Future<void> _toggle() async {
     setState(() => _expanded = !_expanded);
-    if (!widget.message.isRead) {
-      final userId = supabase.auth.currentUser?.id ?? '';
-      ref
-          .read(markAdminMessageReadProvider.notifier)
-          .mark(
-            messageId: widget.message.id,
-            userId: userId,
-            isDj: widget.isDj,
-          );
+    if (widget.message.isRead) return;
+
+    final userId = supabase.auth.currentUser?.id ?? '';
+    // ⚠️ AWAIT before refreshing. `onRead()` invalidates adminMessagesProvider,
+    // and firing it alongside an un-awaited mark raced the UPDATE: the refetch
+    // could land first and return the message still unread, so the card flipped
+    // back to the unread style until the next refresh. The mark also used to be
+    // fire-and-forget, so a failed write was completely silent.
+    final marked = await ref
+        .read(markAdminMessageReadProvider.notifier)
+        .mark(messageId: widget.message.id, userId: userId, isDj: widget.isDj);
+    if (!mounted) return;
+    if (marked) {
       widget.onRead();
+      return;
     }
+    DSToast.show(
+      context,
+      variant: DSToastVariant.error,
+      title: 'Kunne ikke markere beskeden som læst.',
+    );
   }
 
   @override
