@@ -8,11 +8,8 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider
 import 'package:lucide_icons/lucide_icons.dart';
 
 class SongRequestsScreen extends ConsumerStatefulWidget {
-  const SongRequestsScreen({
-    super.key,
-    this.jobId,
-    this.extJobId,
-  }) : assert(jobId != null || extJobId != null, 'jobId or extJobId required');
+  const SongRequestsScreen({super.key, this.jobId, this.extJobId})
+    : assert(jobId != null || extJobId != null, 'jobId or extJobId required');
 
   final int? jobId;
   final int? extJobId;
@@ -51,9 +48,10 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final requestsAsync = _isExtJob
-        ? ref.watch(songRequestsForExtJobProvider(widget.extJobId!))
-        : ref.watch(songRequestsForJobProvider(widget.jobId!));
+    final requestsAsync =
+        _isExtJob
+            ? ref.watch(songRequestsForExtJobProvider(widget.extJobId!))
+            : ref.watch(songRequestsForJobProvider(widget.jobId!));
 
     return Scaffold(
       backgroundColor: _c.bg.canvas,
@@ -70,29 +68,35 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
         ],
       ),
       body: requestsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        error: (_, __) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(LucideIcons.alertCircle, size: 32, color: DSTheme.of(context).state.danger),
-              const SizedBox(height: DSSpacing.s3),
-              Text(
-                'Kunne ikke hente sangønsker',
-                style: DSTextStyle.bodyMd
-                    .copyWith(color: DSTheme.of(context).text.secondary),
+        loading:
+            () =>
+                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        error:
+            (_, __) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    LucideIcons.alertCircle,
+                    size: 32,
+                    color: DSTheme.of(context).state.danger,
+                  ),
+                  const SizedBox(height: DSSpacing.s3),
+                  Text(
+                    'Kunne ikke hente sangønsker',
+                    style: DSTextStyle.bodyMd.copyWith(
+                      color: DSTheme.of(context).text.secondary,
+                    ),
+                  ),
+                  const SizedBox(height: DSSpacing.s3),
+                  DSButton(
+                    label: 'Prøv igen',
+                    variant: DSButtonVariant.secondary,
+                    onTap: _invalidate,
+                  ),
+                ],
               ),
-              const SizedBox(height: DSSpacing.s3),
-              DSButton(
-                label: 'Prøv igen',
-                variant: DSButtonVariant.secondary,
-                onTap: _invalidate,
-              ),
-            ],
-          ),
-        ),
+            ),
         data: (requests) {
           if (requests.isEmpty) {
             return Center(
@@ -110,8 +114,10 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
                     'Gæsterne kan sende ønsker ved at scanne din QR-kode '
                     '(find den under Profil).',
                     textAlign: TextAlign.center,
-                    style: DSTextStyle.bodyMd
-                        .copyWith(color: _c.text.muted, height: 1.4),
+                    style: DSTextStyle.bodyMd.copyWith(
+                      color: _c.text.muted,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
@@ -121,10 +127,9 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
           return ListView.separated(
             padding: const EdgeInsets.all(DSSpacing.s4),
             itemCount: requests.length,
-            separatorBuilder: (_, __) => Divider(
-              height: DSSpacing.s4,
-              color: _c.border.subtle,
-            ),
+            separatorBuilder:
+                (_, __) =>
+                    Divider(height: DSSpacing.s4, color: _c.border.subtle),
             itemBuilder: (_, i) => _SongRequestTile(request: requests[i]),
           );
         },
@@ -140,8 +145,10 @@ class _SongRequestTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DSTheme.of(context);
-    final dateStr = DateFormat('d. MMM HH:mm', 'da_DK')
-        .format(request.createdAt.toLocal());
+    final dateStr = DateFormat(
+      'd. MMM HH:mm',
+      'da_DK',
+    ).format(request.createdAt.toLocal());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +178,11 @@ class _SongRequestTile extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Row(
               children: [
-                Icon(LucideIcons.music2, size: 13, color: c.brand.primaryActive),
+                Icon(
+                  LucideIcons.music2,
+                  size: 13,
+                  color: c.brand.primaryActive,
+                ),
                 const SizedBox(width: DSSpacing.s2),
                 Expanded(
                   child: Text(

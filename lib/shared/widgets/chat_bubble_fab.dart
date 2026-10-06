@@ -18,8 +18,10 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider
 /// Provide exactly one of [jobId] (internal job) or [extJobId] (ext job).
 class ChatBubbleFab extends ConsumerWidget {
   const ChatBubbleFab({super.key, this.jobId, this.extJobId})
-      : assert(jobId != null || extJobId != null,
-            'Provide either jobId or extJobId');
+    : assert(
+        jobId != null || extJobId != null,
+        'Provide either jobId or extJobId',
+      );
 
   final int? jobId;
   final int? extJobId;
@@ -29,16 +31,19 @@ class ChatBubbleFab extends ConsumerWidget {
     final c = DSTheme.of(context);
     final conversations = ref.watch(conversationsProvider).valueOrNull ?? [];
 
-    final matches = conversations.where((conv) =>
-        (jobId != null && conv.jobId == jobId) ||
-        (extJobId != null && conv.extJobId == extJobId));
+    final matches = conversations.where(
+      (conv) =>
+          (jobId != null && conv.jobId == jobId) ||
+          (extJobId != null && conv.extJobId == extJobId),
+    );
     if (matches.isEmpty) return const SizedBox.shrink();
     final conv = matches.first;
 
     final currentUserId = supabase.auth.currentUser?.id;
-    final currentUserImage = currentUserId == null
-        ? null
-        : ref.watch(userProfileImageProvider(currentUserId)).valueOrNull;
+    final currentUserImage =
+        currentUserId == null
+            ? null
+            : ref.watch(userProfileImageProvider(currentUserId)).valueOrNull;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -47,11 +52,16 @@ class ChatBubbleFab extends ConsumerWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(999),
-            onTap: () => context.pushNamed(AppRoutes.conversationDetail,
-                extra: conv),
+            onTap:
+                () => context.pushNamed(
+                  AppRoutes.conversationDetail,
+                  extra: conv,
+                ),
             child: Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: DSSpacing.s4, vertical: DSSpacing.s3),
+                horizontal: DSSpacing.s4,
+                vertical: DSSpacing.s3,
+              ),
               decoration: BoxDecoration(
                 color: c.bg.surface,
                 borderRadius: BorderRadius.circular(999),
@@ -88,8 +98,7 @@ class ChatBubbleFab extends ConsumerWidget {
             left: -4,
             child: Container(
               constraints: const BoxConstraints(minWidth: 20),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: c.state.danger,
                 borderRadius: BorderRadius.circular(999),
@@ -161,32 +170,36 @@ class _AvatarStack extends StatelessWidget {
       // Container's circle decoration + clipBehavior lets image corners poke
       // past the circle, so the avatars read as rounded squares.
       child: ClipOval(
-        child: imageUrl != null
-            ? CachedNetworkImage(
-                imageUrl: imageUrl,
-                fit: BoxFit.cover,
-                width: _size,
-                height: _size,
-                errorWidget: (_, __, ___) => _fallback(name),
-              )
-            : _fallback(name),
+        child:
+            imageUrl != null
+                ? CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  width: _size,
+                  height: _size,
+                  errorWidget: (_, __, ___) => _fallback(name),
+                )
+                : _fallback(name),
       ),
     );
   }
 
   Widget _fallback(String? name) {
     final initial =
-        (name != null && name.trim().isNotEmpty) ? name.trim()[0].toUpperCase() : null;
+        (name != null && name.trim().isNotEmpty)
+            ? name.trim()[0].toUpperCase()
+            : null;
     return Center(
-      child: initial != null
-          ? Text(
-              initial,
-              style: DSTextStyle.labelSm.copyWith(
-                color: c.brand.primaryActive,
-                fontWeight: FontWeight.w700,
-              ),
-            )
-          : Icon(LucideIcons.user, size: 14, color: c.brand.primaryActive),
+      child:
+          initial != null
+              ? Text(
+                initial,
+                style: DSTextStyle.labelSm.copyWith(
+                  color: c.brand.primaryActive,
+                  fontWeight: FontWeight.w700,
+                ),
+              )
+              : Icon(LucideIcons.user, size: 14, color: c.brand.primaryActive),
     );
   }
 }

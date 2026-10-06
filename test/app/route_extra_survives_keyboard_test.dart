@@ -40,7 +40,9 @@ void main() {
       ),
     );
 
-    final before = tester.state<_RouterStandInState>(find.byType(_RouterStandIn));
+    final before = tester.state<_RouterStandInState>(
+      find.byType(_RouterStandIn),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -59,7 +61,9 @@ void main() {
       ),
     );
 
-    final after = tester.state<_RouterStandInState>(find.byType(_RouterStandIn));
+    final after = tester.state<_RouterStandInState>(
+      find.byType(_RouterStandIn),
+    );
 
     expect(
       identical(before, after),

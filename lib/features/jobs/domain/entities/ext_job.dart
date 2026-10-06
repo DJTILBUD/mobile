@@ -32,6 +32,7 @@ class ExtJob {
     this.firstDanceSong,
     this.spotifyPlaylistUrl,
     this.specialConditions,
+    this.room,
     this.earlySetup = false,
     this.earlySetupPrice,
     this.recurringCustomerId,
@@ -81,6 +82,9 @@ class ExtJob {
   final String? firstDanceSong;
   final String? spotifyPlaylistUrl;
   final String? specialConditions;
+
+  /// Which room at the venue the party is in (ExtJobs.room; partner venues with the room field on).
+  final String? room;
   final bool earlySetup;
 
   /// Agreed early-setup fee in DKK, added by the DJ or admin. When non-null it is

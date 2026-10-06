@@ -55,29 +55,32 @@ class DSChip extends StatelessWidget {
     final c = DSTheme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bg = tinted
-        ? c.brand.primary.withValues(alpha: isDark ? 0.25 : 0.15)
-        : !enabled
+    final bg =
+        tinted
+            ? c.brand.primary.withValues(alpha: isDark ? 0.25 : 0.15)
+            : !enabled
             ? c.bg.inputBg
             : selected
-                ? c.brand.primary
-                : c.bg.surface;
+            ? c.brand.primary
+            : c.bg.surface;
 
-    final content = tinted
-        ? c.brand.primaryActive
-        : !enabled
+    final content =
+        tinted
+            ? c.brand.primaryActive
+            : !enabled
             ? c.text.muted
             : selected
-                ? c.brand.onPrimary
-                : c.text.primary;
+            ? c.brand.onPrimary
+            : c.text.primary;
 
-    final border = tinted
-        ? null
-        : !enabled
+    final border =
+        tinted
+            ? null
+            : !enabled
             ? Border.all(color: c.border.subtle)
             : selected
-                ? Border.all(color: c.brand.primary)
-                : Border.all(color: c.border.strong);
+            ? Border.all(color: c.brand.primary)
+            : Border.all(color: c.border.strong);
 
     return GestureDetector(
       onTap: tinted ? null : (enabled ? onTap : null),

@@ -19,5 +19,9 @@ class SongRequest {
   final String? song3;
   final DateTime createdAt;
 
-  List<String> get songs => [song1, if (song2 != null) song2!, if (song3 != null) song3!];
+  List<String> get songs => [
+    song1,
+    if (song2 != null) song2!,
+    if (song3 != null) song3!,
+  ];
 }

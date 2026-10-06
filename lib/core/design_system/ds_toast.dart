@@ -23,26 +23,45 @@ class DSToast {
       DSToastVariant.error => (c.state.danger, LucideIcons.alertCircle),
     };
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      backgroundColor: color,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(DSRadius.sm)),
-      duration: duration,
-      content: Row(children: [
-        Icon(icon, color: Colors.white, size: 20),
-        const SizedBox(width: DSSpacing.s3),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 14)),
-              if (description != null)
-                Text(description, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-            ],
-          ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(DSRadius.sm),
         ),
-      ]),
-    ));
+        duration: duration,
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: DSSpacing.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (description != null)
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

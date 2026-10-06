@@ -17,68 +17,83 @@ void main() {
   final legacy = DateTime.utc(2026, 6, 1);
 
   final seasonDate = DateTime(2027, 6, 5); // Saturday in June
-  final offSeasonDate = DateTime(2027, 6, 4); // Friday in June
+  final offSeasonDate = DateTime(2027, 6, 6); // Sunday in June
 
   group('isSaxHighSeason', () {
-    test('matches Saturdays inside the seasonal windows', () {
+    test('matches Fridays and Saturdays from April through September', () {
       expect(
-        isSaxHighSeason(DateTime(2027, 5, 22)),
+        isSaxHighSeason(DateTime(2027, 4, 2)),
         isTrue,
-      ); // last 2 weeks of May
-      expect(isSaxHighSeason(DateTime(2027, 6, 5)), isTrue); // all of June
-      expect(isSaxHighSeason(DateTime(2027, 8, 7)), isTrue); // all of August
+      ); // first Friday of April
+      expect(isSaxHighSeason(DateTime(2028, 4, 1)), isTrue); // Saturday 1 April
+      expect(isSaxHighSeason(DateTime(2027, 6, 4)), isTrue); // Friday in June
+      expect(isSaxHighSeason(DateTime(2027, 6, 5)), isTrue); // Saturday in June
       expect(
-        isSaxHighSeason(DateTime(2027, 9, 4)),
+        isSaxHighSeason(DateTime(2028, 9, 29)),
         isTrue,
-      ); // first 2 weeks of September
+      ); // late-September Friday
+      expect(
+        isSaxHighSeason(DateTime(2028, 9, 30)),
+        isTrue,
+      ); // late-September Saturday
     });
 
-    test('rejects Saturdays outside the windows', () {
+    test('rejects the weekend before April', () {
       expect(
-        isSaxHighSeason(DateTime(2027, 5, 15)),
+        isSaxHighSeason(DateTime(2027, 3, 26)),
         isFalse,
-      ); // May, before the 18th
-      expect(isSaxHighSeason(DateTime(2027, 2, 13)), isFalse); // wrong month
-
-      // The extras set covers the 3rd and 4th Saturdays of September every year, so those dates
-      // assert the extras, not the recurring rule. Pick a late-September Saturday that is neither,
-      // and prove it is outside the extras rather than assuming it.
-      final lateSeptemberSaturday = DateTime(2028, 9, 30);
+      ); // Friday in March
       expect(
-        saxHighSeasonExtraDates.contains('2028-09-30'),
+        isSaxHighSeason(DateTime(2027, 3, 27)),
         isFalse,
-      );
+      ); // Saturday in March
       expect(
-        isSaxHighSeason(lateSeptemberSaturday),
+        isSaxHighSeason(DateTime(2027, 1, 16)),
         isFalse,
-      ); // September, after the 14th
+      ); // Saturday in January
     });
 
-    test('rejects non-Saturdays inside the windows', () {
-      expect(isSaxHighSeason(DateTime(2027, 6, 4)), isFalse); // Friday
+    test('includes only the FIRST weekend of October (2026, 2027 and 2028)', () {
+      // 2026: 1 Oct is a Thursday, so the first weekend is Fri 2 + Sat 3.
+      expect(isSaxHighSeason(DateTime(2026, 10, 2)), isTrue);
+      expect(isSaxHighSeason(DateTime(2026, 10, 3)), isTrue);
+      expect(isSaxHighSeason(DateTime(2026, 10, 9)), isFalse);
+      expect(isSaxHighSeason(DateTime(2026, 10, 10)), isFalse);
+      // 2027: 1 Oct is a Friday, so the first weekend is Fri 1 + Sat 2.
+      expect(isSaxHighSeason(DateTime(2027, 10, 1)), isTrue);
+      expect(isSaxHighSeason(DateTime(2027, 10, 2)), isTrue);
+      expect(isSaxHighSeason(DateTime(2027, 10, 8)), isFalse);
+      expect(isSaxHighSeason(DateTime(2027, 10, 9)), isFalse);
+      // 2028: 1 Oct is a Sunday, so the first October weekend is Fri 6 + Sat 7.
+      expect(isSaxHighSeason(DateTime(2028, 10, 6)), isTrue);
+      expect(isSaxHighSeason(DateTime(2028, 10, 7)), isTrue);
+      expect(isSaxHighSeason(DateTime(2028, 10, 13)), isFalse);
+      expect(isSaxHighSeason(DateTime(2028, 10, 14)), isFalse);
+    });
+
+    test('matches every Friday and Saturday in November and December', () {
+      expect(isSaxHighSeason(DateTime(2026, 11, 6)), isTrue); // Friday
+      expect(isSaxHighSeason(DateTime(2026, 12, 19)), isTrue); // Saturday
+      expect(isSaxHighSeason(DateTime(2028, 12, 29)), isTrue); // Friday
+    });
+
+    test('rejects the other weekdays inside the season', () {
+      expect(isSaxHighSeason(DateTime(2027, 6, 3)), isFalse); // Thursday
       expect(isSaxHighSeason(DateTime(2027, 6, 6)), isFalse); // Sunday
-    });
-
-    test('treats 4 July as seasonal only when it lands on a Saturday', () {
-      expect(isSaxHighSeason(DateTime(2026, 7, 4)), isTrue); // Saturday
       expect(
-        isSaxHighSeason(DateTime(2027, 7, 3)),
+        isSaxHighSeason(DateTime(2028, 10, 1)),
         isFalse,
-      ); // Saturday, not the 4th
-      expect(
-        isSaxHighSeason(DateTime(2027, 7, 4)),
-        isFalse,
-      ); // the 4th, but a Sunday
+      ); // Sunday 1 October
     });
 
     test(
-      'honours the explicit extra dates regardless of the Saturday rule',
+      'keeps no one-off extra dates: the rule covers every date that used to be listed',
       () {
-        expect(isSaxHighSeason(DateTime(2026, 11, 27)), isTrue); // a Friday
-        expect(
-          isSaxHighSeason(DateTime(2026, 9, 19)),
-          isTrue,
-        ); // Saturday after 14 Sept
+        expect(saxHighSeasonExtraDates, isEmpty);
+        expect(isSaxHighSeason(DateTime(2026, 8, 21)), isTrue);
+        expect(isSaxHighSeason(DateTime(2026, 9, 26)), isTrue);
+        expect(isSaxHighSeason(DateTime(2026, 11, 27)), isTrue);
+        expect(isSaxHighSeason(DateTime(2027, 12, 10)), isTrue);
       },
     );
 

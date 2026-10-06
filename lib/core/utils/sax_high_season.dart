@@ -16,44 +16,25 @@
 /// figures, never store them. Keep byte-identical to `SAX_SEASON_PRICING_START` in the web helper.
 final saxSeasonPricingStart = DateTime.utc(2026, 8, 24);
 
-/// One-off high-demand dates that don't fit the recurring Saturday rule below.
-///
-/// Each year follows the same shape: the last two Fridays of August, the third and fourth Saturdays
-/// of September (the recurring rule stops at 14 September), and the julefrokost Fridays — last Friday
-/// of November plus the first two Fridays of December.
-///
-/// These run out after 2027-12-10. Without new entries the 2028 season silently narrows to the
-/// Saturday rule alone — add next year's dates before the season starts. Keep in sync with the web
-/// helper and `EXTRA_SPECIAL_QUOTE_DATES` in dj-form.
-const saxHighSeasonExtraDates = <String>{
-  '2026-08-21',
-  '2026-08-28',
-  '2026-09-19',
-  '2026-09-26',
-  '2026-11-27',
-  '2026-12-04',
-  '2026-12-11',
-  '2027-08-20',
-  '2027-08-27',
-  '2027-09-18',
-  '2027-09-25',
-  '2027-11-26',
-  '2027-12-03',
-  '2027-12-10',
-};
+/// One-off high-demand dates that fall OUTSIDE the recurring weekend rule below. Empty since the
+/// 2026-09-28 rule change: every date that used to be listed here is now covered by the rule itself.
+/// Keep the mechanism for a genuine one-off. Keep in sync with the web helper and
+/// `EXTRA_SPECIAL_QUOTE_DATES` in dj-form.
+const saxHighSeasonExtraDates = <String>{};
 
 String _isoDate(int year, int month, int day) =>
     '${year.toString().padLeft(4, '0')}-'
     '${month.toString().padLeft(2, '0')}-'
     '${day.toString().padLeft(2, '0')}';
 
-/// Is this event date in saxophone high season?
+/// Is this event date in saxophone high season? (Rule from 2026-09-28, every year.)
 ///
-/// Saturdays only, within: 18-31 May, all of June, 4 July only, all of August, 1-14 September — plus
-/// the explicit one-off dates in [saxHighSeasonExtraDates].
+/// Fridays and Saturdays only, within: April through September, the FIRST weekend of October (the
+/// first Saturday of October and the Friday before it), and all of November and December, plus any
+/// one-off date in [saxHighSeasonExtraDates].
 ///
 /// The date is read as the calendar day it names. `Jobs.date` / `ExtJobs.date` are plain date
-/// columns, and a UTC-parsed value would land on the previous day west of UTC, shifting Saturdays out
+/// columns, and a UTC-parsed value would land on the previous day west of UTC, shifting weekends out
 /// of the window.
 bool isSaxHighSeason(DateTime? eventDate) {
   if (eventDate == null) return false;
@@ -64,20 +45,19 @@ bool isSaxHighSeason(DateTime? eventDate) {
 
   if (saxHighSeasonExtraDates.contains(_isoDate(year, month, day))) return true;
 
-  // DateTime.weekday is 1=Mon..7=Sun, so Saturday is 6.
-  if (eventDate.weekday != DateTime.saturday) return false;
+  // DateTime.weekday is 1=Mon..7=Sun.
+  final isFriday = eventDate.weekday == DateTime.friday;
+  final isSaturday = eventDate.weekday == DateTime.saturday;
+  if (!isFriday && !isSaturday) return false;
 
-  final isLastTwoWeeksMay = month == 5 && day >= 18;
-  final isAllJune = month == 6;
-  final isOnlyFourthJuly = month == 7 && day == 4;
-  final isAllAugust = month == 8;
-  final isFirstTwoWeeksSeptember = month == 9 && day <= 14;
+  final isAprilToSeptember = month >= 4 && month <= 9;
+  // First Saturday of October is day 1-7; its Friday is day 1-6 (a Friday on the 7th belongs to the
+  // weekend of the 8th, the second weekend).
+  final isFirstOctoberWeekend =
+      month == 10 && (isSaturday ? day <= 7 : day <= 6);
+  final isNovemberDecember = month == 11 || month == 12;
 
-  return isLastTwoWeeksMay ||
-      isAllJune ||
-      isOnlyFourthJuly ||
-      isAllAugust ||
-      isFirstTwoWeeksSeptember;
+  return isAprilToSeptember || isFirstOctoberWeekend || isNovemberDecember;
 }
 
 /// The full gate for season sax pricing: the event must be in season AND the job must have been

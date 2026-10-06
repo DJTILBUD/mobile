@@ -5,6 +5,8 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/musician_job_filt
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/payment_info.dart';
+import 'package:dj_tilbud_app/features/profile/domain/self_billing_reference_format.dart';
+import 'package:dj_tilbud_app/features/profile/domain/entities/billing_change_request.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/review.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/admin_message.dart';
@@ -184,11 +186,44 @@ class ProfileRepositoryImpl implements ProfileRepository {
           'business_type': info.businessType?.toDbString(),
           'cvr': info.cvr,
           'billing_email': info.billingEmail,
+          'billing_email_secondary': info.billingEmailSecondary,
         },
       );
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
+  }
+
+  @override
+  Future<void> saveSelfBillingReferenceFormat({
+    required String userId,
+    required bool isDj,
+    required SelfBillingReferenceFormat format,
+  }) async {
+    await _datasource.upsertPaymentInfo(
+      userId: userId,
+      isDj: isDj,
+      data: {'self_billing_reference_format': format.dbValue},
+    );
+  }
+
+  @override
+  Future<bool> isSelfBillingLive() => _datasource.isSelfBillingLive();
+
+  @override
+  Future<void> acceptSelfBillingTerms() => _datasource.acceptSelfBillingTerms();
+
+  @override
+  Future<BillingChangeRequest?> fetchBillingChangeRequest() async {
+    final data = await _datasource.fetchBillingChangeRequest();
+    if (data == null) return null;
+    return BillingChangeRequest.fromJson(data);
+  }
+
+  @override
+  Future<BillingChangeRequest> createBillingChangeRequest(String reason) async {
+    final data = await _datasource.createBillingChangeRequest(reason);
+    return BillingChangeRequest.fromJson(data);
   }
 
   // ── DJ Job Filters ──

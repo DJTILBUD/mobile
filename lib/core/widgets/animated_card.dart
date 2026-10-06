@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AnimatedCard extends StatefulWidget {
-  const AnimatedCard({
-    super.key,
-    required this.index,
-    required this.child,
-  });
+  const AnimatedCard({super.key, required this.index, required this.child});
 
   final int index;
   final Widget child;
@@ -37,10 +33,7 @@ class _AnimatedCardState extends State<AnimatedCard>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.08),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     // Staggered delay based on index (capped at 5 to avoid long waits)
     final delay = Duration(milliseconds: 60 * widget.index.clamp(0, 5));

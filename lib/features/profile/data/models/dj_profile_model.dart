@@ -54,11 +54,15 @@ class DjProfileModel {
       isSuppressed: json['is_suppressed'] as bool? ?? false,
       tier: json['tier'] as String?,
       soundcloudUrl: json['soundcloud_url'] as String?,
-      venuesAndEvents: (json['venues_and_events'] as List<dynamic>?)?.cast<String>(),
-      excludedEventTypes: (json['excluded_event_types'] as List<dynamic>?)?.cast<String>() ?? [],
-      onboardingCompletedAt: json['onboarding_completed_at'] != null
-          ? DateTime.tryParse(json['onboarding_completed_at'] as String)
-          : null,
+      venuesAndEvents:
+          (json['venues_and_events'] as List<dynamic>?)?.cast<String>(),
+      excludedEventTypes:
+          (json['excluded_event_types'] as List<dynamic>?)?.cast<String>() ??
+          [],
+      onboardingCompletedAt:
+          json['onboarding_completed_at'] != null
+              ? DateTime.tryParse(json['onboarding_completed_at'] as String)
+              : null,
       songRequestToken: json['song_request_token'] as String?,
     );
   }

@@ -9,9 +9,19 @@ import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_pr
 import 'package:lucide_icons/lucide_icons.dart';
 
 const _eventTypes = [
-  'bryllup', 'fødselsdag', 'fødselsdagsfest', 'firmafest', 'konfirmation',
-  'studenterfest', 'julefrokost', 'sommerfest', 'privatfest',
-  'ungdomsfest', 'klub/bar', 'lounge', 'andet',
+  'bryllup',
+  'fødselsdag',
+  'fødselsdagsfest',
+  'firmafest',
+  'konfirmation',
+  'studenterfest',
+  'julefrokost',
+  'sommerfest',
+  'privatfest',
+  'ungdomsfest',
+  'klub/bar',
+  'lounge',
+  'andet',
 ];
 
 class StandardMessagesScreen extends ConsumerWidget {
@@ -19,13 +29,16 @@ class StandardMessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final messagesAsync = ref.watch(standardMessagesProvider);
 
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
-        title: Text('Standardbeskeder', style: DSTextStyle.headingSm.copyWith(color: _c.text.primary)),
+        title: Text(
+          'Standardbeskeder',
+          style: DSTextStyle.headingSm.copyWith(color: _c.text.primary),
+        ),
         backgroundColor: _c.bg.surface,
         surfaceTintColor: _c.bg.surface,
       ),
@@ -36,7 +49,10 @@ class StandardMessagesScreen extends ConsumerWidget {
         onTap: () => _showUpsertDialog(context, ref),
       ),
       body: messagesAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: _c.brand.primary)),
+        loading:
+            () => Center(
+              child: CircularProgressIndicator(color: _c.brand.primary),
+            ),
         error: (e, _) => Center(child: Text('Fejl: $e')),
         data: (messages) {
           if (messages.isEmpty) {
@@ -44,11 +60,26 @@ class StandardMessagesScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.messageSquare, size: 48, color: _c.border.subtle),
+                  Icon(
+                    LucideIcons.messageSquare,
+                    size: 48,
+                    color: _c.border.subtle,
+                  ),
                   const SizedBox(height: DSSpacing.s3),
-                  Text('Ingen standardbeskeder endnu', style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary)),
+                  Text(
+                    'Ingen standardbeskeder endnu',
+                    style: DSTextStyle.bodyMd.copyWith(
+                      color: _c.text.secondary,
+                    ),
+                  ),
                   const SizedBox(height: DSSpacing.s1),
-                  Text('Tryk + for at tilføje en', style: DSTextStyle.labelMd.copyWith(fontWeight: FontWeight.w400, color: _c.text.muted)),
+                  Text(
+                    'Tryk + for at tilføje en',
+                    style: DSTextStyle.labelMd.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: _c.text.muted,
+                    ),
+                  ),
                 ],
               ),
             );
@@ -62,71 +93,111 @@ class StandardMessagesScreen extends ConsumerWidget {
 
           return ListView(
             padding: const EdgeInsets.all(DSSpacing.s4),
-            children: grouped.entries.map((entry) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: DSSpacing.s3, bottom: DSSpacing.s2),
-                    child: Text(
-                      eventTypeLabel(entry.key),
-                      style: DSTextStyle.labelLg.copyWith(fontWeight: FontWeight.w700, color: _c.text.primary),
-                    ),
-                  ),
-                  ...entry.value.map((msg) => _MessageCard(
-                    message: msg,
-                    onEdit: () => _showUpsertDialog(context, ref, existing: msg),
-                    onDelete: () => _confirmDelete(context, ref, msg),
-                  )),
-                ],
-              );
-            }).toList(),
+            children:
+                grouped.entries.map((entry) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          top: DSSpacing.s3,
+                          bottom: DSSpacing.s2,
+                        ),
+                        child: Text(
+                          eventTypeLabel(entry.key),
+                          style: DSTextStyle.labelLg.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: _c.text.primary,
+                          ),
+                        ),
+                      ),
+                      ...entry.value.map(
+                        (msg) => _MessageCard(
+                          message: msg,
+                          onEdit:
+                              () => _showUpsertDialog(
+                                context,
+                                ref,
+                                existing: msg,
+                              ),
+                          onDelete: () => _confirmDelete(context, ref, msg),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
           );
         },
       ),
     );
   }
 
-  void _showUpsertDialog(BuildContext context, WidgetRef ref, {StandardMessage? existing}) {
+  void _showUpsertDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    StandardMessage? existing,
+  }) {
     final _c = DSTheme.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: _c.bg.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg))),
-      builder: (ctx) => _MessageForm(
-        existing: existing,
-        onSave: (messageText, eventType) async {
-          try {
-            final repo = ref.read(profileRepositoryProvider);
-            final userId = supabase.auth.currentUser!.id;
-            if (existing != null) {
-              await repo.updateStandardMessage(
-                messageId: existing.id,
-                messageText: messageText,
-                eventType: eventType,
-              );
-            } else {
-              await repo.createStandardMessage(
-                userId: userId,
-                messageText: messageText,
-                eventType: eventType,
-              );
-            }
-            ref.invalidate(standardMessagesProvider);
-            if (ctx.mounted) Navigator.of(ctx).pop();
-            if (context.mounted) {
-              DSToast.show(context, variant: DSToastVariant.success, title: existing != null ? 'Besked opdateret' : 'Besked tilføjet');
-            }
-          } catch (e) {
-            if (context.mounted) DSToast.show(context, variant: DSToastVariant.error, title: friendlyErrorMessage(e, fallback: 'Beskeden kunne ikke gemmes. Prøv igen.'));
-          }
-        },
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
       ),
+      builder:
+          (ctx) => _MessageForm(
+            existing: existing,
+            onSave: (messageText, eventType) async {
+              try {
+                final repo = ref.read(profileRepositoryProvider);
+                final userId = supabase.auth.currentUser!.id;
+                if (existing != null) {
+                  await repo.updateStandardMessage(
+                    messageId: existing.id,
+                    messageText: messageText,
+                    eventType: eventType,
+                  );
+                } else {
+                  await repo.createStandardMessage(
+                    userId: userId,
+                    messageText: messageText,
+                    eventType: eventType,
+                  );
+                }
+                ref.invalidate(standardMessagesProvider);
+                if (ctx.mounted) Navigator.of(ctx).pop();
+                if (context.mounted) {
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.success,
+                    title:
+                        existing != null
+                            ? 'Besked opdateret'
+                            : 'Besked tilføjet',
+                  );
+                }
+              } catch (e) {
+                if (context.mounted)
+                  DSToast.show(
+                    context,
+                    variant: DSToastVariant.error,
+                    title: friendlyErrorMessage(
+                      e,
+                      fallback: 'Beskeden kunne ikke gemmes. Prøv igen.',
+                    ),
+                  );
+              }
+            },
+          ),
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, StandardMessage msg) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    StandardMessage msg,
+  ) async {
     final confirmed = await showDSConfirm(
       context,
       title: 'Slet besked?',
@@ -137,19 +208,33 @@ class StandardMessagesScreen extends ConsumerWidget {
     try {
       await ref.read(profileRepositoryProvider).deleteStandardMessage(msg.id);
       ref.invalidate(standardMessagesProvider);
-      if (context.mounted) DSToast.show(context, variant: DSToastVariant.success, title: 'Besked slettet');
+      if (context.mounted)
+        DSToast.show(
+          context,
+          variant: DSToastVariant.success,
+          title: 'Besked slettet',
+        );
     } catch (e) {
       if (context.mounted) {
-        DSToast.show(context,
-            variant: DSToastVariant.error,
-            title: friendlyErrorMessage(e, fallback: 'Beskeden kunne ikke slettes. Prøv igen.'));
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: friendlyErrorMessage(
+            e,
+            fallback: 'Beskeden kunne ikke slettes. Prøv igen.',
+          ),
+        );
       }
     }
   }
 }
 
 class _MessageCard extends StatelessWidget {
-  const _MessageCard({required this.message, required this.onEdit, required this.onDelete});
+  const _MessageCard({
+    required this.message,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   final StandardMessage message;
   final VoidCallback onEdit;
@@ -157,7 +242,7 @@ class _MessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: DSSpacing.s2),
       child: DSSurface(
@@ -168,7 +253,10 @@ class _MessageCard extends StatelessWidget {
             Expanded(
               child: Text(
                 message.messageText,
-                style: DSTextStyle.labelMd.copyWith(fontWeight: FontWeight.w400, color: _c.text.secondary),
+                style: DSTextStyle.labelMd.copyWith(
+                  fontWeight: FontWeight.w400,
+                  color: _c.text.secondary,
+                ),
               ),
             ),
             PopupMenuButton<String>(
@@ -176,11 +264,24 @@ class _MessageCard extends StatelessWidget {
                 if (v == 'edit') onEdit();
                 if (v == 'delete') onDelete();
               },
-              itemBuilder: (_) => [
-                const PopupMenuItem(value: 'edit', child: Text('Rediger')),
-                PopupMenuItem(value: 'delete', child: Text('Slet', style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger))),
-              ],
-              icon: Icon(LucideIcons.moreVertical, size: 18, color: _c.text.secondary),
+              itemBuilder:
+                  (_) => [
+                    const PopupMenuItem(value: 'edit', child: Text('Rediger')),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Text(
+                        'Slet',
+                        style: DSTextStyle.bodyMd.copyWith(
+                          color: _c.state.danger,
+                        ),
+                      ),
+                    ),
+                  ],
+              icon: Icon(
+                LucideIcons.moreVertical,
+                size: 18,
+                color: _c.text.secondary,
+              ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
@@ -223,10 +324,12 @@ class _MessageFormState extends State<_MessageForm> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Padding(
       padding: EdgeInsets.only(
-        left: DSSpacing.s6, right: DSSpacing.s6, top: DSSpacing.s6,
+        left: DSSpacing.s6,
+        right: DSSpacing.s6,
+        top: DSSpacing.s6,
         bottom: MediaQuery.of(context).viewInsets.bottom + DSSpacing.s6,
       ),
       child: Form(
@@ -237,16 +340,27 @@ class _MessageFormState extends State<_MessageForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.existing != null ? 'Rediger besked' : 'Ny standardbesked',
-                style: DSTextStyle.headingMd.copyWith(fontWeight: FontWeight.w700, color: _c.text.primary),
+                widget.existing != null
+                    ? 'Rediger besked'
+                    : 'Ny standardbesked',
+                style: DSTextStyle.headingMd.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: _c.text.primary,
+                ),
               ),
               const SizedBox(height: DSSpacing.s4),
               DSDropdown<String>(
                 label: 'Event type',
                 value: _eventType,
-                items: _eventTypes
-                    .map((t) => DSDropdownItem(value: t, label: eventTypeLabel(t)))
-                    .toList(),
+                items:
+                    _eventTypes
+                        .map(
+                          (t) => DSDropdownItem(
+                            value: t,
+                            label: eventTypeLabel(t),
+                          ),
+                        )
+                        .toList(),
                 onChanged: (v) => setState(() => _eventType = v!),
               ),
               const SizedBox(height: DSSpacing.s3),
@@ -254,7 +368,8 @@ class _MessageFormState extends State<_MessageForm> {
                 controller: _textCtrl,
                 label: 'Besked',
                 maxLines: 6,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
+                validator:
+                    (v) => (v == null || v.trim().isEmpty) ? 'Påkrævet' : null,
               ),
               const SizedBox(height: DSSpacing.s4),
               DSButton(
@@ -262,12 +377,18 @@ class _MessageFormState extends State<_MessageForm> {
                 size: DSButtonSize.lg,
                 expand: true,
                 isLoading: _saving,
-                onTap: _saving ? null : () async {
-                  if (!_formKey.currentState!.validate()) return;
-                  setState(() => _saving = true);
-                  await widget.onSave(_textCtrl.text.trim(), _eventType);
-                  if (mounted) setState(() => _saving = false);
-                },
+                onTap:
+                    _saving
+                        ? null
+                        : () async {
+                          if (!_formKey.currentState!.validate()) return;
+                          setState(() => _saving = true);
+                          await widget.onSave(
+                            _textCtrl.text.trim(),
+                            _eventType,
+                          );
+                          if (mounted) setState(() => _saving = false);
+                        },
               ),
             ],
           ),

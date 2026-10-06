@@ -269,7 +269,8 @@ class _MetaList extends StatelessWidget {
           ),
           const SizedBox(height: 3),
         ],
-        _MetaItem(icon: LucideIcons.mapPin, label: job.region, c: c),
+        // Region, postal code and place, same as the new-job card (it used to be region only).
+        _MetaItem(icon: LucideIcons.mapPin, label: job.cardLocationLabel, c: c),
         const SizedBox(height: 3),
         // Time mirrors the open job card (job_card.dart, musician view): a musician_only job shows
         // the saxofonist start (the event time is often unset -> "00:00 - 00:00"), otherwise the

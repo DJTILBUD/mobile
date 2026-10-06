@@ -31,6 +31,7 @@ class ExtJobModel {
     this.firstDanceSong,
     this.spotifyPlaylistUrl,
     this.specialConditions,
+    this.room,
     this.earlySetup = false,
     this.earlySetupPrice,
     this.recurringCustomerId,
@@ -81,6 +82,9 @@ class ExtJobModel {
   final String? firstDanceSong;
   final String? spotifyPlaylistUrl;
   final String? specialConditions;
+
+  /// Which room at the venue the party is in (ExtJobs.room; partner venues with the room field on).
+  final String? room;
   final bool earlySetup;
   final num? earlySetupPrice;
   final int? recurringCustomerId;
@@ -143,6 +147,7 @@ class ExtJobModel {
       firstDanceSong: json['first_dance_song'] as String?,
       spotifyPlaylistUrl: json['spotify_playlist_url'] as String?,
       specialConditions: json['special_conditions'] as String?,
+      room: json['room'] as String?,
       earlySetup: json['early_setup'] as bool? ?? false,
       earlySetupPrice: (json['early_setup_price'] as num?)?.toDouble(),
       recurringCustomerId: (json['recurring_customer_id'] as num?)?.toInt(),
@@ -206,6 +211,7 @@ class ExtJobModel {
       firstDanceSong: firstDanceSong,
       spotifyPlaylistUrl: spotifyPlaylistUrl,
       specialConditions: specialConditions,
+      room: room,
       earlySetup: earlySetup,
       earlySetupPrice: earlySetupPrice,
       recurringCustomerId: recurringCustomerId,
@@ -280,6 +286,7 @@ class ExtJobModel {
       firstDanceSong: firstDanceSong,
       spotifyPlaylistUrl: spotifyPlaylistUrl,
       specialConditions: specialConditions,
+      room: room,
       earlySetup: earlySetup,
       // Carry the decision-window fields so the offer detail screen (which sees an ext job as a
       // Job via this mapper) can render the customer countdown the same as a normal job.

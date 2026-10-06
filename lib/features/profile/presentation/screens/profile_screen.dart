@@ -261,6 +261,11 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.pushNamed(AppRoutes.payment, extra: role),
           ),
           _MenuItem(
+            icon: LucideIcons.gift,
+            label: 'Henvis en kunde',
+            onTap: () => context.pushNamed(AppRoutes.referrals, extra: role),
+          ),
+          _MenuItem(
             icon: LucideIcons.calendarDays,
             label: 'Kalender',
             reminderText:

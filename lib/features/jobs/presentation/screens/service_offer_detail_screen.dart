@@ -65,6 +65,14 @@ class _ServiceOfferDetailScreenState
   void initState() {
     super.initState();
     _offer = widget.offer;
+    // Same stale-list problem as QuoteDetailScreen: `ServiceOffers` is not in the
+    // realtime publication, so the cached list this offer usually comes from
+    // does not self-update. Re-fetch on open; the `ref.listen` in build() swaps
+    // `_offer` in once the fresh list lands.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted)
+        ref.read(serviceOffersProvider.notifier).refetchKeepingData();
+    });
     _customerContacted = widget.offer.customerContacted;
     _customerContactPlannedFor = widget.offer.customerContactPlannedFor;
     _musicianReadyConfirmedAt = widget.offer.musicianReadyConfirmedAt;
@@ -580,6 +588,7 @@ class _ServiceOfferDetailScreenState
           musicianView: true,
           addressAs: offer.job.addressAs,
           specialConditions: offer.job.specialConditions,
+          room: offer.job.room,
         ),
         // Extra clearance so the floating chat bubble never covers the last card.
         const SizedBox(height: 96),

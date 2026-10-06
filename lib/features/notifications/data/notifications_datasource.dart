@@ -59,16 +59,15 @@ class NotificationsDatasource {
     final now = DateTime.now().toUtc().toIso8601String();
 
     if (referenceId == null) {
-      final rows =
-          await _client
-              .from('UserNotifications')
-              .select('id')
-              .eq('user_id', userId)
-              .eq('type', type)
-              .isFilter('reference_id', null)
-              .isFilter('read_at', null)
-              .order('created_at', ascending: false)
-              .limit(1);
+      final rows = await _client
+          .from('UserNotifications')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('type', type)
+          .isFilter('reference_id', null)
+          .isFilter('read_at', null)
+          .order('created_at', ascending: false)
+          .limit(1);
       final list = rows as List;
       if (list.isEmpty) return;
       await _client
@@ -140,8 +139,7 @@ class NotificationsDatasource {
     final staleIds = <int>{};
     for (final n in candidates) {
       final id = int.parse(n.referenceId!);
-      final state =
-          n.type == 'new_ext_job' ? extJobStates[id] : jobStates[id];
+      final state = n.type == 'new_ext_job' ? extJobStates[id] : jobStates[id];
       if (isBidInvitationStale(type: n.type, role: n.role, state: state)) {
         staleIds.add(n.id);
       }

@@ -62,9 +62,7 @@ class DSNavigationBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.bg.surface,
-        border: Border(
-          top: BorderSide(color: c.border.subtle, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: c.border.subtle, width: 0.5)),
       ),
       child: SafeArea(
         top: false,
@@ -126,9 +124,10 @@ class _DSNavItem extends StatelessWidget {
                         vertical: isSelected ? 3 : 0,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? c.brand.primary.withValues(alpha: 0.18)
-                            : Colors.transparent,
+                        color:
+                            isSelected
+                                ? c.brand.primary.withValues(alpha: 0.18)
+                                : Colors.transparent,
                         borderRadius: BorderRadius.circular(DSRadius.pill),
                       ),
                       child: Icon(icon, size: 22, color: color),
@@ -146,8 +145,7 @@ class _DSNavItem extends StatelessWidget {
                   item.label,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight:
-                        isSelected ? FontWeight.w700 : FontWeight.w400,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
                     color: color,
                     height: 1.2,
                   ),

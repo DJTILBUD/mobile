@@ -62,23 +62,27 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
         navCtx,
         title: title,
         message: message,
-        actions: (ctx) => [
-          DSButton(
-            label: 'Senere',
-            variant: DSButtonVariant.ghost,
-            size: DSButtonSize.sm,
-            onTap: () => Navigator.of(ctx).pop(),
-          ),
-          DSButton(
-            label: 'Opdatér',
-            variant: DSButtonVariant.primary,
-            size: DSButtonSize.sm,
-            onTap: () async {
-              Navigator.of(ctx).pop();
-              await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-            },
-          ),
-        ],
+        actions:
+            (ctx) => [
+              DSButton(
+                label: 'Senere',
+                variant: DSButtonVariant.ghost,
+                size: DSButtonSize.sm,
+                onTap: () => Navigator.of(ctx).pop(),
+              ),
+              DSButton(
+                label: 'Opdatér',
+                variant: DSButtonVariant.primary,
+                size: DSButtonSize.sm,
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await launchUrl(
+                    Uri.parse(url),
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
+              ),
+            ],
       );
     });
   }
@@ -103,8 +107,7 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
           case RequiredUpdateLevel.optional:
             if (!_softPromptShown && status.config != null) {
               _showSoftPrompt(
-                status.config!.optionalUpdateTitle ??
-                    'Ny version tilgængelig',
+                status.config!.optionalUpdateTitle ?? 'Ny version tilgængelig',
                 status.config!.optionalUpdateMessage ??
                     'En ny version af DJTilbud er klar. Opdatér for de nyeste funktioner.',
                 status.storeUrl!,

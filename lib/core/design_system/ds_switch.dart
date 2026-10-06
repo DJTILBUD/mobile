@@ -24,42 +24,44 @@ class DSSwitch extends StatelessWidget {
       opacity: _disabled ? 0.6 : 1,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: DSSpacing.s1),
-        child: Row(children: [
-          if (label != null)
-            Expanded(
-              child: Text(
-                label!,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: _disabled ? c.text.muted : c.text.primary,
+        child: Row(
+          children: [
+            if (label != null)
+              Expanded(
+                child: Text(
+                  label!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: _disabled ? c.text.muted : c.text.primary,
+                  ),
                 ),
               ),
-            ),
-          GestureDetector(
-            onTap: _disabled ? null : () => onChanged!(!value),
-            child: AnimatedContainer(
-              duration: DSMotion.normal,
-              width: 56,                          // w-14 = 56px
-              height: 32,                         // h-8 = 32px
-              padding: const EdgeInsets.all(4),   // left-1 top-1 = 4px inset
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(DSRadius.pill),
-                color: value ? c.brand.primary : c.border.subtle,
-              ),
-              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-              child: Container(
-                width: 24,                        // h-6 w-6 = 24px
-                height: 24,
+            GestureDetector(
+              onTap: _disabled ? null : () => onChanged!(!value),
+              child: AnimatedContainer(
+                duration: DSMotion.normal,
+                width: 56, // w-14 = 56px
+                height: 32, // h-8 = 32px
+                padding: const EdgeInsets.all(4), // left-1 top-1 = 4px inset
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: DSShadow.sm,
+                  borderRadius: BorderRadius.circular(DSRadius.pill),
+                  color: value ? c.brand.primary : c.border.subtle,
+                ),
+                alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 24, // h-6 w-6 = 24px
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    boxShadow: DSShadow.sm,
+                  ),
                 ),
               ),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }

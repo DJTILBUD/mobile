@@ -76,7 +76,9 @@ class _ProfileCoachBottomSheetState
   }
 
   void _generate() {
-    ref.read(profileCoachSessionProvider.notifier).generateProfileCoach(
+    ref
+        .read(profileCoachSessionProvider.notifier)
+        .generateProfileCoach(
           userContext: widget.userContext,
           userRole: widget.userRole,
         );
@@ -92,19 +94,21 @@ class _ProfileCoachBottomSheetState
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ProviderScope(
-        overrides: [
-          agentSessionProvider.overrideWith(
-            (ref) => AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
+      builder:
+          (_) => ProviderScope(
+            overrides: [
+              agentSessionProvider.overrideWith(
+                (ref) =>
+                    AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
+              ),
+            ],
+            child: ProfileBioBottomSheet(
+              userContext: widget.userContext,
+              userRole: widget.userRole,
+              isDj: widget.isDj,
+              onDraftAccepted: widget.onBioAccepted,
+            ),
           ),
-        ],
-        child: ProfileBioBottomSheet(
-          userContext: widget.userContext,
-          userRole: widget.userRole,
-          isDj: widget.isDj,
-          onDraftAccepted: widget.onBioAccepted,
-        ),
-      ),
     );
   }
 
@@ -129,85 +133,100 @@ class _ProfileCoachBottomSheetState
     final gaps = <_GapItem>[];
 
     if (!hasProfileImage) {
-      gaps.add(_GapItem(
-        icon: LucideIcons.camera,
-        title: 'Tilføj profilbillede',
-        stat: '+50% klik',
-        description:
-            'Kunder klikker 50% sjældnere på profiler uden billede — det er det første de ser. '
-            'Upload et godt foto fra et event eller et professionelt portræt.',
-        onTap: widget.onGoToMedia,
-        onDismiss: () => _dismissGap('Tilføj profilbillede'),
-      ));
+      gaps.add(
+        _GapItem(
+          icon: LucideIcons.camera,
+          title: 'Tilføj profilbillede',
+          stat: '+50% klik',
+          description:
+              'Kunder klikker 50% sjældnere på profiler uden billede — det er det første de ser. '
+              'Upload et godt foto fra et event eller et professionelt portræt.',
+          onTap: widget.onGoToMedia,
+          onDismiss: () => _dismissGap('Tilføj profilbillede'),
+        ),
+      );
     }
 
     if (reviewCount < 10) {
-      gaps.add(_GapItem(
-        icon: LucideIcons.star,
-        title: 'Få flere anbefalinger',
-        stat: '+40% bookinger',
-        description: reviewCount == 0
-            ? 'Ingen anbefalinger endnu — social proof er afgørende for nye kunder. '
-                'Bed dine tidligere kunder om en kort anmeldelse via DJTilbud efter eventet.'
-            : 'Du har $reviewCount anbefalinger — profiler med 10+ lukker 40% flere bookinger. '
-                'Kontakt tidligere kunder og bed dem skrive en kort anmeldelse.',
-        onTap: widget.onGoToReviews,
-        onDismiss: () => _dismissGap('Få flere anbefalinger'),
-      ));
+      gaps.add(
+        _GapItem(
+          icon: LucideIcons.star,
+          title: 'Få flere anbefalinger',
+          stat: '+40% bookinger',
+          description:
+              reviewCount == 0
+                  ? 'Ingen anbefalinger endnu — social proof er afgørende for nye kunder. '
+                      'Bed dine tidligere kunder om en kort anmeldelse via DJTilbud efter eventet.'
+                  : 'Du har $reviewCount anbefalinger — profiler med 10+ lukker 40% flere bookinger. '
+                      'Kontakt tidligere kunder og bed dem skrive en kort anmeldelse.',
+          onTap: widget.onGoToReviews,
+          onDismiss: () => _dismissGap('Få flere anbefalinger'),
+        ),
+      );
     }
 
     if (videoCount == 0) {
-      gaps.add(_GapItem(
-        icon: LucideIcons.video,
-        title: 'Upload en video',
-        stat: '+60% klik',
-        description:
-            'Kunder klikker 60% sjældnere på profiler uden video — de vil se dig i aktion. '
-            'En 1–2 minutters klip fra et event er nok, det behøver ikke være professionelt optaget.',
-        onTap: widget.onGoToMedia,
-        onDismiss: () => _dismissGap('Upload en video'),
-      ));
+      gaps.add(
+        _GapItem(
+          icon: LucideIcons.video,
+          title: 'Upload en video',
+          stat: '+60% klik',
+          description:
+              'Kunder klikker 60% sjældnere på profiler uden video — de vil se dig i aktion. '
+              'En 1–2 minutters klip fra et event er nok, det behøver ikke være professionelt optaget.',
+          onTap: widget.onGoToMedia,
+          onDismiss: () => _dismissGap('Upload en video'),
+        ),
+      );
     }
 
     if (aboutText.length < 80) {
-      gaps.add(_GapItem(
-        icon: LucideIcons.fileText,
-        title: 'Udbyg din bio',
-        stat: '+35% konvertering',
-        description: aboutText.isEmpty
-            ? 'Ingen bio endnu — kunder springer profiler over uden en personlig tekst. '
-                'Tryk her og lad AI hjælpe dig med 3–4 sætninger om din stil og hvad du bringer til eventet.'
-            : 'Din bio er kun ${aboutText.length} tegn — for kort til at overbevise. '
-                'Tryk her og lad AI hjælpe dig med at udvide den med din stil og erfaring.',
-        onTap: _openBioSheet,
-        onDismiss: () => _dismissGap('Udbyg din bio'),
-      ));
+      gaps.add(
+        _GapItem(
+          icon: LucideIcons.fileText,
+          title: 'Udbyg din bio',
+          stat: '+35% konvertering',
+          description:
+              aboutText.isEmpty
+                  ? 'Ingen bio endnu — kunder springer profiler over uden en personlig tekst. '
+                      'Tryk her og lad AI hjælpe dig med 3–4 sætninger om din stil og hvad du bringer til eventet.'
+                  : 'Din bio er kun ${aboutText.length} tegn — for kort til at overbevise. '
+                      'Tryk her og lad AI hjælpe dig med at udvide den med din stil og erfaring.',
+          onTap: _openBioSheet,
+          onDismiss: () => _dismissGap('Udbyg din bio'),
+        ),
+      );
     }
 
     if (genres.isEmpty) {
-      gaps.add(_GapItem(
-        icon: LucideIcons.music2,
-        title: 'Tilføj genrer',
-        description:
-            'Uden genrer dukker din profil ikke op, når kunder søger på specifikke musiktyper. '
-            'Gå til profil-redigering og tilføj de genrer du oftest spiller — det tager under et minut.',
-        onTap: widget.onEditProfile,
-        onDismiss: () => _dismissGap('Tilføj genrer'),
-      ));
+      gaps.add(
+        _GapItem(
+          icon: LucideIcons.music2,
+          title: 'Tilføj genrer',
+          description:
+              'Uden genrer dukker din profil ikke op, når kunder søger på specifikke musiktyper. '
+              'Gå til profil-redigering og tilføj de genrer du oftest spiller — det tager under et minut.',
+          onTap: widget.onEditProfile,
+          onDismiss: () => _dismissGap('Tilføj genrer'),
+        ),
+      );
     }
 
     if (venuesAndEvents.length < 3) {
-      gaps.add(_GapItem(
-        icon: LucideIcons.mapPin,
-        title: 'Tilføj flere spillesteder',
-        description: venuesAndEvents.isEmpty
-            ? 'Ingen spillesteder angivet — kunder vil gerne vide hvor du har optrådt. '
-                'Tilføj navne på venues og eventtyper som bryllupper, firmafester eller klubaftener.'
-            : 'Jo mere specifik du er, jo mere tillid skaber du. '
-                'Tilføj flere venues og eventtyper — f.eks. konkrete navne og arrangementsstørrelser.',
-        onTap: widget.onEditProfile,
-        onDismiss: () => _dismissGap('Tilføj flere spillesteder'),
-      ));
+      gaps.add(
+        _GapItem(
+          icon: LucideIcons.mapPin,
+          title: 'Tilføj flere spillesteder',
+          description:
+              venuesAndEvents.isEmpty
+                  ? 'Ingen spillesteder angivet — kunder vil gerne vide hvor du har optrådt. '
+                      'Tilføj navne på venues og eventtyper som bryllupper, firmafester eller klubaftener.'
+                  : 'Jo mere specifik du er, jo mere tillid skaber du. '
+                      'Tilføj flere venues og eventtyper — f.eks. konkrete navne og arrangementsstørrelser.',
+          onTap: widget.onEditProfile,
+          onDismiss: () => _dismissGap('Tilføj flere spillesteder'),
+        ),
+      );
     }
 
     return gaps;
@@ -215,7 +234,7 @@ class _ProfileCoachBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final agentState = ref.watch(profileCoachSessionProvider);
     final gaps = _buildGaps();
 
@@ -228,8 +247,9 @@ class _ProfileCoachBottomSheetState
         return Container(
           decoration: BoxDecoration(
             color: _c.bg.surface,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(DSRadius.lg),
+            ),
           ),
           child: Column(
             children: [
@@ -249,25 +269,36 @@ class _ProfileCoachBottomSheetState
               // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    DSSpacing.s4, 0, DSSpacing.s2, DSSpacing.s3),
+                  DSSpacing.s4,
+                  0,
+                  DSSpacing.s2,
+                  DSSpacing.s3,
+                ),
                 child: Row(
                   children: [
-                    Icon(LucideIcons.sparkles,
-                        size: 18, color: _c.brand.primaryActive),
+                    Icon(
+                      LucideIcons.sparkles,
+                      size: 18,
+                      color: _c.brand.primaryActive,
+                    ),
                     const SizedBox(width: DSSpacing.s2),
                     Expanded(
                       child: Text(
                         'Profilcoach',
                         style: DSTextStyle.headingSm.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: _c.text.primary),
+                          fontWeight: FontWeight.w700,
+                          color: _c.text.primary,
+                        ),
                       ),
                     ),
                     if (agentState is AgentDone || agentState is AgentError)
                       IconButton(
                         onPressed: _refresh,
-                        icon: Icon(LucideIcons.refreshCw,
-                            size: 18, color: _c.text.muted),
+                        icon: Icon(
+                          LucideIcons.refreshCw,
+                          size: 18,
+                          color: _c.text.muted,
+                        ),
                         tooltip: 'Generer ny analyse',
                         visualDensity: VisualDensity.compact,
                       ),
@@ -327,7 +358,7 @@ class _AssessmentText extends StatelessWidget {
   final AgentState agentState;
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     if (agentState is AgentIdle) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: DSSpacing.s4),
@@ -392,9 +423,10 @@ class _AssessmentText extends StatelessWidget {
       );
     }
 
-    final text = agentState is AgentStreaming
-        ? (agentState as AgentStreaming).text
-        : (agentState as AgentDone).text;
+    final text =
+        agentState is AgentStreaming
+            ? (agentState as AgentStreaming).text
+            : (agentState as AgentDone).text;
 
     final isStreaming = agentState is AgentStreaming;
 
@@ -403,11 +435,7 @@ class _AssessmentText extends StatelessWidget {
       children: [
         Text(
           text,
-          style: TextStyle(
-            fontSize: 14,
-            color: _c.text.primary,
-            height: 1.6,
-          ),
+          style: TextStyle(fontSize: 14, color: _c.text.primary, height: 1.6),
         ),
         if (isStreaming) ...[
           const SizedBox(height: DSSpacing.s2),
@@ -424,8 +452,10 @@ class _AssessmentText extends StatelessWidget {
               const SizedBox(width: DSSpacing.s2),
               Text(
                 'Analyserer...',
-                style: DSTextStyle.bodySm
-                    .copyWith(fontSize: 11, color: _c.text.muted),
+                style: DSTextStyle.bodySm.copyWith(
+                  fontSize: 11,
+                  color: _c.text.muted,
+                ),
               ),
             ],
           ),
@@ -477,19 +507,21 @@ class _GapCard extends StatelessWidget {
                         child: Text(
                           gap.title,
                           style: DSTextStyle.labelLg.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: _c.text.primary),
+                            fontWeight: FontWeight.w600,
+                            color: _c.text.primary,
+                          ),
                         ),
                       ),
                       if (gap.stat != null) ...[
                         const SizedBox(width: DSSpacing.s2),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: _c.brand.primary.withValues(alpha: 0.1),
-                            borderRadius:
-                                BorderRadius.circular(DSRadius.pill),
+                            borderRadius: BorderRadius.circular(DSRadius.pill),
                           ),
                           child: Text(
                             gap.stat!,
@@ -506,8 +538,11 @@ class _GapCard extends StatelessWidget {
                         behavior: HitTestBehavior.opaque,
                         child: Padding(
                           padding: const EdgeInsets.only(left: DSSpacing.s2),
-                          child: Icon(LucideIcons.x,
-                              size: 16, color: _c.text.muted),
+                          child: Icon(
+                            LucideIcons.x,
+                            size: 16,
+                            color: _c.text.muted,
+                          ),
                         ),
                       ),
                     ],
@@ -516,7 +551,9 @@ class _GapCard extends StatelessWidget {
                   Text(
                     gap.description,
                     style: DSTextStyle.bodySm.copyWith(
-                        color: _c.text.secondary, height: 1.3),
+                      color: _c.text.secondary,
+                      height: 1.3,
+                    ),
                   ),
                 ],
               ),
@@ -533,7 +570,7 @@ class _GapCard extends StatelessWidget {
 class _CompleteBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.all(DSSpacing.s4),
       decoration: BoxDecoration(
@@ -548,8 +585,7 @@ class _CompleteBadge extends StatelessWidget {
           Expanded(
             child: Text(
               'Din profil er komplet — godt klaret!',
-              style:
-                  DSTextStyle.bodyMd.copyWith(color: _c.state.success),
+              style: DSTextStyle.bodyMd.copyWith(color: _c.state.success),
             ),
           ),
         ],

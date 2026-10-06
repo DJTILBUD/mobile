@@ -4,6 +4,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/song_request.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
 
 abstract class JobsRepository {
   /// Fetches all open jobs for a DJ (not filtered by region — only job filters apply).
@@ -145,8 +146,14 @@ abstract class JobsRepository {
   /// `extra_hours_reminder` push for them. Pass `declined: false` to undo.
   /// One method per payee row: quote (DJ internal), ext job (DJ external),
   /// service offer (musician).
-  Future<void> setQuoteExtraHoursDeclined(int quoteId, {required bool declined});
-  Future<void> setExtJobExtraHoursDeclined(int extJobId, {required bool declined});
+  Future<void> setQuoteExtraHoursDeclined(
+    int quoteId, {
+    required bool declined,
+  });
+  Future<void> setExtJobExtraHoursDeclined(
+    int extJobId, {
+    required bool declined,
+  });
   Future<void> setServiceOfferExtraHoursDeclined(
     int offerId, {
     required bool declined,
@@ -154,7 +161,11 @@ abstract class JobsRepository {
 
   /// Sets the agreed early-setup fee (+ optional HH:MM time) on an ext job.
   /// The fee is folded into full_amount + honorar server-side.
-  Future<void> setExtJobEarlySetup(int extJobId, {required num price, String? time});
+  Future<void> setExtJobEarlySetup(
+    int extJobId, {
+    required num price,
+    String? time,
+  });
 
   /// Removes early setup from an ext job.
   Future<void> deleteExtJobEarlySetup(int extJobId);
@@ -178,11 +189,22 @@ abstract class JobsRepository {
     int? extJobId,
   });
 
+  /// The ext job ids currently visible to this musician whose account is a TRUE
+  /// partner-portal account (`is_partner = true`). Used to hide those jobs from
+  /// the self-serve feed and to block them on the offer-form deep-link path (see
+  /// [MusicianJobAvailability]). Fails OPEN to an empty set.
+  Future<Set<int>> fetchPartnerExtJobIds();
+
   /// Has this job's supply/matching wave opened for the current DJ?
   ///
   /// Display aid for the quote form only (the feed is already gated server-side, and the real
   /// gate is the 403 from the quote route). Fails OPEN on any error.
   Future<bool> fetchJobWaveOpen(int jobId);
+
+  /// Can the current DJ still place a quote on this job (status, cap, tier quota, own quote)?
+  ///
+  /// Server-resolved; display aid for the quote form only. Fails OPEN on any error.
+  Future<DjBidStatus> fetchDjBidStatus(int jobId);
 
   /// Fetches service offers for a given internal job (for DJ view).
   Future<List<ServiceOffer>> fetchServiceOffersForJob(int jobId);

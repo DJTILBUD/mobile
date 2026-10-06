@@ -52,98 +52,99 @@ class CalendarEventCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      margin: const EdgeInsets.symmetric(
-          horizontal: DSSpacing.s4, vertical: DSSpacing.s1),
-      decoration: BoxDecoration(
-        color: c.bg.surface,
-        borderRadius: BorderRadius.circular(DSRadius.md),
-        border: Border.all(color: c.border.subtle),
-        boxShadow: DSShadow.sm,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(DSSpacing.s4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left color bar
-            Container(
-              width: 3,
-              height: 48,
-              decoration: BoxDecoration(
-                color: barColor,
-                borderRadius: BorderRadius.circular(2),
+        margin: const EdgeInsets.symmetric(
+          horizontal: DSSpacing.s4,
+          vertical: DSSpacing.s1,
+        ),
+        decoration: BoxDecoration(
+          color: c.bg.surface,
+          borderRadius: BorderRadius.circular(DSRadius.md),
+          border: Border.all(color: c.border.subtle),
+          boxShadow: DSShadow.sm,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(DSSpacing.s4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left color bar
+              Container(
+                width: 3,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: barColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(width: DSSpacing.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          eventTypeLabel(event.label),
-                          style: DSTextStyle.headingSm.copyWith(
-                            fontSize: 15,
-                            color: c.text.primary,
-                          ),
-                        ),
-                      ),
-                      if (showTypeTag)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: DSSpacing.s2, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: tagBg,
-                            borderRadius:
-                                BorderRadius.circular(DSRadius.pill),
-                          ),
+              const SizedBox(width: DSSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
                           child: Text(
-                            tagLabel,
-                            style: DSTextStyle.bodySm.copyWith(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: tagFg,
+                            eventTypeLabel(event.label),
+                            style: DSTextStyle.headingSm.copyWith(
+                              fontSize: 15,
+                              color: c.text.primary,
                             ),
                           ),
                         ),
+                        if (showTypeTag)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: DSSpacing.s2,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: tagBg,
+                              borderRadius: BorderRadius.circular(
+                                DSRadius.pill,
+                              ),
+                            ),
+                            child: Text(
+                              tagLabel,
+                              style: DSTextStyle.bodySm.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: tagFg,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: DSSpacing.s1),
+                    _InfoRow(icon: LucideIcons.clock, text: event.timeDisplay),
+                    const SizedBox(height: 2),
+                    _InfoRow(
+                      icon: LucideIcons.mapPin,
+                      text: event.locationDisplay,
+                    ),
+                    if (event.guestsAmount != null) ...[
+                      const SizedBox(height: 2),
+                      _InfoRow(
+                        icon: LucideIcons.users,
+                        text: '${event.guestsAmount} gæster',
+                      ),
                     ],
-                  ),
-                  const SizedBox(height: DSSpacing.s1),
-                  _InfoRow(
-                    icon: LucideIcons.clock,
-                    text: event.timeDisplay,
-                  ),
-                  const SizedBox(height: 2),
-                  _InfoRow(
-                    icon: LucideIcons.mapPin,
-                    text: event.locationDisplay,
-                  ),
-                  if (event.guestsAmount != null) ...[
-                    const SizedBox(height: 2),
-                    _InfoRow(
-                      icon: LucideIcons.users,
-                      text: '${event.guestsAmount} gæster',
-                    ),
+                    if (event.budgetDisplay != null) ...[
+                      const SizedBox(height: 2),
+                      _InfoRow(
+                        icon: LucideIcons.banknote,
+                        text: event.budgetDisplay!,
+                      ),
+                    ],
                   ],
-                  if (event.budgetDisplay != null) ...[
-                    const SizedBox(height: 2),
-                    _InfoRow(
-                      icon: LucideIcons.banknote,
-                      text: event.budgetDisplay!,
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
-            if (onTap != null)
-              Icon(LucideIcons.chevronRight,
-                  size: 20, color: c.text.muted),
-          ],
+              if (onTap != null)
+                Icon(LucideIcons.chevronRight, size: 20, color: c.text.muted),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }

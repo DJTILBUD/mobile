@@ -15,8 +15,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 /// there must BE a won offer, and at least one won offer must be un-contacted. A job
 /// with no musician at all is never blocked.
 bool isBlockedByMusicianContact(List<ServiceOffer> offers) {
-  final won =
-      offers.where((o) => o.status == ServiceOfferStatus.won).toList();
+  final won = offers.where((o) => o.status == ServiceOfferStatus.won).toList();
   if (won.isEmpty) return false;
   return won.any((o) => !o.customerContacted);
 }
@@ -30,7 +29,9 @@ bool isBlockedByMusicianContact(List<ServiceOffer> offers) {
 String musicianContactBlockedMessage(List<ServiceOffer> offers) {
   final blocking =
       offers
-          .where((o) => o.status == ServiceOfferStatus.won && !o.customerContacted)
+          .where(
+            (o) => o.status == ServiceOfferStatus.won && !o.customerContacted,
+          )
           .toList();
   final instruments =
       blocking

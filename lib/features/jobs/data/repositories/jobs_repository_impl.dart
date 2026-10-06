@@ -13,6 +13,7 @@ import 'package:dj_tilbud_app/features/jobs/data/models/dj_quote_model.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/service_offer_model.dart';
 import 'package:dj_tilbud_app/features/jobs/data/models/ext_job_model.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
 
 class JobsRepositoryImpl implements JobsRepository {
   JobsRepositoryImpl(this._datasource);
@@ -401,10 +402,7 @@ class JobsRepositoryImpl implements JobsRepository {
     required bool declined,
   }) async {
     try {
-      await _datasource.setQuoteExtraHoursDeclined(
-        quoteId,
-        declined: declined,
-      );
+      await _datasource.setQuoteExtraHoursDeclined(quoteId, declined: declined);
     } on sb.PostgrestException catch (e) {
       throw DatabaseException(e.message);
     }
@@ -502,10 +500,22 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
+  Future<Set<int>> fetchPartnerExtJobIds() {
+    // The datasource already fails open to an empty set.
+    return _datasource.fetchPartnerExtJobIds();
+  }
+
+  @override
   Future<bool> fetchJobWaveOpen(int jobId) async {
     // The datasource already swallows errors and returns true; no try/catch here would change
     // that, and turning a failed lookup into an exception would block the form.
     return _datasource.fetchJobWaveOpen(jobId);
+  }
+
+  @override
+  Future<DjBidStatus> fetchDjBidStatus(int jobId) async {
+    // Same shape as fetchJobWaveOpen: the datasource already fails open.
+    return _datasource.fetchDjBidStatus(jobId);
   }
 
   @override

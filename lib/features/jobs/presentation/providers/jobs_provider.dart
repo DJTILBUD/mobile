@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
@@ -19,6 +20,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/repositories/jobs_repository.
 import 'package:dj_tilbud_app/features/jobs/data/datasources/jobs_remote_datasource.dart';
 import 'package:dj_tilbud_app/features/jobs/data/repositories/jobs_repository_impl.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
 
 final jobsRepositoryProvider = Provider<JobsRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -32,8 +34,11 @@ String get _currentUserId => supabase.auth.currentUser!.id;
 
 /// Sets state to AsyncLoading → fetches → AsyncData/AsyncError.
 /// Returns when fetch is complete so RefreshIndicator can await it.
-abstract class _RealtimeNotifier<T> extends StateNotifier<AsyncValue<T>> {
-  _RealtimeNotifier(this.client) : super(const AsyncLoading());
+abstract class _RealtimeNotifier<T> extends StateNotifier<AsyncValue<T>>
+    with WidgetsBindingObserver {
+  _RealtimeNotifier(this.client) : super(const AsyncLoading()) {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   final SupabaseClient client;
   final List<RealtimeChannel> _channels = [];
@@ -43,6 +48,31 @@ abstract class _RealtimeNotifier<T> extends StateNotifier<AsyncValue<T>> {
   Future<void> init() async {
     await _loadSilently();
     subscribeToRealtime();
+  }
+
+  /// Realtime is the only thing that refreshes these lists after the first
+  /// load, and it misses every event while the app is backgrounded (the socket
+  /// drops while the phone is locked). A quote that expired overnight then kept
+  /// showing its old status on the list, and the detail opened from that list
+  /// inherited it, while a push deep-link fetched the row fresh and showed the
+  /// truth. Re-fetch on resume, like the chat and notifications providers do.
+  /// Keeps the current data on a transient failure instead of flashing an error.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    if (lifecycle == AppLifecycleState.resumed) refetchKeepingData();
+  }
+
+  /// Silent re-fetch that never downgrades a loaded list to an error. Used on
+  /// resume and by detail screens that were handed a possibly stale entity
+  /// from this list (see `QuoteDetailScreen.initState`).
+  Future<void> refetchKeepingData() async {
+    try {
+      final data = await fetch();
+      if (mounted) state = AsyncData(data);
+    } catch (e) {
+      debugPrint('[$runtimeType] refetch failed: $e');
+      if (mounted && !state.hasValue) state = AsyncError(e, StackTrace.current);
+    }
   }
 
   Future<void> _loadSilently() async {
@@ -69,6 +99,7 @@ abstract class _RealtimeNotifier<T> extends StateNotifier<AsyncValue<T>> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (final ch in _channels) {
       client.removeChannel(ch);
     }
@@ -182,17 +213,17 @@ final djExtJobRecurringNamesProvider = FutureProvider<Map<int, String>>((
 /// jobs, keyed by ext job id. Same endpoint and same degrade-to-empty rule as
 /// [djExtJobRecurringNamesProvider]; a separate provider for the same reason
 /// that one is (the shared `djExtJobsProvider` read must stay untouched).
-final djExtJobVenuePhotosProvider = FutureProvider<Map<int, List<VenuePhoto>>>(
-  (ref) async {
-    try {
-      return await ref
-          .watch(jobsRepositoryProvider)
-          .fetchDjExtJobVenuePhotos(_currentUserId);
-    } catch (_) {
-      return <int, List<VenuePhoto>>{};
-    }
-  },
-);
+final djExtJobVenuePhotosProvider = FutureProvider<Map<int, List<VenuePhoto>>>((
+  ref,
+) async {
+  try {
+    return await ref
+        .watch(jobsRepositoryProvider)
+        .fetchDjExtJobVenuePhotos(_currentUserId);
+  } catch (_) {
+    return <int, List<VenuePhoto>>{};
+  }
+});
 
 /// Musician counterpart of [djExtJobRecurringNamesProvider] — venue names for the
 /// current sax's won/assigned ext jobs. The ext-job detail screen is shared by
@@ -1462,12 +1493,17 @@ final dateConflictProvider = FutureProvider.autoDispose
 /// rejection is the authoritative gate, so a slow lookup must not block a legitimate offer.
 final musicianJobAvailabilityProvider = FutureProvider.autoDispose
     .family<MusicianJobAvailability, Job>((ref, job) async {
-      final offers = await ref
-          .watch(jobsRepositoryProvider)
-          .fetchOffersForJob(
-            jobId: job.isExtJob ? null : job.id,
-            extJobId: job.isExtJob ? job.extJobId : null,
-          );
+      final repo = ref.watch(jobsRepositoryProvider);
+      final offers = await repo.fetchOffersForJob(
+        jobId: job.isExtJob ? null : job.id,
+        extJobId: job.isExtJob ? job.extJobId : null,
+      );
+
+      var isPartnerBooking = false;
+      if (job.isExtJob && job.extJobId != null) {
+        final partnerExtJobIds = await repo.fetchPartnerExtJobIds();
+        isPartnerBooking = partnerExtJobIds.contains(job.extJobId);
+      }
 
       return resolveMusicianJobAvailability(
         status: job.status.dbValue,
@@ -1475,6 +1511,7 @@ final musicianJobAvailabilityProvider = FutureProvider.autoDispose
         assignedMusicianId: job.assignedMusicianId,
         currentMusicianId: _currentUserId,
         offers: offers,
+        isPartnerBooking: isPartnerBooking,
       );
     });
 
@@ -1491,6 +1528,18 @@ final jobWaveOpenProvider = FutureProvider.autoDispose.family<bool, int>((
 ) async {
   return ref.watch(jobsRepositoryProvider).fetchJobWaveOpen(jobId);
 });
+
+/// Can the current DJ still place a quote on [jobId]? See [DjBidStatus].
+///
+/// Only consumed by the DJ quote form, which a push deep-link / notification-centre row can open
+/// for a job the feed hides (full `sent` job, admin-assigned, expired…). Like
+/// [jobWaveOpenProvider] it defaults to OPEN while loading and on any error, so a slow lookup never
+/// blocks a legitimate bid; the quote route is the authority.
+final djBidStatusProvider = FutureProvider.autoDispose.family<DjBidStatus, int>(
+  (ref, jobId) async {
+    return ref.watch(jobsRepositoryProvider).fetchDjBidStatus(jobId);
+  },
+);
 
 // ─── Service offers for a job (DJ view) ─────────────────────────────────────
 

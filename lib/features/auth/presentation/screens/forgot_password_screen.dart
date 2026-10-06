@@ -38,9 +38,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     });
 
     try {
-      await ref.read(authRepositoryProvider).resetPassword(
-        email: _emailController.text.trim(),
-      );
+      await ref
+          .read(authRepositoryProvider)
+          .resetPassword(email: _emailController.text.trim());
       if (!mounted) return;
       setState(() => _emailSent = true);
     } on AppException catch (e) {
@@ -56,7 +56,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
@@ -122,7 +122,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         children: [
           Text(
             'Indtast din email, og vi sender dig instruktioner til at nulstille din adgangskode.',
-            style: DSTextStyle.labelMd.copyWith(fontSize: 15, color: _c.text.secondary, height: 1.5),
+            style: DSTextStyle.labelMd.copyWith(
+              fontSize: 15,
+              color: _c.text.secondary,
+              height: 1.5,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: DSSpacing.s6),

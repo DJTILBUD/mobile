@@ -16,6 +16,7 @@ import 'package:dj_tilbud_app/core/utils/equipment_description.dart';
 import 'package:dj_tilbud_app/features/agent/presentation/widgets/agent_ai_button.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/date_collision.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/profile/domain/self_billing_complete.dart';
@@ -275,11 +276,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       );
       // The offending field is very likely off-screen (that is the whole bug),
       // so say what is wrong AND scroll back up to it.
-      DSToast.show(
-        context,
-        variant: DSToastVariant.error,
-        title: inputError,
-      );
+      DSToast.show(context, variant: DSToastVariant.error, title: inputError);
       if (_price <= 0 && _scrollController.hasClients) {
         _scrollController.animateTo(
           0,
@@ -585,10 +582,19 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     final isWaveOpen =
         ref.watch(jobWaveOpenProvider(job.id)).valueOrNull ?? true;
 
+    // "Can I still quote on this job?" — status, quote cap, tier quota, own existing quote.
+    // Server-resolved because the cap needs other DJs' quotes + tiers, which RLS hides from us.
+    // A `sent` job can still be biddable and an `open` one already full, so this is NOT a status
+    // check (see DjBidStatus). Defaults to OPEN while loading / on error, same as the wave gate.
+    final bidStatus =
+        ref.watch(djBidStatusProvider(job.id)).valueOrNull ??
+        const DjBidStatus.open();
+
     final isBlocked =
         (priceOverBudget && withinFourHours) ||
         collisionMessage != null ||
-        !isWaveOpen;
+        !isWaveOpen ||
+        !bidStatus.canBid;
 
     return PopScope(
       canPop: !_isDirty,
@@ -680,6 +686,14 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
               // Shown ABOVE the collision banner and before any input: the DJ should learn the
               // job isn't open to them yet before writing a price and a sales pitch, not from a
               // toast after tapping submit.
+              // Hard block first: a job that is full / taken / no longer open is the most
+              // common way a days-old notification lands here, and the DJ should read that
+              // before anything else on the form.
+              if (!bidStatus.canBid) ...[
+                _BidClosedBanner(status: bidStatus),
+                const SizedBox(height: DSSpacing.s6),
+              ],
+
               if (!isWaveOpen) ...[
                 const _WaveClosedBanner(),
                 const SizedBox(height: DSSpacing.s6),
@@ -832,13 +846,13 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
                     'Fortæl kunden hvorfor du er det rette valg til deres event...',
                 controller: _salesPitchController,
                 minLines: 8,
-                maxLines: 15,
-                maxLength: 450,
+                maxLines: 25,
+                maxLength: kSalesPitchMaxLength,
                 showCounter: true,
                 textInputAction: TextInputAction.newline,
                 validator: (v) {
-                  if (v == null || v.trim().length < 100) {
-                    return 'Salgstalen skal være mindst 100 tegn';
+                  if (v == null || v.trim().length < kSalesPitchMinLength) {
+                    return 'Salgstalen skal være mindst $kSalesPitchMinLength tegn';
                   }
                   return null;
                 },
@@ -847,7 +861,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
               Row(
                 children: [
                   Text(
-                    '$_pitchLength / 450',
+                    '$_pitchLength / $kSalesPitchMaxLength',
                     style: DSTextStyle.labelSm.copyWith(color: _c.text.muted),
                   ),
                   const Spacer(),
@@ -943,6 +957,55 @@ class _CollisionBanner extends StatelessWidget {
 /// Deliberately describes the JOB's state and the mechanism ("flere runder", "åbner automatisk"),
 /// never the DJ's standing — this is a delay, not a judgement, and nothing is required of them.
 /// Styled `info`, not `danger`: nothing is wrong and there is no mistake to correct.
+/// The job itself is closed to this DJ (full, already bid, taken, paused, gone). Danger-styled
+/// like the collision banner: unlike the wave banner there is nothing that will open later.
+class _BidClosedBanner extends StatelessWidget {
+  const _BidClosedBanner({required this.status});
+  final DjBidStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final _c = DSTheme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(DSSpacing.s3),
+      decoration: BoxDecoration(
+        color: _c.state.danger.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _c.state.danger.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(LucideIcons.ban, size: 18, color: _c.state.danger),
+          const SizedBox(width: DSSpacing.s2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  status.title,
+                  style: DSTextStyle.labelSm.copyWith(
+                    color: _c.state.danger,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: DSSpacing.s1),
+                Text(
+                  status.message ?? DjBidStatus.fallbackMessage,
+                  style: DSTextStyle.bodySm.copyWith(
+                    color: _c.text.secondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _WaveClosedBanner extends StatelessWidget {
   const _WaveClosedBanner();
 

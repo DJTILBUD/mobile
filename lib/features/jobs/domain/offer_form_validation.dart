@@ -26,6 +26,12 @@ library;
 /// fields and the web app's own minimum.
 const int kSalesPitchMinLength = 100;
 
+/// Maximum sales-pitch length. Applied as `maxLength` on every salgstale
+/// field (create + edit) and enforced server-side by the web-app quote and
+/// service-offer routes. Mirrors `SALES_PITCH_MAX_LENGTH` in
+/// `web-app/src/helpers/salesPitchLimits.ts` — change both together.
+const int kSalesPitchMaxLength = 800;
+
 /// The first problem with a DJ quote, as a Danish user-facing message, or null
 /// when the input is submittable.
 ///

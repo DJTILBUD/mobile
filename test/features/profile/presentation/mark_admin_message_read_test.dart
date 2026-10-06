@@ -19,22 +19,25 @@ import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_pr
 /// This test drives the notifier directly (no container/provider needed) and
 /// disposes it mid-flight, which is exactly the situation autoDispose creates.
 void main() {
-  test('mark() survives being disposed mid-request and reports success', () async {
-    final completer = Completer<void>();
-    final notifier = MarkAdminMessageReadNotifier(
-      _FakeProfileRepository(completer.future),
-    );
+  test(
+    'mark() survives being disposed mid-request and reports success',
+    () async {
+      final completer = Completer<void>();
+      final notifier = MarkAdminMessageReadNotifier(
+        _FakeProfileRepository(completer.future),
+      );
 
-    final future = notifier.mark(messageId: 1, userId: 'u1', isDj: true);
+      final future = notifier.mark(messageId: 1, userId: 'u1', isDj: true);
 
-    // Riverpod disposes the un-listened autoDispose notifier before the
-    // repository call comes back.
-    notifier.dispose();
-    completer.complete();
+      // Riverpod disposes the un-listened autoDispose notifier before the
+      // repository call comes back.
+      notifier.dispose();
+      completer.complete();
 
-    // Unguarded, this line threw StateError instead of returning.
-    expect(await future, isTrue);
-  });
+      // Unguarded, this line threw StateError instead of returning.
+      expect(await future, isTrue);
+    },
+  );
 
   test('mark() reports failure instead of throwing when disposed', () async {
     final completer = Completer<void>();
@@ -74,5 +77,7 @@ class _FakeProfileRepository implements ProfileRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
-      throw UnimplementedError('${invocation.memberName} not used in this test');
+      throw UnimplementedError(
+        '${invocation.memberName} not used in this test',
+      );
 }

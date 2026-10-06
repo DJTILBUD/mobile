@@ -60,11 +60,13 @@ class DjQuoteModel {
       job: jobJson != null ? JobModel.fromJson(jobJson) : _emptyJobModel(),
       earlySetupStatus: json['early_setup_status'] as String?,
       earlySetupPrice: (json['early_setup_price'] as num?)?.toInt(),
-      djReadyConfirmedAt: json['dj_ready_confirmed_at'] != null
-          ? DateTime.parse(json['dj_ready_confirmed_at'] as String)
-          : null,
+      djReadyConfirmedAt:
+          json['dj_ready_confirmed_at'] != null
+              ? DateTime.parse(json['dj_ready_confirmed_at'] as String)
+              : null,
       extraHours: (json['extra_hours'] as num?)?.toDouble(),
-      extraHoursPricePerHour: (json['extra_hours_price_per_hour'] as num?)?.toDouble(),
+      extraHoursPricePerHour:
+          (json['extra_hours_price_per_hour'] as num?)?.toDouble(),
       extraHoursDeclinedAt:
           json['extra_hours_declined_at'] != null
               ? DateTime.parse(json['extra_hours_declined_at'] as String)

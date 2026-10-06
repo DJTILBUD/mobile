@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/repositories/profile_repository.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/payment_info.dart';
+import 'package:dj_tilbud_app/features/profile/domain/entities/billing_change_request.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/review.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/admin_message.dart';
@@ -48,6 +49,37 @@ final musicianPaymentInfoProvider = FutureProvider<PaymentInfo?>((ref) {
   return ref
       .watch(profileRepositoryProvider)
       .fetchPaymentInfo(userId: _userId, isDj: false);
+});
+
+/// Latest billing change request (any status) for the signed-in performer.
+/// Drives the lock card on the payment screen.
+final billingChangeRequestProvider = FutureProvider<BillingChangeRequest?>((
+  ref,
+) {
+  return ref.watch(profileRepositoryProvider).fetchBillingChangeRequest();
+});
+
+// ── Self-billing terms popup ──
+
+/// The `self_billing_live` feature flag (fails closed). The popup never shows while it is off.
+final selfBillingLiveProvider = FutureProvider<bool>((ref) {
+  return ref.watch(profileRepositoryProvider).isSelfBillingLive();
+});
+
+/// True when the mandatory "Accepter vilkår for selvfakturering" popup must show: flag on, the
+/// SAVED payment type is Invoice, and the terms are not accepted yet. Same rule as web
+/// `DjSidebar`/`MusicianSidebar` (`needsSelfBillingTermsAcceptance`). False while loading or on
+/// any error, so the gate can never block the app on a failed lookup.
+final needsSelfBillingTermsProvider = Provider.family<bool, bool>((ref, isDj) {
+  final live = ref.watch(selfBillingLiveProvider).valueOrNull ?? false;
+  if (!live) return false;
+  final info =
+      ref
+          .watch(isDj ? djPaymentInfoProvider : musicianPaymentInfoProvider)
+          .valueOrNull;
+  return info != null &&
+      info.payment == PaymentType.invoice &&
+      !info.selfBillingTermsAccepted;
 });
 
 // ── Reviews ──

@@ -31,7 +31,8 @@ class DSRangeSlider extends StatelessWidget {
 
   bool get _isFullRange => values.start <= min && values.end >= max;
 
-  String _format(double v) => labelBuilder != null ? labelBuilder!(v) : v.toInt().toString();
+  String _format(double v) =>
+      labelBuilder != null ? labelBuilder!(v) : v.toInt().toString();
 
   @override
   Widget build(BuildContext context) {
@@ -76,38 +77,39 @@ class DSRangeSlider extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: _isFullRange && noFilterLabel != null
-              ? Center(
-                  child: Text(
-                    noFilterLabel!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: c.text.muted,
-                      fontStyle: FontStyle.italic,
+          child:
+              _isFullRange && noFilterLabel != null
+                  ? Center(
+                    child: Text(
+                      noFilterLabel!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: c.text.muted,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
+                  )
+                  : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _format(values.start),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: c.text.primary,
+                        ),
+                      ),
+                      Text(
+                        _format(values.end),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: c.text.primary,
+                        ),
+                      ),
+                    ],
                   ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _format(values.start),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: c.text.primary,
-                      ),
-                    ),
-                    Text(
-                      _format(values.end),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: c.text.primary,
-                      ),
-                    ),
-                  ],
-                ),
         ),
       ],
     );

@@ -16,10 +16,7 @@ Future<void> initSupabase() async {
   final url = _resolvedSupabaseUrl;
   // ignore: avoid_print
   print('Initializing Supabase: url=$url, env=${EnvConfig.env}');
-  await Supabase.initialize(
-    url: url,
-    anonKey: EnvConfig.supabaseAnonKey,
-  );
+  await Supabase.initialize(url: url, anonKey: EnvConfig.supabaseAnonKey);
 }
 
 SupabaseClient get supabase => Supabase.instance.client;

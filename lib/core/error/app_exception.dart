@@ -45,6 +45,16 @@ class BillingInfoIncompleteException extends AppException {
   const BillingInfoIncompleteException(super.message);
 }
 
+/// A billing-lock rejection from the web API (web-app/documentation/billing-lock-plan.md):
+/// a save on locked payment info (HTTP 423, `code: "billing_locked"`) or a refused change
+/// request (`reason_required`, `not_locked`, `already_open`). `message` is the server's
+/// Danish, user-facing text and is shown as-is.
+class BillingLockException extends AppException {
+  const BillingLockException(super.message, {this.code});
+
+  final String? code;
+}
+
 class AgentException extends AppException {
   const AgentException(super.message);
 }

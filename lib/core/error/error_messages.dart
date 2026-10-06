@@ -25,6 +25,10 @@ String friendlyErrorMessage(Object? error, {String? fallback}) {
   if (error is NetworkException) {
     return 'Der er problemer med forbindelsen. Tjek dit internet, og prøv igen.';
   }
+  if (error is BillingLockException) {
+    // Authored Danish by the web API (billing lock / change request rules).
+    return error.message.isNotEmpty ? error.message : generic;
+  }
   if (error is DatabaseException) {
     // The inner message may be raw server/database text — never surface it here.
     return fallback ?? 'Kunne ikke hente data. Prøv igen.';

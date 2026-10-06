@@ -48,7 +48,9 @@ class DSStatusBadge extends StatelessWidget {
     return Container(
       width: expand ? double.infinity : null,
       padding: const EdgeInsets.symmetric(
-          horizontal: DSSpacing.s2, vertical: 3),
+        horizontal: DSSpacing.s2,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: expand ? 0.25 : 0.20),
         borderRadius: BorderRadius.circular(DSRadius.pill),

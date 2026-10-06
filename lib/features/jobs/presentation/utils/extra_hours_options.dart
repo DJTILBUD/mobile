@@ -4,13 +4,10 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 /// (`AddExtraHours.tsx` / `AddExtExtraHours.tsx`): 0.25-hour steps from
 /// 1 kvarter up to 10 timer. Multiples of 0.25 are exactly representable as
 /// doubles, so they match dropdown values without precision drift.
-final List<DSDropdownItem<double>> extraHoursOptions = List.generate(
-  40,
-  (i) {
-    final value = (i + 1) * 0.25;
-    return DSDropdownItem<double>(value: value, label: extraHoursLabel(value));
-  },
-);
+final List<DSDropdownItem<double>> extraHoursOptions = List.generate(40, (i) {
+  final value = (i + 1) * 0.25;
+  return DSDropdownItem<double>(value: value, label: extraHoursLabel(value));
+});
 
 /// Danish label for an extra-hours value, matching the web wording exactly
 /// (e.g. 0.25 → "1 kvarter", 1.5 → "1 time 1 halv time", 2 → "2 timer").

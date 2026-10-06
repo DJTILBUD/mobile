@@ -44,28 +44,36 @@ Future<void> showSongRequestQrDialog(BuildContext context, String token) {
             'Én fast QR-kode til alle dine jobs. Gæsterne scanner og sender '
             'ønsker til dit næste kommende arrangement.',
             textAlign: TextAlign.center,
-            style: DSTextStyle.bodyMd.copyWith(color: c.text.secondary, height: 1.4),
+            style: DSTextStyle.bodyMd.copyWith(
+              color: c.text.secondary,
+              height: 1.4,
+            ),
           ),
         ],
       ),
     ),
-    actions: (ctx) => [
-      DSButton(
-        label: 'Kopiér link',
-        variant: DSButtonVariant.secondary,
-        size: DSButtonSize.sm,
-        iconLeft: LucideIcons.copy,
-        onTap: () {
-          Clipboard.setData(ClipboardData(text: url));
-          DSToast.show(context, variant: DSToastVariant.success, title: 'Link kopieret!');
-        },
-      ),
-      DSButton(
-        label: 'Luk',
-        variant: DSButtonVariant.ghost,
-        size: DSButtonSize.sm,
-        onTap: () => Navigator.of(ctx).pop(),
-      ),
-    ],
+    actions:
+        (ctx) => [
+          DSButton(
+            label: 'Kopiér link',
+            variant: DSButtonVariant.secondary,
+            size: DSButtonSize.sm,
+            iconLeft: LucideIcons.copy,
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: url));
+              DSToast.show(
+                context,
+                variant: DSToastVariant.success,
+                title: 'Link kopieret!',
+              );
+            },
+          ),
+          DSButton(
+            label: 'Luk',
+            variant: DSButtonVariant.ghost,
+            size: DSButtonSize.sm,
+            onTap: () => Navigator.of(ctx).pop(),
+          ),
+        ],
   );
 }

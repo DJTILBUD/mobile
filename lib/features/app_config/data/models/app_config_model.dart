@@ -47,28 +47,28 @@ class AppConfigModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'ios_min_version': iosMinVersion,
-        'android_min_version': androidMinVersion,
-        'ios_latest_version': iosLatestVersion,
-        'android_latest_version': androidLatestVersion,
-        'ios_app_store_url': iosAppStoreUrl,
-        'android_play_store_url': androidPlayStoreUrl,
-        'force_update_title': forceUpdateTitle,
-        'force_update_message': forceUpdateMessage,
-        'optional_update_title': optionalUpdateTitle,
-        'optional_update_message': optionalUpdateMessage,
-      };
+    'ios_min_version': iosMinVersion,
+    'android_min_version': androidMinVersion,
+    'ios_latest_version': iosLatestVersion,
+    'android_latest_version': androidLatestVersion,
+    'ios_app_store_url': iosAppStoreUrl,
+    'android_play_store_url': androidPlayStoreUrl,
+    'force_update_title': forceUpdateTitle,
+    'force_update_message': forceUpdateMessage,
+    'optional_update_title': optionalUpdateTitle,
+    'optional_update_message': optionalUpdateMessage,
+  };
 
   AppConfig toEntity() => AppConfig(
-        iosMinVersion: iosMinVersion,
-        androidMinVersion: androidMinVersion,
-        iosLatestVersion: iosLatestVersion,
-        androidLatestVersion: androidLatestVersion,
-        iosAppStoreUrl: iosAppStoreUrl,
-        androidPlayStoreUrl: androidPlayStoreUrl,
-        forceUpdateTitle: forceUpdateTitle,
-        forceUpdateMessage: forceUpdateMessage,
-        optionalUpdateTitle: optionalUpdateTitle,
-        optionalUpdateMessage: optionalUpdateMessage,
-      );
+    iosMinVersion: iosMinVersion,
+    androidMinVersion: androidMinVersion,
+    iosLatestVersion: iosLatestVersion,
+    androidLatestVersion: androidLatestVersion,
+    iosAppStoreUrl: iosAppStoreUrl,
+    androidPlayStoreUrl: androidPlayStoreUrl,
+    forceUpdateTitle: forceUpdateTitle,
+    forceUpdateMessage: forceUpdateMessage,
+    optionalUpdateTitle: optionalUpdateTitle,
+    optionalUpdateMessage: optionalUpdateMessage,
+  );
 }

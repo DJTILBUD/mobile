@@ -31,7 +31,10 @@ class DjJobFiltersModel {
     List<String> _strList(String key) =>
         (json[key] as List<dynamic>?)?.cast<String>() ?? [];
     List<int> _intList(String key) =>
-        (json[key] as List<dynamic>?)?.map((e) => (e as num).toInt()).toList() ?? [];
+        (json[key] as List<dynamic>?)
+            ?.map((e) => (e as num).toInt())
+            .toList() ??
+        [];
 
     final weekdays = json['allowed_weekdays'] as List<dynamic>?;
 
@@ -51,46 +54,46 @@ class DjJobFiltersModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'dj_id': djId,
-        'excluded_event_types': excludedEventTypes,
-        'excluded_regions': excludedRegions,
-        'excluded_genres': excludedGenres,
-        'allowed_weekdays': allowedWeekdays,
-        'min_budget': minBudget,
-        'max_budget': maxBudget,
-        'min_guests': minGuests,
-        'max_guests': maxGuests,
-        // toJson is the upsert payload: a field missing here saves with no error and then
-        // reverts on reload (the lossy hand-listed-mapper trap).
-        'min_hours': minHours,
-        'max_hours': maxHours,
-      };
+    'dj_id': djId,
+    'excluded_event_types': excludedEventTypes,
+    'excluded_regions': excludedRegions,
+    'excluded_genres': excludedGenres,
+    'allowed_weekdays': allowedWeekdays,
+    'min_budget': minBudget,
+    'max_budget': maxBudget,
+    'min_guests': minGuests,
+    'max_guests': maxGuests,
+    // toJson is the upsert payload: a field missing here saves with no error and then
+    // reverts on reload (the lossy hand-listed-mapper trap).
+    'min_hours': minHours,
+    'max_hours': maxHours,
+  };
 
   DjJobFilters toEntity() => DjJobFilters(
-        djId: djId,
-        excludedEventTypes: excludedEventTypes,
-        excludedRegions: excludedRegions,
-        excludedGenres: excludedGenres,
-        allowedWeekdays: allowedWeekdays,
-        minBudget: minBudget,
-        maxBudget: maxBudget,
-        minGuests: minGuests,
-        maxGuests: maxGuests,
-        minHours: minHours,
-        maxHours: maxHours,
-      );
+    djId: djId,
+    excludedEventTypes: excludedEventTypes,
+    excludedRegions: excludedRegions,
+    excludedGenres: excludedGenres,
+    allowedWeekdays: allowedWeekdays,
+    minBudget: minBudget,
+    maxBudget: maxBudget,
+    minGuests: minGuests,
+    maxGuests: maxGuests,
+    minHours: minHours,
+    maxHours: maxHours,
+  );
 
   static DjJobFiltersModel fromEntity(DjJobFilters e) => DjJobFiltersModel(
-        djId: e.djId,
-        excludedEventTypes: e.excludedEventTypes,
-        excludedRegions: e.excludedRegions,
-        excludedGenres: e.excludedGenres,
-        allowedWeekdays: e.allowedWeekdays,
-        minBudget: e.minBudget,
-        maxBudget: e.maxBudget,
-        minGuests: e.minGuests,
-        maxGuests: e.maxGuests,
-        minHours: e.minHours,
-        maxHours: e.maxHours,
-      );
+    djId: e.djId,
+    excludedEventTypes: e.excludedEventTypes,
+    excludedRegions: e.excludedRegions,
+    excludedGenres: e.excludedGenres,
+    allowedWeekdays: e.allowedWeekdays,
+    minBudget: e.minBudget,
+    maxBudget: e.maxBudget,
+    minGuests: e.minGuests,
+    maxGuests: e.maxGuests,
+    minHours: e.minHours,
+    maxHours: e.maxHours,
+  );
 }

@@ -23,19 +23,21 @@ class InvoiceStatusBadge extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = DSTheme.of(context);
 
-    final statusAsync = jobId != null
-        ? ref.watch(invoiceStatusByJobIdProvider(jobId!))
-        : ref.watch(invoiceStatusByExtJobIdProvider(extJobId!));
+    final statusAsync =
+        jobId != null
+            ? ref.watch(invoiceStatusByJobIdProvider(jobId!))
+            : ref.watch(invoiceStatusByExtJobIdProvider(extJobId!));
 
     return statusAsync.when(
-      loading: () => Container(
-        height: expand ? 32 : 22,
-        width: expand ? null : 160,
-        decoration: BoxDecoration(
-          color: c.border.subtle,
-          borderRadius: BorderRadius.circular(DSRadius.pill),
-        ),
-      ),
+      loading:
+          () => Container(
+            height: expand ? 32 : 22,
+            width: expand ? null : 160,
+            decoration: BoxDecoration(
+              color: c.border.subtle,
+              borderRadius: BorderRadius.circular(DSRadius.pill),
+            ),
+          ),
       error: (_, __) => const SizedBox.shrink(),
       data: (firstInvoicePaid) {
         final paid = firstInvoicePaid == true;

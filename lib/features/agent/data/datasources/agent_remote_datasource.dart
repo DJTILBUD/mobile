@@ -47,10 +47,11 @@ class AgentRemoteDatasource {
     if (profileAnswers != null) bodyMap['profileAnswers'] = profileAnswers;
     if (followUpMessage != null) bodyMap['followUpMessage'] = followUpMessage;
 
-    final request = http.Request('POST', uri)
-      ..headers['Authorization'] = 'Bearer $_accessToken'
-      ..headers['Content-Type'] = 'application/json'
-      ..body = jsonEncode(bodyMap);
+    final request =
+        http.Request('POST', uri)
+          ..headers['Authorization'] = 'Bearer $_accessToken'
+          ..headers['Content-Type'] = 'application/json'
+          ..body = jsonEncode(bodyMap);
 
     http.StreamedResponse response;
     try {
@@ -62,8 +63,13 @@ class AgentRemoteDatasource {
     if (response.statusCode == 429) {
       final body = await response.stream.bytesToString();
       Map<String, dynamic> parsed = {};
-      try { parsed = jsonDecode(body) as Map<String, dynamic>; } catch (_) {}
-      final limitType = (parsed['error'] as String? ?? '').contains('daily') ? 'daily' : 'monthly';
+      try {
+        parsed = jsonDecode(body) as Map<String, dynamic>;
+      } catch (_) {}
+      final limitType =
+          (parsed['error'] as String? ?? '').contains('daily')
+              ? 'daily'
+              : 'monthly';
       throw AgentLimitException(limitType: limitType);
     }
 
@@ -100,7 +106,9 @@ class AgentRemoteDatasource {
           } else if (data['type'] == 'done') {
             return;
           } else if (data['type'] == 'error') {
-            throw AgentException(data['message'] as String? ?? 'Unknown agent error');
+            throw AgentException(
+              data['message'] as String? ?? 'Unknown agent error',
+            );
           }
         }
       }
@@ -112,7 +120,8 @@ class AgentRemoteDatasource {
     if (userId == null) return (dailyUsed: 0, monthlyUsed: 0);
 
     final now = DateTime.now().toUtc();
-    final dayStart = DateTime.utc(now.year, now.month, now.day).toIso8601String();
+    final dayStart =
+        DateTime.utc(now.year, now.month, now.day).toIso8601String();
     final monthStart = DateTime.utc(now.year, now.month, 1).toIso8601String();
 
     final results = await Future.wait([

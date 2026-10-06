@@ -80,23 +80,40 @@ void main() {
       expect(isPaymentInfoComplete(null), isFalse);
     });
 
-    test(
-      'Invoice + private is NOT complete even when every field is filled',
-      () {
-        expect(
-          isPaymentInfoComplete(
-            base(businessType: BusinessEntityType.private_),
+    test('Invoice + private is complete with CPR, email and bank, no CVR', () {
+      final priv = base(businessType: BusinessEntityType.private_, cvr: null);
+      expect(isPaymentInfoComplete(priv), isTrue);
+      expect(isSelfBillingPayoutReady(priv), isTrue);
+    });
+
+    test('Invoice + private still needs CPR, billing email and bank', () {
+      expect(
+        isPaymentInfoComplete(
+          base(businessType: BusinessEntityType.private_, cvr: null, cpr: null),
+        ),
+        isFalse,
+      );
+      expect(
+        isPaymentInfoComplete(
+          base(
+            businessType: BusinessEntityType.private_,
+            cvr: null,
+            billingEmail: ' ',
           ),
-          isFalse,
-        );
-        expect(
-          isSelfBillingPayoutReady(
-            base(businessType: BusinessEntityType.private_),
+        ),
+        isFalse,
+      );
+      expect(
+        isPaymentInfoComplete(
+          base(
+            businessType: BusinessEntityType.private_,
+            cvr: null,
+            accountNumber: null,
           ),
-          isFalse,
-        );
-      },
-    );
+        ),
+        isFalse,
+      );
+    });
 
     test('Invoice + sole trader needs CVR, CPR, email and bank', () {
       expect(isPaymentInfoComplete(base()), isTrue);
@@ -158,12 +175,19 @@ void main() {
       },
     );
 
-    test('missingPayoutReadyFields names the private-type problem', () {
-      final missing = missingPayoutReadyFields(
-        base(businessType: BusinessEntityType.private_, accountNumber: null),
-      );
-      expect(missing.first, contains('CVR'));
-      expect(missing, contains('bankoplysninger'));
-    });
+    test(
+      'missingPayoutReadyFields asks a private person for CPR and bank, never a CVR',
+      () {
+        final missing = missingPayoutReadyFields(
+          base(
+            businessType: BusinessEntityType.private_,
+            cvr: null,
+            cpr: null,
+            accountNumber: null,
+          ),
+        );
+        expect(missing, ['CPR', 'bankoplysninger']);
+      },
+    );
   });
 }

@@ -1,7 +1,5 @@
-Ny fane "Stedet" på partnerjobs
+Vilkår for henvisninger og opdatering af betalingsoplysninger
 
-• Jobs hos faste partnere som Kokkedal Slot har nu to faner: "Job" med din proces, kundekontakt og faktura, og "Stedet" med alt om lokationen
-• Under "Stedet" finder du billeder fra stedet, som DJTILBUD har taget ved besøg, hver med en kommentar til dig, fx hvor DJ'en står, og hvor strømmen er
-• Tryk på et billede for at se det i fuld størrelse, swipe mellem billederne og zoom med to fingre
-• Adressen og parrets ønsker til festen ("Til festen") ligger nu samlet på samme fane, så du ikke skal scrolle forbi proceskortene for at finde dem
-• Almindelige jobs ser ud som før
+• Før du henviser en kunde første gang, skal du læse og acceptere vilkårene for henvisninger under Henvis en kunde
+• Du kan nu trække ned for at opdatere siden med betalingsoplysninger, fx når support har godkendt din anmodning om ændring
+• Små forbedringer og rettelser

@@ -12,9 +12,10 @@ class RoleCache {
   static Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final value = prefs.getString(_key);
-    _role = value == 'dj'
-        ? MusicianRole.dj
-        : value == 'instrumentalist'
+    _role =
+        value == 'dj'
+            ? MusicianRole.dj
+            : value == 'instrumentalist'
             ? MusicianRole.instrumentalist
             : null;
   }

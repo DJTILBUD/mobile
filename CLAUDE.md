@@ -353,6 +353,79 @@ Mobile can create brand-new accounts (`SignupScreen`, route `AppRoutes.signup`, 
   session appears the onboarding gate (Gate 4) would bounce the user to `/onboarding` before any
   profile exists. `/profile-setup` is already public for the same reason; do not "tidy" either out.
 
+## Referrals: "Henvis en kunde" (`features/referrals/`, plan: `web-app/documentation/referrals-plan.md`)
+
+A DJ or saxophonist hands a job they cannot take to DJTILBUD and earns 500 kr once it has been
+played. **Everything goes through the web-app** (`GET/POST /api/referrals`, Bearer-authed): the
+route creates the ExtJob, the `Referrals` row, the admin `call_customer` Action and the sax push.
+Mobile never touches the `Referrals` table directly (`ReferralsRemoteDatasource` is web-API only).
+
+- **Where it lives in the UI:** ONLY the shared profile menu row "Henvis en kunde" (`profile_screen.dart`,
+  both roles, route `AppRoutes.referrals` = `/referrals`, role-aware via `roleFromExtra`). A promo
+  card was tried under the "Nye jobs" empty state and removed the same day (owner call: not on the
+  starting page) — do not re-add a referral nudge to any feed/home screen without asking first.
+- **Referral terms gate (2026-10-06):** the screen watches `referralTermsProvider`
+  (`GET /api/referrals/terms`); until accepted it shows `_ReferralTermsGate` (link to
+  djtilbud.dk/referral-handelsbetingelser + "Jeg har læst og accepterer vilkårene", which POSTs the
+  same route and stays disabled until the `DSCheckbox` "Jeg har læst vilkårene for henvisninger" is ticked) and NO tab bar. The server is the real gate: `POST /api/referrals` 403s with
+  `code: referral_terms_not_accepted`. Copy mirrors web `ReferralsPage.tsx`. Test fakes of
+  `ReferralsRepository` default to accepted.
+- **Two tabs, driven by an explicit `TabController`** (`ConsumerStatefulWidget` +
+  `SingleTickerProviderStateMixin`, not an implicit `DefaultTabController`) — "Ny henvisning" (form,
+  with a bold reward line up top) and "Mine henvisninger" (the list, each job showing its `#E<id>`
+  job ref via `Referral.jobRef`). `RefreshIndicator` needs a Scrollable direct child, so every state
+  on the list tab (loading/error/empty/populated) is its own `ListView` with
+  `AlwaysScrollableScrollPhysics`, never a bare `Center`. The loading-state widget test cannot
+  `pumpAndSettle()` after switching to that tab (the spinner's animation never settles) — tap then a
+  couple of fixed `pump()` calls.
+- **On submit success: a ~1.1s auto-dismissing overlay, then switch to "Mine henvisninger."**
+  `widgets/referral_success_overlay.dart` (`showReferralSuccessOverlay(context)`, pure
+  Tween/AnimationController — no new package) is awaited in `_submit` before
+  `_tabController.animateTo(1)`. A toast alone disappears too fast to register as a reward moment
+  right before the view changes under the user. The referrals list is already invalidated inside
+  `submit()`, so by the time the tab switches "Mine henvisninger" refetches with the new row included
+  — the explicit `TabController` exists specifically so this can be driven programmatically.
+- **Copy and state logic mirror web `ReferralsPage.tsx` line for line** in the pure
+  `domain/referral_labels.dart` (`referralJobState`, `referralRewardState`, the `canSubmit` rule);
+  `test/features/referrals/domain/referral_labels_test.dart` pins them. Change web and mobile together.
+- `referralRewardDkk` is display only; the real amount is frozen server-side on `reward_dkk` and
+  comes back on every item.
+- **Errors:** the route's rejections are Danish and user-facing (a validation `details` string,
+  "Kun DJs og musikere kan henvise jobs."), so the screen reads `DatabaseException.message`
+  directly instead of `friendlyErrorMessage`, which suppresses it (see the web-API error section).
+- The form validates VALUES via `referralInputIsComplete`, not `Form.validate()` (lazy ListView rule).
+- **Phone is a country-code dropdown + local number, mirroring dj-form's own phone entry** (`domain/phone_countries.dart`, ported from `dj-form/src/App.tsx` `PHONE_COUNTRIES` + `normalizePhoneLocal`, and mirrored again on web in `web-app/src/helpers/phoneCountries.ts` — all three change together). The submitted `phone_number` is always `+<dial code><local digits>`.
+- **Never mark a job as referred on any job view** (owner rule): a DJ or saxophonist looking at an
+  ext job must see no difference. No badge, no prefix in the notes, no copy. The referrer's note
+  becomes the job's ordinary `notes`; the only place a referral is visible is the referrer's own
+  list on this screen.
+
+## ⚠️ Job/quote/offer lists do NOT self-update: `Quotes`, `Jobs`, `ServiceOffers` are not in the Realtime publication
+
+`DjQuotesNotifier`, `NewDjJobsNotifier`, `NewInstrumentalistJobsNotifier` and `ServiceOffersNotifier`
+(`jobs_provider.dart`) subscribe to `postgres_changes` on those tables, but no migration ever ran
+`ALTER PUBLICATION supabase_realtime ADD TABLE` for them (only chat tables, `FeatureFlags`,
+`SupportAiDecisions` are published; check with
+`select tablename from pg_publication_tables where pubname = 'supabase_realtime'`). So the callback
+never fires and the lists only refresh on first load, pull-to-refresh, or an explicit
+`silentRefresh()` after one of our own writes. The bug this produced (job #3198, Sept 2026): the
+customer canceled, the DB trigger flipped the DJ's quote to `lost` and the push went out, but the
+"Bud afgivet" tab still listed the job and the detail opened from it said "Bud givet", while the same
+job opened from the push said "Udgået" (that path fetches the row by id). Both screens render
+`Quotes.status` exactly like web; only the data each was handed differed.
+
+Guards now in place, keep them:
+- `_RealtimeNotifier.refetchKeepingData()` runs on `AppLifecycleState.resumed` (base class, all four
+  lists) and never downgrades a loaded list to `AsyncError` on a transient failure.
+- `QuoteDetailScreen` / `ServiceOfferDetailScreen` call it in `initState`, so a detail reached from
+  any cached list re-fetches on open and the existing `ref.listen(...)` swaps the fresh entity in
+  (which also corrects the tab underneath).
+- The calendar (`CalendarEventsNotifier`) still has its own one-shot fetch; its "Bud afgivet" tag can
+  lag until pull-to-refresh, but the detail it opens is corrected by the guard above.
+
+If the tables ever get added to the publication, the subscriptions start working as designed and
+nothing here needs to change. Do not "fix" the stale list by fetching in every card.
+
 ## "Udvalgte jobs" must filter `sent` out — `djExtJobsProvider` deliberately includes it
 
 `djExtJobsProvider` / `fetchDjExtJobs` (`jobs_remote_datasource.dart`) returns ext jobs with status
@@ -434,7 +507,7 @@ Mirrors web `VenuePhotosSection` on `dj/udvalgte-jobs/[id]`.
 ## "🎶 Til festen" partner-booking card (`PartnerEventWishesCard`)
 
 `shared/widgets/partner_event_wishes_card.dart` — a purple card of the couple-facing partner-booking
-details (address_as, guest_age, first_dance_song, spotify_playlist_url, special_conditions, early_setup
+details (room ("Lokale", `ExtJobs.room`, shown to the DJ AND the saxophonist), address_as, guest_age, first_dance_song, spotify_playlist_url, special_conditions, early_setup
 + a sax subsection), mirroring the web `src/components/PartnerEventWishesCard.tsx`. Self-hides when
 nothing is set. Kept as the **LAST card** on both screens. Shown to:
 - **DJs** on `featured_jobs/.../ext_job_detail_screen.dart` (from the `ExtJob` entity) — the full card;
@@ -448,7 +521,7 @@ nothing is set. Kept as the **LAST card** on both screens. Shown to:
 
 **The data plumbing was the work:** these are ExtJobs Phase-2 columns that the models didn't carry.
 Added to BOTH entity/model layers: `ExtJob`/`ExtJobModel` gained `address_as, guest_age,
-first_dance_song, spotify_playlist_url, special_conditions, early_setup` (+ surfaced the already-parsed
+first_dance_song, spotify_playlist_url, special_conditions, early_setup, room` (+ surfaced the already-parsed
 `sax_type`/`musician_start_time` on the entity — `toEntity()` had been dropping them), and `Job`/`JobModel`
 gained the same six. **`ExtJobModel.toJobModel()` must forward all six** or the won-sax view (which sees an
 ext job as a `Job` via that mapper) shows an empty card. When you add another ExtJobs display column,
@@ -1107,8 +1180,25 @@ and the first sign of trouble was the server rejecting the insert.
   because the server rejection remains the authoritative gate.
 - `closed`/`customer_contacted` DO still accept sax offers (a booked DJ doesn't fill the sax slot);
   `ready_for_billing`/`canceled`/`expired` do not. Internal jobs use their own status set.
+- **⚠️ Another musician's merely SENT offer DOES lock the job** (`heldByAnother`, job #3320, 2026-10-02).
+  The DB allows ONE non-lost offer per instrument per job (unique indexes
+  `idx_unique_active_instrument_per_job` / `_per_ext_job`, migration `20260130000001`). The first
+  version of the resolver (and its test) assumed "several sax offers per job are fine", so the
+  deep-linked form stayed fully enabled and the insert failed after the musician wrote a pitch.
+  The form shows the yellow "optaget" card for it (not the red hard block, since it frees up if
+  that offer goes `lost`), hides the payment + message section whenever the job is not biddable,
+  and re-checks availability after a failed submit. Server side, `POST /api/service-offers` maps
+  that index violation to a 409 with Danish copy (matched on the index name, not code 23505,
+  because the date-conflict trigger also raises `unique_violation`).
 - **When you add any new "can I act on this?" signal to a feed row, check the deep-link path too** —
   it will NOT have it. Same root cause as the wave-gate banner below.
+- **`MusicianJobAvailability.partnerBooking`** (checked FIRST, before the won/alreadyBid/status
+  branches) blocks a TRUE partner-portal ext job (`RecurringCustomers.is_partner=true` — web-app is
+  the source of truth, see `web-app/CLAUDE.md` → "Commission engine v2"). The feed already excludes
+  these (`fetchInstrumentalistExtJobs` calls the new `JobsRepository.fetchPartnerExtJobIds()`, fed
+  by web-app `GET /api/internal-musician/partner-ext-job-ids` since musician RLS can't read
+  `is_partner`), so this only matters on the deep-link/push path, same reasoning as every other
+  case in this section. The server 403 on `POST /api/service-offers` is the real gate.
 
 ## Supply/matching wave gate: the quote form must guard independently
 
@@ -1136,6 +1226,30 @@ than `friendlyErrorMessage()`, which would have swallowed it into a generic "Nog
 - There are **no app links / associated domains configured**, so a pasted web URL cannot open the
   app — push is the only way in. Chat `@job:` chips are already safe (`resolveJobLink` reuses the
   wave-gated selector).
+
+## DJ quote form: "is this job still open to ME?" is server-resolved (`bid-status`), NOT a status check
+
+A `new_job` / `another_round` push (or its row in the notification centre, days later) opens the
+DJ quote form with a **bare `Jobs` row** — no quotes, no tiers. Until this landed, a job that was
+long `sent` with 3 pending quotes rendered as a perfect, fully enabled form; the DJ wrote a price
+and a pitch and learned at submit ("maksimale antal bud") that it was full. The sax form already
+had `resolveMusicianJobAvailability`; the DJ form had nothing.
+
+- **Do NOT gate on `job.status`.** A `sent` job is still biddable when a pending quote was
+  lost/overwritten (the web selector fetches `sent` on purpose), and an `open` job can already be
+  full (`first_quote_only`) or closed to *this* DJ by the tier quota. Both web gates
+  (`useCanDjQuote` + the quote route) decide on the pending-quote count + tier table.
+- Mobile cannot count those quotes (other DJs' `Quotes` + `DjInfos.tier` are RLS-hidden), so it asks
+  **`GET /api/dj/jobs/{id}/bid-status`** → `{can_bid, reason, message}`; the rule is web
+  `src/domain/djBidStatus.ts` (unit-tested), the read-only twin of the route's guard chain.
+  Reasons: `archived`, `paused`, `not_biddable_status`, `already_bid`, `full`, `tier_quota`,
+  `not_found`.
+- Mobile: `features/jobs/domain/dj_bid_status.dart` (`DjBidStatus`, `fromJson` fails OPEN) →
+  `fetchDjBidStatus` (datasource fails OPEN) → `djBidStatusProvider(jobId)` → `_BidClosedBanner`
+  ABOVE the wave banner in `dj_quote_form_screen`, folded into `isBlocked`. Same fail-open
+  polarity as `jobWaveOpenProvider`; the quote route stays the authority.
+- Known gap: the notification-centre stale sweep (`stale_bid_notifications.dart`) still keys on
+  status, so a full `sent` job's row stays unread; only the form is guarded.
 
 ## Date-collision guard (no double-booking a date)
 
@@ -1233,12 +1347,42 @@ Two non-obvious wiring facts:
 `features/profile/domain/self_billing_complete.dart` mirrors `web-app/src/helpers/selfBillingComplete.ts`
 function for function: `isPaymentInfoComplete(PaymentInfo.toReadinessInfo())` is what the two bid
 gates (`dj_quote_form_screen`, `instrumentalist_offer_form_screen`) enforce, exactly like the web
-Redirecter. Invoice needs a registered business (`sole_trader` or `aps`; **Invoice + Privat is never
-complete**), CVR, billing email and bank; B-income needs CPR, bank and address. `payment_screen.dart`
-hides the Privat card under Invoice (`_BusinessTypeSelector.allowPrivate`), warns on a legacy private
-row, requires the CVR under Invoice, and shows the server-derived `cvrCompanyName` read-only (parsed
+Redirecter. Invoice is valid for every business type since 2026-09-30: **Privat needs CPR and no
+CVR**, `sole_trader` CVR + CPR, `aps` CVR, all with billing email and bank; B-income needs CPR, bank
+and address. `payment_screen.dart` always offers the Privat card, hides the CVR field for Privat
+(and saves `cvr` as null), tells a private person they send their own invoice with the CPR on it
+(they are not self-billed), and shows the server-derived `cvrCompanyName` read-only (parsed
 from `cvr_company_name`, never sent back). Tests: `test/features/profile/domain/self_billing_complete_test.dart`
 mirrors the web test file; add cases to both.
+
+## Billing info lock + change requests (plan: `web-app/documentation/billing-lock-plan.md`)
+
+Payment info locks server-side the first time it is complete (`billing_locked_at` on
+`PrivateDjInfos`/`PrivateMusiciansInfo`, parsed into `PaymentInfo.billingLockedAt` / `isLocked`,
+never sent back). The web-app decides when to lock; mobile only renders it.
+
+- **Locked:** `payment_screen.dart` disables every input (`enabled: !_locked`) and both type
+  selectors (`AbsorbPointer`), hides "Gem", and shows `widgets/billing_lock_card.dart` with the lock
+  date and "Anmod om ændring" (reason dialog -> `POST /api/billing-change-requests`). A `pending`
+  request shows "Afventer support" and hides the button; `rejected` shows the admin note and allows a
+  new request. State comes from `billingChangeRequestProvider` (`GET /api/billing-change-requests`).
+- **Approved:** the server clears `billing_locked_at`, so the form is editable again and the card
+  says the next complete save locks it again.
+- **Confirm before locking:** `_save` checks `isPaymentInfoComplete(_formInfo().toReadinessInfo())`
+  and asks with `showDSConfirm` first; incomplete saves go through without the dialog.
+- **Errors are Danish and surfaced.** A 423 on save and a 400/409 on the request POST are thrown as
+  `BillingLockException` (datasource `_billingLockException`), and `friendlyErrorMessage` returns
+  its message instead of the generic text (unlike `DatabaseException`).
+- The lock state is read once per screen open (`_initialized`); a request submitted from the card
+  only refreshes the card. Parsing tests: `test/features/profile/domain/billing_lock_parsing_test.dart`.
+- **Optional second billing email (`billing_email_secondary`).** `PaymentInfo.billingEmailSecondary`
+  is parsed (blank -> null) and sent with the rest of the payload, unencrypted, like `billing_email`.
+  It is billing-locked (disabled with `enabled: !_locked`, saved only while unlocked) but NEVER part of
+  completeness: do not add it to `self_billing_complete.dart`. When set, the web-app sends the
+  self-billing "Afregning" to both addresses. `payment_screen.dart` shows it right under the billing
+  email; `domain/billing_email_validation.dart` holds both validators (empty ok, else a valid email
+  that differs trimmed and case-insensitively from the primary), and `_save` checks the value too
+  because of the lazy ListView rule below.
 
 ## ⚠️ `Form.validate()` SKIPS fields the lazy `ListView` has unmounted — validate VALUES
 

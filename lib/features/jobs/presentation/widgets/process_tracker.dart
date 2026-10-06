@@ -14,7 +14,7 @@ class ProcessTracker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -33,9 +33,10 @@ class ProcessTracker extends StatelessWidget {
                     Container(
                       width: 2,
                       height: 32,
-                      color: i < completedSteps
-                          ? _c.state.success
-                          : _c.border.strong,
+                      color:
+                          i < completedSteps
+                              ? _c.state.success
+                              : _c.border.strong,
                     ),
                 ],
               ),
@@ -46,12 +47,14 @@ class ProcessTracker extends StatelessWidget {
                   child: Text(
                     steps[i],
                     style: DSTextStyle.bodyMd.copyWith(
-                      fontWeight: i == completedSteps
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                      color: i < completedSteps
-                          ? _c.text.secondary
-                          : i == completedSteps
+                      fontWeight:
+                          i == completedSteps
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                      color:
+                          i < completedSteps
+                              ? _c.text.secondary
+                              : i == completedSteps
                               ? _c.text.primary
                               : _c.text.muted,
                     ),
@@ -79,7 +82,7 @@ class _StepCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     if (isCompleted) {
       return Container(
         width: 28,

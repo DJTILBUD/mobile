@@ -67,7 +67,11 @@ void main() {
     test('price is reported before the other problems', () {
       // The price is the one that silently reached the customer, so it wins.
       expect(
-        validateDjQuoteInput(price: 0, salesPitch: '', equipmentSelected: false),
+        validateDjQuoteInput(
+          price: 0,
+          salesPitch: '',
+          equipmentSelected: false,
+        ),
         'Indtast en gyldig pris',
       );
     });

@@ -13,11 +13,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// DSAvatar(imageUrl: profile.photoUrl, size: 40)
 /// ```
 class DSAvatar extends StatelessWidget {
-  const DSAvatar({
-    super.key,
-    this.imageUrl,
-    this.size = 40,
-  });
+  const DSAvatar({super.key, this.imageUrl, this.size = 40});
 
   /// Remote image URL. When `null` the person icon placeholder is shown.
   final String? imageUrl;
@@ -45,16 +41,17 @@ class DSAvatar extends StatelessWidget {
         color: c.brand.primary.withValues(alpha: 0.12),
       ),
       clipBehavior: imageUrl != null ? Clip.antiAlias : Clip.none,
-      child: imageUrl != null
-          ? CachedNetworkImage(
-              imageUrl: imageUrl!,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => placeholder,
-              errorWidget: (_, __, ___) => placeholder,
-            )
-          : placeholder,
+      child:
+          imageUrl != null
+              ? CachedNetworkImage(
+                imageUrl: imageUrl!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => placeholder,
+                errorWidget: (_, __, ___) => placeholder,
+              )
+              : placeholder,
     );
   }
 }

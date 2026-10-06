@@ -17,8 +17,18 @@ class CalendarHeader extends StatelessWidget {
   final VoidCallback? onShare;
 
   static const _monthNamesShort = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Maj',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Dec',
   ];
 
   void _pickYear(BuildContext context) {
@@ -40,9 +50,8 @@ class CalendarHeader extends StatelessWidget {
                     '$year',
                     textAlign: TextAlign.center,
                     style: DSTextStyle.labelLg.copyWith(
-                      color: isSelected
-                          ? c.brand.primaryActive
-                          : c.text.primary,
+                      color:
+                          isSelected ? c.brand.primaryActive : c.text.primary,
                       fontWeight:
                           isSelected ? FontWeight.w700 : FontWeight.w400,
                     ),
@@ -66,7 +75,9 @@ class CalendarHeader extends StatelessWidget {
     final c = DSTheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: DSSpacing.s4, vertical: DSSpacing.s2),
+        horizontal: DSSpacing.s4,
+        vertical: DSSpacing.s2,
+      ),
       child: Column(
         children: [
           // ── Year row (tappable → year picker) ──────────────────────────
@@ -85,8 +96,11 @@ class CalendarHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 3),
-                  Icon(LucideIcons.chevronDown,
-                      size: 12, color: c.text.secondary),
+                  Icon(
+                    LucideIcons.chevronDown,
+                    size: 12,
+                    color: c.text.secondary,
+                  ),
                 ],
               ),
             ),
@@ -96,8 +110,8 @@ class CalendarHeader extends StatelessWidget {
             children: [
               DSIconButton(
                 icon: LucideIcons.chevronLeft,
-                onTap: () =>
-                    onMonthChanged(DateTime(month.year, month.month - 1)),
+                onTap:
+                    () => onMonthChanged(DateTime(month.year, month.month - 1)),
               ),
               Flexible(
                 child: Text(
@@ -112,15 +126,17 @@ class CalendarHeader extends StatelessWidget {
               ),
               DSIconButton(
                 icon: LucideIcons.chevronRight,
-                onTap: () =>
-                    onMonthChanged(DateTime(month.year, month.month + 1)),
+                onTap:
+                    () => onMonthChanged(DateTime(month.year, month.month + 1)),
               ),
               const SizedBox(width: DSSpacing.s2),
               GestureDetector(
                 onTap: onTodayTapped,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: DSSpacing.s3, vertical: 6),
+                    horizontal: DSSpacing.s3,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: c.bg.inputBg,
                     borderRadius: BorderRadius.circular(DSRadius.sm),
@@ -138,7 +154,9 @@ class CalendarHeader extends StatelessWidget {
                     onTap: onShare,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: DSSpacing.s3, vertical: 6),
+                        horizontal: DSSpacing.s3,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: c.bg.inputBg,
                         borderRadius: BorderRadius.circular(DSRadius.sm),
@@ -146,14 +164,18 @@ class CalendarHeader extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(LucideIcons.share2,
-                              size: 14, color: c.text.primary),
+                          Icon(
+                            LucideIcons.share2,
+                            size: 14,
+                            color: c.text.primary,
+                          ),
                           const SizedBox(width: DSSpacing.s1),
                           Flexible(
                             child: Text(
                               'Eksporter',
-                              style: DSTextStyle.labelMd
-                                  .copyWith(color: c.text.primary),
+                              style: DSTextStyle.labelMd.copyWith(
+                                color: c.text.primary,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

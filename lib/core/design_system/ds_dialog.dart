@@ -32,7 +32,10 @@ class DSDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: DSSpacing.s6, vertical: DSSpacing.s6),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: DSSpacing.s6,
+        vertical: DSSpacing.s6,
+      ),
       child: Container(
         // Elevated surface treatment (distinct from a flat DSSurface card):
         // bg.elevated + the md "floating" shadow, since a dialog sits above
@@ -48,10 +51,17 @@ class DSDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: DSTextStyle.headingSm.copyWith(color: c.text.primary)),
+            Text(
+              title,
+              style: DSTextStyle.headingSm.copyWith(color: c.text.primary),
+            ),
             if (content != null || message != null) ...[
               const SizedBox(height: DSSpacing.s3),
-              content ?? Text(message!, style: DSTextStyle.bodyMd.copyWith(color: c.text.secondary)),
+              content ??
+                  Text(
+                    message!,
+                    style: DSTextStyle.bodyMd.copyWith(color: c.text.secondary),
+                  ),
             ],
             const SizedBox(height: DSSpacing.s4),
             Align(
@@ -83,12 +93,13 @@ Future<T?> showDSDialog<T>(
   return showDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    builder: (ctx) => DSDialog(
-      title: title,
-      message: message,
-      content: content,
-      actions: actions(ctx),
-    ),
+    builder:
+        (ctx) => DSDialog(
+          title: title,
+          message: message,
+          content: content,
+          actions: actions(ctx),
+        ),
   );
 }
 
@@ -107,20 +118,24 @@ Future<bool> showDSConfirm(
     context,
     title: title,
     message: message,
-    actions: (ctx) => [
-      DSButton(
-        label: cancelLabel,
-        variant: DSButtonVariant.ghost,
-        size: DSButtonSize.sm,
-        onTap: () => Navigator.of(ctx).pop(false),
-      ),
-      DSButton(
-        label: confirmLabel,
-        variant: destructive ? DSButtonVariant.tertiary : DSButtonVariant.primary,
-        size: DSButtonSize.sm,
-        onTap: () => Navigator.of(ctx).pop(true),
-      ),
-    ],
+    actions:
+        (ctx) => [
+          DSButton(
+            label: cancelLabel,
+            variant: DSButtonVariant.ghost,
+            size: DSButtonSize.sm,
+            onTap: () => Navigator.of(ctx).pop(false),
+          ),
+          DSButton(
+            label: confirmLabel,
+            variant:
+                destructive
+                    ? DSButtonVariant.tertiary
+                    : DSButtonVariant.primary,
+            size: DSButtonSize.sm,
+            onTap: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
   );
   return result ?? false;
 }

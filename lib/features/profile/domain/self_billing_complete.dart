@@ -4,10 +4,11 @@
 //
 // Two payment paths (PaymentInfo.payment):
 //   B-income  we pay the person and report via CPR: CPR + bank + address (DAC7).
-//   Invoice   self-billing (selvfakturering): DJTILBUD issues the afregningsbilag
-//             on the performer's behalf and pays by bank transfer, so it needs a
-//             REGISTERED business: sole_trader -> CVR + CPR, aps -> CVR; `private`
-//             is NOT allowed with Invoice. Plus billing email and reg + account.
+//   Invoice   the performer is paid against an invoice. EVERY business type may
+//             choose it: private -> CPR (no CVR; allowed since 2026-09-30, a
+//             private person sends their own invoice with the CPR on it),
+//             sole_trader -> CVR + CPR, aps -> CVR. Plus billing email and
+//             reg + account. sole_trader / aps are self-billed by DJTILBUD.
 //
 // `isSelfBillingComplete` is the older payment-agnostic identity rule.
 // `isPaymentInfoComplete` picks the rule from the payment type and is what the
@@ -58,9 +59,9 @@ enum BusinessEntityType {
   /// CPR is required for every business type except an ApS.
   bool get requiresCpr => this != BusinessEntityType.aps;
 
-  /// May be paid by self-billing: only a registered business has a CVR to bill
-  /// under. Mirror of INVOICE_BUSINESS_TYPES in the web-app.
-  bool get canInvoice => this != BusinessEntityType.private_;
+  /// May choose Invoice: every type. A private person has a CPR where the others
+  /// have a CVR. Mirror of INVOICE_BUSINESS_TYPES in the web-app.
+  bool get canInvoice => true;
 }
 
 /// Everything the payment-type aware rule looks at. Built from a PaymentInfo via
@@ -124,8 +125,8 @@ bool isSelfBillingComplete(SelfBillingInfo? info) {
   return true;
 }
 
-/// The Invoice path: a registered business with its ids, a billing email and a
-/// bank account. Mirror of `isSelfBillingPayoutReady` in the web-app.
+/// The Invoice path: a business type with ITS ids (private: CPR; sole trader:
+/// CVR + CPR; ApS: CVR), a billing email and a bank account. Mirror of `isSelfBillingPayoutReady` in the web-app.
 bool isSelfBillingPayoutReady(PaymentReadinessInfo? info) {
   final type = info?.businessType;
   if (info == null || type == null) return false;
@@ -152,7 +153,9 @@ bool isDac7Complete(PaymentReadinessInfo? info) {
 bool isPaymentInfoComplete(PaymentReadinessInfo? info) {
   final payment = info?.payment;
   if (info == null || payment == null) return false;
-  return payment == 'Invoice' ? isSelfBillingPayoutReady(info) : isDac7Complete(info);
+  return payment == 'Invoice'
+      ? isSelfBillingPayoutReady(info)
+      : isDac7Complete(info);
 }
 
 /// Danish list of what an Invoice performer still lacks before self-billing can
@@ -161,9 +164,11 @@ List<String> missingPayoutReadyFields(PaymentReadinessInfo? info) {
   final missing = <String>[];
   final type = info?.businessType;
   if (info == null || type == null || !type.canInvoice) {
-    missing.add('virksomhedstype med CVR (enkeltmandsvirksomhed eller ApS)');
+    missing.add(
+      'virksomhedstype (privatperson, enkeltmandsvirksomhed eller ApS)',
+    );
   } else {
-    if (!_present(info.cvr)) missing.add('CVR');
+    if (type.requiresCvr && !_present(info.cvr)) missing.add('CVR');
     if (type.requiresCpr && !_present(info.cpr)) missing.add('CPR');
   }
   if (info == null || !_present(info.billingEmail)) {

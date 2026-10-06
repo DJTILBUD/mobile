@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:dj_tilbud_app/core/config/env_config.dart';
+import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 
 class ProfileRemoteDatasource {
@@ -105,11 +106,107 @@ class ProfileRemoteDatasource {
       },
       body: jsonEncode(data),
     );
+    // 423 = the info is locked (billing lock). The Danish message is user-facing.
+    if (response.statusCode == 423) {
+      throw _billingLockException(response.body);
+    }
     if (response.statusCode != 200) {
       throw Exception(
         'upsertPaymentInfo failed (${response.statusCode}): ${response.body}',
       );
     }
+  }
+
+  // ── Billing change requests (unlock locked payment info via support) ──
+
+  Future<Map<String, dynamic>?> fetchBillingChangeRequest() async {
+    final uri = Uri.parse('$_webAppBaseUrl/api/billing-change-requests');
+    final response = await http.get(
+      uri,
+      headers: {'Authorization': 'Bearer $_accessToken'},
+    );
+    if (response.statusCode != 200) {
+      throw Exception(
+        'fetchBillingChangeRequest failed (${response.statusCode}): ${response.body}',
+      );
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['request'] as Map<String, dynamic>?;
+  }
+
+  Future<Map<String, dynamic>> createBillingChangeRequest(String reason) async {
+    final uri = Uri.parse('$_webAppBaseUrl/api/billing-change-requests');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'reason': reason}),
+    );
+    // 400 reason_required / 409 not_locked | already_open carry Danish copy.
+    if (response.statusCode == 400 || response.statusCode == 409) {
+      throw _billingLockException(response.body);
+    }
+    if (response.statusCode != 201) {
+      throw Exception(
+        'createBillingChangeRequest failed (${response.statusCode}): ${response.body}',
+      );
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return body['request'] as Map<String, dynamic>;
+  }
+
+  // ── Self-billing terms (the mandatory accept popup) ──
+
+  /// Whether the `self_billing_live` flag is on. Fails CLOSED (false) when the row is missing or
+  /// unreadable, exactly like web `useFeatureFlag`: the popup must never show before go-live.
+  Future<bool> isSelfBillingLive() async {
+    try {
+      final row =
+          await _client
+              .from('FeatureFlags')
+              .select('enabled')
+              .eq('key', 'self_billing_live')
+              .maybeSingle();
+      return (row?['enabled'] as bool?) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// "Jeg accepterer vilkårene": the same web-app endpoint the web popup calls, which owns the
+  /// rule (only on Invoice) and stamps self_billing_terms_accepted_at.
+  Future<void> acceptSelfBillingTerms() async {
+    final response = await http.post(
+      Uri.parse('$_webAppBaseUrl/api/self-billing/accept-terms'),
+      headers: {'Authorization': 'Bearer $_accessToken'},
+    );
+    if (response.statusCode != 200) {
+      String message = '';
+      try {
+        message =
+            ((jsonDecode(response.body) as Map<String, dynamic>)['message']
+                as String?) ??
+            '';
+      } catch (_) {}
+      throw Exception(
+        message.isNotEmpty
+            ? message
+            : 'acceptSelfBillingTerms failed (${response.statusCode})',
+      );
+    }
+  }
+
+  BillingLockException _billingLockException(String responseBody) {
+    String message = '';
+    String? code;
+    try {
+      final json = jsonDecode(responseBody) as Map<String, dynamic>;
+      message = (json['message'] as String?) ?? '';
+      code = json['code'] as String?;
+    } catch (_) {}
+    return BillingLockException(message, code: code);
   }
 
   // ── DJ Job Filters ──

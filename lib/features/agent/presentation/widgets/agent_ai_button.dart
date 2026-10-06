@@ -28,12 +28,10 @@ class AgentAiButton extends ConsumerWidget {
     final dailyRemaining = usage?.dailyRemaining;
 
     final activeColor = isLimited ? c.text.muted : c.brand.primaryActive;
-    final bgColor = isLimited
-        ? c.bg.inputBg
-        : c.brand.primary.withValues(alpha: 0.12);
-    final borderColor = isLimited
-        ? c.border.subtle
-        : c.brand.primary.withValues(alpha: 0.5);
+    final bgColor =
+        isLimited ? c.bg.inputBg : c.brand.primary.withValues(alpha: 0.12);
+    final borderColor =
+        isLimited ? c.border.subtle : c.brand.primary.withValues(alpha: 0.5);
 
     String label = 'Skriv med AI';
     if (usage != null) {
@@ -47,7 +45,10 @@ class AgentAiButton extends ConsumerWidget {
     }
 
     return GestureDetector(
-      onTap: isLimited ? () => _showLimitDialog(context, usage!) : () => _openSheet(context, ref),
+      onTap:
+          isLimited
+              ? () => _showLimitDialog(context, usage!)
+              : () => _openSheet(context, ref),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: DSSpacing.s3,
@@ -88,30 +89,34 @@ class AgentAiButton extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AgentBottomSheet(
-        job: job,
-        isDj: isDj,
-        onDraftAccepted: onDraftAccepted,
-      ),
+      builder:
+          (_) => AgentBottomSheet(
+            job: job,
+            isDj: isDj,
+            onDraftAccepted: onDraftAccepted,
+          ),
     );
   }
 
   void _showLimitDialog(BuildContext context, AgentUsage usage) {
-    final isDailyLimit = usage.isDailyLimitReached && !usage.isMonthlyLimitReached;
+    final isDailyLimit =
+        usage.isDailyLimitReached && !usage.isMonthlyLimitReached;
     showDSDialog<void>(
       context,
       title: isDailyLimit ? 'Daglig grænse nået' : 'Månedlig grænse nået',
-      message: isDailyLimit
-          ? 'Du har brugt dine ${usage.dailyLimit} AI-udkast for i dag. Prøv igen i morgen.'
-          : 'Du har brugt dine ${usage.monthlyLimit} AI-udkast for denne måned.',
-      actions: (ctx) => [
-        DSButton(
-          label: 'OK',
-          variant: DSButtonVariant.primary,
-          size: DSButtonSize.sm,
-          onTap: () => Navigator.of(ctx).pop(),
-        ),
-      ],
+      message:
+          isDailyLimit
+              ? 'Du har brugt dine ${usage.dailyLimit} AI-udkast for i dag. Prøv igen i morgen.'
+              : 'Du har brugt dine ${usage.monthlyLimit} AI-udkast for denne måned.',
+      actions:
+          (ctx) => [
+            DSButton(
+              label: 'OK',
+              variant: DSButtonVariant.primary,
+              size: DSButtonSize.sm,
+              onTap: () => Navigator.of(ctx).pop(),
+            ),
+          ],
     );
   }
 }

@@ -46,8 +46,16 @@ void main() {
       // blocking on them would freeze every DJ-only job that ever took a bid.
       expect(
         isBlockedByMusicianContact([
-          _offer(id: 1, status: ServiceOfferStatus.sent, customerContacted: false),
-          _offer(id: 2, status: ServiceOfferStatus.lost, customerContacted: false),
+          _offer(
+            id: 1,
+            status: ServiceOfferStatus.sent,
+            customerContacted: false,
+          ),
+          _offer(
+            id: 2,
+            status: ServiceOfferStatus.lost,
+            customerContacted: false,
+          ),
         ]),
         isFalse,
       );
@@ -56,7 +64,11 @@ void main() {
     test('blocked while a WON musician has not contacted the customer', () {
       expect(
         isBlockedByMusicianContact([
-          _offer(id: 1, status: ServiceOfferStatus.won, customerContacted: false),
+          _offer(
+            id: 1,
+            status: ServiceOfferStatus.won,
+            customerContacted: false,
+          ),
         ]),
         isTrue,
       );
@@ -65,8 +77,16 @@ void main() {
     test('not blocked once every won musician has contacted the customer', () {
       expect(
         isBlockedByMusicianContact([
-          _offer(id: 1, status: ServiceOfferStatus.won, customerContacted: true),
-          _offer(id: 2, status: ServiceOfferStatus.lost, customerContacted: false),
+          _offer(
+            id: 1,
+            status: ServiceOfferStatus.won,
+            customerContacted: true,
+          ),
+          _offer(
+            id: 2,
+            status: ServiceOfferStatus.lost,
+            customerContacted: false,
+          ),
         ]),
         isFalse,
       );
@@ -75,8 +95,16 @@ void main() {
     test('one un-contacted winner blocks even when another winner is done', () {
       expect(
         isBlockedByMusicianContact([
-          _offer(id: 1, status: ServiceOfferStatus.won, customerContacted: true),
-          _offer(id: 2, status: ServiceOfferStatus.won, customerContacted: false),
+          _offer(
+            id: 1,
+            status: ServiceOfferStatus.won,
+            customerContacted: true,
+          ),
+          _offer(
+            id: 2,
+            status: ServiceOfferStatus.won,
+            customerContacted: false,
+          ),
         ]),
         isTrue,
       );

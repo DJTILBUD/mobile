@@ -152,4 +152,44 @@ void main() {
       });
     });
   });
+
+  // Same inputs and expected values as the web test "adjustBudgetForDjView — 1.500 kr. floor".
+  group('adjustBudgetForDjView — 1.500 kr. floor (mirrors web)', () {
+    test('floor is 1.500', () {
+      expect(djBudgetFloorDkk, 1500);
+    });
+
+    test('applies after the sax and B-tier deductions', () {
+      // 7.100 − 5.190 (standard 1,5t) − 500 (B-tier, first 24h) = 1.410 → 1.500.
+      expect(
+        adjustBudgetForDjView(
+          budget: 7100,
+          requestedSaxophonist: true,
+          requestedMusicianHours: 1.5,
+          djTier: 'B',
+          maxBudget: 7100,
+          jobCreatedAt: DateTime.now(),
+        ),
+        1500,
+      );
+    });
+
+    test('raises any budget below the floor', () {
+      expect(adjustBudgetForDjView(budget: 1000), 1500);
+    });
+
+    test('leaves a share just above the floor alone', () {
+      // 7.100 − 5.190 = 1.910, A-tier, no further deductions.
+      expect(
+        adjustBudgetForDjView(
+          budget: 7100,
+          requestedSaxophonist: true,
+          requestedMusicianHours: 1.5,
+          djTier: 'A',
+          maxBudget: 7100,
+        ),
+        1910,
+      );
+    });
+  });
 }

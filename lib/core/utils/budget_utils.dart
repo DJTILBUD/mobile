@@ -17,6 +17,11 @@ double getFeeForJob(DateTime jobCreatedAt) {
 }
 
 const _bTierBudgetDeduction = 500;
+
+/// The DJ-facing budget never shows below this. Mirrors `DJ_BUDGET_FLOOR_DKK` in
+/// web-app/src/helpers/adjustBudgetForDjView.ts (a sax job's budget is the TOTAL incl. sax, so the
+/// DJ's share could drop to ~1.5k or lower).
+const djBudgetFloorDkk = 1500;
 const _bTierDeductionWindowMs = 24 * 60 * 60 * 1000;
 const _fourHoursMs = 4 * 60 * 60 * 1000;
 
@@ -96,7 +101,7 @@ double? adjustBudgetForDjView({
     adjusted -= _bTierBudgetDeduction;
   }
 
-  return adjusted;
+  return adjusted < djBudgetFloorDkk ? djBudgetFloorDkk.toDouble() : adjusted;
 }
 
 String _fmtKr(int n) =>

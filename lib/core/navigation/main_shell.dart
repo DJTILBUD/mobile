@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/chat_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/widgets/self_billing_terms_gate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class MainShell extends ConsumerWidget {
@@ -94,7 +95,12 @@ class MainShell extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: navigationShell,
+      // Mandatory self-billing terms popup, on every screen (same place web shows it: the sidebar
+      // that wraps every page). Inert while the `self_billing_live` flag is off.
+      body: SelfBillingTermsGate(
+        isDj: role == MusicianRole.dj,
+        child: navigationShell,
+      ),
       bottomNavigationBar: DSNavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected:

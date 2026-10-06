@@ -19,8 +19,19 @@ enum MusicianJobAvailability {
   /// This musician already has an offer on it (it lives in their sent/won/lost lanes instead).
   alreadyBid,
 
+  /// Another musician holds an ACTIVE (non-lost) offer on it. The DB allows only one non-lost
+  /// offer per instrument per job (unique indexes `idx_unique_active_instrument_per_job` /
+  /// `_per_ext_job`), so a second offer is rejected at insert. Frees up again if that offer goes
+  /// `lost`. Same rule as the feed's `has_active_offer` ("Jobbet er desværre optaget").
+  heldByAnother,
+
   /// The job's status is past the point where offers are accepted.
   closedForOffers,
+
+  /// This ext job belongs to a TRUE partner-portal account (`is_partner = true`) — the venue
+  /// coordinator books the performer via admin/the partner flow, so saxophonists can never
+  /// self-serve bid on it. Only reachable via a push deep-link (the feed already excludes it).
+  partnerBooking,
 }
 
 /// Statuses an ExtJob accepts musician offers in. Mirrors the feed query in
@@ -63,7 +74,12 @@ MusicianJobAvailability resolveMusicianJobAvailability({
   required String? assignedMusicianId,
   required String currentMusicianId,
   required List<({String? musicianId, String? status})> offers,
+  bool isPartnerBooking = false,
 }) {
+  if (isExtJob && isPartnerBooking) {
+    return MusicianJobAvailability.partnerBooking;
+  }
+
   final wonByOther = offers.any(
     (o) => o.status == 'won' && o.musicianId != currentMusicianId,
   );
@@ -89,6 +105,13 @@ MusicianJobAvailability resolveMusicianJobAvailability({
     return MusicianJobAvailability.closedForOffers;
   }
 
+  // After the status check: a closed job must not claim it "may free up again".
+  if (offers.any(
+    (o) => o.status != 'lost' && o.musicianId != currentMusicianId,
+  )) {
+    return MusicianJobAvailability.heldByAnother;
+  }
+
   return MusicianJobAvailability.biddable;
 }
 
@@ -103,7 +126,11 @@ String? musicianJobAvailabilityMessage(MusicianJobAvailability availability) {
       return 'Jobbet er desværre besat af en anden musiker, så du kan ikke sende et tilbud på det længere.';
     case MusicianJobAvailability.alreadyBid:
       return 'Du har allerede sendt et tilbud på dette job. Du finder det under dine tilbud.';
+    case MusicianJobAvailability.heldByAnother:
+      return 'En anden saxofonist har allerede afgivet et aktivt tilbud på dette job. Skulle tilbuddet blive trukket tilbage, vil jobbet automatisk blive tilgængeligt igen.';
     case MusicianJobAvailability.closedForOffers:
       return 'Jobbet tager ikke imod flere tilbud. Se de ledige jobs på din jobside.';
+    case MusicianJobAvailability.partnerBooking:
+      return 'Dette job kan ikke bydes på direkte — kontakt os, hvis du er interesseret.';
   }
 }

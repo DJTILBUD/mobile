@@ -20,6 +20,7 @@ class EquipmentPicker extends StatelessWidget {
   final List<String> selectedEquipment;
   final int topSpeakerCount;
   final int bottomSpeakerCount;
+
   /// True when the user explicitly checked "Jeg medbringer ikke udstyr".
   final bool noEquipmentSelected;
   final void Function(List<String> selected, int top, int bund) onChanged;
@@ -33,7 +34,7 @@ class EquipmentPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -73,7 +74,9 @@ class EquipmentPicker extends StatelessWidget {
             decoration: BoxDecoration(
               color: _c.brand.primary.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(DSRadius.md),
-              border: Border.all(color: _c.brand.primary.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: _c.brand.primary.withValues(alpha: 0.3),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,18 +95,20 @@ class EquipmentPicker extends StatelessWidget {
                       child: _CounterRow(
                         label: 'Top højtaler',
                         count: topSpeakerCount,
-                        onDecrement: topSpeakerCount > 0
-                            ? () => onChanged(
+                        onDecrement:
+                            topSpeakerCount > 0
+                                ? () => onChanged(
                                   selectedEquipment,
                                   topSpeakerCount - 1,
                                   bottomSpeakerCount,
                                 )
-                            : null,
-                        onIncrement: () => onChanged(
-                          selectedEquipment,
-                          topSpeakerCount + 1,
-                          bottomSpeakerCount,
-                        ),
+                                : null,
+                        onIncrement:
+                            () => onChanged(
+                              selectedEquipment,
+                              topSpeakerCount + 1,
+                              bottomSpeakerCount,
+                            ),
                       ),
                     ),
                     const SizedBox(width: DSSpacing.s3),
@@ -111,18 +116,20 @@ class EquipmentPicker extends StatelessWidget {
                       child: _CounterRow(
                         label: 'Bund højtaler',
                         count: bottomSpeakerCount,
-                        onDecrement: bottomSpeakerCount > 0
-                            ? () => onChanged(
+                        onDecrement:
+                            bottomSpeakerCount > 0
+                                ? () => onChanged(
                                   selectedEquipment,
                                   topSpeakerCount,
                                   bottomSpeakerCount - 1,
                                 )
-                            : null,
-                        onIncrement: () => onChanged(
-                          selectedEquipment,
-                          topSpeakerCount,
-                          bottomSpeakerCount + 1,
-                        ),
+                                : null,
+                        onIncrement:
+                            () => onChanged(
+                              selectedEquipment,
+                              topSpeakerCount,
+                              bottomSpeakerCount + 1,
+                            ),
                       ),
                     ),
                   ],
@@ -157,7 +164,7 @@ class _EquipmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -199,21 +206,21 @@ class _CounterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: DSTextStyle.bodySm.copyWith(fontSize: 11, color: _c.text.muted),
+          style: DSTextStyle.bodySm.copyWith(
+            fontSize: 11,
+            color: _c.text.muted,
+          ),
         ),
         const SizedBox(height: DSSpacing.s1),
         Row(
           children: [
-            _CounterButton(
-              icon: LucideIcons.minus,
-              onTap: onDecrement,
-            ),
+            _CounterButton(icon: LucideIcons.minus, onTap: onDecrement),
             const SizedBox(width: DSSpacing.s2),
             Text(
               '$count',
@@ -223,10 +230,7 @@ class _CounterRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: DSSpacing.s2),
-            _CounterButton(
-              icon: LucideIcons.plus,
-              onTap: onIncrement,
-            ),
+            _CounterButton(icon: LucideIcons.plus, onTap: onIncrement),
           ],
         ),
       ],
@@ -241,7 +245,7 @@ class _CounterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final enabled = onTap != null;
     return GestureDetector(
       onTap: onTap,
@@ -251,9 +255,7 @@ class _CounterButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: enabled ? _c.bg.surface : _c.bg.inputBg,
           borderRadius: BorderRadius.circular(DSRadius.sm),
-          border: Border.all(
-            color: enabled ? _c.border.subtle : _c.bg.inputBg,
-          ),
+          border: Border.all(color: enabled ? _c.border.subtle : _c.bg.inputBg),
         ),
         child: Icon(
           icon,

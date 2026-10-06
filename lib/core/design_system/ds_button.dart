@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 
 enum DSButtonVariant { primary, secondary, tertiary, ghost }
+
 enum DSButtonSize { sm, md, lg }
 
 /// Design-system button — pill-shaped, matches web marketplace `Button`.
@@ -30,9 +31,9 @@ class DSButton extends StatelessWidget {
   final bool expand;
 
   double get _height => switch (size) {
-    DSButtonSize.sm => 28,   // h-7
-    DSButtonSize.md => 32,   // h-8
-    DSButtonSize.lg => 40,   // h-10
+    DSButtonSize.sm => 28, // h-7
+    DSButtonSize.md => 32, // h-8
+    DSButtonSize.lg => 40, // h-10
   };
 
   double get _fontSize => switch (size) {
@@ -58,32 +59,37 @@ class DSButton extends StatelessWidget {
     final c = DSTheme.of(context);
     final active = enabled && !isLoading;
 
-    final bg = !enabled
-        ? c.border.subtle
-        : switch (variant) {
-            DSButtonVariant.primary => c.brand.primary,
-            DSButtonVariant.secondary => c.brand.primary.withValues(alpha: 0.1),
-            DSButtonVariant.tertiary => Colors.transparent,
-            DSButtonVariant.ghost => Colors.transparent,
-          };
+    final bg =
+        !enabled
+            ? c.border.subtle
+            : switch (variant) {
+              DSButtonVariant.primary => c.brand.primary,
+              DSButtonVariant.secondary => c.brand.primary.withValues(
+                alpha: 0.1,
+              ),
+              DSButtonVariant.tertiary => Colors.transparent,
+              DSButtonVariant.ghost => Colors.transparent,
+            };
 
-    final fg = !enabled
-        ? c.text.muted
-        : switch (variant) {
-            DSButtonVariant.primary => c.brand.onPrimary,
-            // primaryActive is the "text on tinted bg" token — using `primary`
-            // here renders light-lime text on a light-lime tint (unreadable).
-            DSButtonVariant.secondary => c.brand.primaryActive,
-            DSButtonVariant.tertiary => c.text.primary,
-            DSButtonVariant.ghost => c.text.secondary,
-          };
+    final fg =
+        !enabled
+            ? c.text.muted
+            : switch (variant) {
+              DSButtonVariant.primary => c.brand.onPrimary,
+              // primaryActive is the "text on tinted bg" token — using `primary`
+              // here renders light-lime text on a light-lime tint (unreadable).
+              DSButtonVariant.secondary => c.brand.primaryActive,
+              DSButtonVariant.tertiary => c.text.primary,
+              DSButtonVariant.ghost => c.text.secondary,
+            };
 
-    final borderColor = (!enabled && variant == DSButtonVariant.tertiary)
-        ? c.border.subtle
-        : switch (variant) {
-            DSButtonVariant.tertiary => c.border.strong,
-            _ => null,
-          };
+    final borderColor =
+        (!enabled && variant == DSButtonVariant.tertiary)
+            ? c.border.subtle
+            : switch (variant) {
+              DSButtonVariant.tertiary => c.border.strong,
+              _ => null,
+            };
 
     final container = AnimatedContainer(
       duration: DSMotion.fast,
@@ -95,34 +101,39 @@ class DSButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(DSRadius.pill),
         border: borderColor != null ? Border.all(color: borderColor) : null,
       ),
-      child: isLoading
-          ? SizedBox(
-              width: _iconSize,
-              height: _iconSize,
-              child: CircularProgressIndicator(strokeWidth: 2, color: fg),
-            )
-          : Row(
-              mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (iconLeft != null) ...[
-                  Icon(iconLeft, size: _iconSize, color: fg),
-                  const SizedBox(width: DSSpacing.s2),
-                ],
-                Flexible(
-                  child: Text(
-                    label,
-                    style: TextStyle(fontSize: _fontSize, fontWeight: FontWeight.w600, color: fg),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+      child:
+          isLoading
+              ? SizedBox(
+                width: _iconSize,
+                height: _iconSize,
+                child: CircularProgressIndicator(strokeWidth: 2, color: fg),
+              )
+              : Row(
+                mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (iconLeft != null) ...[
+                    Icon(iconLeft, size: _iconSize, color: fg),
+                    const SizedBox(width: DSSpacing.s2),
+                  ],
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: _fontSize,
+                        fontWeight: FontWeight.w600,
+                        color: fg,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   ),
-                ),
-                if (iconRight != null) ...[
-                  const SizedBox(width: DSSpacing.s2),
-                  Icon(iconRight, size: _iconSize, color: fg),
+                  if (iconRight != null) ...[
+                    const SizedBox(width: DSSpacing.s2),
+                    Icon(iconRight, size: _iconSize, color: fg),
+                  ],
                 ],
-              ],
-            ),
+              ),
     );
 
     return GestureDetector(
@@ -132,9 +143,10 @@ class DSButton extends StatelessWidget {
       // (full-width) constraints throws "Cannot interpolate between finite and
       // unbounded constraints" when a button toggles expand/size mid-life
       // (e.g. a small "Redigér" swapping to a full-width "Gem" button).
-      child: expand
-          ? SizedBox(width: double.infinity, child: container)
-          : container,
+      child:
+          expand
+              ? SizedBox(width: double.infinity, child: container)
+              : container,
     );
   }
 }
@@ -178,25 +190,29 @@ class DSIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = DSTheme.of(context);
 
-    final bg = !enabled
-        ? c.border.subtle
-        : switch (variant) {
-            DSIconButtonVariant.primary => c.brand.primary,
-            DSIconButtonVariant.secondary => c.brand.primary.withValues(alpha: 0.1),
-            DSIconButtonVariant.tertiary => Colors.transparent,
-            DSIconButtonVariant.ghost => Colors.transparent,
-            DSIconButtonVariant.brand => c.brand.accent,
-          };
+    final bg =
+        !enabled
+            ? c.border.subtle
+            : switch (variant) {
+              DSIconButtonVariant.primary => c.brand.primary,
+              DSIconButtonVariant.secondary => c.brand.primary.withValues(
+                alpha: 0.1,
+              ),
+              DSIconButtonVariant.tertiary => Colors.transparent,
+              DSIconButtonVariant.ghost => Colors.transparent,
+              DSIconButtonVariant.brand => c.brand.accent,
+            };
 
-    final fg = !enabled
-        ? c.text.muted
-        : switch (variant) {
-            DSIconButtonVariant.primary => c.brand.onPrimary,
-            DSIconButtonVariant.secondary => c.brand.primaryActive,
-            DSIconButtonVariant.tertiary => c.text.primary,
-            DSIconButtonVariant.ghost => c.text.secondary,
-            DSIconButtonVariant.brand => c.brand.onAccent,
-          };
+    final fg =
+        !enabled
+            ? c.text.muted
+            : switch (variant) {
+              DSIconButtonVariant.primary => c.brand.onPrimary,
+              DSIconButtonVariant.secondary => c.brand.primaryActive,
+              DSIconButtonVariant.tertiary => c.text.primary,
+              DSIconButtonVariant.ghost => c.text.secondary,
+              DSIconButtonVariant.brand => c.brand.onAccent,
+            };
 
     final borderColor = switch (variant) {
       DSIconButtonVariant.tertiary => c.border.subtle,
@@ -213,13 +229,16 @@ class DSIconButton extends StatelessWidget {
           shape: BoxShape.circle,
           border: borderColor != null ? Border.all(color: borderColor) : null,
         ),
-        child: isLoading
-            ? Center(child: SizedBox(
-                width: _iconSize * 0.8,
-                height: _iconSize * 0.8,
-                child: CircularProgressIndicator(strokeWidth: 2, color: fg),
-              ))
-            : Icon(icon, size: _iconSize, color: fg),
+        child:
+            isLoading
+                ? Center(
+                  child: SizedBox(
+                    width: _iconSize * 0.8,
+                    height: _iconSize * 0.8,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: fg),
+                  ),
+                )
+                : Icon(icon, size: _iconSize, color: fg),
       ),
     );
   }

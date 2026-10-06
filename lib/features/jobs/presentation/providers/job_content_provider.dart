@@ -16,35 +16,44 @@ class JobContentKey {
 
   @override
   bool operator ==(Object other) =>
-      other is JobContentKey && other.quoteId == quoteId && other.extJobId == extJobId;
+      other is JobContentKey &&
+      other.quoteId == quoteId &&
+      other.extJobId == extJobId;
 
   @override
   int get hashCode => Object.hash(quoteId, extJobId);
 }
 
-final jobContentDatasourceProvider = Provider<JobContentRemoteDatasource>((ref) {
+final jobContentDatasourceProvider = Provider<JobContentRemoteDatasource>((
+  ref,
+) {
   return JobContentRemoteDatasource(ref.watch(supabaseClientProvider));
 });
 
 final jobContentProvider =
-    FutureProvider.family<List<JobContentClip>, JobContentKey>((ref, key) async {
-  return ref
-      .watch(jobContentDatasourceProvider)
-      .fetchJobContent(quoteId: key.quoteId, extJobId: key.extJobId);
-});
+    FutureProvider.family<List<JobContentClip>, JobContentKey>((
+      ref,
+      key,
+    ) async {
+      return ref
+          .watch(jobContentDatasourceProvider)
+          .fetchJobContent(quoteId: key.quoteId, extJobId: key.extJobId);
+    });
 
 /// All of the current DJ's content clips across every job (profile library).
-final myJobContentProvider = FutureProvider<List<MyJobContentClip>>((ref) async {
+final myJobContentProvider = FutureProvider<List<MyJobContentClip>>((
+  ref,
+) async {
   return ref.watch(jobContentDatasourceProvider).fetchMyJobContent();
 });
 
 /// Label for the job a scoped upload targets (shown on the content screen).
 final scopedJobSummaryProvider =
     FutureProvider.family<JobSummary, JobContentKey>((ref, key) async {
-  return ref
-      .watch(jobContentDatasourceProvider)
-      .fetchJobSummary(quoteId: key.quoteId, extJobId: key.extJobId);
-});
+      return ref
+          .watch(jobContentDatasourceProvider)
+          .fetchJobSummary(quoteId: key.quoteId, extJobId: key.extJobId);
+    });
 
 /// Hard-validates a clip before upload (max 15s, 9:16 portrait). Returns a
 /// Danish error string, or null when the clip is acceptable. Server-side

@@ -35,10 +35,13 @@ void main() {
       );
     });
 
-    test('a dropped extra resolves to the signed-in role, not "Mangler data"', () async {
-      await _signInAs(MusicianRole.instrumentalist);
-      expect(roleFromExtra(null), MusicianRole.instrumentalist);
-    });
+    test(
+      'a dropped extra resolves to the signed-in role, not "Mangler data"',
+      () async {
+        await _signInAs(MusicianRole.instrumentalist);
+        expect(roleFromExtra(null), MusicianRole.instrumentalist);
+      },
+    );
 
     test('a wrongly-typed extra (the raw role String) also resolves', () async {
       // The original admin_message bug passed data['role'] straight through as a
@@ -47,10 +50,13 @@ void main() {
       expect(roleFromExtra('musician'), MusicianRole.dj);
     });
 
-    test('no cached role (signed out) still yields the fallback screen', () async {
-      await _signInAs(null);
-      expect(roleFromExtra(null), isNull);
-    });
+    test(
+      'no cached role (signed out) still yields the fallback screen',
+      () async {
+        await _signInAs(null);
+        expect(roleFromExtra(null), isNull);
+      },
+    );
   });
 
   group('NotificationsService.effectiveRole', () {
@@ -65,14 +71,17 @@ void main() {
       );
     });
 
-    test('a role-less admin_message resolves to the musician, not "dj"', () async {
-      // target_audience: 'both' → the Edge Function omits `role` entirely.
-      await _signInAs(MusicianRole.instrumentalist);
-      expect(
-        NotificationsService.effectiveRole({'type': 'admin_message'}),
-        'musician',
-      );
-    });
+    test(
+      'a role-less admin_message resolves to the musician, not "dj"',
+      () async {
+        // target_audience: 'both' → the Edge Function omits `role` entirely.
+        await _signInAs(MusicianRole.instrumentalist);
+        expect(
+          NotificationsService.effectiveRole({'type': 'admin_message'}),
+          'musician',
+        );
+      },
+    );
 
     test('a role-less payload resolves to dj for a signed-in DJ', () async {
       await _signInAs(MusicianRole.dj);

@@ -82,7 +82,8 @@ class MediaScreen extends ConsumerWidget {
               const SizedBox(height: DSSpacing.s6),
               _MediaSection(
                 title: 'Profilvideo',
-                subtitle: 'Personlig video hilsen (maks $kProfileVideoMaxSeconds sek.)',
+                subtitle:
+                    'Personlig video hilsen (maks $kProfileVideoMaxSeconds sek.)',
                 files: profileVideos,
                 maxCount: 1,
                 fileType: UserFileType.profileVideo,
@@ -92,7 +93,8 @@ class MediaScreen extends ConsumerWidget {
               const SizedBox(height: DSSpacing.s6),
               _MediaSection(
                 title: 'Performance videoer',
-                subtitle: 'Op til 6 klip (maks $kCommonVideoMaxSeconds sek. hver)',
+                subtitle:
+                    'Op til 6 klip (maks $kCommonVideoMaxSeconds sek. hver)',
                 files: commonVideos,
                 maxCount: 6,
                 fileType: UserFileType.commonVideo,
@@ -351,8 +353,7 @@ class _MediaSectionState extends ConsumerState<_MediaSection> {
 
               return DragTarget<int>(
                 onWillAcceptWithDetails: (details) => details.data != index,
-                onAcceptWithDetails:
-                    (details) => _reorder(details.data, index),
+                onAcceptWithDetails: (details) => _reorder(details.data, index),
                 builder: (context, candidate, rejected) {
                   final isHovered = candidate.isNotEmpty;
                   return LongPressDraggable<int>(
@@ -370,9 +371,7 @@ class _MediaSectionState extends ConsumerState<_MediaSection> {
                         borderRadius: BorderRadius.circular(DSRadius.md),
                         border: Border.all(
                           color:
-                              isHovered
-                                  ? _c.brand.primary
-                                  : Colors.transparent,
+                              isHovered ? _c.brand.primary : Colors.transparent,
                           width: 2,
                         ),
                       ),

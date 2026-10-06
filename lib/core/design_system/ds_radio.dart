@@ -31,43 +31,57 @@ class DSRadio extends StatelessWidget {
         onTap: disabled ? null : () => onChanged?.call(value),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: DSSpacing.s1),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 24,
-              height: 24,
-              margin: const EdgeInsets.only(top: 1),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _selected ? c.brand.primary : c.border.strong,
-                  width: 2,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                margin: const EdgeInsets.only(top: 1),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _selected ? c.brand.primary : c.border.strong,
+                    width: 2,
+                  ),
+                ),
+                child:
+                    _selected
+                        ? Center(
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: c.brand.primary,
+                            ),
+                          ),
+                        )
+                        : null,
+              ),
+              const SizedBox(width: DSSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: c.text.primary,
+                      ),
+                    ),
+                    if (hint != null)
+                      Text(
+                        hint!,
+                        style: TextStyle(fontSize: 12, color: c.text.muted),
+                      ),
+                  ],
                 ),
               ),
-              child: _selected
-                  ? Center(
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: c.brand.primary,
-                        ),
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: DSSpacing.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.text.primary)),
-                  if (hint != null)
-                    Text(hint!, style: TextStyle(fontSize: 12, color: c.text.muted)),
-                ],
-              ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );

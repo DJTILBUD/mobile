@@ -55,6 +55,17 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   void initState() {
     super.initState();
     _quote = widget.quote;
+    // Most entry points hand us a quote from the cached list (tabs, calendar,
+    // chat job link), and that list does NOT self-update: `Quotes` is not in the
+    // `supabase_realtime` publication, so the Realtime subscription in
+    // DjQuotesNotifier never fires. A quote that went `lost` while the app was
+    // open kept showing "Bud givet" here until the DJ pulled to refresh, while a
+    // push deep-link (which fetches the row by id) showed "Udgået" for the same
+    // job. Re-fetch on open; the `ref.listen` in build() swaps `_quote` in and
+    // the list tab underneath corrects itself at the same time.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(djQuotesProvider.notifier).refetchKeepingData();
+    });
   }
 
   Future<void> _openEdit() async {

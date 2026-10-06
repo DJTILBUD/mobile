@@ -24,8 +24,10 @@ class ConversationCard extends ConsumerWidget {
     this.title = 'Chat med instrumentalist',
     this.showPartnerName = true,
     this.compact = false,
-  }) : assert(jobId != null || extJobId != null,
-            'Provide either jobId or extJobId');
+  }) : assert(
+         jobId != null || extJobId != null,
+         'Provide either jobId or extJobId',
+       );
 
   final int? jobId;
   final int? extJobId;
@@ -35,9 +37,8 @@ class ConversationCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-      final _c = DSTheme.of(context);
-    final conversations =
-        ref.watch(conversationsProvider).valueOrNull ?? [];
+    final _c = DSTheme.of(context);
+    final conversations = ref.watch(conversationsProvider).valueOrNull ?? [];
 
     final conv = conversations.firstWhere(
       (c) =>
@@ -49,21 +50,17 @@ class ConversationCard extends ConsumerWidget {
     if (identical(conv, _sentinel)) return const SizedBox.shrink();
 
     return GestureDetector(
-      onTap: () => context.pushNamed(
-        AppRoutes.conversationDetail,
-        extra: conv,
-      ),
+      onTap: () => context.pushNamed(AppRoutes.conversationDetail, extra: conv),
       child: Container(
         decoration: BoxDecoration(
           color: _c.brand.accent.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(DSRadius.md),
-          border: Border.all(
-            color: _c.brand.accent.withValues(alpha: 0.35),
-          ),
+          border: Border.all(color: _c.brand.accent.withValues(alpha: 0.35)),
         ),
         padding: EdgeInsets.symmetric(
-            horizontal: DSSpacing.s4,
-            vertical: compact ? DSSpacing.s2 : DSSpacing.s3),
+          horizontal: DSSpacing.s4,
+          vertical: compact ? DSSpacing.s2 : DSSpacing.s3,
+        ),
         child: Row(
           children: [
             Container(
@@ -73,8 +70,11 @@ class ConversationCard extends ConsumerWidget {
                 color: _c.brand.accent.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: Icon(LucideIcons.messageSquare,
-                  size: compact ? 15 : 18, color: _c.brand.accent),
+              child: Icon(
+                LucideIcons.messageSquare,
+                size: compact ? 15 : 18,
+                color: _c.brand.accent,
+              ),
             ),
             const SizedBox(width: DSSpacing.s3),
             Expanded(
@@ -85,15 +85,14 @@ class ConversationCard extends ConsumerWidget {
                     title,
                     style: (compact ? DSTextStyle.labelMd : DSTextStyle.labelLg)
                         .copyWith(
-                      color: _c.text.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
+                          color: _c.text.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                   if (showPartnerName)
                     Text(
                       conv.partnerName,
-                      style:
-                          DSTextStyle.bodySm.copyWith(color: _c.text.muted),
+                      style: DSTextStyle.bodySm.copyWith(color: _c.text.muted),
                     ),
                 ],
               ),

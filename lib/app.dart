@@ -53,6 +53,7 @@ import 'package:dj_tilbud_app/features/profile/presentation/screens/payment_scre
 import 'package:dj_tilbud_app/features/profile/presentation/screens/profile_preview_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/admin_messages_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/feedback_screen.dart';
+import 'package:dj_tilbud_app/features/referrals/presentation/screens/referrals_screen.dart';
 import 'package:dj_tilbud_app/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/faq_screen.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/screens/terms_screen.dart';
@@ -644,6 +645,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const StandardMessagesScreen(),
       ),
       GoRoute(
+        path: '/referrals',
+        name: AppRoutes.referrals,
+        builder: (context, state) {
+          final role = roleFromExtra(state.extra);
+          if (role == null) {
+            return const _MissingRouteDataScreen(label: 'henvisninger');
+          }
+          return ReferralsScreen(role: role);
+        },
+      ),
+      GoRoute(
         path: '/payment',
         name: AppRoutes.payment,
         builder: (context, state) {
@@ -661,8 +673,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           // The id is always the signed-in user, so fall back to the session rather
           // than failing on a dropped `extra` — same reasoning as [roleFromExtra].
           final extra = state.extra;
-          final djId =
-              extra is String ? extra : supabase.auth.currentUser?.id;
+          final djId = extra is String ? extra : supabase.auth.currentUser?.id;
           if (djId == null) {
             return const _MissingRouteDataScreen(label: 'jobfiltre');
           }
@@ -734,7 +745,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           // threw instead of degrading. See [roleFromExtra].
           final role = roleFromExtra(state.extra);
           if (role == null) {
-            return const _MissingRouteDataScreen(label: 'ofte stillede spørgsmål');
+            return const _MissingRouteDataScreen(
+              label: 'ofte stillede spørgsmål',
+            );
           }
           return FaqScreen(role: role);
         },

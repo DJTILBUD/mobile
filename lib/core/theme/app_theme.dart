@@ -69,9 +69,7 @@ ThemeData buildAppTheme() {
         fontWeight: FontWeight.w900,
         color: AppColors.eerieBlack,
       ),
-      bodyLarge: textTheme.bodyLarge?.copyWith(
-        color: AppColors.eerieBlack,
-      ),
+      bodyLarge: textTheme.bodyLarge?.copyWith(color: AppColors.eerieBlack),
       bodyMedium: textTheme.bodyMedium?.copyWith(
         color: AppColors.darkElectricBlue,
       ),
@@ -97,8 +95,14 @@ ThemeData buildAppTheme() {
         borderSide: const BorderSide(color: AppColors.peachRed, width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
-      labelStyle: const TextStyle(color: AppColors.eerieBlack, fontWeight: FontWeight.bold),
-      hintStyle: const TextStyle(color: AppColors.darkElectricBlue, fontSize: 14),
+      labelStyle: const TextStyle(
+        color: AppColors.eerieBlack,
+        fontWeight: FontWeight.bold,
+      ),
+      hintStyle: const TextStyle(
+        color: AppColors.darkElectricBlue,
+        fontSize: 14,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(

@@ -410,7 +410,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   if (isDj) ...[
                     const SizedBox(height: DSSpacing.s4),
                     _buildTextField(
-                      'Pris pr. ekstra time (inkl. moms)',
+                      'Pris pr. ekstra time (kr.)',
                       _priceExtraHourCtrl,
                       required: true,
                       keyboardType: TextInputType.number,

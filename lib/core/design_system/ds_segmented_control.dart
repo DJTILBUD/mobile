@@ -19,10 +19,10 @@ class DSSegmentedControl extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = DSTheme.of(context);
     return Container(
-      height: 48,                              // h-12 (md size)
-      padding: const EdgeInsets.all(6),        // p-1.5
+      height: 48, // h-12 (md size)
+      padding: const EdgeInsets.all(6), // p-1.5
       decoration: BoxDecoration(
-        color: c.bg.inputBg,                   // bg-ds-input-bg (#F1F5F9)
+        color: c.bg.inputBg, // bg-ds-input-bg (#F1F5F9)
         borderRadius: BorderRadius.circular(DSRadius.pill),
       ),
       child: Row(

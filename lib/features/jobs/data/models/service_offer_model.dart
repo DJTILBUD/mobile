@@ -87,9 +87,10 @@ class ServiceOfferModel {
       musicianPayoutDkk: (json['musician_payout_dkk'] as num?)?.toInt(),
       salesPitch: json['sales_pitch'] as String?,
       customerContacted: json['customer_contacted'] as bool? ?? false,
-      musicianReadyConfirmedAt: json['musician_ready_confirmed_at'] != null
-          ? DateTime.parse(json['musician_ready_confirmed_at'] as String)
-          : null,
+      musicianReadyConfirmedAt:
+          json['musician_ready_confirmed_at'] != null
+              ? DateTime.parse(json['musician_ready_confirmed_at'] as String)
+              : null,
       extraHours: (json['extra_hours'] as num?)?.toDouble(),
       extraHoursDeclinedAt:
           json['extra_hours_declined_at'] != null
@@ -99,9 +100,12 @@ class ServiceOfferModel {
       musicianFullName: musicianJson?['full_name'] as String?,
       musicianPhone: musicianJson?['phone'] as String?,
       musicianEmail: musicianJson?['email'] as String?,
-      customerContactPlannedFor: json['customer_contact_planned_for'] as String?,
-      specialRequestExtraFeeDkk: (json['special_request_extra_fee_dkk'] as num?)?.toInt() ?? 0,
-      specialRequestExtraFeeConfirmed: json['special_request_extra_fee_confirmed'] as bool? ?? false,
+      customerContactPlannedFor:
+          json['customer_contact_planned_for'] as String?,
+      specialRequestExtraFeeDkk:
+          (json['special_request_extra_fee_dkk'] as num?)?.toInt() ?? 0,
+      specialRequestExtraFeeConfirmed:
+          json['special_request_extra_fee_confirmed'] as bool? ?? false,
       specialRequestExtraFeeReason:
           json['special_request_extra_fee_reason'] as String?,
     );
@@ -128,9 +132,10 @@ class ServiceOfferModel {
       musicianFullName: musicianFullName,
       musicianPhone: musicianPhone,
       musicianEmail: musicianEmail,
-      customerContactPlannedFor: customerContactPlannedFor != null
-          ? DateTime.parse(customerContactPlannedFor!)
-          : null,
+      customerContactPlannedFor:
+          customerContactPlannedFor != null
+              ? DateTime.parse(customerContactPlannedFor!)
+              : null,
       specialRequestExtraFeeDkk: specialRequestExtraFeeDkk,
       specialRequestExtraFeeConfirmed: specialRequestExtraFeeConfirmed,
       specialRequestExtraFeeReason: specialRequestExtraFeeReason,

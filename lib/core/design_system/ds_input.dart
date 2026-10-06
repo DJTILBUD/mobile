@@ -111,7 +111,12 @@ class DSInput extends StatelessWidget {
     // ~22 logical px per line at fontSize 14, capped so a maxLines-15 field does not demand more
     // room than any phone has above the keyboard.
     final lines = (minLines ?? maxLines).clamp(1, 8);
-    return EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 20 + lines * 22.0);
+    return EdgeInsets.only(
+      left: 20,
+      top: 20,
+      right: 20,
+      bottom: 20 + lines * 22.0,
+    );
   }
 
   BorderRadius get _radius =>

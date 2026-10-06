@@ -6,7 +6,8 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 
 const sickLeavePhone = '60 14 86 98';
 const _djTermsUrl = 'https://djtilbud.dk/dj-handelsbetingelser/';
-const _musicianTermsUrl = 'https://djtilbud.dk/handelsbetingelser-instrumentalister/';
+const _musicianTermsUrl =
+    'https://djtilbud.dk/handelsbetingelser-instrumentalister/';
 
 /// "What happens if I get sick?" disclaimer. Subtle collapsed fold-out, shown on
 /// committed jobs for both DJs and musicians. The terms link (pkt. 3.1) points
@@ -27,11 +28,21 @@ class _SickDisclaimerState extends State<SickDisclaimer> {
   @override
   void initState() {
     super.initState();
-    _callRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse('tel:${sickLeavePhone.replaceAll(' ', '')}'));
-    final termsUrl = widget.role == 'musician' ? _musicianTermsUrl : _djTermsUrl;
-    _termsRecognizer = TapGestureRecognizer()
-      ..onTap = () => launchUrl(Uri.parse(termsUrl), mode: LaunchMode.externalApplication);
+    _callRecognizer =
+        TapGestureRecognizer()
+          ..onTap =
+              () => launchUrl(
+                Uri.parse('tel:${sickLeavePhone.replaceAll(' ', '')}'),
+              );
+    final termsUrl =
+        widget.role == 'musician' ? _musicianTermsUrl : _djTermsUrl;
+    _termsRecognizer =
+        TapGestureRecognizer()
+          ..onTap =
+              () => launchUrl(
+                Uri.parse(termsUrl),
+                mode: LaunchMode.externalApplication,
+              );
   }
 
   @override
@@ -61,12 +72,24 @@ class _SickDisclaimerState extends State<SickDisclaimer> {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
-          childrenPadding: const EdgeInsets.fromLTRB(DSSpacing.s4, 0, DSSpacing.s4, DSSpacing.s4),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            DSSpacing.s4,
+            0,
+            DSSpacing.s4,
+            DSSpacing.s4,
+          ),
           expandedCrossAxisAlignment: CrossAxisAlignment.start,
-          leading: Icon(LucideIcons.alertTriangle, size: 16, color: c.text.muted),
+          leading: Icon(
+            LucideIcons.alertTriangle,
+            size: 16,
+            color: c.text.muted,
+          ),
           title: Text(
             'Hvad sker der, hvis jeg bliver syg?',
-            style: DSTextStyle.labelMd.copyWith(color: c.text.secondary, fontWeight: FontWeight.w600),
+            style: DSTextStyle.labelMd.copyWith(
+              color: c.text.secondary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           children: [
             Text.rich(
@@ -74,9 +97,14 @@ class _SickDisclaimerState extends State<SickDisclaimer> {
                 style: body,
                 children: [
                   const TextSpan(text: 'Ring til os med det samme på '),
-                  TextSpan(text: sickLeavePhone, style: linkStyle, recognizer: _callRecognizer),
+                  TextSpan(
+                    text: sickLeavePhone,
+                    style: linkStyle,
+                    recognizer: _callRecognizer,
+                  ),
                   const TextSpan(
-                    text: ' – ikke næste dag. Har du mistanke om sygdom dagen inden, '
+                    text:
+                        ' – ikke næste dag. Har du mistanke om sygdom dagen inden, '
                         'så giv os besked allerede der.',
                   ),
                 ],
@@ -94,13 +122,19 @@ class _SickDisclaimerState extends State<SickDisclaimer> {
                 style: body,
                 children: [
                   const TextSpan(
-                    text: 'Såfremt du ikke kan finde en DJ, så træder vi ind. Vi gør vores bedste for '
+                    text:
+                        'Såfremt du ikke kan finde en DJ, så træder vi ind. Vi gør vores bedste for '
                         'at finde en DJ til den løn, du var berrettiget til og ikke mere. Dog '
                         'forbeholder vi os retten jf. pkt. 3.1 (',
                   ),
-                  TextSpan(text: 'handelsbetingelser', style: linkStyle, recognizer: _termsRecognizer),
+                  TextSpan(
+                    text: 'handelsbetingelser',
+                    style: linkStyle,
+                    recognizer: _termsRecognizer,
+                  ),
                   const TextSpan(
-                    text: '), til at vi kan tilbageholde eller fakturere dig 50% af jobbets løn ekstra. '
+                    text:
+                        '), til at vi kan tilbageholde eller fakturere dig 50% af jobbets løn ekstra. '
                         'I dette tilfælde vil den ekstra omkostning for erstatnings DJ\'ens løn '
                         'tilfalde dig, da det er din kunde og dit ansvar.',
                   ),

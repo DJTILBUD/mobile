@@ -32,7 +32,9 @@ class AgentRepositoryImpl implements AgentRepository {
     } on AppException {
       rethrow;
     } catch (_) {
-      throw const AgentException('AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
+      throw const AgentException(
+        'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.',
+      );
     }
   }
 

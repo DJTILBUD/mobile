@@ -1,4 +1,5 @@
 import 'package:dj_tilbud_app/features/profile/domain/self_billing_complete.dart';
+import 'package:dj_tilbud_app/features/profile/domain/self_billing_reference_format.dart';
 
 enum PaymentType {
   invoice,
@@ -36,7 +37,11 @@ class PaymentInfo {
     this.businessType,
     this.cvr,
     this.billingEmail,
+    this.billingEmailSecondary,
     this.cvrCompanyName,
+    this.billingLockedAt,
+    this.referenceFormat = SelfBillingReferenceFormat.standard,
+    this.selfBillingTermsAccepted = false,
   });
 
   final PaymentType payment;
@@ -51,9 +56,31 @@ class PaymentInfo {
   final String? cvr;
   final String? billingEmail;
 
+  /// Optional second address the self-billing "Afregning" is also sent to.
+  /// Billing-locked like [billingEmail], but never required for completeness.
+  final String? billingEmailSecondary;
+
   /// Registered company name behind the CVR, looked up by the web-app when the
   /// CVR is saved. Read-only on mobile: never sent back.
   final String? cvrCompanyName;
+
+  /// Set = the info is locked since then and can only change after support
+  /// approves a change request (web-app/documentation/billing-lock-plan.md).
+  /// Server-owned: read-only on mobile, never sent back.
+  final DateTime? billingLockedAt;
+
+  bool get isLocked => billingLockedAt != null;
+
+  /// The performer's own reference format. Not billing-locked, so it is
+  /// saved separately ([ProfileRepository.saveSelfBillingReferenceFormat]).
+  final SelfBillingReferenceFormat referenceFormat;
+
+  /// Whether the performer accepted the self-billing terms (server-owned, read-only).
+  final bool selfBillingTermsAccepted;
+
+  /// Saved setup where DJTILBUD issues the afregning: everyone on Invoice,
+  /// a private person too (since 2026-10-05).
+  bool get isSelfBilled => payment == PaymentType.invoice;
 
   SelfBillingInfo toSelfBillingInfo() => SelfBillingInfo(
     businessType: businessType,

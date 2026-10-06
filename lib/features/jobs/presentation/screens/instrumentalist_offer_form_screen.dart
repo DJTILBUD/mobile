@@ -162,11 +162,7 @@ class _InstrumentalistOfferFormScreenState
     _formKey.currentState!.validate();
     if (inputError != null) {
       _logSubmitFailed(OfferSubmitFailure.invalidInput);
-      DSToast.show(
-        context,
-        variant: DSToastVariant.error,
-        title: inputError,
-      );
+      DSToast.show(context, variant: DSToastVariant.error, title: inputError);
       return;
     }
 
@@ -261,6 +257,10 @@ class _InstrumentalistOfferFormScreenState
         );
         return;
       }
+
+      // The job may have been taken while the musician was writing. Re-check so the form flips to
+      // the "optaget"/unavailable card instead of inviting another doomed retry.
+      ref.invalidate(musicianJobAvailabilityProvider(job));
 
       final message =
           error is AppException && error.message.isNotEmpty
@@ -386,7 +386,6 @@ class _InstrumentalistOfferFormScreenState
       ),
     );
     final hasConflict = conflictAsync.valueOrNull == true;
-    final hasActiveOffer = job.hasActiveOffer;
 
     // Is the job still open to offers at all? The feed excludes everything that isn't, but this
     // screen is reachable by PUSH DEEP-LINK, where a `new_ext_job` notification stays tappable long
@@ -396,7 +395,17 @@ class _InstrumentalistOfferFormScreenState
     final availability =
         ref.watch(musicianJobAvailabilityProvider(job)).valueOrNull ??
         MusicianJobAvailability.biddable;
-    final unavailableMessage = musicianJobAvailabilityMessage(availability);
+    // Held by another musician's active offer: the DB allows one non-lost offer per instrument per
+    // job, so this blocks just as hard. The feed injects it as `has_active_offer`, but a deep-linked
+    // job is a bare row without it, so the fetched offers are the source here. Rendered as the
+    // softer "optaget" card (it can free up again), not the red hard-block card.
+    final hasActiveOffer =
+        job.hasActiveOffer ||
+        availability == MusicianJobAvailability.heldByAnother;
+    final unavailableMessage =
+        availability == MusicianJobAvailability.heldByAnother
+            ? null
+            : musicianJobAvailabilityMessage(availability);
     final isUnavailable = unavailableMessage != null;
     // Other sent/won offers the sax already holds on this date (drives the multi-offer notice).
     final sameDateOffers = _sameDateOffers(
@@ -749,7 +758,8 @@ class _InstrumentalistOfferFormScreenState
               ),
               const SizedBox(height: DSSpacing.s6),
 
-              if (!hasActiveOffer) ...[
+              // Hidden whenever the job can't be bid on, so nobody writes a pitch that can't be sent.
+              if (!isUnavailable && !hasActiveOffer) ...[
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -821,16 +831,16 @@ class _InstrumentalistOfferFormScreenState
                       'Fortæl kunden om din erfaring, hvorfor du er den rette til jobbet...',
                   controller: _salesPitchController,
                   // Grows with the text instead of scrolling inside a 5-line box.
-                  // 15 lines covers the 450-char cap, so it effectively never scrolls.
+                  // 25 lines covers the kSalesPitchMaxLength cap, so it effectively never scrolls.
                   // Same numbers as the DJ salgstale field in dj_quote_form_screen.dart.
                   minLines: 8,
-                  maxLines: 15,
-                  maxLength: 450,
+                  maxLines: 25,
+                  maxLength: kSalesPitchMaxLength,
                   showCounter: true,
                   textInputAction: TextInputAction.newline,
                   validator: (v) {
-                    if (v == null || v.trim().length < 100) {
-                      return 'Beskeden skal være mindst 100 tegn';
+                    if (v == null || v.trim().length < kSalesPitchMinLength) {
+                      return 'Beskeden skal være mindst $kSalesPitchMinLength tegn';
                     }
                     return null;
                   },
@@ -839,7 +849,7 @@ class _InstrumentalistOfferFormScreenState
                 Row(
                   children: [
                     Text(
-                      '$_pitchLength / 450',
+                      '$_pitchLength / $kSalesPitchMaxLength',
                       style: DSTextStyle.labelSm.copyWith(color: _c.text.muted),
                     ),
                     const Spacer(),

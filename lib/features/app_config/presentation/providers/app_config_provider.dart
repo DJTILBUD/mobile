@@ -31,13 +31,14 @@ class UpdateStatus {
 
   String? get storeUrl {
     if (config == null) return null;
-    return Platform.isIOS ? config!.iosAppStoreUrl : config!.androidPlayStoreUrl;
+    return Platform.isIOS
+        ? config!.iosAppStoreUrl
+        : config!.androidPlayStoreUrl;
   }
 }
 
 extension on AppConfig {
-  String? minVersionFor() =>
-      Platform.isIOS ? iosMinVersion : androidMinVersion;
+  String? minVersionFor() => Platform.isIOS ? iosMinVersion : androidMinVersion;
   String? latestVersionFor() =>
       Platform.isIOS ? iosLatestVersion : androidLatestVersion;
   String? storeUrlFor() =>
@@ -57,7 +58,9 @@ final updateStatusProvider = FutureProvider<UpdateStatus>((ref) async {
   final config = await repo.fetch();
   if (config == null) {
     return UpdateStatus(
-        level: RequiredUpdateLevel.none, currentVersion: current);
+      level: RequiredUpdateLevel.none,
+      currentVersion: current,
+    );
   }
 
   final minVersion = config.minVersionFor();

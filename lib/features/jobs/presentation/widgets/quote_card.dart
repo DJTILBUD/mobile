@@ -255,7 +255,8 @@ class _MetaList extends StatelessWidget {
           ),
           const SizedBox(height: 3),
         ],
-        _MetaItem(icon: LucideIcons.mapPin, label: job.region, c: c),
+        // Region, postal code and place, same as the new-job card (it used to be region only).
+        _MetaItem(icon: LucideIcons.mapPin, label: job.cardLocationLabel, c: c),
         const SizedBox(height: 3),
         _MetaItem(icon: LucideIcons.clock, label: job.timeDisplay, c: c),
         if (job.guestsAmount > 0) ...[

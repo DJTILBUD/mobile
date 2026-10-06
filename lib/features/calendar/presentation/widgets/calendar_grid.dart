@@ -52,76 +52,85 @@ class CalendarGrid extends StatelessWidget {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onHorizontalDragEnd: onMonthChanged == null
-          ? null
-          : (details) {
-              final v = details.primaryVelocity ?? 0;
-              if (v < -300) {
-                onMonthChanged!(DateTime(month.year, month.month + 1));
-              } else if (v > 300) {
-                onMonthChanged!(DateTime(month.year, month.month - 1));
-              }
-            },
+      onHorizontalDragEnd:
+          onMonthChanged == null
+              ? null
+              : (details) {
+                final v = details.primaryVelocity ?? 0;
+                if (v < -300) {
+                  onMonthChanged!(DateTime(month.year, month.month + 1));
+                } else if (v > 300) {
+                  onMonthChanged!(DateTime(month.year, month.month - 1));
+                }
+              },
       child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
-      child: Column(
-        children: [
-          Row(
-            children: _weekDays
-                .map((d) => Expanded(
-                      child: Center(
-                        child: Text(d,
-                            style: DSTextStyle.labelSm
-                                .copyWith(color: c.text.secondary)),
-                      ),
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: DSSpacing.s1),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 4,
-              crossAxisSpacing: 4,
-              childAspectRatio: 0.9,
+        padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
+        child: Column(
+          children: [
+            Row(
+              children:
+                  _weekDays
+                      .map(
+                        (d) => Expanded(
+                          child: Center(
+                            child: Text(
+                              d,
+                              style: DSTextStyle.labelSm.copyWith(
+                                color: c.text.secondary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
             ),
-            itemCount: totalCells,
-            itemBuilder: (context, index) {
-              if (index < leadingBlanks) return const SizedBox.shrink();
+            const SizedBox(height: DSSpacing.s1),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                mainAxisSpacing: 4,
+                crossAxisSpacing: 4,
+                childAspectRatio: 0.9,
+              ),
+              itemCount: totalCells,
+              itemBuilder: (context, index) {
+                if (index < leadingBlanks) return const SizedBox.shrink();
 
-              final day = index - leadingBlanks + 1;
-              final date = DateTime(month.year, month.month, day);
-              final dateStr =
-                  DateFormat('yyyy-MM-dd').format(date);
-              final isToday = date.year == today.year &&
-                  date.month == today.month &&
-                  date.day == today.day;
-              final isSelected = selectedDay != null &&
-                  date.year == selectedDay!.year &&
-                  date.month == selectedDay!.month &&
-                  date.day == selectedDay!.day;
-              final isUnavailable = unavailableDays.contains(dateStr);
-              final kinds = kindsByDay[day];
+                final day = index - leadingBlanks + 1;
+                final date = DateTime(month.year, month.month, day);
+                final dateStr = DateFormat('yyyy-MM-dd').format(date);
+                final isToday =
+                    date.year == today.year &&
+                    date.month == today.month &&
+                    date.day == today.day;
+                final isSelected =
+                    selectedDay != null &&
+                    date.year == selectedDay!.year &&
+                    date.month == selectedDay!.month &&
+                    date.day == selectedDay!.day;
+                final isUnavailable = unavailableDays.contains(dateStr);
+                final kinds = kindsByDay[day];
 
-              return GestureDetector(
-                onTap: () => onDaySelected(date),
-                onLongPress: onDayLongPress != null
-                    ? () => onDayLongPress!(date)
-                    : null,
-                child: _DayCell(
-                  day: day,
-                  isToday: isToday,
-                  isSelected: isSelected,
-                  isUnavailable: isUnavailable,
-                  eventKinds: kinds,
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+                return GestureDetector(
+                  onTap: () => onDaySelected(date),
+                  onLongPress:
+                      onDayLongPress != null
+                          ? () => onDayLongPress!(date)
+                          : null,
+                  child: _DayCell(
+                    day: day,
+                    isToday: isToday,
+                    isSelected: isSelected,
+                    isUnavailable: isUnavailable,
+                    eventKinds: kinds,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -158,11 +167,14 @@ class _DayCell extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(DSRadius.sm),
-        border: isToday && !isSelected
-            ? Border.all(color: c.brand.primaryActive, width: 1.5)
-            : isUnavailable && !isSelected
+        border:
+            isToday && !isSelected
+                ? Border.all(color: c.brand.primaryActive, width: 1.5)
+                : isUnavailable && !isSelected
                 ? Border.all(
-                    color: c.state.danger.withValues(alpha: 0.55), width: 1)
+                  color: c.state.danger.withValues(alpha: 0.55),
+                  width: 1,
+                )
                 : null,
       ),
       child: Column(
@@ -173,9 +185,10 @@ class _DayCell extends StatelessWidget {
             style: DSTextStyle.bodyMd.copyWith(
               fontWeight:
                   isToday || isSelected ? FontWeight.w700 : FontWeight.w400,
-              color: isSelected
-                  ? c.brand.onPrimary
-                  : isUnavailable
+              color:
+                  isSelected
+                      ? c.brand.onPrimary
+                      : isUnavailable
                       ? c.state.danger
                       : c.text.primary,
             ),
@@ -196,20 +209,21 @@ class _DayCell extends StatelessWidget {
             const SizedBox(height: 3),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: eventKinds!.map((kind) {
-                final dotColor = _kindColor(c, kind);
-                final resolvedColor =
-                    isSelected ? c.brand.onPrimary : dotColor;
-                return Container(
-                  width: 5,
-                  height: 5,
-                  margin: const EdgeInsets.symmetric(horizontal: 1),
-                  decoration: BoxDecoration(
-                    color: resolvedColor,
-                    shape: BoxShape.circle,
-                  ),
-                );
-              }).toList(),
+              children:
+                  eventKinds!.map((kind) {
+                    final dotColor = _kindColor(c, kind);
+                    final resolvedColor =
+                        isSelected ? c.brand.onPrimary : dotColor;
+                    return Container(
+                      width: 5,
+                      height: 5,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: BoxDecoration(
+                        color: resolvedColor,
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  }).toList(),
             ),
           ],
         ],
@@ -220,8 +234,8 @@ class _DayCell extends StatelessWidget {
   static Color _kindColor(DSColors c, CalendarEventKind kind) {
     return switch (kind) {
       CalendarEventKind.newJob => c.state.info,
-      CalendarEventKind.sent   => c.state.warning,
-      CalendarEventKind.won    => c.state.success,
+      CalendarEventKind.sent => c.state.warning,
+      CalendarEventKind.won => c.state.success,
     };
   }
 }

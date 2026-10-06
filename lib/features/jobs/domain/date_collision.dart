@@ -14,11 +14,13 @@ bool isDateColliding(Job job, List<DjQuote> quotes, List<ExtJob> extJobs) {
   // A confirmed/booked external job on the same date always blocks.
   if (extJobs.any((e) => sameDay(e.date, job.date))) return true;
 
-  final activeOnDate = quotes.where((q) =>
-      sameDay(q.job.date, job.date) &&
-      q.jobId != job.id &&
-      q.status != QuoteStatus.lost &&
-      q.status != QuoteStatus.overwritten);
+  final activeOnDate = quotes.where(
+    (q) =>
+        sameDay(q.job.date, job.date) &&
+        q.jobId != job.id &&
+        q.status != QuoteStatus.lost &&
+        q.status != QuoteStatus.overwritten,
+  );
 
   // Already won a job on this date → no more bidding (max 1 won per date).
   if (activeOnDate.any((q) => q.status == QuoteStatus.won)) return true;
@@ -30,7 +32,11 @@ bool isDateColliding(Job job, List<DjQuote> quotes, List<ExtJob> extJobs) {
 
 /// Danish explanation for why [job]'s date is blocked, or null if it isn't.
 /// Mirrors the three cases in the web `JobCollissionNotificationBanner`.
-String? dateCollisionMessage(Job job, List<DjQuote> quotes, List<ExtJob> extJobs) {
+String? dateCollisionMessage(
+  Job job,
+  List<DjQuote> quotes,
+  List<ExtJob> extJobs,
+) {
   bool sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
@@ -38,11 +44,13 @@ String? dateCollisionMessage(Job job, List<DjQuote> quotes, List<ExtJob> extJobs
     return 'Du kan ikke sende et bud på denne dato, da du allerede har et udvalgt job på samme dato.';
   }
 
-  final activeOnDate = quotes.where((q) =>
-      sameDay(q.job.date, job.date) &&
-      q.jobId != job.id &&
-      q.status != QuoteStatus.lost &&
-      q.status != QuoteStatus.overwritten);
+  final activeOnDate = quotes.where(
+    (q) =>
+        sameDay(q.job.date, job.date) &&
+        q.jobId != job.id &&
+        q.status != QuoteStatus.lost &&
+        q.status != QuoteStatus.overwritten,
+  );
 
   if (activeOnDate.any((q) => q.status == QuoteStatus.won)) {
     return 'Du kan ikke sende et bud på denne dato, da du allerede har vundet et job på samme dato. Du kan kun have 1 vundet job per dato.';

@@ -14,9 +14,12 @@ void main() {
     expect(formatBirthdayPersonAge('50-års'), ', 50-års');
   });
 
-  test('nothing to show yields an empty suffix so call sites can concatenate', () {
-    expect(formatBirthdayPersonAge(null), '');
-    expect(formatBirthdayPersonAge(''), '');
-    expect(formatBirthdayPersonAge('   '), '');
-  });
+  test(
+    'nothing to show yields an empty suffix so call sites can concatenate',
+    () {
+      expect(formatBirthdayPersonAge(null), '');
+      expect(formatBirthdayPersonAge(''), '');
+      expect(formatBirthdayPersonAge('   '), '');
+    },
+  );
 }

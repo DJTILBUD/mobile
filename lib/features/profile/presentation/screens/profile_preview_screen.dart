@@ -30,12 +30,16 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final isDj = widget.role == MusicianRole.dj;
     final profileAsync =
-        isDj ? ref.watch(djProfileProvider) : ref.watch(musicianProfileProvider);
+        isDj
+            ? ref.watch(djProfileProvider)
+            : ref.watch(musicianProfileProvider);
     final reviewsAsync =
-        isDj ? ref.watch(djReviewsProvider) : ref.watch(musicianReviewsProvider);
+        isDj
+            ? ref.watch(djReviewsProvider)
+            : ref.watch(musicianReviewsProvider);
     final filesAsync = ref.watch(userFilesProvider);
 
     return Scaffold(
@@ -46,9 +50,16 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
         surfaceTintColor: _c.bg.surface,
         actions: [
           TextButton.icon(
-            onPressed: () =>
-                context.pushNamed(AppRoutes.editProfile, extra: widget.role),
-            icon: Icon(LucideIcons.pencil, size: 15, color: _c.brand.primaryActive),
+            onPressed:
+                () => context.pushNamed(
+                  AppRoutes.editProfile,
+                  extra: widget.role,
+                ),
+            icon: Icon(
+              LucideIcons.pencil,
+              size: 15,
+              color: _c.brand.primaryActive,
+            ),
             label: Text(
               'Rediger profil',
               style: DSTextStyle.labelMd.copyWith(
@@ -62,24 +73,30 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
       ),
       body: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-            child: Text('Fejl: $e',
-                style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger))),
+        error:
+            (e, _) => Center(
+              child: Text(
+                'Fejl: $e',
+                style: DSTextStyle.bodyMd.copyWith(color: _c.state.danger),
+              ),
+            ),
         data: (profile) {
-          final fullName = profile is DjProfile
-              ? profile.fullName
-              : (profile as MusicianProfile).fullName;
+          final fullName =
+              profile is DjProfile
+                  ? profile.fullName
+                  : (profile as MusicianProfile).fullName;
           final firstName = fullName.split(' ').first;
 
-          final about = profile is DjProfile
-              ? profile.aboutYou
-              : (profile as MusicianProfile).aboutText;
-          final venues = profile is DjProfile
-              ? profile.venuesAndEvents
-              : (profile as MusicianProfile).venuesAndEvents;
+          final about =
+              profile is DjProfile
+                  ? profile.aboutYou
+                  : (profile as MusicianProfile).aboutText;
+          final venues =
+              profile is DjProfile
+                  ? profile.venuesAndEvents
+                  : (profile as MusicianProfile).venuesAndEvents;
           // Only musicians show genres on the preview page
-          final genres =
-              isDj ? null : (profile as MusicianProfile).genres;
+          final genres = isDj ? null : (profile as MusicianProfile).genres;
 
           final files = filesAsync.valueOrNull ?? [];
           final mediaItems = _buildOrderedMediaItems(files);
@@ -94,24 +111,29 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
               // ── Info banner ──────────────────────────────────────────────
               Container(
                 margin: const EdgeInsets.fromLTRB(
-                    DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
+                  DSSpacing.s4,
+                  DSSpacing.s4,
+                  DSSpacing.s4,
+                  0,
+                ),
                 padding: const EdgeInsets.all(DSSpacing.s3),
                 decoration: BoxDecoration(
                   color: _c.state.info.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(DSRadius.sm),
-                  border:
-                      Border.all(color: _c.state.info.withValues(alpha: 0.50)),
+                  border: Border.all(
+                    color: _c.state.info.withValues(alpha: 0.50),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(LucideIcons.eye,
-                        size: 15, color: _c.state.info),
+                    Icon(LucideIcons.eye, size: 15, color: _c.state.info),
                     const SizedBox(width: DSSpacing.s2),
                     Expanded(
                       child: Text(
                         'Sådan ser din profil ud for kunder',
-                        style:
-                            DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                        style: DSTextStyle.labelMd.copyWith(
+                          color: _c.text.secondary,
+                        ),
                       ),
                     ),
                   ],
@@ -127,7 +149,11 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
               // ── First name (+ verified badge for DJs) ────────────────────
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, 0),
+                  DSSpacing.s4,
+                  DSSpacing.s4,
+                  DSSpacing.s4,
+                  0,
+                ),
                 child: Row(
                   children: [
                     Text(
@@ -139,8 +165,11 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
                     ),
                     if (isDj) ...[
                       const SizedBox(width: 6),
-                      Icon(LucideIcons.badgeCheck,
-                          size: 20, color: _c.brand.accent),
+                      Icon(
+                        LucideIcons.badgeCheck,
+                        size: 20,
+                        color: _c.brand.accent,
+                      ),
                     ],
                   ],
                 ),
@@ -173,9 +202,7 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: venues
-                        .map((v) => _CheckTag(label: v))
-                        .toList(),
+                    children: venues.map((v) => _CheckTag(label: v)).toList(),
                   ),
                 ),
                 const SizedBox(height: DSSpacing.s6),
@@ -189,9 +216,7 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: genres
-                        .map((g) => _CheckTag(label: g))
-                        .toList(),
+                    children: genres.map((g) => _CheckTag(label: g)).toList(),
                   ),
                 ),
                 const SizedBox(height: DSSpacing.s6),
@@ -200,8 +225,7 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
               // ── Reviews ──────────────────────────────────────────────────
               if (reviews.isNotEmpty) ...[
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
+                  padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -213,13 +237,14 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
                         ),
                       ),
                       const SizedBox(height: DSSpacing.s4),
-                      ...displayedReviews
-                          .map((r) => _ReviewCard(review: r)),
+                      ...displayedReviews.map((r) => _ReviewCard(review: r)),
                       if (reviews.length > 4) ...[
                         const SizedBox(height: DSSpacing.s2),
                         GestureDetector(
-                          onTap: () => setState(
-                              () => _showAllReviews = !_showAllReviews),
+                          onTap:
+                              () => setState(
+                                () => _showAllReviews = !_showAllReviews,
+                              ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -235,8 +260,9 @@ class _ProfilePreviewScreenState extends ConsumerState<ProfilePreviewScreen> {
                                 _showAllReviews
                                     ? 'Skjul anbefalinger'
                                     : 'Se alle anbefalinger',
-                                style: DSTextStyle.labelMd
-                                    .copyWith(color: _c.text.muted),
+                                style: DSTextStyle.labelMd.copyWith(
+                                  color: _c.text.muted,
+                                ),
                               ),
                             ],
                           ),
@@ -302,9 +328,10 @@ List<_MediaItem> _buildOrderedMediaItems(List<UserFile> files) {
   if (profileImage != null) ordered.add(wrap(profileImage));
   if (profileVideo != null) ordered.add(wrap(profileVideo));
 
-  final maxCommon = commonImages.length > commonVideos.length
-      ? commonImages.length
-      : commonVideos.length;
+  final maxCommon =
+      commonImages.length > commonVideos.length
+          ? commonImages.length
+          : commonVideos.length;
   for (var i = 0; i < maxCommon; i++) {
     if (i < commonImages.length) ordered.add(wrap(commonImages[i]));
     if (i < commonVideos.length) ordered.add(wrap(commonVideos[i]));
@@ -321,7 +348,7 @@ class _ImageCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return SizedBox(
       height: 260,
       child: ListView.separated(
@@ -329,24 +356,27 @@ class _ImageCarousel extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) => _MediaTile(
-          item: items[i],
-          onTap: () => _openViewer(context, items, i),
-        ),
+        itemBuilder:
+            (_, i) => _MediaTile(
+              item: items[i],
+              onTap: () => _openViewer(context, items, i),
+            ),
       ),
     );
   }
 
   void _openViewer(
-      BuildContext context, List<_MediaItem> items, int initialIndex) {
+    BuildContext context,
+    List<_MediaItem> items,
+    int initialIndex,
+  ) {
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black87,
-        pageBuilder: (_, __, ___) => _MediaViewerScreen(
-          items: items,
-          initialIndex: initialIndex,
-        ),
+        pageBuilder:
+            (_, __, ___) =>
+                _MediaViewerScreen(items: items, initialIndex: initialIndex),
       ),
     );
   }
@@ -360,7 +390,7 @@ class _MediaTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final previewUrl = item.previewUrl;
 
     return GestureDetector(
@@ -375,13 +405,14 @@ class _MediaTile extends StatelessWidget {
                 width: 260,
                 height: 260,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => Container(
-                  width: 260,
-                  height: 260,
-                  color: _c.bg.inputBg,
-                ),
-                errorWidget: (_, __, ___) => _PlaceholderTile(
-                    isVideo: item.isVideo),
+                placeholder:
+                    (_, __) => Container(
+                      width: 260,
+                      height: 260,
+                      color: _c.bg.inputBg,
+                    ),
+                errorWidget:
+                    (_, __, ___) => _PlaceholderTile(isVideo: item.isVideo),
               )
             else
               _PlaceholderTile(isVideo: item.isVideo),
@@ -413,7 +444,7 @@ class _PlaceholderTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       width: 260,
       height: 260,
@@ -430,10 +461,7 @@ class _PlaceholderTile extends StatelessWidget {
 // ─── Full-screen media viewer ─────────────────────────────────────────────────
 
 class _MediaViewerScreen extends StatefulWidget {
-  const _MediaViewerScreen({
-    required this.items,
-    required this.initialIndex,
-  });
+  const _MediaViewerScreen({required this.items, required this.initialIndex});
 
   final List<_MediaItem> items;
   final int initialIndex;
@@ -461,7 +489,7 @@ class _MediaViewerScreenState extends State<_MediaViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -495,7 +523,7 @@ class _ImagePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return InteractiveViewer(
       minScale: 0.5,
       maxScale: 4.0,
@@ -503,13 +531,18 @@ class _ImagePage extends StatelessWidget {
         child: CachedNetworkImage(
           imageUrl: imageUrl,
           fit: BoxFit.contain,
-          placeholder: (_, __) => const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
-          errorWidget: (_, __, ___) => const Center(
-            child: Icon(LucideIcons.imageOff,
-                color: Colors.white54, size: 64),
-          ),
+          placeholder:
+              (_, __) => const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+          errorWidget:
+              (_, __, ___) => const Center(
+                child: Icon(
+                  LucideIcons.imageOff,
+                  color: Colors.white54,
+                  size: 64,
+                ),
+              ),
         ),
       ),
     );
@@ -538,8 +571,9 @@ class _VideoPageState extends State<_VideoPage> {
   }
 
   Future<void> _init() async {
-    _videoController =
-        VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+    _videoController = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoUrl),
+    );
     try {
       await _videoController.initialize();
       if (mounted) {
@@ -566,11 +600,10 @@ class _VideoPageState extends State<_VideoPage> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     if (_hasError) {
       return const Center(
-        child: Icon(LucideIcons.videoOff,
-            color: Colors.white54, size: 64),
+        child: Icon(LucideIcons.videoOff, color: Colors.white54, size: 64),
       );
     }
     if (_chewieController == null) {
@@ -597,7 +630,7 @@ class _ContentSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: DSSpacing.s4),
       child: Column(
@@ -635,7 +668,7 @@ class _CheckTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
@@ -664,8 +697,11 @@ class _CheckTag extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          Icon(LucideIcons.checkCircle,
-              size: 14, color: _c.brand.primaryActive),
+          Icon(
+            LucideIcons.checkCircle,
+            size: 14,
+            color: _c.brand.primaryActive,
+          ),
         ],
       ),
     );
@@ -681,7 +717,7 @@ class _ReviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final date = _formatDate(review.eventDate);
 
     return Container(
@@ -709,10 +745,7 @@ class _ReviewCard extends StatelessWidget {
           // Customer name + date
           Text(
             '${review.customerName} • $date',
-            style: TextStyle(
-              fontSize: 12,
-              color: _c.text.muted,
-            ),
+            style: TextStyle(fontSize: 12, color: _c.text.muted),
           ),
           const SizedBox(height: DSSpacing.s3),
           // Review text
@@ -733,8 +766,18 @@ class _ReviewCard extends StatelessWidget {
     try {
       final dt = DateTime.parse(dateStr);
       const months = [
-        'jan', 'feb', 'mar', 'apr', 'maj', 'jun',
-        'jul', 'aug', 'sep', 'okt', 'nov', 'dec',
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'maj',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'okt',
+        'nov',
+        'dec',
       ];
       return '${dt.day}. ${months[dt.month - 1]} ${dt.year}';
     } catch (_) {

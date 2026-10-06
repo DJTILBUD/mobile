@@ -26,10 +26,7 @@ Future<void> showIcalExportBottomSheet(
 }
 
 class _ICalExportBottomSheet extends ConsumerStatefulWidget {
-  const _ICalExportBottomSheet({
-    required this.events,
-    required this.isDj,
-  });
+  const _ICalExportBottomSheet({required this.events, required this.isDj});
 
   final List<CalendarEvent> events;
   final bool isDj;
@@ -51,10 +48,9 @@ class _ICalExportBottomSheetState
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/djtilbud-kalender.ics');
       await file.writeAsString(ics);
-      await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'text/calendar')],
-        subject: 'Mine jobs – DJTilbud',
-      );
+      await Share.shareXFiles([
+        XFile(file.path, mimeType: 'text/calendar'),
+      ], subject: 'Mine jobs – DJTilbud');
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -66,21 +62,26 @@ class _ICalExportBottomSheetState
         .generate(isDj: widget.isDj);
     if (!mounted) return;
     if (token == null) {
-      DSToast.show(context,
-          variant: DSToastVariant.error,
-          title: 'Kunne ikke oprette link. Prøv igen.');
+      DSToast.show(
+        context,
+        variant: DSToastVariant.error,
+        title: 'Kunne ikke oprette link. Prøv igen.',
+      );
     }
   }
 
   void _copyToClipboard(String url) {
     Clipboard.setData(ClipboardData(text: url));
-    DSToast.show(context,
-        variant: DSToastVariant.success, title: 'Link kopieret!');
+    DSToast.show(
+      context,
+      variant: DSToastVariant.success,
+      title: 'Link kopieret!',
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final tokenAsync = ref.watch(icalTokenProvider(widget.isDj));
     final generateState = ref.watch(generateIcalTokenProvider);
     final isGenerating = generateState is AsyncLoading;
@@ -93,8 +94,9 @@ class _ICalExportBottomSheetState
         return Container(
           decoration: BoxDecoration(
             color: _c.bg.canvas,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(DSRadius.lg)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(DSRadius.lg),
+            ),
           ),
           child: Column(
             children: [
@@ -114,12 +116,19 @@ class _ICalExportBottomSheetState
                 child: ListView(
                   controller: scrollCtrl,
                   padding: const EdgeInsets.fromLTRB(
-                      DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, DSSpacing.s8),
+                    DSSpacing.s4,
+                    DSSpacing.s4,
+                    DSSpacing.s4,
+                    DSSpacing.s8,
+                  ),
                   children: [
                     Row(
                       children: [
-                        Icon(LucideIcons.calendarDays,
-                            color: _c.text.primary, size: 20),
+                        Icon(
+                          LucideIcons.calendarDays,
+                          color: _c.text.primary,
+                          size: 20,
+                        ),
                         const SizedBox(width: DSSpacing.s2),
                         Text(
                           'Eksporter kalender',
@@ -141,17 +150,21 @@ class _ICalExportBottomSheetState
                     Text(
                       'Download en .ics-fil med dine ${widget.events.length} aktiviteter. '
                       'Dette er et snapshot — nye jobs dukker ikke automatisk op efterfølgende.',
-                      style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                      style: DSTextStyle.labelMd.copyWith(
+                        color: _c.text.secondary,
+                      ),
                     ),
                     const SizedBox(height: DSSpacing.s3),
                     DSButton(
-                      label: 'Del .ics-fil (${widget.events.length} aktiviteter)',
+                      label:
+                          'Del .ics-fil (${widget.events.length} aktiviteter)',
                       variant: DSButtonVariant.primary,
                       expand: true,
                       isLoading: _isExporting,
-                      onTap: widget.events.isEmpty || _isExporting
-                          ? null
-                          : _handleDownload,
+                      onTap:
+                          widget.events.isEmpty || _isExporting
+                              ? null
+                              : _handleDownload,
                     ),
 
                     const SizedBox(height: DSSpacing.s4),
@@ -167,19 +180,25 @@ class _ICalExportBottomSheetState
                     Text(
                       'Opret et personligt abonnements-link. Din kalender-app henter '
                       'automatisk opdateringer ca. hver 12. time.',
-                      style: DSTextStyle.labelMd.copyWith(color: _c.text.secondary),
+                      style: DSTextStyle.labelMd.copyWith(
+                        color: _c.text.secondary,
+                      ),
                     ),
                     const SizedBox(height: DSSpacing.s3),
 
                     tokenAsync.when(
-                      loading: () => const Center(
-                          child: CircularProgressIndicator()),
-                      error: (_, __) => DSButton(
-                        label: 'Prøv igen',
-                        variant: DSButtonVariant.secondary,
-                        onTap: () =>
-                            ref.invalidate(icalTokenProvider(widget.isDj)),
-                      ),
+                      loading:
+                          () =>
+                              const Center(child: CircularProgressIndicator()),
+                      error:
+                          (_, __) => DSButton(
+                            label: 'Prøv igen',
+                            variant: DSButtonVariant.secondary,
+                            onTap:
+                                () => ref.invalidate(
+                                  icalTokenProvider(widget.isDj),
+                                ),
+                          ),
                       data: (token) {
                         if (token == null) {
                           // No token yet
@@ -202,8 +221,9 @@ class _ICalExportBottomSheetState
                               padding: const EdgeInsets.all(DSSpacing.s3),
                               decoration: BoxDecoration(
                                 color: _c.bg.surface,
-                                borderRadius:
-                                    BorderRadius.circular(DSRadius.md),
+                                borderRadius: BorderRadius.circular(
+                                  DSRadius.md,
+                                ),
                                 border: Border.all(color: _c.border.subtle),
                               ),
                               child: Row(
@@ -235,8 +255,7 @@ class _ICalExportBottomSheetState
                               variant: DSButtonVariant.tertiary,
                               expand: true,
                               isLoading: isGenerating,
-                              onTap:
-                                  isGenerating ? null : _handleGenerateToken,
+                              onTap: isGenerating ? null : _handleGenerateToken,
                             ),
                           ],
                         );
@@ -295,7 +314,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Row(
       children: [
         Icon(icon, size: 16, color: _c.text.secondary),
@@ -313,11 +332,7 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _AppBox extends StatelessWidget {
-  const _AppBox({
-    required this.icon,
-    required this.title,
-    required this.body,
-  });
+  const _AppBox({required this.icon, required this.title, required this.body});
 
   final IconData icon;
   final String title;
@@ -325,7 +340,7 @@ class _AppBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Container(
       padding: const EdgeInsets.all(DSSpacing.s3),
       decoration: BoxDecoration(

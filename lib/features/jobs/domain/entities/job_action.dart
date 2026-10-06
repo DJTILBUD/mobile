@@ -6,7 +6,11 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 bool _isWithin5Days(DateTime eventDate) {
   final now = DateTime.now();
   final todayMidnight = DateTime(now.year, now.month, now.day);
-  final eventMidnight = DateTime(eventDate.year, eventDate.month, eventDate.day);
+  final eventMidnight = DateTime(
+    eventDate.year,
+    eventDate.month,
+    eventDate.day,
+  );
   return eventMidnight.difference(todayMidnight).inDays <= 5;
 }
 

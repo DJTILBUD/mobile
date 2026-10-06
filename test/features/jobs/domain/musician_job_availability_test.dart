@@ -9,12 +9,14 @@ MusicianJobAvailability resolve({
   bool isExtJob = true,
   String? assignedMusicianId,
   List<({String? musicianId, String? status})> offers = const [],
+  bool isPartnerBooking = false,
 }) => resolveMusicianJobAvailability(
   status: status,
   isExtJob: isExtJob,
   assignedMusicianId: assignedMusicianId,
   currentMusicianId: me,
   offers: offers,
+  isPartnerBooking: isPartnerBooking,
 );
 
 void main() {
@@ -23,11 +25,40 @@ void main() {
       expect(resolve(), MusicianJobAvailability.biddable);
     });
 
-    test('another musician having merely SENT an offer does not block', () {
-      // Multiple sax offers on one job are allowed — the slot is still winnable.
+    // The DB allows ONE non-lost offer per instrument per job (idx_unique_active_instrument_per_
+    // job / _per_ext_job), so another musician's SENT offer locks the job. Reporting it biddable
+    // let deep-linked musicians write a full pitch the insert then rejected (job #3320).
+    test('another musician holding an active SENT offer blocks', () {
       expect(
         resolve(offers: [(musicianId: other, status: 'sent')]),
+        MusicianJobAvailability.heldByAnother,
+      );
+    });
+
+    test('another musician\'s LOST offer does not block', () {
+      expect(
+        resolve(offers: [(musicianId: other, status: 'lost')]),
         MusicianJobAvailability.biddable,
+      );
+    });
+
+    test(
+      'a closed job reports closed, not held, even with an active offer',
+      () {
+        expect(
+          resolve(
+            status: 'ready_for_billing',
+            offers: [(musicianId: other, status: 'sent')],
+          ),
+          MusicianJobAvailability.closedForOffers,
+        );
+      },
+    );
+
+    test('heldByAnother has a message', () {
+      expect(
+        musicianJobAvailabilityMessage(MusicianJobAvailability.heldByAnother),
+        isNotNull,
       );
     });
 
@@ -122,6 +153,23 @@ void main() {
       expect(
         resolve(status: 'nonsense'),
         MusicianJobAvailability.closedForOffers,
+      );
+    });
+
+    // A TRUE partner-portal booking (is_partner=true) can never be self-serve bid on, whatever
+    // the status — this is checked BEFORE the won/alreadyBid/status branches.
+    test('a partner-portal ext job blocks even when otherwise biddable', () {
+      expect(
+        resolve(isPartnerBooking: true),
+        MusicianJobAvailability.partnerBooking,
+      );
+    });
+
+    test('partner-booking check does not apply to internal jobs', () {
+      // Internal Jobs have no recurring_customer_id / is_partner concept at all.
+      expect(
+        resolve(isExtJob: false, isPartnerBooking: true),
+        MusicianJobAvailability.biddable,
       );
     });
   });

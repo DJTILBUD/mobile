@@ -76,7 +76,9 @@ bool _isStructured(dynamic value) {
   if (value['v'] != 1) return false;
   final gear = value['gear'];
   if (gear is! List) return false;
-  return gear.every((item) => item is Map && _keyToLabel.containsKey(item['key']));
+  return gear.every(
+    (item) => item is Map && _keyToLabel.containsKey(item['key']),
+  );
 }
 
 ParsedEquipmentState? _parseStructured(String raw) {
@@ -89,9 +91,9 @@ ParsedEquipmentState? _parseStructured(String raw) {
     bool includesGear(String label) {
       final key = _labelToKey[label]!;
       final item = gear.cast<Map?>().firstWhere(
-            (g) => g?['key'] == key,
-            orElse: () => null,
-          );
+        (g) => g?['key'] == key,
+        orElse: () => null,
+      );
       if (item == null) return false;
       if (key == 'hoejtalere') {
         if (item['top'] == null && item['bund'] == null) {
@@ -104,9 +106,9 @@ ParsedEquipmentState? _parseStructured(String raw) {
 
     final selected = equipmentOptions.where(includesGear).toList();
     final speakers = gear.cast<Map?>().firstWhere(
-          (g) => g?['key'] == 'hoejtalere',
-          orElse: () => null,
-        );
+      (g) => g?['key'] == 'hoejtalere',
+      orElse: () => null,
+    );
     final top = _nonNeg(speakers?['top'], 2);
     final bund = _nonNeg(speakers?['bund'], 2);
 
@@ -153,13 +155,18 @@ String serializeEquipmentDescription(
   int topSpeakerCount,
   int bottomSpeakerCount,
 ) {
-  final gear = selectedEquipment.map((label) {
-    final key = _labelToKey[label]!;
-    if (key == 'hoejtalere') {
-      return {'key': key, 'top': topSpeakerCount.clamp(0, 99), 'bund': bottomSpeakerCount.clamp(0, 99)};
-    }
-    return {'key': key, 'qty': 1};
-  }).toList();
+  final gear =
+      selectedEquipment.map((label) {
+        final key = _labelToKey[label]!;
+        if (key == 'hoejtalere') {
+          return {
+            'key': key,
+            'top': topSpeakerCount.clamp(0, 99),
+            'bund': bottomSpeakerCount.clamp(0, 99),
+          };
+        }
+        return {'key': key, 'qty': 1};
+      }).toList();
 
   return jsonEncode({'v': 1, 'gear': gear});
 }
@@ -168,7 +175,8 @@ String serializeEquipmentDescription(
 List<String> getEquipmentDisplayItems(String? raw) {
   final parsed = parseStructuredEquipmentDescription(raw);
 
-  if (parsed != null && parsed.selectedEquipment.isEmpty) return ['Intet udstyr'];
+  if (parsed != null && parsed.selectedEquipment.isEmpty)
+    return ['Intet udstyr'];
 
   if (parsed == null) {
     if (raw == null || raw.trim().isEmpty) return [];

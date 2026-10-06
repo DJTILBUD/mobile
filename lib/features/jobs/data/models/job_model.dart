@@ -45,6 +45,7 @@ class JobModel {
     this.firstDanceSong,
     this.spotifyPlaylistUrl,
     this.specialConditions,
+    this.room,
     this.earlySetup = false,
   });
 
@@ -91,6 +92,9 @@ class JobModel {
   final String? firstDanceSong;
   final String? spotifyPlaylistUrl;
   final String? specialConditions;
+
+  /// Which room at the venue the party is in (ExtJobs.room; partner venues with the room field on).
+  final String? room;
   final bool earlySetup;
 
   factory JobModel.fromJson(Map<String, dynamic> json) {
@@ -137,6 +141,7 @@ class JobModel {
       firstDanceSong: json['first_dance_song'] as String?,
       spotifyPlaylistUrl: json['spotify_playlist_url'] as String?,
       specialConditions: json['special_conditions'] as String?,
+      room: json['room'] as String?,
       earlySetup: json['early_setup'] as bool? ?? false,
     );
   }
@@ -203,6 +208,7 @@ class JobModel {
       firstDanceSong: firstDanceSong,
       spotifyPlaylistUrl: spotifyPlaylistUrl,
       specialConditions: specialConditions,
+      room: room,
       earlySetup: earlySetup,
     );
   }

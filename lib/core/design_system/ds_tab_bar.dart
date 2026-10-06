@@ -69,8 +69,7 @@ class DSTabBar extends StatelessWidget implements PreferredSizeWidget {
   /// which tab is selected.
   final bool coloredIndicatorOnly;
 
-  bool get _hasIcons =>
-      tabs.any((t) => t.icon != null || t.activeIcon != null);
+  bool get _hasIcons => tabs.any((t) => t.icon != null || t.activeIcon != null);
 
   @override
   Size get preferredSize => Size.fromHeight(_hasIcons ? 56 : 44);
@@ -84,42 +83,44 @@ class DSTabBar extends StatelessWidget implements PreferredSizeWidget {
       builder: (context, _) {
         final c = DSTheme.of(context);
         return TabBar(
-        controller: ctrl,
-        isScrollable: isScrollable,
-        tabAlignment:
-            isScrollable ? TabAlignment.start : TabAlignment.fill,
+          controller: ctrl,
+          isScrollable: isScrollable,
+          tabAlignment: isScrollable ? TabAlignment.start : TabAlignment.fill,
 
-        // Colors — indicator always uses activeColor; label only when not coloredIndicatorOnly
-        labelColor: coloredIndicatorOnly ? c.text.primary : (tabs[ctrl.index].activeColor ?? c.brand.primary),
-        unselectedLabelColor: c.text.muted,
+          // Colors — indicator always uses activeColor; label only when not coloredIndicatorOnly
+          labelColor:
+              coloredIndicatorOnly
+                  ? c.text.primary
+                  : (tabs[ctrl.index].activeColor ?? c.brand.primary),
+          unselectedLabelColor: c.text.muted,
 
-        // Indicator — 3px line, full tab width
-        indicatorColor: tabs[ctrl.index].activeColor ?? c.brand.primary,
-        indicatorWeight: 3,
-        indicatorSize: TabBarIndicatorSize.tab,
+          // Indicator — 3px line, full tab width
+          indicatorColor: tabs[ctrl.index].activeColor ?? c.brand.primary,
+          indicatorWeight: 3,
+          indicatorSize: TabBarIndicatorSize.tab,
 
-        // Divider under the whole bar
-        dividerColor: c.border.subtle,
-        dividerHeight: 1,
+          // Divider under the whole bar
+          dividerColor: c.border.subtle,
+          dividerHeight: 1,
 
-        // Typography
-        labelStyle: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          height: 1.2,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w400,
-          height: 1.2,
-        ),
+          // Typography
+          labelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            height: 1.2,
+          ),
 
-        padding: EdgeInsets.zero,
-        tabs: [
-          for (int i = 0; i < tabs.length; i++)
-            _buildTab(tabs[i], isActive: ctrl.index == i),
-        ],
-      );
+          padding: EdgeInsets.zero,
+          tabs: [
+            for (int i = 0; i < tabs.length; i++)
+              _buildTab(tabs[i], isActive: ctrl.index == i),
+          ],
+        );
       },
     );
   }
@@ -128,19 +129,20 @@ class DSTabBar extends StatelessWidget implements PreferredSizeWidget {
     final icon = isActive ? (item.activeIcon ?? item.icon) : item.icon;
 
     if (icon != null) {
-      final iconWidget = item.badgeCount > 0
-          ? Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(icon, size: 20),
-                Positioned(
-                  top: -6,
-                  right: -10,
-                  child: _TabBadge(count: item.badgeCount),
-                ),
-              ],
-            )
-          : Icon(icon, size: 20);
+      final iconWidget =
+          item.badgeCount > 0
+              ? Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, size: 20),
+                  Positioned(
+                    top: -6,
+                    right: -10,
+                    child: _TabBadge(count: item.badgeCount),
+                  ),
+                ],
+              )
+              : Icon(icon, size: 20);
 
       return Tab(
         height: 56,

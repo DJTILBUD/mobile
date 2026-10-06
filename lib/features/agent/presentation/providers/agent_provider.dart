@@ -18,8 +18,10 @@ class AgentUsage {
   const AgentUsage({
     required this.dailyUsed,
     required this.monthlyUsed,
-    this.dailyLimit = 5,
-    this.monthlyLimit = 20,
+    this.dailyLimit =
+        10, // mirrors DAILY_LIMIT in web-app supabase/functions/agent-assist
+    this.monthlyLimit =
+        100, // mirrors MONTHLY_LIMIT in web-app supabase/functions/agent-assist
   });
 
   final int dailyUsed;
@@ -28,7 +30,8 @@ class AgentUsage {
   final int monthlyLimit;
 
   int get dailyRemaining => (dailyLimit - dailyUsed).clamp(0, dailyLimit);
-  int get monthlyRemaining => (monthlyLimit - monthlyUsed).clamp(0, monthlyLimit);
+  int get monthlyRemaining =>
+      (monthlyLimit - monthlyUsed).clamp(0, monthlyLimit);
   bool get isDailyLimitReached => dailyUsed >= dailyLimit;
   bool get isMonthlyLimitReached => monthlyUsed >= monthlyLimit;
   bool get isLimitReached => isDailyLimitReached || isMonthlyLimitReached;
@@ -104,13 +107,18 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
       state = AgentDone(text: _accumulatedText);
     } catch (e) {
       if (e is AgentLimitException) {
-        final msg = e.limitType == 'daily'
-            ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
-            : 'Du har brugt dine 20 AI-udkast for denne måned.';
+        final msg =
+            e.limitType == 'daily'
+                ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
+                : 'Du har brugt dine 20 AI-udkast for denne måned.';
         state = AgentError(message: msg);
         return;
       }
-      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
+      final message = friendlyErrorMessage(
+        e,
+        fallback:
+            'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.',
+      );
       state = AgentError(message: message);
     }
   }
@@ -127,9 +135,8 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
         userContext: _lastUserContext,
         userRole: _lastUserRole,
         sessionId: sessionId,
-        messageHistory: _messageHistory
-            .map((m) => Map<String, dynamic>.from(m))
-            .toList(),
+        messageHistory:
+            _messageHistory.map((m) => Map<String, dynamic>.from(m)).toList(),
         followUpMessage: refinementMessage,
       );
 
@@ -148,13 +155,18 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
       state = AgentDone(text: _accumulatedText);
     } catch (e) {
       if (e is AgentLimitException) {
-        final msg = e.limitType == 'daily'
-            ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
-            : 'Du har brugt dine 20 AI-udkast for denne måned.';
+        final msg =
+            e.limitType == 'daily'
+                ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
+                : 'Du har brugt dine 20 AI-udkast for denne måned.';
         state = AgentError(message: msg);
         return;
       }
-      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
+      final message = friendlyErrorMessage(
+        e,
+        fallback:
+            'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.',
+      );
       state = AgentError(message: message);
     }
   }
@@ -182,7 +194,11 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
 
       state = AgentDone(text: _accumulatedText);
     } catch (e) {
-      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
+      final message = friendlyErrorMessage(
+        e,
+        fallback:
+            'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.',
+      );
       state = AgentError(message: message);
     }
   }
@@ -212,13 +228,18 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
       state = AgentDone(text: _accumulatedText);
     } catch (e) {
       if (e is AgentLimitException) {
-        final msg = e.limitType == 'daily'
-            ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
-            : 'Du har brugt dine 20 AI-udkast for denne måned.';
+        final msg =
+            e.limitType == 'daily'
+                ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
+                : 'Du har brugt dine 20 AI-udkast for denne måned.';
         state = AgentError(message: msg);
         return;
       }
-      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
+      final message = friendlyErrorMessage(
+        e,
+        fallback:
+            'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.',
+      );
       state = AgentError(message: message);
     }
   }
@@ -254,13 +275,18 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
       state = AgentDone(text: _accumulatedText);
     } catch (e) {
       if (e is AgentLimitException) {
-        final msg = e.limitType == 'daily'
-            ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
-            : 'Du har brugt dine 20 AI-udkast for denne måned.';
+        final msg =
+            e.limitType == 'daily'
+                ? 'Du har brugt dine 5 AI-udkast for i dag. Prøv igen i morgen.'
+                : 'Du har brugt dine 20 AI-udkast for denne måned.';
         state = AgentError(message: msg);
         return;
       }
-      final message = friendlyErrorMessage(e, fallback: 'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.');
+      final message = friendlyErrorMessage(
+        e,
+        fallback:
+            'AI-assistenten er ikke tilgængelig lige nu. Prøv igen senere.',
+      );
       state = AgentError(message: message);
     }
   }
@@ -279,17 +305,17 @@ class AgentSessionNotifier extends StateNotifier<AgentState> {
   }
 }
 
-final agentSessionProvider = StateNotifierProvider.autoDispose<
-    AgentSessionNotifier, AgentState>(
-  (ref) => AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
-);
+final agentSessionProvider =
+    StateNotifierProvider.autoDispose<AgentSessionNotifier, AgentState>(
+      (ref) => AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
+    );
 
 // Non-autoDispose — persists between sheet openings so the analysis is not
 // regenerated every time the musician navigates away and comes back.
 final profileCoachSessionProvider =
     StateNotifierProvider<AgentSessionNotifier, AgentState>(
-  (ref) => AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
-);
+      (ref) => AgentSessionNotifier(ref.watch(agentRepositoryProvider)),
+    );
 
 // ── Usage provider ────────────────────────────────────────────────────────────
 
@@ -305,39 +331,39 @@ final agentUsageProvider = FutureProvider.autoDispose<AgentUsage>((ref) async {
 // ── Context builders (pure functions, no providers needed) ────────────────────
 
 Map<String, dynamic> jobToContext(Job job) => {
-      'id': job.id,
-      'eventType': job.eventType,
-      'eventTypeLabel': eventTypeLabel(job.eventType),
-      'date': job.date.toIso8601String(),
-      'city': job.city,
-      'region': job.region,
-      'guestsAmount': job.guestsAmount,
-      'budgetStart': job.budgetStart,
-      'budgetEnd': job.budgetEnd,
-      'genres': job.genres,
-      'leadRequest': job.leadRequest,
-      'additionalInformation': job.additionalInformation,
-      'requestedMusicianHours': job.requestedMusicianHours,
-      'birthdayPersonAge': job.birthdayPersonAge,
-      'customerNote': job.customerNote,
-    };
+  'id': job.id,
+  'eventType': job.eventType,
+  'eventTypeLabel': eventTypeLabel(job.eventType),
+  'date': job.date.toIso8601String(),
+  'city': job.city,
+  'region': job.region,
+  'guestsAmount': job.guestsAmount,
+  'budgetStart': job.budgetStart,
+  'budgetEnd': job.budgetEnd,
+  'genres': job.genres,
+  'leadRequest': job.leadRequest,
+  'additionalInformation': job.additionalInformation,
+  'requestedMusicianHours': job.requestedMusicianHours,
+  'birthdayPersonAge': job.birthdayPersonAge,
+  'customerNote': job.customerNote,
+};
 
 Map<String, dynamic> djToUserContext(DjProfile profile) => {
-      'fullName': profile.fullName,
-      'instrument': 'dj',
-      'aboutYou': profile.aboutYou,
-      'genres': profile.genres,
-      'regions': profile.regions,
-      'venuesAndEvents': profile.venuesAndEvents ?? [],
-      'canPlayWithSax': profile.canPlayWithSax,
-    };
+  'fullName': profile.fullName,
+  'instrument': 'dj',
+  'aboutYou': profile.aboutYou,
+  'genres': profile.genres,
+  'regions': profile.regions,
+  'venuesAndEvents': profile.venuesAndEvents ?? [],
+  'canPlayWithSax': profile.canPlayWithSax,
+};
 
 Map<String, dynamic> musicianToUserContext(MusicianProfile profile) => {
-      'fullName': profile.fullName,
-      'instrument': profile.instrument,
-      'aboutText': profile.aboutText ?? '',
-      'genres': profile.genres ?? [],
-      'regions': profile.regions,
-      'experienceYears': profile.experienceYears,
-      'venuesAndEvents': profile.venuesAndEvents ?? [],
-    };
+  'fullName': profile.fullName,
+  'instrument': profile.instrument,
+  'aboutText': profile.aboutText ?? '',
+  'genres': profile.genres ?? [],
+  'regions': profile.regions,
+  'experienceYears': profile.experienceYears,
+  'venuesAndEvents': profile.venuesAndEvents ?? [],
+};

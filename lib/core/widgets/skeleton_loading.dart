@@ -30,7 +30,7 @@ class _SkeletonCardState extends State<SkeletonCard>
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -56,7 +56,10 @@ class _SkeletonCardState extends State<SkeletonCard>
         );
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: DSSpacing.s4, vertical: 6),
+        margin: const EdgeInsets.symmetric(
+          horizontal: DSSpacing.s4,
+          vertical: 6,
+        ),
         padding: const EdgeInsets.all(DSSpacing.s4),
         decoration: BoxDecoration(
           color: _c.bg.surface,
@@ -124,7 +127,7 @@ class SkeletonListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: DSSpacing.s3),
       physics: const NeverScrollableScrollPhysics(),

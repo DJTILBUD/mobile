@@ -57,16 +57,17 @@ class _ContactCustomerSheetState extends State<ContactCustomerSheet> {
       firstDate: today,
       lastDate: today.add(const Duration(days: 365)),
       locale: const Locale('da'),
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-          colorScheme: ColorScheme.light(
-            primary: _c.brand.primary,
-            onPrimary: _c.brand.onPrimary,
-            surface: _c.bg.surface,
+      builder:
+          (ctx, child) => Theme(
+            data: Theme.of(ctx).copyWith(
+              colorScheme: ColorScheme.light(
+                primary: _c.brand.primary,
+                onPrimary: _c.brand.onPrimary,
+                surface: _c.bg.surface,
+              ),
+            ),
+            child: child!,
           ),
-        ),
-        child: child!,
-      ),
     );
     if (picked != null) setState(() => _plannedDate = picked);
   }
@@ -91,13 +92,17 @@ class _ContactCustomerSheetState extends State<ContactCustomerSheet> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     final canConfirm = _mode == _Mode.contacted || _plannedDate != null;
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-            DSSpacing.s4, DSSpacing.s4, DSSpacing.s4, DSSpacing.s6),
+          DSSpacing.s4,
+          DSSpacing.s4,
+          DSSpacing.s4,
+          DSSpacing.s6,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,29 +167,37 @@ class _ContactCustomerSheetState extends State<ContactCustomerSheet> {
                     color: _c.bg.inputBg,
                     borderRadius: BorderRadius.circular(DSRadius.md),
                     border: Border.all(
-                      color: _plannedDate != null
-                          ? _c.brand.accent
-                          : _c.border.subtle,
+                      color:
+                          _plannedDate != null
+                              ? _c.brand.accent
+                              : _c.border.subtle,
                     ),
                   ),
                   child: Row(
                     children: [
-                      Icon(LucideIcons.calendar,
-                          size: 18, color: _c.text.secondary),
+                      Icon(
+                        LucideIcons.calendar,
+                        size: 18,
+                        color: _c.text.secondary,
+                      ),
                       const SizedBox(width: DSSpacing.s2),
                       Text(
                         _plannedDate != null
                             ? _formatDate(_plannedDate!)
                             : 'Vælg dato',
                         style: DSTextStyle.bodyMd.copyWith(
-                          color: _plannedDate != null
-                              ? _c.text.primary
-                              : _c.text.muted,
+                          color:
+                              _plannedDate != null
+                                  ? _c.text.primary
+                                  : _c.text.muted,
                         ),
                       ),
                       const Spacer(),
-                      Icon(LucideIcons.chevronDown,
-                          size: 16, color: _c.text.muted),
+                      Icon(
+                        LucideIcons.chevronDown,
+                        size: 16,
+                        color: _c.text.muted,
+                      ),
                     ],
                   ),
                 ),
@@ -195,9 +208,10 @@ class _ContactCustomerSheetState extends State<ContactCustomerSheet> {
 
             // ── Confirm button ───────────────────────────────────────────────
             DSButton(
-              label: _mode == _Mode.contacted
-                  ? 'Bekræft kontakt'
-                  : 'Gem planlagt dato',
+              label:
+                  _mode == _Mode.contacted
+                      ? 'Bekræft kontakt'
+                      : 'Gem planlagt dato',
               variant: DSButtonVariant.primary,
               expand: true,
               isLoading: _loading,
@@ -229,15 +243,16 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(DSSpacing.s3),
         decoration: BoxDecoration(
-          color: selected
-              ? _c.brand.primary.withValues(alpha: 0.12)
-              : _c.bg.surface,
+          color:
+              selected
+                  ? _c.brand.primary.withValues(alpha: 0.12)
+                  : _c.bg.surface,
           borderRadius: BorderRadius.circular(DSRadius.md),
           border: Border.all(
             color: selected ? _c.brand.primary : _c.border.subtle,
@@ -257,8 +272,7 @@ class _OptionTile extends StatelessWidget {
                 label,
                 style: DSTextStyle.bodyMd.copyWith(
                   color: selected ? _c.brand.primaryActive : _c.text.primary,
-                  fontWeight:
-                      selected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                 ),
               ),
             ),

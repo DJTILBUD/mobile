@@ -40,9 +40,10 @@ class DSDropdown<T> extends StatelessWidget {
   OutlineInputBorder _border({Color? color, double width = 1}) =>
       OutlineInputBorder(
         borderRadius: BorderRadius.circular(DSRadius.pill),
-        borderSide: color != null
-            ? BorderSide(color: color, width: width)
-            : BorderSide.none,
+        borderSide:
+            color != null
+                ? BorderSide(color: color, width: width)
+                : BorderSide.none,
       );
 
   @override
@@ -72,27 +73,28 @@ class DSDropdown<T> extends StatelessWidget {
           isExpanded: true,
           onChanged: enabled ? onChanged : null,
           validator: validator,
-          icon: Icon(
-            LucideIcons.chevronDown,
-            color: c.text.muted,
-            size: 20,
-          ),
+          icon: Icon(LucideIcons.chevronDown, color: c.text.muted, size: 20),
           dropdownColor: c.bg.surface,
-          hint: hint != null
-              ? Text(hint!, style: TextStyle(color: c.text.muted, fontSize: 14))
-              : null,
+          hint:
+              hint != null
+                  ? Text(
+                    hint!,
+                    style: TextStyle(color: c.text.muted, fontSize: 14),
+                  )
+                  : null,
           style: TextStyle(fontSize: 14, color: c.text.primary),
-          items: items
-              .map(
-                (item) => DropdownMenuItem<T>(
-                  value: item.value,
-                  child: Text(
-                    item.label,
-                    style: TextStyle(fontSize: 14, color: c.text.primary),
-                  ),
-                ),
-              )
-              .toList(),
+          items:
+              items
+                  .map(
+                    (item) => DropdownMenuItem<T>(
+                      value: item.value,
+                      child: Text(
+                        item.label,
+                        style: TextStyle(fontSize: 14, color: c.text.primary),
+                      ),
+                    ),
+                  )
+                  .toList(),
           decoration: InputDecoration(
             filled: true,
             fillColor: enabled ? c.bg.inputBg : c.border.subtle,

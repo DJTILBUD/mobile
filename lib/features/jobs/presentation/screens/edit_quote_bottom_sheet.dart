@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/utils/equipment_description.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/offer_form_validation.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/equipment_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -115,8 +116,11 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
     if (_selectedEquipment.isEmpty && !_noEquipmentSelected)
       return 'Vælg mindst ét stykke udstyr';
     final pitchLen = _pitchCtrl.text.trim().length;
-    if (pitchLen > 0 && pitchLen < 100) {
-      return 'Salgstale skal enten være tom eller mindst 100 tegn';
+    if (pitchLen > 0 && pitchLen < kSalesPitchMinLength) {
+      return 'Salgstale skal enten være tom eller mindst $kSalesPitchMinLength tegn';
+    }
+    if (_pitchCtrl.text.length > kSalesPitchMaxLength) {
+      return 'Salgstale må højst være $kSalesPitchMaxLength tegn';
     }
     if (_offerEarlySetup) {
       final ep = int.tryParse(_earlyPriceCtrl.text.trim());
@@ -287,9 +291,13 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
                             controller: _pitchCtrl,
                             label: 'Salgstale',
                             hint:
-                                'Beskriv dig selv og dit tilbud... (min. 100 tegn)',
+                                'Beskriv dig selv og dit tilbud... (min. $kSalesPitchMinLength tegn)',
                             maxLines: 6,
                             minLines: 4,
+                            // DSInput only forwards maxLength when showCounter is on
+                            // (its built-in counter is hidden either way).
+                            maxLength: kSalesPitchMaxLength,
+                            showCounter: true,
                             enabled: !isExpired && !isSaving,
                           ),
                           const SizedBox(height: DSSpacing.s4),

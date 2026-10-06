@@ -46,6 +46,7 @@ class Job {
     this.firstDanceSong,
     this.spotifyPlaylistUrl,
     this.specialConditions,
+    this.room,
     this.earlySetup = false,
   });
 
@@ -121,6 +122,9 @@ class Job {
   final String? firstDanceSong;
   final String? spotifyPlaylistUrl;
   final String? specialConditions;
+
+  /// Which room at the venue the party is in (ExtJobs.room; partner venues with the room field on).
+  final String? room;
   final bool earlySetup;
 
   /// Postal code of the event location. Present on both Jobs and ExtJobs.
@@ -198,6 +202,21 @@ class Job {
     if (pc != null && pc.isNotEmpty && city.isNotEmpty) return '$pc $city';
     if (pc != null && pc.isNotEmpty) return pc;
     return city;
+  }
+
+  /// The location line on every job CARD: region, postal code, then the place
+  /// (city for normal jobs, ExtJobs.location for ext jobs), e.g.
+  /// "Østjylland, 8600, Silkeborg". One getter for the new-job card AND the
+  /// sent/won quote and offer cards, so the postal code can never drop off a
+  /// card again once the job is bid on or won.
+  String get cardLocationLabel {
+    final pc = postalCode?.trim();
+    final parts = <String>[
+      if (region.isNotEmpty) region,
+      if (pc != null && pc.isNotEmpty) pc,
+      if (city.isNotEmpty) city,
+    ];
+    return parts.isNotEmpty ? parts.join(', ') : 'Lokation ikke angivet';
   }
 
   String get timeDisplay =>

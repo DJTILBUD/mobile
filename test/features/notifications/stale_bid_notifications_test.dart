@@ -95,10 +95,7 @@ void main() {
         isBidInvitationStale(
           type: 'new_ext_job',
           role: 'musician',
-          state: const JobBidState(
-            status: 'sent',
-            assignedMusicianId: 'a1b2',
-          ),
+          state: const JobBidState(status: 'sent', assignedMusicianId: 'a1b2'),
         ),
         isTrue,
       );

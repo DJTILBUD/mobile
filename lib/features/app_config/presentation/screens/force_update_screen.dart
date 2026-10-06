@@ -84,8 +84,7 @@ class ForceUpdateScreen extends StatelessWidget {
                     const SizedBox(height: DSSpacing.s4),
                     Text(
                       'Din version: $currentVersion',
-                      style: DSTextStyle.bodySm
-                          .copyWith(color: c.text.muted),
+                      style: DSTextStyle.bodySm.copyWith(color: c.text.muted),
                     ),
                   ],
                 ),

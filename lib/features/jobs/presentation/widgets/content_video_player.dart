@@ -69,7 +69,10 @@ class _ContentVideoDialogState extends State<_ContentVideoDialog> {
         children: [
           // Close sits above the video, clear of Chewie's own controls.
           Container(
-            decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              color: Colors.black54,
+              shape: BoxShape.circle,
+            ),
             child: IconButton(
               icon: const Icon(LucideIcons.x, color: Colors.white),
               onPressed: () => Navigator.of(context).pop(),
@@ -77,14 +80,19 @@ class _ContentVideoDialogState extends State<_ContentVideoDialog> {
           ),
           const SizedBox(height: 8),
           Flexible(
-            child: _error
-                ? const Icon(LucideIcons.videoOff, color: Colors.white54, size: 64)
-                : _chewie == null
+            child:
+                _error
+                    ? const Icon(
+                      LucideIcons.videoOff,
+                      color: Colors.white54,
+                      size: 64,
+                    )
+                    : _chewie == null
                     ? const CircularProgressIndicator(color: Colors.white)
                     : AspectRatio(
-                        aspectRatio: _video.value.aspectRatio,
-                        child: Chewie(controller: _chewie!),
-                      ),
+                      aspectRatio: _video.value.aspectRatio,
+                      child: Chewie(controller: _chewie!),
+                    ),
           ),
         ],
       ),

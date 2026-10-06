@@ -29,7 +29,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Scaffold(
       backgroundColor: _c.bg.canvas,
       appBar: AppBar(
@@ -47,13 +47,19 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       children: [
         Text(
           'Hjælp os med at blive bedre',
-          style: DSTextStyle.headingLg.copyWith(fontWeight: FontWeight.w700, color: _c.text.primary),
+          style: DSTextStyle.headingLg.copyWith(
+            fontWeight: FontWeight.w700,
+            color: _c.text.primary,
+          ),
         ),
         const SizedBox(height: DSSpacing.s2),
         Text(
           'Vi forsøger hele tiden at gøre oplevelsen bedre for dig. Hvis du har feedback, '
           'må du meget gerne skrive det herunder.',
-          style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary, height: 1.5),
+          style: DSTextStyle.bodyMd.copyWith(
+            color: _c.text.secondary,
+            height: 1.5,
+          ),
         ),
         const SizedBox(height: DSSpacing.s6),
         Container(
@@ -103,19 +109,29 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                 color: _c.brand.primary,
                 shape: BoxShape.circle,
               ),
-              child: Icon(LucideIcons.check, size: 36, color: _c.brand.onPrimary),
+              child: Icon(
+                LucideIcons.check,
+                size: 36,
+                color: _c.brand.onPrimary,
+              ),
             ),
             const SizedBox(height: DSSpacing.s4),
             Text(
               'Tak for din feedback!',
-              style: DSTextStyle.headingLg.copyWith(fontWeight: FontWeight.w700, color: _c.text.primary),
+              style: DSTextStyle.headingLg.copyWith(
+                fontWeight: FontWeight.w700,
+                color: _c.text.primary,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: DSSpacing.s2),
             Text(
               'Tusind tak fordi du tog dig tid til at give os feedback. '
               'Vi læser det hele og bruger det til at gøre platformen bedre.',
-              style: DSTextStyle.bodyMd.copyWith(color: _c.text.secondary, height: 1.5),
+              style: DSTextStyle.bodyMd.copyWith(
+                color: _c.text.secondary,
+                height: 1.5,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: DSSpacing.s6),

@@ -364,19 +364,8 @@ class _MetaLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = colors;
-    // Same location format for normal jobs and ext jobs: region, postal code,
-    // then the place (job.city already holds ExtJobs.location for ext jobs and
-    // Jobs.city for normal jobs).
-    final locationParts = <String>[
-      if (job.region.isNotEmpty) job.region,
-      if (job.postalCode != null && job.postalCode!.trim().isNotEmpty)
-        job.postalCode!.trim(),
-      if (job.city.isNotEmpty) job.city,
-    ];
-    final locationLabel =
-        locationParts.isNotEmpty
-            ? locationParts.join(', ')
-            : 'Lokation ikke angivet';
+    // Shared with the quote and service-offer cards (Job.cardLocationLabel).
+    final locationLabel = job.cardLocationLabel;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -67,7 +67,8 @@ class DjJobFilters {
       excludedEventTypes: excludedEventTypes ?? this.excludedEventTypes,
       excludedRegions: excludedRegions ?? this.excludedRegions,
       excludedGenres: excludedGenres ?? this.excludedGenres,
-      allowedWeekdays: allowedWeekdays != null ? allowedWeekdays() : this.allowedWeekdays,
+      allowedWeekdays:
+          allowedWeekdays != null ? allowedWeekdays() : this.allowedWeekdays,
       minBudget: minBudget != null ? minBudget() : this.minBudget,
       maxBudget: maxBudget != null ? maxBudget() : this.maxBudget,
       minGuests: minGuests != null ? minGuests() : this.minGuests,

@@ -36,4 +36,5 @@ abstract class AppRoutes {
   static const notificationSettings = 'notification-settings';
   static const notifications = 'notifications';
   static const onboarding = 'onboarding';
+  static const referrals = 'referrals';
 }

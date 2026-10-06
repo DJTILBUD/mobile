@@ -37,8 +37,13 @@ class JobContentSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Husk at optage content 📸',
-              style: DSTextStyle.headingSm.copyWith(fontSize: 15, color: c.text.primary)),
+          Text(
+            'Husk at optage content 📸',
+            style: DSTextStyle.headingSm.copyWith(
+              fontSize: 15,
+              color: c.text.primary,
+            ),
+          ),
           const SizedBox(height: DSSpacing.s2),
           Text(
             'Optag korte klip hvor der er gang i festen. Vi redigerer dem og tilbyder at sætte dem '
@@ -48,31 +53,47 @@ class JobContentSection extends ConsumerWidget {
           const SizedBox(height: DSSpacing.s2),
           Text(
             'Krav: maks. $kContentVideoMaxSeconds sekunder · lodret 9:16 format.',
-            style: DSTextStyle.labelMd.copyWith(color: c.text.primary, fontWeight: FontWeight.w600),
+            style: DSTextStyle.labelMd.copyWith(
+              color: c.text.primary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: DSSpacing.s2),
           InkWell(
-            onTap: () => launchUrl(Uri.parse(_examplesUrl), mode: LaunchMode.externalApplication),
+            onTap:
+                () => launchUrl(
+                  Uri.parse(_examplesUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(LucideIcons.externalLink, size: 14, color: c.state.info),
                 const SizedBox(width: DSSpacing.s1),
                 Flexible(
-                  child: Text('Se hvordan du gør det og eksempler på god content',
-                      style: DSTextStyle.labelMd.copyWith(
-                          color: c.state.info, fontWeight: FontWeight.bold, decoration: TextDecoration.underline)),
+                  child: Text(
+                    'Se hvordan du gør det og eksempler på god content',
+                    style: DSTextStyle.labelMd.copyWith(
+                      color: c.state.info,
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 2),
-          Text('Se eksemplerne, før du optager.',
-              style: DSTextStyle.labelSm.copyWith(color: c.text.muted)),
+          Text(
+            'Se eksemplerne, før du optager.',
+            style: DSTextStyle.labelSm.copyWith(color: c.text.muted),
+          ),
           if (count > 0) ...[
             const SizedBox(height: DSSpacing.s2),
-            Text('Du har uploadet $count klip til dette job.',
-                style: DSTextStyle.labelSm.copyWith(color: c.text.muted)),
+            Text(
+              'Du har uploadet $count klip til dette job.',
+              style: DSTextStyle.labelSm.copyWith(color: c.text.muted),
+            ),
           ],
           const SizedBox(height: DSSpacing.s3),
           DSButton(

@@ -3,6 +3,8 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/musician_job_filt
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/payment_info.dart';
+import 'package:dj_tilbud_app/features/profile/domain/self_billing_reference_format.dart';
+import 'package:dj_tilbud_app/features/profile/domain/entities/billing_change_request.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/review.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/admin_message.dart';
@@ -32,6 +34,19 @@ abstract class ProfileRepository {
     required bool isDj,
     required PaymentInfo info,
   });
+
+  /// Saves ONLY the own-invoice-number format, through the same web-app route.
+  /// Separate on purpose: it is not billing-locked, so it must stay changeable
+  /// after the payment info has locked.
+  Future<void> saveSelfBillingReferenceFormat({
+    required String userId,
+    required bool isDj,
+    required SelfBillingReferenceFormat format,
+  });
+  Future<BillingChangeRequest?> fetchBillingChangeRequest();
+  Future<bool> isSelfBillingLive();
+  Future<void> acceptSelfBillingTerms();
+  Future<BillingChangeRequest> createBillingChangeRequest(String reason);
 
   // Reviews
   Future<List<Review>> fetchReviews({

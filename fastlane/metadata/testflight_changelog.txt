@@ -1,12 +1,10 @@
-Venue tab on partner ext jobs
+Referral terms gate, self-billing terms popup, payment screen refresh
 
-• The ext job detail is now tabbed for recurring-customer (partner) bookings: "Job" keeps the process tracker, customer contact, extra hours, chat, song requests, invoice status and the job info card; "Stedet" holds the venue badge, the event address, the new venue photos and the "Til festen" card
-• Venue photos come from the admin tool (recurring customer -> Billeder tab), each with a comment. They are served by GET /api/internal-dj/ext-jobs as venue_photos per job, same endpoint as the "Fast kunde" name
-• A partner booking with no photos yet shows an empty state on the tab; a non-partner ext job has no tab bar and looks exactly as before
+• Henvis en kunde: before the first referral the performer must tick "Jeg har læst vilkårene for henvisninger" and press "Jeg har læst og accepterer vilkårene" (button greyed out until ticked). Link opens djtilbud.dk/referral-handelsbetingelser. Acceptance is stored with a timestamp; the tabs only show afterwards
+• Self-billing terms popup (only when the self_billing_live flag is on and payment type is Faktura): new last line "Se uddybende besked under Beskeder"
+• Udbetaling / betalingsoplysninger: pull to refresh
 
 What to test:
-1. PARTNER JOB: open an ext job assigned to you that belongs to a recurring customer (e.g. Kokkedal). The app bar must show two tabs, "Job" and "Stedet". "Job" must contain everything it did before except the address and the "Til festen" card.
-2. PHOTOS: have an admin upload two photos with comments on that account (admin -> Faste kunder -> account -> Billeder). Pull to refresh or reopen the job. "Stedet" must show a horizontal strip with the comment under each thumbnail. Tap one: full-screen viewer, swipe to the next, pinch to zoom, comment under the image, "1 / 2" in the app bar.
-3. EMPTY STATE: on a partner account with no photos and a booking without wishes, "Stedet" must show "Ingen oplysninger om stedet endnu", not a blank screen.
-4. NORMAL EXT JOB: open a non-partner ext job. No tab bar, address and notes inline as before.
-5. CHAT BUBBLE: the floating "Beskeder" bubble must be visible on both tabs.
+1. Profil -> Henvis en kunde as a DJ/sax who has not accepted: only the terms card, button disabled until the box is ticked. Accept, the two tabs appear. Reopen: goes straight to the tabs.
+2. Admin -> Henvisninger -> Accepterede vilkår shows the acceptance time.
+3. Profil -> Udbetaling: pull down refreshes (e.g. after support approves a change request).

@@ -11,6 +11,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 class PartnerEventWishesCard extends StatelessWidget {
   const PartnerEventWishesCard({
     super.key,
+    this.room,
     this.addressAs,
     this.guestAge,
     this.firstDanceSong,
@@ -25,6 +26,9 @@ class PartnerEventWishesCard extends StatelessWidget {
     this.musicianView = false,
   });
 
+  /// Which room at the venue the party is in (ExtJobs.room). Shown to the DJ AND the saxophonist:
+  /// both need to know where to set up. Mirrors the web card's "Lokale" field.
+  final String? room;
   final String? addressAs;
   final String? guestAge;
   final String? firstDanceSong;
@@ -52,8 +56,9 @@ class PartnerEventWishesCard extends StatelessWidget {
   /// to decide whether the "Stedet" tab has content).
   bool get hasContent =>
       musicianView
-          ? (_has(addressAs) || _has(specialConditions))
-          : (_has(addressAs) ||
+          ? (_has(room) || _has(addressAs) || _has(specialConditions))
+          : (_has(room) ||
+              _has(addressAs) ||
               _has(guestAge) ||
               _has(firstDanceSong) ||
               _has(spotifyPlaylistUrl) ||
@@ -95,6 +100,13 @@ class PartnerEventWishesCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: DSSpacing.s3),
+          if (_has(room))
+            _Field(
+              icon: LucideIcons.doorOpen,
+              label: 'Lokale',
+              value: room!,
+              labelColor: labelColor,
+            ),
           if (_has(addressAs))
             _Field(
               icon: LucideIcons.messageCircle,

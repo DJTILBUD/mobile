@@ -325,6 +325,7 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
       firstDanceSong: extJob.firstDanceSong,
       spotifyPlaylistUrl: extJob.spotifyPlaylistUrl,
       specialConditions: extJob.specialConditions,
+      room: extJob.room,
       earlySetup: extJob.earlySetup,
       wantsIc: extJob.wantsIc,
       saxType: extJob.saxType,

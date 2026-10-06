@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart';
 import 'package:dj_tilbud_app/core/config/env_config.dart';
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
 
 class JobsRemoteDatasource {
   JobsRemoteDatasource(this._client);
@@ -241,11 +242,12 @@ class JobsRemoteDatasource {
       final id = row['id'] as int?;
       final raw = row['venue_photos'];
       if (id == null || raw is! List) continue;
-      final photos = raw
-          .whereType<Map<String, dynamic>>()
-          .map(VenuePhoto.fromJson)
-          .whereType<VenuePhoto>()
-          .toList();
+      final photos =
+          raw
+              .whereType<Map<String, dynamic>>()
+              .map(VenuePhoto.fromJson)
+              .whereType<VenuePhoto>()
+              .toList();
       if (photos.isNotEmpty) photosByJob[id] = photos;
     }
     return photosByJob;
@@ -310,6 +312,17 @@ class JobsRemoteDatasource {
     }
   }
 
+  /// Server-resolved "can I still quote on this job?" — see [DjBidStatus]. Fails OPEN on any
+  /// transport error, exactly like [fetchJobWaveOpen]: the quote route is the authority.
+  Future<DjBidStatus> fetchDjBidStatus(int jobId) async {
+    try {
+      final body = await _webApiGet('/api/dj/jobs/$jobId/bid-status');
+      return DjBidStatus.fromJson(body);
+    } catch (_) {
+      return const DjBidStatus.open();
+    }
+  }
+
   Future<Map<int, bool?>> fetchDjExtJobWantsContact(String userId) async {
     final body = await _webApiGet('/api/internal-dj/ext-jobs?dj_id=$userId');
     final jobs = (body['jobs'] as List<dynamic>?) ?? const [];
@@ -341,6 +354,23 @@ class JobsRemoteDatasource {
       if (id != null && value is String && value.isNotEmpty) names[id] = value;
     });
     return names;
+  }
+
+  /// The ext job ids a saxophonist may currently see whose account is a TRUE
+  /// partner-portal account (`RecurringCustomers.is_partner = true`) — resolved
+  /// server-side (musician RLS can't read `is_partner`). Fails OPEN to an empty
+  /// set: on the feed this only trims the list; on the offer-form deep-link path
+  /// (see [MusicianJobAvailability]) the server 403 on submit remains the real gate.
+  Future<Set<int>> fetchPartnerExtJobIds() async {
+    try {
+      final body = await _webApiGet(
+        '/api/internal-musician/partner-ext-job-ids',
+      );
+      final ids = (body['extJobIds'] as List<dynamic>?) ?? const [];
+      return ids.map((e) => (e as num).toInt()).toSet();
+    } catch (_) {
+      return {};
+    }
   }
 
   /// Fetches jobs available for an instrumentalist to bid on.
@@ -493,6 +523,11 @@ class JobsRemoteDatasource {
 
     if (extJobs.isEmpty) return [];
 
+    // A saxophonist can't self-serve bid on a TRUE partner-portal booking
+    // (is_partner=true) — RecurringCustomers.is_partner isn't musician-RLS-readable,
+    // so the blocked ids are resolved server-side (mirrors web useExtJobsForMusicians).
+    final partnerExtJobIds = await fetchPartnerExtJobIds();
+
     // Fetch all service offers for these ext jobs in one query
     final allExtJobIds = extJobs.map((j) => (j['id'] as num).toInt()).toList();
     final allOffers = await _client
@@ -515,6 +550,9 @@ class JobsRemoteDatasource {
         .where((j) {
           final id = (j['id'] as num).toInt();
           final jobOffers = offersByExtJob[id] ?? [];
+
+          // Partner-portal bookings are never self-serve biddable.
+          if (partnerExtJobIds.contains(id)) return false;
 
           // Regional window: within first 24 h, only show if job region is in musician's regions
           if (instrument == 'saxophone') {

@@ -13,7 +13,7 @@ class JobIdBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-      final _c = DSTheme.of(context);
+    final _c = DSTheme.of(context);
     return Text(
       _label,
       style: DSTextStyle.labelMd.copyWith(
