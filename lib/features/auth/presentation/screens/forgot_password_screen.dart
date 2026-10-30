@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/auth/presentation/screens/forgot_password_screen.dart::ForgotPasswordScreen
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
