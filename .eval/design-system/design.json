@@ -1,0 +1,1725 @@
+{
+  "framework": "unknown",
+  "sources": [],
+  "shadcn": null,
+  "darkVariant": null,
+  "palette": {
+    "spaces": [],
+    "achromatic": [],
+    "chromatic": []
+  },
+  "groups": [],
+  "tokens": [],
+  "scales": {
+    "radius": [],
+    "spacing": [],
+    "breakpoints": []
+  },
+  "typography": {
+    "fontFaces": [],
+    "families": [],
+    "scale": []
+  },
+  "states": [
+    {
+      "variant": "active",
+      "count": 8
+    }
+  ],
+  "breakpointUse": [],
+  "components": [],
+  "composition": {
+    "primitiveDir": null,
+    "primitiveDirEvidence": null,
+    "primitives": [],
+    "unusedPrimitives": [],
+    "oneOffs": [],
+    "unreferenced": 0,
+    "screenCount": 0,
+    "applicationCount": 0,
+    "primitiveCount": 0,
+    "primitiveFileCount": 0
+  },
+  "disagreements": [
+    {
+      "kind": "hardcoded-color",
+      "title": "200 hardcoded colour literal(s) bypass the tokens",
+      "detail": "Written into a colour property or an arbitrary class value.",
+      "count": 200,
+      "examples": [
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 15,
+          "excerpt": "'Brand/Primary':             '#D1F366',"
+        },
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 16,
+          "excerpt": "'Brand/Primary Hover':       '#B8DC4B',"
+        },
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 17,
+          "excerpt": "'Brand/Primary Active':      '#5A731A',"
+        },
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 18,
+          "excerpt": "'Brand/On Primary':          '#141627',"
+        },
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 19,
+          "excerpt": "'Brand/Accent':              '#66D0F2',"
+        },
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 20,
+          "excerpt": "'Brand/Accent Soft':         '#D0D4E7',"
+        },
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 21,
+          "excerpt": "'Brand/On Accent':           '#141627',"
+        },
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 22,
+          "excerpt": "'Background/Canvas':         '#F8F8F8',"
+        },
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 23,
+          "excerpt": "'Background/Surface':        '#FFFFFF',"
+        },
+        {
+          "path": "design-system/figma-plugin/code.js",
+          "line": 24,
+          "excerpt": "'Background/Elevated':       '#FFFFFF',"
+        }
+      ]
+    }
+  ],
+  "literals": [
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 15,
+      "excerpt": "'Brand/Primary':             '#D1F366',",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 16,
+      "excerpt": "'Brand/Primary Hover':       '#B8DC4B',",
+      "literal": "#B8DC4B",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 17,
+      "excerpt": "'Brand/Primary Active':      '#5A731A',",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 18,
+      "excerpt": "'Brand/On Primary':          '#141627',",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 19,
+      "excerpt": "'Brand/Accent':              '#66D0F2',",
+      "literal": "#66D0F2",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 20,
+      "excerpt": "'Brand/Accent Soft':         '#D0D4E7',",
+      "literal": "#D0D4E7",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 21,
+      "excerpt": "'Brand/On Accent':           '#141627',",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 22,
+      "excerpt": "'Background/Canvas':         '#F8F8F8',",
+      "literal": "#F8F8F8",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 23,
+      "excerpt": "'Background/Surface':        '#FFFFFF',",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 24,
+      "excerpt": "'Background/Elevated':       '#FFFFFF',",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 25,
+      "excerpt": "'Background/Input':          '#F3F3F3',",
+      "literal": "#F3F3F3",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 26,
+      "excerpt": "'Background/Input Hover':    '#DDDDDD',",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 27,
+      "excerpt": "'Text/Primary':              '#141627',",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 28,
+      "excerpt": "'Text/Secondary':            '#626577',",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 29,
+      "excerpt": "'Text/Muted':                '#9A9CAB',",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 30,
+      "excerpt": "'Text/On Dark':              '#FFFFFF',",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 31,
+      "excerpt": "'Border/Subtle':             '#DDDDDD',",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 32,
+      "excerpt": "'Border/Strong':             '#626577',",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 33,
+      "excerpt": "'State/Success':             '#5A731A',",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 34,
+      "excerpt": "'State/Warning':             '#FFD365',",
+      "literal": "#FFD365",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 35,
+      "excerpt": "'State/Danger':              '#EC502C',",
+      "literal": "#EC502C",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 36,
+      "excerpt": "'State/Info':                '#66D0F2',",
+      "literal": "#66D0F2",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 37,
+      "excerpt": "'Trust/Verified':            '#66D0F2',",
+      "literal": "#66D0F2",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 38,
+      "excerpt": "'Trust/Verified Soft':       '#D0D4E7',",
+      "literal": "#D0D4E7",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 39,
+      "excerpt": "'Availability/Available':    '#5A731A',",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 40,
+      "excerpt": "'Availability/Limited':      '#FFD365',",
+      "literal": "#FFD365",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 41,
+      "excerpt": "'Availability/Unavailable':  '#9A9CAB',",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 45,
+      "excerpt": "'Brand/Primary':             '#D1F366',",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 46,
+      "excerpt": "'Brand/Primary Hover':       '#B8DC4B',",
+      "literal": "#B8DC4B",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 47,
+      "excerpt": "'Brand/Primary Active':      '#D1F366',",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 48,
+      "excerpt": "'Brand/On Primary':          '#141627',",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 49,
+      "excerpt": "'Brand/Accent':              '#66D0F2',",
+      "literal": "#66D0F2",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 50,
+      "excerpt": "'Brand/Accent Soft':         '#1C1F37',",
+      "literal": "#1C1F37",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 51,
+      "excerpt": "'Brand/On Accent':           '#141627',",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 52,
+      "excerpt": "'Background/Canvas':         '#111827',",
+      "literal": "#111827",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 53,
+      "excerpt": "'Background/Surface':        '#1F2937',",
+      "literal": "#1F2937",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 54,
+      "excerpt": "'Background/Elevated':       '#374151',",
+      "literal": "#374151",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 55,
+      "excerpt": "'Background/Input':          '#1F2937',",
+      "literal": "#1F2937",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 56,
+      "excerpt": "'Background/Input Hover':    '#374151',",
+      "literal": "#374151",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 57,
+      "excerpt": "'Text/Primary':              '#F9FAFB',",
+      "literal": "#F9FAFB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 58,
+      "excerpt": "'Text/Secondary':            '#D1D5DB',",
+      "literal": "#D1D5DB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 59,
+      "excerpt": "'Text/Muted':                '#9CA3AF',",
+      "literal": "#9CA3AF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 60,
+      "excerpt": "'Text/On Dark':              '#F9FAFB',",
+      "literal": "#F9FAFB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 61,
+      "excerpt": "'Border/Subtle':             '#374151',",
+      "literal": "#374151",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 62,
+      "excerpt": "'Border/Strong':             '#4B5563',",
+      "literal": "#4B5563",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 63,
+      "excerpt": "'State/Success':             '#22C55E',",
+      "literal": "#22C55E",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 64,
+      "excerpt": "'State/Warning':             '#F59E0B',",
+      "literal": "#F59E0B",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 65,
+      "excerpt": "'State/Danger':              '#EF4444',",
+      "literal": "#EF4444",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 66,
+      "excerpt": "'State/Info':                '#3B82F6',",
+      "literal": "#3B82F6",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 67,
+      "excerpt": "'Trust/Verified':            '#2DD4BF',",
+      "literal": "#2DD4BF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 68,
+      "excerpt": "'Trust/Verified Soft':       '#134E4A',",
+      "literal": "#134E4A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 69,
+      "excerpt": "'Availability/Available':    '#22C55E',",
+      "literal": "#22C55E",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 70,
+      "excerpt": "'Availability/Limited':      '#F59E0B',",
+      "literal": "#F59E0B",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 71,
+      "excerpt": "'Availability/Unavailable':  '#6B7280',",
+      "literal": "#6B7280",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 109,
+      "excerpt": "r.effects = [{ type:'DROP_SHADOW', color:hexA('#0F172A', 0.06), offset:{x:0,y:1}, radius:2, spread:0, visible:true, blendMode:'NORMAL' }];",
+      "literal": "#0F172A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 157,
+      "excerpt": "text(page, title, 28, 700, hex('#141627'), 0, y);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 158,
+      "excerpt": "rect(page, 700, 2, 0, y + 42, hex('#D1F366'));",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 164,
+      "excerpt": "const card = frame(page, w, h + 56, x, y, hex('#FFFFFF'), { radius:16, stroke:hex('#DDDDDD') });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 164,
+      "excerpt": "const card = frame(page, w, h + 56, x, y, hex('#FFFFFF'), { radius:16, stroke:hex('#DDDDDD') });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 166,
+      "excerpt": "rect(card, w, 44, 0, 0, hex('#F8F8F8'));",
+      "literal": "#F8F8F8",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 167,
+      "excerpt": "text(card, title, 13, 600, hex('#141627'), 16, 14);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 168,
+      "excerpt": "if (subtitle) text(card, subtitle, 10, 400, hex('#9A9CAB'), 16, 30);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 177,
+      "excerpt": "rect(card, 120, 32, cx, cy, hex('#D1F366'), { radius:9999 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 178,
+      "excerpt": "text(card, 'Tilbyd', 14, 600, hex('#141627'), cx + 30, cy + 8);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 181,
+      "excerpt": "rect(card, 120, 32, cx + 136, cy, hex('#D1F366'), { radius:9999, opacity:0.1 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 182,
+      "excerpt": "text(card, 'Tilbyd', 14, 600, hex('#5A731A'), cx + 166, cy + 8);",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 185,
+      "excerpt": "rect(card, 120, 32, cx + 272, cy, hex('#FFFFFF'), { radius:9999, stroke:hex('#626577') });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 185,
+      "excerpt": "rect(card, 120, 32, cx + 272, cy, hex('#FFFFFF'), { radius:9999, stroke:hex('#626577') });",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 186,
+      "excerpt": "text(card, 'Annuller', 14, 600, hex('#141627'), cx + 299, cy + 8);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 190,
+      "excerpt": "text(card, 'Se mere', 14, 400, hex('#626577'), cx + 412, cy + 8);",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 193,
+      "excerpt": "rect(card, 80, 28, cx, cy + 48, hex('#D1F366'), { radius:9999 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 194,
+      "excerpt": "text(card, 'SM', 13, 600, hex('#141627'), cx + 26, cy + 56);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 196,
+      "excerpt": "rect(card, 80, 32, cx + 96, cy + 46, hex('#D1F366'), { radius:9999 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 197,
+      "excerpt": "text(card, 'MD', 14, 600, hex('#141627'), cx + 120, cy + 54);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 199,
+      "excerpt": "rect(card, 80, 40, cx + 192, cy + 42, hex('#D1F366'), { radius:9999 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 200,
+      "excerpt": "text(card, 'LG', 15, 600, hex('#141627'), cx + 216, cy + 52);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 203,
+      "excerpt": "rect(card, 80, 32, cx + 288, cy + 46, hex('#DDDDDD'), { radius:9999 });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 204,
+      "excerpt": "text(card, 'Lukket', 14, 600, hex('#9A9CAB'), cx + 305, cy + 54);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 211,
+      "excerpt": "text(card, 'Hvad hedder du?', 14, 500, hex('#141627'), cx, cy);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 213,
+      "excerpt": "rect(card, 280, 44, cx, cy + 22, hex('#F3F3F3'), { radius:9999 });",
+      "literal": "#F3F3F3",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 214,
+      "excerpt": "text(card, 'Indtast dit navn...', 14, 400, hex('#9A9CAB'), cx + 20, cy + 36);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 217,
+      "excerpt": "text(card, 'Email', 14, 500, hex('#141627'), cx, cy + 82);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 218,
+      "excerpt": "rect(card, 280, 44, cx, cy + 104, hex('#F3F3F3'), { radius:9999, stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#F3F3F3",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 218,
+      "excerpt": "rect(card, 280, 44, cx, cy + 104, hex('#F3F3F3'), { radius:9999, stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 219,
+      "excerpt": "text(card, 'victor@djtilbud.dk', 14, 400, hex('#141627'), cx + 20, cy + 118);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 222,
+      "excerpt": "text(card, 'Telefon', 14, 500, hex('#141627'), cx, cy + 164);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 223,
+      "excerpt": "rect(card, 280, 44, cx, cy + 186, hex('#F3F3F3'), { radius:9999, stroke:hex('#EC502C'), strokeWidth:2 });",
+      "literal": "#F3F3F3",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 223,
+      "excerpt": "rect(card, 280, 44, cx, cy + 186, hex('#F3F3F3'), { radius:9999, stroke:hex('#EC502C'), strokeWidth:2 });",
+      "literal": "#EC502C",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 224,
+      "excerpt": "text(card, 'Ugyldigt nummer', 12, 400, hex('#EC502C'), cx, cy + 236);",
+      "literal": "#EC502C",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 231,
+      "excerpt": "rect(card, 70, 34, cx, cy, hex('#FFFFFF'), { radius:9999, stroke:hex('#626577') });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 231,
+      "excerpt": "rect(card, 70, 34, cx, cy, hex('#FFFFFF'), { radius:9999, stroke:hex('#626577') });",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 232,
+      "excerpt": "text(card, 'Pop', 13, 500, hex('#141627'), cx + 21, cy + 10);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 235,
+      "excerpt": "rect(card, 84, 34, cx + 86, cy, hex('#D1F366'), { radius:9999, stroke:hex('#D1F366') });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 235,
+      "excerpt": "rect(card, 84, 34, cx + 86, cy, hex('#D1F366'), { radius:9999, stroke:hex('#D1F366') });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 236,
+      "excerpt": "text(card, 'House', 13, 500, hex('#141627'), cx + 104, cy + 10);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 239,
+      "excerpt": "rect(card, 88, 24, cx, cy + 50, hex('#D1F366'), { radius:9999, opacity:0.15 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 240,
+      "excerpt": "text(card, '70er/80er', 11, 600, hex('#5A731A'), cx + 8, cy + 56);",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 242,
+      "excerpt": "rect(card, 58, 24, cx + 96, cy + 50, hex('#D1F366'), { radius:9999, opacity:0.15 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 243,
+      "excerpt": "text(card, 'Disco', 11, 600, hex('#5A731A'), cx + 110, cy + 56);",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 246,
+      "excerpt": "rect(card, 96, 34, cx, cy + 92, hex('#FFFFFF'), { radius:9999, stroke:hex('#626577') });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 246,
+      "excerpt": "rect(card, 96, 34, cx, cy + 92, hex('#FFFFFF'), { radius:9999, stroke:hex('#626577') });",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 247,
+      "excerpt": "text(card, 'Bryllup ×', 13, 500, hex('#141627'), cx + 12, cy + 102);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 254,
+      "excerpt": "{ label:'Afventer svar', color:'#FFD365' },",
+      "literal": "#FFD365",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 255,
+      "excerpt": "{ label:'Aftale bekræftet', color:'#5A731A' },",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 256,
+      "excerpt": "{ label:'Tabt', color:'#EC502C' },",
+      "literal": "#EC502C",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 257,
+      "excerpt": "{ label:'Udbudt', color:'#66D0F2' },",
+      "literal": "#66D0F2",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 268,
+      "excerpt": "rect(card, 280, 32, cx, cy + 40, hex('#5A731A'), { radius:9999, opacity:0.25, stroke:hex('#5A731A'), strokeOpacity:0.55 });",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 268,
+      "excerpt": "rect(card, 280, 32, cx, cy + 40, hex('#5A731A'), { radius:9999, opacity:0.25, stroke:hex('#5A731A'), strokeOpacity:0.55 });",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 269,
+      "excerpt": "text(card, 'Aftale bekræftet — du spiller til dette event', 11, 600, hex('#5A731A'), cx + 12, cy + 50);",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 276,
+      "excerpt": "const surface = frame(card, 260, 100, cx, cy, hex('#FFFFFF'), { radius:16, stroke:hex('#DDDDDD') });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 276,
+      "excerpt": "const surface = frame(card, 260, 100, cx, cy, hex('#FFFFFF'), { radius:16, stroke:hex('#DDDDDD') });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 277,
+      "excerpt": "surface.effects = [{ type:'DROP_SHADOW', color:hexA('#0F172A', 0.06), offset:{x:0,y:1}, radius:2, spread:0, visible:true, blendMode:'NORMAL' }];",
+      "literal": "#0F172A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 278,
+      "excerpt": "text(surface, 'Bryllup · 19. aug 2028', 14, 600, hex('#141627'), 16, 16);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 279,
+      "excerpt": "text(surface, 'Bygaden 1, Slangerup', 12, 400, hex('#626577'), 16, 38);",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 280,
+      "excerpt": "text(surface, '48 gæster · 22:00–02:00', 12, 400, hex('#9A9CAB'), 16, 56);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 290,
+      "excerpt": "ellipse(card, sz, sz, ax, cy + (72 - sz) / 2, hex('#D1F366'), {});",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 293,
+      "excerpt": "ellipse(card, sz * 0.28, sz * 0.28, ax + sz * 0.36, cy + (72 - sz) / 2 + sz * 0.18, hex('#5A731A'));",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 295,
+      "excerpt": "rect(card, sz * 0.56, sz * 0.24, ax + sz * 0.22, cy + (72 - sz) / 2 + sz * 0.55, hex('#5A731A'), { radius:sz });",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 296,
+      "excerpt": "text(card, `${sz}`, 10, 400, hex('#9A9CAB'), ax + sz * 0.1, cy + 78);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 304,
+      "excerpt": "rect(card, 56, 32, cx, cy, hex('#DDDDDD'), { radius:9999 });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 305,
+      "excerpt": "ellipse(card, 24, 24, cx + 4, cy + 4, hex('#FFFFFF'));",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 308,
+      "excerpt": "rect(card, 56, 32, cx + 80, cy, hex('#D1F366'), { radius:9999 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 309,
+      "excerpt": "ellipse(card, 24, 24, cx + 80 + 28, cy + 4, hex('#FFFFFF'));",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 312,
+      "excerpt": "text(card, 'Push notifikationer', 14, 600, hex('#141627'), cx, cy + 52);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 313,
+      "excerpt": "rect(card, 56, 32, cx + 224, cy + 48, hex('#D1F366'), { radius:9999 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 314,
+      "excerpt": "ellipse(card, 24, 24, cx + 224 + 28, cy + 52, hex('#FFFFFF'));",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 316,
+      "excerpt": "text(card, 'Slå lyd fra', 14, 600, hex('#141627'), cx, cy + 100);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 317,
+      "excerpt": "rect(card, 56, 32, cx + 224, cy + 96, hex('#DDDDDD'), { radius:9999 });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 318,
+      "excerpt": "ellipse(card, 24, 24, cx + 228, cy + 100, hex('#FFFFFF'));",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 325,
+      "excerpt": "rect(card, 24, 24, cx, cy, null, { radius:8, stroke:hex('#626577'), strokeWidth:2 });",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 326,
+      "excerpt": "text(card, 'Jeg accepterer betingelserne', 14, 600, hex('#141627'), cx + 36, cy + 4);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 329,
+      "excerpt": "rect(card, 24, 24, cx, cy + 44, hex('#D1F366'), { radius:8, stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 329,
+      "excerpt": "rect(card, 24, 24, cx, cy + 44, hex('#D1F366'), { radius:8, stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 330,
+      "excerpt": "text(card, '✓', 13, 700, hex('#141627'), cx + 5, cy + 48);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 331,
+      "excerpt": "text(card, 'Send mig nyhedsbreve', 14, 600, hex('#141627'), cx + 36, cy + 48);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 334,
+      "excerpt": "rect(card, 24, 24, cx, cy + 88, null, { radius:8, stroke:hex('#DDDDDD'), strokeWidth:2 });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 335,
+      "excerpt": "text(card, 'Ikke tilgængeligt', 14, 600, hex('#9A9CAB'), cx + 36, cy + 92);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 342,
+      "excerpt": "ellipse(card, 22, 22, cx, cy, null, { stroke:hex('#626577'), strokeWidth:2 });",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 343,
+      "excerpt": "text(card, 'B-indkomst', 14, 400, hex('#141627'), cx + 30, cy + 4);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 346,
+      "excerpt": "ellipse(card, 22, 22, cx, cy + 40, null, { stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 347,
+      "excerpt": "ellipse(card, 12, 12, cx + 5, cy + 45, hex('#D1F366'));",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 348,
+      "excerpt": "text(card, 'A-indkomst', 14, 400, hex('#141627'), cx + 30, cy + 44);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 351,
+      "excerpt": "ellipse(card, 22, 22, cx, cy + 80, null, { stroke:hex('#DDDDDD'), strokeWidth:2 });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 352,
+      "excerpt": "text(card, 'Virksomhed', 14, 400, hex('#9A9CAB'), cx + 30, cy + 84);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 359,
+      "excerpt": "text(card, 'Genre', 14, 500, hex('#141627'), cx, cy);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 360,
+      "excerpt": "rect(card, 280, 44, cx, cy + 22, hex('#F3F3F3'), { radius:9999 });",
+      "literal": "#F3F3F3",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 361,
+      "excerpt": "text(card, 'Vælg genre', 14, 400, hex('#9A9CAB'), cx + 20, cy + 36);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 362,
+      "excerpt": "text(card, '⌄', 18, 400, hex('#626577'), cx + 250, cy + 32);",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 365,
+      "excerpt": "text(card, 'Event type', 14, 500, hex('#141627'), cx, cy + 82);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 366,
+      "excerpt": "rect(card, 280, 44, cx, cy + 104, hex('#F3F3F3'), { radius:9999 });",
+      "literal": "#F3F3F3",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 367,
+      "excerpt": "text(card, 'Bryllup', 14, 400, hex('#141627'), cx + 20, cy + 118);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 368,
+      "excerpt": "text(card, '⌄', 18, 400, hex('#626577'), cx + 250, cy + 114);",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 375,
+      "excerpt": "rect(card, 280, 4, cx, cy + 12, hex('#DDDDDD'), { radius:9999 });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 376,
+      "excerpt": "rect(card, 168, 4, cx, cy + 12, hex('#D1F366'), { radius:9999 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 378,
+      "excerpt": "ellipse(card, 24, 24, cx + 156, cy + 4, hex('#FFFFFF'), { stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 378,
+      "excerpt": "ellipse(card, 24, 24, cx + 156, cy + 4, hex('#FFFFFF'), { stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 380,
+      "excerpt": "text(card, '5.000 kr', 12, 500, hex('#141627'), cx, cy + 32);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 381,
+      "excerpt": "text(card, '10.000 kr', 12, 500, hex('#9A9CAB'), cx + 240, cy + 32);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 382,
+      "excerpt": "text(card, 'Budget: 7.500 kr', 13, 600, hex('#141627'), cx + 100, cy + 52);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 389,
+      "excerpt": "rect(card, 280, 4, cx, cy + 12, hex('#DDDDDD'), { radius:9999 });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 390,
+      "excerpt": "rect(card, 140, 4, cx + 70, cy + 12, hex('#D1F366'), { radius:9999 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 392,
+      "excerpt": "ellipse(card, 24, 24, cx + 58, cy + 4, hex('#FFFFFF'), { stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 392,
+      "excerpt": "ellipse(card, 24, 24, cx + 58, cy + 4, hex('#FFFFFF'), { stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 394,
+      "excerpt": "ellipse(card, 24, 24, cx + 196, cy + 4, hex('#FFFFFF'), { stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 394,
+      "excerpt": "ellipse(card, 24, 24, cx + 196, cy + 4, hex('#FFFFFF'), { stroke:hex('#D1F366'), strokeWidth:2 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 396,
+      "excerpt": "text(card, '0 kr', 12, 500, hex('#141627'), cx, cy + 32);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 397,
+      "excerpt": "text(card, '15.000 kr', 12, 500, hex('#9A9CAB'), cx + 236, cy + 32);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 398,
+      "excerpt": "text(card, '4.000 – 9.000 kr', 13, 600, hex('#141627'), cx + 90, cy + 52);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 407,
+      "excerpt": "rect(card, totalW, 36, cx, cy, hex('#F3F3F3'), { radius:9999 });",
+      "literal": "#F3F3F3",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 411,
+      "excerpt": "rect(card, segW - 4, 28, cx + i * segW + 2, cy + 4, hex('#FFFFFF'), { radius:9999 });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 412,
+      "excerpt": "text(card, labels[i], 13, 600, hex('#141627'), cx + i * segW + 22, cy + 12);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 414,
+      "excerpt": "text(card, labels[i], 13, 400, hex('#9A9CAB'), cx + i * segW + (i === 0 ? 24 : 20), cy + 12);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 422,
+      "excerpt": "rect(card, 320, 48, cx, cy, hex('#FFFFFF'), { stroke:hex('#DDDDDD') });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 422,
+      "excerpt": "rect(card, 320, 48, cx, cy, hex('#FFFFFF'), { stroke:hex('#DDDDDD') });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 432,
+      "excerpt": "const clr = tabs[i].active ? hex('#141627') : hex('#9A9CAB');",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 432,
+      "excerpt": "const clr = tabs[i].active ? hex('#141627') : hex('#9A9CAB');",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 434,
+      "excerpt": "ellipse(card, 20, 20, tx + tabW / 2 - 10, cy + 6, tabs[i].active ? hex('#D1F366') : null, {});",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 441,
+      "excerpt": "rect(card, 24, 2, tx + tabW / 2 - 12, cy + 46, hex('#D1F366'), { radius:9999 });",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 449,
+      "excerpt": "rect(card, 320, 64, cx, cy, hex('#FFFFFF'), { stroke:hex('#DDDDDD') });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 449,
+      "excerpt": "rect(card, 320, 64, cx, cy, hex('#FFFFFF'), { stroke:hex('#DDDDDD') });",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 460,
+      "excerpt": "text(card, tabs[i].icon, 22, 400, active ? hex('#141627') : hex('#9A9CAB'), tx - 10, cy + 8);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 460,
+      "excerpt": "text(card, tabs[i].icon, 22, 400, active ? hex('#141627') : hex('#9A9CAB'), tx - 10, cy + 8);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 461,
+      "excerpt": "text(card, tabs[i].label, 10, active ? 600 : 400, active ? hex('#141627') : hex('#9A9CAB'), tx - tabs[i].label.length * 3, cy + 44);",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 461,
+      "excerpt": "text(card, tabs[i].label, 10, active ? 600 : 400, active ? hex('#141627') : hex('#9A9CAB'), tx - tabs[i].label.length * 3, cy + 44);",
+      "literal": "#9A9CAB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 469,
+      "excerpt": "{ label:'Tilbud sendt!', color:'#5A731A' },",
+      "literal": "#5A731A",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 470,
+      "excerpt": "{ label:'Noget gik galt — prøv igen', color:'#EC502C' },",
+      "literal": "#EC502C",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 471,
+      "excerpt": "{ label:'Ny besked fra kunde', color:'#66D0F2' },",
+      "literal": "#66D0F2",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 475,
+      "excerpt": "rect(card, 280, 40, cx, ty, hex('#141627'), { radius:12 });",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 477,
+      "excerpt": "text(card, t.label, 13, 500, hex('#F9FAFB'), cx + 24, ty + 12);",
+      "literal": "#F9FAFB",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 496,
+      "excerpt": "rect(card, tw, 32, ix, rowY, hex('#F3F3F3'), { radius:9999 });",
+      "literal": "#F3F3F3",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 497,
+      "excerpt": "text(card, chips[i].icon + ' ' + chips[i].label, 12, 500, hex('#626577'), ix + 10, rowY + 8);",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 586,
+      "excerpt": "const DARK_TEXT = hex('#141627');",
+      "literal": "#141627",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 587,
+      "excerpt": "const MUTED     = hex('#626577');",
+      "literal": "#626577",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 588,
+      "excerpt": "const BORDER    = hex('#DDDDDD');",
+      "literal": "#DDDDDD",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 589,
+      "excerpt": "const PRIMARY   = hex('#D1F366');",
+      "literal": "#D1F366",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 632,
+      "excerpt": "rect(page, 120, 40, rx, y+20, hex('#FFFFFF'), { radius:9999, stroke:BORDER });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 637,
+      "excerpt": "rect(page, 80, 80, rx, y, hex('#FFFFFF'), { radius:val, stroke:BORDER });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 662,
+      "excerpt": "const card = frame(page, comp.w + 48, cardH + 24, compX, compY, hex('#FFFFFF'), { radius:16, stroke:BORDER });",
+      "literal": "#FFFFFF",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "design-system/figma-plugin/code.js",
+      "line": 665,
+      "excerpt": "rect(card, comp.w + 48, 44, 0, 0, hex('#F8F8F8'));",
+      "literal": "#F8F8F8",
+      "duplicatesToken": null,
+      "context": "colour-valued string"
+    },
+    {
+      "path": "lib/core/design_system/ds_segmented_control.dart",
+      "line": 26,
+      "excerpt": "color: c.bg.inputBg, // bg-ds-input-bg (#F1F5F9)",
+      "literal": "#F1F5F9",
+      "duplicatesToken": null,
+      "context": "colour property"
+    }
+  ],
+  "summary": {
+    "tokenCount": 0,
+    "declarationCount": 0,
+    "groupCount": 0,
+    "tokensWithDark": 0,
+    "tokensWithoutDark": 0,
+    "usedTokens": 0,
+    "deadTokens": 0,
+    "componentCount": 0,
+    "componentsWithVariants": 0,
+    "variantAxisCount": 0,
+    "variantValueCount": 0,
+    "primitiveCount": 0,
+    "disagreementKinds": 1,
+    "disagreementInstances": 200
+  },
+  "filesScanned": {
+    "style": 0,
+    "source": 294
+  }
+}

@@ -13,6 +13,7 @@ Future<void> showContentVideoPlayer(BuildContext context, String url) {
   );
 }
 
+// @uxid lib/features/jobs/presentation/widgets/content_video_player.dart::_ContentVideoDialog
 class _ContentVideoDialog extends StatefulWidget {
   const _ContentVideoDialog({required this.url});
   final String url;

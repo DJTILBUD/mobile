@@ -34,6 +34,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 import 'package:dj_tilbud_app/shared/widgets/venue_photos_card.dart';
 import 'package:dj_tilbud_app/core/utils/planned_contact.dart';
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::ExtJobDetailScreen
 class ExtJobDetailScreen extends ConsumerStatefulWidget {
   const ExtJobDetailScreen({super.key, required this.extJob});
 
@@ -637,6 +638,7 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
 
 /// Shown on the "Stedet" tab of a partner booking before the team has uploaded
 /// any photos and the booking carries no wishes, so the tab never looks broken.
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_VenueEmptyState
 class _VenueEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -672,6 +674,7 @@ class _VenueEmptyState extends StatelessWidget {
 
 // ─── Job Info Card ────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_JobInfoCard
 class _JobInfoCard extends StatelessWidget {
   const _JobInfoCard({required this.extJob});
 
@@ -850,6 +853,7 @@ class _JobInfoCard extends StatelessWidget {
 
 // ─── Info Row ─────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_InfoRow
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.icon,
@@ -891,6 +895,7 @@ class _InfoRow extends StatelessWidget {
 
 // ─── Section Card ─────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_SectionCard
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.title, required this.children});
 
@@ -929,6 +934,7 @@ class _SectionCard extends StatelessWidget {
 
 // ─── Done Button ──────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_DoneButton
 class _DoneButton extends StatelessWidget {
   const _DoneButton({required this.label});
 
@@ -970,6 +976,7 @@ class _DoneButton extends StatelessWidget {
 
 // ─── Contact Row ──────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ContactRow
 class _ContactRow extends StatelessWidget {
   const _ContactRow({required this.icon, required this.label, this.onCopy});
 
@@ -1004,6 +1011,7 @@ class _ContactRow extends StatelessWidget {
 
 // ─── Song Requests Row ────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobSongRequestsRow
 class _ExtJobSongRequestsRow extends ConsumerWidget {
   const _ExtJobSongRequestsRow({required this.extJob});
   final ExtJob extJob;
@@ -1074,6 +1082,7 @@ class _ExtJobSongRequestsRow extends ConsumerWidget {
 // display `full_amount`; only the extra cost and the DJ's payout adjustment
 // (the same two numbers the web shows).
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobExtraHoursSection
 class _ExtJobExtraHoursSection extends ConsumerStatefulWidget {
   const _ExtJobExtraHoursSection({required this.extJob});
 
@@ -1398,6 +1407,7 @@ class _ExtJobExtraHoursSectionState
   }
 }
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobExtraHoursSummary
 class _ExtJobExtraHoursSummary extends StatelessWidget {
   const _ExtJobExtraHoursSummary({
     required this.hours,
@@ -1438,6 +1448,7 @@ class _ExtJobExtraHoursSummary extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobSummaryRow
 class _ExtJobSummaryRow extends StatelessWidget {
   const _ExtJobSummaryRow({
     required this.label,
@@ -1473,6 +1484,7 @@ class _ExtJobSummaryRow extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobDeleteButton
 class _ExtJobDeleteButton extends ConsumerWidget {
   const _ExtJobDeleteButton({required this.onTap});
 
@@ -1504,6 +1516,7 @@ class _ExtJobDeleteButton extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_PlannedContactBanner
 class _PlannedContactBanner extends StatelessWidget {
   const _PlannedContactBanner({required this.date});
   final DateTime date;
@@ -1549,6 +1562,7 @@ class _PlannedContactBanner extends StatelessWidget {
 
 /// Shown when an ext job has been canceled — it can still be reached via a stale notification,
 /// so make the canceled state unmistakable rather than rendering it as an active job.
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_CanceledBanner
 class _CanceledBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1596,6 +1610,7 @@ class _CanceledBanner extends StatelessWidget {
 //    `extDjPayoutShare`. The extra-hours section above uses the three-bracket
 //    internal `getFeeForJob` ladder, which does not apply to ext jobs.
 // ---------------------------------------------------------------------------
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobEarlySetupSection
 class _ExtJobEarlySetupSection extends ConsumerStatefulWidget {
   const _ExtJobEarlySetupSection({required this.extJob});
 
@@ -1849,6 +1864,7 @@ class _ExtJobEarlySetupSectionState
   }
 }
 
+// @uxid lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobEarlySetupSummary
 class _ExtJobEarlySetupSummary extends StatelessWidget {
   const _ExtJobEarlySetupSummary({
     required this.price,

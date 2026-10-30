@@ -36,6 +36,7 @@ enum _JobAction { busy, notInterested }
 String _fmt(num n) =>
     NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
 
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::DjQuoteFormScreen
 class DjQuoteFormScreen extends ConsumerStatefulWidget {
   const DjQuoteFormScreen({super.key, required this.job, this.source = 'list'});
 
@@ -903,6 +904,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_CollisionBanner
 class _CollisionBanner extends StatelessWidget {
   const _CollisionBanner({required this.message});
   final String message;
@@ -959,6 +961,7 @@ class _CollisionBanner extends StatelessWidget {
 /// Styled `info`, not `danger`: nothing is wrong and there is no mistake to correct.
 /// The job itself is closed to this DJ (full, already bid, taken, paused, gone). Danger-styled
 /// like the collision banner: unlike the wave banner there is nothing that will open later.
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_BidClosedBanner
 class _BidClosedBanner extends StatelessWidget {
   const _BidClosedBanner({required this.status});
   final DjBidStatus status;
@@ -1006,6 +1009,7 @@ class _BidClosedBanner extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_WaveClosedBanner
 class _WaveClosedBanner extends StatelessWidget {
   const _WaveClosedBanner();
 
@@ -1054,6 +1058,7 @@ class _WaveClosedBanner extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_EarlySetupSection
 class _EarlySetupSection extends StatelessWidget {
   const _EarlySetupSection({
     required this.offersEarlySetup,
@@ -1145,6 +1150,7 @@ class _EarlySetupSection extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_JobSummary
 class _JobSummary extends StatelessWidget {
   const _JobSummary({
     required this.job,
@@ -1244,6 +1250,7 @@ class _JobSummary extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_BudgetWarningBanner
 class _BudgetWarningBanner extends StatelessWidget {
   const _BudgetWarningBanner({
     required this.price,
@@ -1307,6 +1314,7 @@ class _BudgetWarningBanner extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_SummaryRow
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow(this.icon, this.text);
 
@@ -1333,6 +1341,7 @@ class _SummaryRow extends StatelessWidget {
 
 // ─── Not Interested Bottom Sheet ─────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_NotInterestedSheet
 class _NotInterestedSheet extends StatefulWidget {
   const _NotInterestedSheet();
 
@@ -1450,6 +1459,7 @@ class _NotInterestedSheetState extends State<_NotInterestedSheet> {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_ReasonRow
 class _ReasonRow extends StatelessWidget {
   const _ReasonRow({
     required this.label,

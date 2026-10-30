@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/chat/presentation/providers/admin_support_provider.dart';
 
+// @uxid lib/features/profile/presentation/screens/notification_settings_screen.dart::NotificationSettingsScreen
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
   const NotificationSettingsScreen({super.key, required this.role});
 
@@ -335,6 +336,7 @@ class _NotifSection {
   final List<_NotifGroup> groups;
 }
 
+// @uxid lib/features/profile/presentation/screens/notification_settings_screen.dart::_SectionHeader
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.label, required this.colors});
 
@@ -362,6 +364,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/notification_settings_screen.dart::_ToggleTile
 class _ToggleTile extends StatelessWidget {
   const _ToggleTile({
     required this.label,

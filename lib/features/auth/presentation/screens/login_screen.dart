@@ -11,6 +11,7 @@ import 'package:dj_tilbud_app/features/auth/presentation/providers/auth_provider
 import 'package:dj_tilbud_app/app.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
+// @uxid lib/features/auth/presentation/screens/login_screen.dart::LoginScreen
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 

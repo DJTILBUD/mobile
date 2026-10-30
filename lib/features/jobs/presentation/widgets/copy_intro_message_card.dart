@@ -13,6 +13,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// "Send besked" opens the OS message composer with the customer's number AND the message already
 /// filled in, so sending is one tap. Copy stays as a secondary action: some performers send via
 /// WhatsApp/mail instead, and it is the fallback when the composer cannot open.
+// @uxid lib/features/jobs/presentation/widgets/copy_intro_message_card.dart::CopyIntroMessageCard
 class CopyIntroMessageCard extends StatelessWidget {
   const CopyIntroMessageCard({
     super.key,

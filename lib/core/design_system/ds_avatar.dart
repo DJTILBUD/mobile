@@ -12,6 +12,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// // With a remote image:
 /// DSAvatar(imageUrl: profile.photoUrl, size: 40)
 /// ```
+// @uxid lib/core/design_system/ds_avatar.dart::DSAvatar
 class DSAvatar extends StatelessWidget {
   const DSAvatar({super.key, this.imageUrl, this.size = 40});
 

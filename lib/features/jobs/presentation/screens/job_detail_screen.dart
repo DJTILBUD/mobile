@@ -16,6 +16,7 @@ import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 /// (musicians go straight from the feed/push/calendar into the offer form), so
 /// `job_viewed` does not fire in practice. The logging is wired correctly for the
 /// day the route is used; treat `offer_form_opened` as the funnel entry today.
+// @uxid lib/features/jobs/presentation/screens/job_detail_screen.dart::JobDetailScreen
 class JobDetailScreen extends ConsumerStatefulWidget {
   const JobDetailScreen({super.key, required this.job, this.source = 'list'});
 
@@ -479,6 +480,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/job_detail_screen.dart::_SectionCard
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.title, required this.child});
 
@@ -516,6 +518,7 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/job_detail_screen.dart::_InfoRow
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.icon,
@@ -551,6 +554,7 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/job_detail_screen.dart::_BudgetIncreasePulse
 class _BudgetIncreasePulse extends StatefulWidget {
   const _BudgetIncreasePulse({required this.colors});
   final DSColors colors;
