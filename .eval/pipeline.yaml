@@ -1,0 +1,14 @@
+stack: flutter
+packageManager: flutter
+commit: f1e2b66dc70d7a4a25f9d5dd0e782ca872721c5a
+verifiedAt: 2026-10-30T08:39:17.214Z
+commands:
+  install: flutter pub get
+  build: null
+  analyze: dart analyze
+  test: flutter test
+status:
+  install: none
+  build: none
+  analyze: none
+  test: none
