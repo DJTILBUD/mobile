@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 
 /// Design-system radio button — matches web marketplace `Radio`.
+// @uxid lib/core/design_system/ds_radio.dart::DSRadio
 class DSRadio extends StatelessWidget {
   const DSRadio({
     super.key,

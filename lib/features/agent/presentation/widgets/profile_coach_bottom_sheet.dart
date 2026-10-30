@@ -28,6 +28,7 @@ class _GapItem {
 
 // ── Widget ────────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::ProfileCoachBottomSheet
 class ProfileCoachBottomSheet extends ConsumerStatefulWidget {
   const ProfileCoachBottomSheet({
     super.key,
@@ -352,6 +353,7 @@ class _ProfileCoachBottomSheetState
 
 // ── Assessment text (AI intro) ────────────────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::_AssessmentText
 class _AssessmentText extends StatelessWidget {
   const _AssessmentText({required this.agentState});
 
@@ -467,6 +469,7 @@ class _AssessmentText extends StatelessWidget {
 
 // ── Gap card ──────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::_GapCard
 class _GapCard extends StatelessWidget {
   const _GapCard({required this.gap});
 
@@ -567,6 +570,7 @@ class _GapCard extends StatelessWidget {
 
 // ── Complete badge (shown when no gaps) ──────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::_CompleteBadge
 class _CompleteBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

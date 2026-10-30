@@ -36,6 +36,7 @@ import 'package:dj_tilbud_app/features/first_win/presentation/widgets/first_win_
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::JobsShellScreen
 class JobsShellScreen extends ConsumerStatefulWidget {
   const JobsShellScreen({super.key, required this.role});
 
@@ -290,6 +291,7 @@ class _JobsShellScreenState extends ConsumerState<JobsShellScreen> {
 // ── AppBar action pills ──
 
 /// Icon-only two-segment switch: list | calendar
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_ModeTogglePill
 class _ModeTogglePill extends StatelessWidget {
   const _ModeTogglePill({required this.isCalendarMode, required this.onToggle});
 
@@ -328,6 +330,7 @@ class _ModeTogglePill extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_IconSegment
 class _IconSegment extends StatelessWidget {
   const _IconSegment({required this.icon, required this.selected});
 
@@ -357,6 +360,7 @@ class _IconSegment extends StatelessWidget {
 }
 
 /// Filter on/off pill — text label + check/x icon
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_FilterTogglePill
 class _FilterTogglePill extends ConsumerWidget {
   const _FilterTogglePill();
 
@@ -414,6 +418,7 @@ class _FilterTogglePill extends ConsumerWidget {
 
 /// Filter on/off pill for the saxophonist feed — mirrors [_FilterTogglePill]
 /// but drives the musician's MusicianJobFilters (region + sax type) toggle.
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_MusicianFilterTogglePill
 class _MusicianFilterTogglePill extends ConsumerWidget {
   const _MusicianFilterTogglePill();
 
@@ -472,6 +477,7 @@ class _MusicianFilterTogglePill extends ConsumerWidget {
 
 // ── DJ Jobs Calendar View ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjCalendarView
 class _DjCalendarView extends ConsumerStatefulWidget {
   const _DjCalendarView();
 
@@ -830,6 +836,7 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
 
 // ── Instrumentalist Jobs Calendar View ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistCalendarView
 class _InstrumentalistCalendarView extends ConsumerStatefulWidget {
   const _InstrumentalistCalendarView();
 
@@ -1287,6 +1294,7 @@ List<Widget> _groupByMonth<T>({
   return children;
 }
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_MonthGroupHeader
 class _MonthGroupHeader extends StatelessWidget {
   const _MonthGroupHeader({required this.label});
 
@@ -1315,6 +1323,7 @@ class _MonthGroupHeader extends StatelessWidget {
 
 // ── Calendar filter chips ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_KindChip
 class _KindChip extends StatelessWidget {
   const _KindChip({
     required this.label,
@@ -1371,6 +1380,7 @@ class _KindChip extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_UnavailableDatesPanel
 class _UnavailableDatesPanel extends StatelessWidget {
   const _UnavailableDatesPanel({
     required this.isEditing,
@@ -1451,6 +1461,7 @@ class _UnavailableDatesPanel extends StatelessWidget {
 
 // ── DJ tabs ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjNewJobsTab
 class _DjNewJobsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1549,6 +1560,7 @@ class _DjNewJobsTab extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjQuotesTab
 class _DjQuotesTab extends ConsumerWidget {
   const _DjQuotesTab({required this.filter});
 
@@ -1620,6 +1632,7 @@ class _DjQuotesTab extends ConsumerWidget {
 
 // ── DJ Won Quotes Tab (with played-jobs toggle) ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjWonQuotesTab
 class _DjWonQuotesTab extends ConsumerStatefulWidget {
   const _DjWonQuotesTab();
 
@@ -1788,6 +1801,7 @@ class _DjWonQuotesTabState extends ConsumerState<_DjWonQuotesTab> {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjExpiredTab
 class _DjExpiredTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1841,6 +1855,7 @@ class _DjExpiredTab extends ConsumerWidget {
 
 // ── Instrumentalist tabs ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistNewJobsTab
 class _InstrumentalistNewJobsTab extends ConsumerWidget {
   Future<void> _refresh(WidgetRef ref) async {
     await Future.wait([
@@ -1978,6 +1993,7 @@ bool _musicianHasDateConflict(Job job, List<ServiceOffer> won) {
 
 // ── Instrumentalist Won Offers Tab (with played-jobs toggle) ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistWonOffersTab
 class _InstrumentalistWonOffersTab extends ConsumerStatefulWidget {
   const _InstrumentalistWonOffersTab();
 
@@ -2156,6 +2172,7 @@ class _InstrumentalistWonOffersTabState
 
 // ── Instrumentalist Offers Tab (sent / lost) ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistOffersTab
 class _InstrumentalistOffersTab extends ConsumerWidget {
   const _InstrumentalistOffersTab({required this.filter});
 
@@ -2231,6 +2248,7 @@ class _InstrumentalistOffersTab extends ConsumerWidget {
 
 // ── Availability gate dialog ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_AvailabilityGateDialog
 class _AvailabilityGateDialog extends StatelessWidget {
   const _AvailabilityGateDialog({
     required this.missingMonthsCount,
@@ -2293,6 +2311,7 @@ class _AvailabilityGateDialog extends StatelessWidget {
 
 // ── Shared ──
 
+// @uxid lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_ErrorView
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message, required this.onRetry});
 

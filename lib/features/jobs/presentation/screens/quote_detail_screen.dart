@@ -38,6 +38,7 @@ import 'package:dj_tilbud_app/core/utils/birthday_person_age.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/decline_extra_hours.dart';
 import 'package:dj_tilbud_app/core/utils/planned_contact.dart';
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::QuoteDetailScreen
 class QuoteDetailScreen extends ConsumerStatefulWidget {
   const QuoteDetailScreen({super.key, required this.quote});
 
@@ -227,6 +228,7 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
 
 // ─── Top Status Row (primary status pill + invoice pill if won) ──────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_TopStatusRow
 class _TopStatusRow extends StatelessWidget {
   const _TopStatusRow({required this.quote});
 
@@ -256,6 +258,7 @@ class _TopStatusRow extends StatelessWidget {
 
 // ─── Job Hero Card ────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_JobHeroCard
 class _JobHeroCard extends ConsumerWidget {
   const _JobHeroCard({required this.quote});
 
@@ -459,6 +462,7 @@ class _JobHeroCard extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_MetaRow
 class _MetaRow extends StatelessWidget {
   const _MetaRow({required this.icon, required this.label});
   final IconData icon;
@@ -483,6 +487,7 @@ class _MetaRow extends StatelessWidget {
 
 // ─── Bid Summary Card ─────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_BidSummaryCard
 class _BidSummaryCard extends StatelessWidget {
   const _BidSummaryCard({required this.quote, required this.payout});
 
@@ -686,6 +691,7 @@ class _BidSummaryCard extends StatelessWidget {
 
 // ─── Customer deadline banner ─────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_CustomerDeadlineBanner
 class _CustomerDeadlineBanner extends StatelessWidget {
   const _CustomerDeadlineBanner({required this.quote});
 
@@ -774,6 +780,7 @@ class _CustomerDeadlineBanner extends StatelessWidget {
 
 // ─── Edit window banner ───────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_EditWindowBanner
 class _EditWindowBanner extends StatefulWidget {
   const _EditWindowBanner({required this.quote, required this.onEdit});
 
@@ -878,6 +885,7 @@ class _EditWindowBannerState extends State<_EditWindowBanner> {
 
 /// Combined section shown when a DJ wins a quote: contact info and full
 /// step-by-step process (contact → invoice → confirm ready → play event).
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_WonSection
 class _WonSection extends ConsumerStatefulWidget {
   const _WonSection({required this.quote});
 
@@ -1474,6 +1482,7 @@ class _WonSectionState extends ConsumerState<_WonSection> {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_DoneButton
 class _DoneButton extends StatelessWidget {
   const _DoneButton({required this.label});
   final String label;
@@ -1509,6 +1518,7 @@ class _DoneButton extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ContactRow
 class _ContactRow extends StatelessWidget {
   const _ContactRow({required this.icon, required this.label, this.onCopy});
 
@@ -1541,6 +1551,7 @@ class _ContactRow extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_EarlySetupRow
 class _EarlySetupRow extends StatelessWidget {
   const _EarlySetupRow({required this.status, this.price});
 
@@ -1604,6 +1615,7 @@ class _EarlySetupRow extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_Section
 class _Section extends StatelessWidget {
   const _Section({required this.title, required this.children});
 
@@ -1642,6 +1654,7 @@ class _Section extends StatelessWidget {
 
 // ─── Extra Hours Section ──────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ExtraHoursSection
 class _ExtraHoursSection extends ConsumerStatefulWidget {
   const _ExtraHoursSection({required this.quote});
 
@@ -1976,6 +1989,7 @@ class _ExtraHoursSectionState extends ConsumerState<_ExtraHoursSection> {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ExtraHoursSummary
 class _ExtraHoursSummary extends StatelessWidget {
   const _ExtraHoursSummary({required this.hours, required this.pricePerHour});
 
@@ -2004,6 +2018,7 @@ class _ExtraHoursSummary extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_SummaryRow
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
     required this.label,
@@ -2040,6 +2055,7 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_DeleteButton
 class _DeleteButton extends ConsumerWidget {
   const _DeleteButton({required this.onTap});
 
@@ -2074,6 +2090,7 @@ class _DeleteButton extends ConsumerWidget {
 
 // ─── Service Offers Section (musician offers on this job) ────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ServiceOffersSection
 class _ServiceOffersSection extends ConsumerWidget {
   const _ServiceOffersSection({required this.jobId});
   final int? jobId;
@@ -2116,6 +2133,7 @@ class _ServiceOffersSection extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_MusicianOfferRow
 class _MusicianOfferRow extends ConsumerWidget {
   const _MusicianOfferRow({required this.offer});
   final ServiceOffer offer;
@@ -2258,6 +2276,7 @@ class _MusicianOfferRow extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ContactLine
 class _ContactLine extends StatelessWidget {
   const _ContactLine({
     required this.icon,
@@ -2293,6 +2312,7 @@ class _ContactLine extends StatelessWidget {
 
 // ─── DJ Notes Section ─────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_DjNotesSection
 class _DjNotesSection extends ConsumerStatefulWidget {
   const _DjNotesSection({required this.quote});
   final DjQuote quote;
@@ -2445,6 +2465,7 @@ class _DjNotesSectionState extends ConsumerState<_DjNotesSection> {
 
 // ─── Profile Avatar ───────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ProfileAvatar
 class _ProfileAvatar extends StatelessWidget {
   const _ProfileAvatar({
     required this.imageUrl,
@@ -2487,6 +2508,7 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_PlannedContactBanner
 class _PlannedContactBanner extends StatelessWidget {
   const _PlannedContactBanner({required this.date});
   final DateTime date;
@@ -2532,6 +2554,7 @@ class _PlannedContactBanner extends StatelessWidget {
 
 // ─── Song Requests Row (compact nav entry in won body) ───────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/quote_detail_screen.dart::_SongRequestsRow
 class _SongRequestsRow extends ConsumerWidget {
   const _SongRequestsRow({required this.quote});
   final DjQuote quote;

@@ -25,6 +25,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// // Read-only genre / taxonomy tag
 /// DSChip(label: 'House', tinted: true)
 /// ```
+// @uxid lib/core/design_system/ds_chip.dart::DSChip
 class DSChip extends StatelessWidget {
   const DSChip({
     super.key,

@@ -3,6 +3,7 @@ import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 
 /// Design-system segmented control — matches web marketplace `SegmentedControl`.
 /// Pill-shaped track with a sliding selected pill.
+// @uxid lib/core/design_system/ds_segmented_control.dart::DSSegmentedControl
 class DSSegmentedControl extends StatelessWidget {
   const DSSegmentedControl({
     super.key,

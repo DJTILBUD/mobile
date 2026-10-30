@@ -1,0 +1,228 @@
+# Module: lib/core [AI]
+
+(part 1 of 3) Shared application-wide infrastructure for the musician-facing mobile app: analytics event logging, environment/config management, cached session role, and the full design-system (DS) widget library used to build job feed, quoting, and profile screens consistently with the web marketplace. (part 2 of 3) Shared cross-cutting infrastructure for the Flutter candidate app: design system (tokens, components, theming), app-wide navigation shell with role-based bottom nav and unread badges, Supabase client setup, push notification handling (FCM registration, foreground in-app banners, OS app icon badge), app routing constants, and centralized error-to-Danish-message translation used across features like jobs, quoting, and chat. (part 3 of 3) Shared, cross-feature utility functions and a few generic widgets used across the musician-facing (candidate) app — Dart ports of web-app business logic for job pricing/budgets, display formatting of job/customer data, equipment parsing, calendar export, and small dev/UI helper widgets.
+
+_This module does not fit in one model call, so it was read in 3 parts and their summaries were combined without a further model call._
+
+## Key files
+- `lib/core/analytics/analytics_service.dart`: Central analytics wrapper around Firebase Analytics; defines bounded event names/params (e.g. offer submit funnel: job_viewed, offer_form_opened, offer_submit_attempted/failed) and a closed-set mapping of Danish server rejection messages to analytics reasons (OfferSubmitFailure).
+- `lib/core/config/env_config.dart`: Loads and resolves runtime environment (local/dev/prod) from dotenv/SharedPreferences and exposes Supabase URL/key, web app URL, and admin API key used by a debug-only impersonation flow.
+- `lib/core/config/role_cache.dart`: Persists the signed-in musician's role (dj/instrumentalist) locally so the router can restore session state without an async DB call on startup.
+- `lib/core/design_system/components.dart`: Single export barrel for all design-system tokens and widgets.
+- `lib/core/design_system/ds_avatar.dart`: Circular avatar widget with brand-tinted placeholder, used for musician/customer profile images.
+- `lib/core/design_system/ds_button.dart`: DSButton and DSIconButton — primary pill-shaped action buttons matching the web marketplace, used across quoting and profile flows.
+- `lib/core/design_system/ds_checkbox.dart`: Design-system checkbox control.
+- `lib/core/design_system/ds_chip.dart`: Selectable/tinted pill chip, e.g. for genre tags.
+- `lib/core/design_system/ds_dialog.dart`: Themed dialog surface plus showDSDialog/showDSConfirm helpers for confirmations.
+- `lib/core/design_system/ds_dropdown.dart`: Design-system dropdown field matching DSInput styling.
+- `lib/core/design_system/ds_info_chip.dart`: Read-only metadata chip for surfacing facts like guest count or price on job cards.
+- `lib/core/design_system/ds_input.dart`: Primary text input/textarea control, including special keyboard-scroll handling tuned for long quote pitch text entry.
+- `lib/core/design_system/ds_navigation_bar.dart`: Bottom navigation bar with badge support, used for the app's main tab navigation (e.g. Jobs, Chat, Profil per its own doc example).
+- `lib/core/design_system/ds_radio.dart`: Design-system radio button control.
+- `lib/core/design_system/ds_range_slider.dart`: Two-thumb range slider, e.g. for price/filter ranges.
+- `lib/core/design_system/ds_segmented_control.dart`: Pill-shaped segmented control for switching between views.
+- `lib/core/design_system/ds_slider.dart`: Single-thumb slider control.
+- `lib/core/design_system/ds_status_badge.dart`: Colored status pill used for offer/quote and invoice states.
+- `lib/core/design_system/ds_surface.dart`: Card-like surface container matching web marketplace card styling.
+- `lib/core/design_system/ds_switch.dart`: Toggle switch control.
+- `lib/core/design_system/ds_tab_bar.dart`: Tab bar widget with icon/badge support, drop-in replacement for TabBar.
+- `lib/core/design_system/ds_toast.dart`: Toast/snackbar notification helper with success/info/warning/error variants.
+- `lib/core/design_system/tokens.dart`: Defines the role-based design tokens (colors, typography, spacing, radius, shadows, motion) mirroring the web app's design system, with light and dark theme variants
+- `lib/core/design_system/showcase_screen.dart`: Internal showcase/reference screen demonstrating all design system tokens and components (foundation, buttons, inputs, forms, controls, cards/toasts)
+- `lib/core/navigation/main_shell.dart`: Root shell widget rendering the bottom navigation bar with role-specific tabs (DJ vs other musicians) and wiring unread badges for jobs, chat, and notifications; wraps content in the self-billing terms gate
+- `lib/core/error/app_exception.dart`: Sealed hierarchy of typed app exceptions (network, auth, database, billing lock, agent/AI limit errors) used throughout the app's repositories and datasources
+- `lib/core/error/error_messages.dart`: Converts any thrown error into a safe, non-technical Danish user-facing message, explicitly scrubbing raw AI/agent error bodies before display
+- `lib/core/notifications/notifications_service.dart`: Manages FCM token registration/cleanup in Supabase's DeviceTokens table, notification tap navigation, and impersonation guard to avoid corrupting a real user's push tokens
+- `lib/core/notifications/in_app_notification_banner.dart`: Animated foreground banner UI shown when an FCM message arrives while the app is open, with tap-to-navigate and swipe-to-dismiss
+- `lib/core/notifications/in_app_notification_provider.dart`: Riverpod state providers tracking the pending foreground notification, the currently open conversation (for suppressing banners), and keyboard dismiss bar visibility
+- `lib/core/notifications/app_badge.dart`: Sets/clears the OS app-icon numeric badge based on unread notification count
+- `lib/core/router/app_routes.dart`: Centralized string constants for all named routes in the app's go_router configuration
+- `lib/core/supabase/supabase_client.dart`: Initializes and exposes the global Supabase client, resolving localhost URL differences for Android emulator
+- `lib/core/supabase/supabase_provider.dart`: Riverpod provider exposing the Supabase client for dependency injection into repositories
+- `lib/core/theme/app_theme.dart`: Builds the Material light/dark ThemeData matching the web app's color palette, used as the app's root theme
+- `lib/core/theme/theme_provider.dart`: Riverpod notifier persisting and toggling the app's light/dark theme preference via SharedPreferences
+- `lib/core/utils/budget_utils.dart`: Computes the platform fee bracket by job creation date and the DJ-facing budget figure shown on jobs (adjusting for saxophone cost, tier deductions, and a floor), plus the single source of truth for budget/payout label strings shown on job and quote cards.
+- `lib/core/utils/musician_price.dart`: Mirrors web-app pricing helpers to compute what a musician is paid (calculateMusicianOfferPrice) and what the customer pays (calculateCustomerMusicianPrice) for a requested booking duration, including high-season sax pricing tables.
+- `lib/core/utils/sax_high_season.dart`: Defines the saxophone high-season date window (and rollout cutoff) that gates season pricing used by musician_price.dart and budget_utils.dart.
+- `lib/core/utils/birthday_person_age.dart`: Formats the free-text birthday-person-age field from customer job forms into a suffix appended to the job's event-type label.
+- `lib/core/utils/customer_name.dart`: Extracts a usable first name from the free-text customer lead name so musicians only see the customer's first name before a job is won.
+- `lib/core/utils/equipment_description.dart`: Parses/serializes the structured or legacy equipment description stored on jobs/quotes into display items musicians see (and a DJ selects when quoting).
+- `lib/core/utils/event_type_labels.dart`: Maps DB event-type keys to Danish display labels for job cards.
+- `lib/core/utils/ical_generator.dart`: Builds an .ics calendar export of a musician's jobs/won quotes, mirroring the web app's ICalExportModal.
+- `lib/core/utils/phone_utils.dart`: Normalizes the free-text customer phone number field into a dialable/SMS-able string, hiding the action when the value is placeholder junk.
+- `lib/core/utils/planned_contact.dart`: Determines whether a musician's planned customer-contact date is due, driving the 'Kundekontakt' card's primary action.
+- `lib/core/utils/unsaved_changes_dialog.dart`: Confirmation dialog shown when leaving a screen (e.g. profile editing) with unsaved changes.
+- `lib/core/widgets/animated_card.dart`: Generic staggered fade/slide/tap-scale animation wrapper used for list cards (e.g. job feed cards).
+- `lib/core/widgets/app_snackbar.dart`: Thin convenience wrapper over the design system's toast for success/error messages.
+- `lib/core/widgets/skeleton_loading.dart`: Loading-state skeleton card/list placeholders shown while data (e.g. job feed) loads.
+- `lib/core/widgets/dev_env_banner.dart`: Debug-only floating tool to switch Supabase environment and impersonate users for testing.
+- `lib/core/widgets/restart_widget.dart`: Enables a full widget-tree restart, used by DevEnvBanner after switching environments.
+
+## Public interface
+- AnalyticsService
+- OfferSubmitFailure
+- EnvConfig
+- RoleCache
+- DSAvatar
+- DSButton
+- DSIconButton
+- DSButtonVariant
+- DSButtonSize
+- DSIconButtonVariant
+- DSCheckbox
+- DSChip
+- DSDialog
+- showDSDialog
+- showDSConfirm
+- DSDropdown
+- DSDropdownItem
+- DSInfoChip
+- DSInput
+- DSInputState
+- DSNavigationBar
+- DSNavigationItem
+- DSRadio
+- DSRangeSlider
+- DSSegmentedControl
+- DSSlider
+- DSStatusBadge
+- DSSurface
+- DSSwitch
+- DSTabBar
+- DSTabItem
+- DSToast
+- DSToastVariant
+- DesignSystemShowcase
+- DSColors
+- DSBrandColors
+- DSBgColors
+- DSTextColors
+- DSBorderColors
+- DSStateColors
+- DSTrustColors
+- DSAvailabilityColors
+- DSRadius
+- DSShadow
+- DSMotion
+- DSSpacing
+- DSTextStyle
+- lightColors
+- darkColors
+- AppException
+- NetworkException
+- AuthException
+- NoMusicianProfileException
+- NeedsProfileSetupException
+- DatabaseException
+- BillingInfoIncompleteException
+- BillingLockException
+- AgentException
+- AgentLimitException
+- friendlyErrorMessage
+- kGenericErrorMessage
+- MainShell
+- setAppIconBadge
+- InAppNotificationBanner
+- inAppNotificationProvider
+- activeConversationIdProvider
+- suppressKeyboardDismissBarProvider
+- NotificationsService
+- AppRoutes
+- initSupabase
+- supabase
+- supabaseClientProvider
+- buildAppTheme
+- buildDarkAppTheme
+- AppColors
+- themeModeProvider
+- ThemeModeNotifier
+- formatBirthdayPersonAge
+- getFeeForJob
+- adjustBudgetForDjView
+- djBudgetLabelFromParts
+- djAdjustedBudgetLabel
+- musicianBudgetLabel
+- musicianOfferPayoutLabel
+- isWithinFirstFourHours
+- customerFirstName
+- equipmentOptions
+- parseStructuredEquipmentDescription
+- parseEquipmentDescription
+- serializeEquipmentDescription
+- getEquipmentDisplayItems
+- eventTypeLabel
+- generateIcal
+- calculateMusicianOfferPrice
+- calculateCustomerMusicianPrice
+- isSaxHighSeason
+- isSaxSeasonPricingActive
+- dialablePhoneNumber
+- isPlannedContactDue
+- showUnsavedChangesDialog
+- AnimatedCard
+- AppSnackbar
+- SkeletonCard
+- SkeletonListView
+- DevEnvBanner
+- RestartWidget
+
+## Dependencies
+- firebase_analytics
+- flutter_dotenv
+- shared_preferences
+- cached_network_image
+- lucide_icons
+- dj_tilbud_app/features/auth/domain/entities/musician_role.dart
+- lib/core/design_system/tokens.dart
+- flutter_riverpod
+- go_router
+- supabase_flutter
+- firebase_messaging
+- app_badge_plus
+- google_fonts
+- dj_tilbud_app/core/config/env_config.dart
+- dj_tilbud_app/core/config/role_cache.dart
+- dj_tilbud_app/features/chat/presentation/providers/chat_provider.dart
+- dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart
+- dj_tilbud_app/features/notifications/presentation/providers/notifications_provider.dart
+- dj_tilbud_app/features/notifications/data/notifications_datasource.dart
+- dj_tilbud_app/features/profile/presentation/widgets/self_billing_terms_gate.dart
+- dj_tilbud_app/features/chat/data/models/conversation_model.dart
+- dj_tilbud_app/features/jobs/data/models/dj_quote_model.dart
+- dj_tilbud_app/features/jobs/data/models/ext_job_model.dart
+- dj_tilbud_app/features/jobs/data/models/job_model.dart
+- dj_tilbud_app/features/jobs/data/models/service_offer_model.dart
+- dj_tilbud_app/core/analytics/analytics_service.dart
+- dj_tilbud_app/app.dart
+- lib/features/jobs/domain/entities/job.dart
+- lib/features/calendar/domain/entities/calendar_event.dart
+- lib/core/design_system/components.dart
+- lib/core/config/env_config.dart
+- lib/core/config/role_cache.dart
+- lib/core/error/app_exception.dart
+- lib/core/notifications/notifications_service.dart
+- lib/core/supabase/supabase_client.dart
+- lib/features/auth/data/datasources/auth_remote_datasource.dart
+- lib/features/auth/data/repositories/auth_repository_impl.dart
+- lib/app.dart
+- intl
+- http
+- flutter/material
+- flutter/foundation
+
+## AI touchpoints [AI]
+- `lib/core/error/error_messages.dart`
+- `lib/core/analytics/analytics_service.dart`
+- `lib/core/error/app_exception.dart`
+
+## Open questions
+- Where is the AI drafting/pitch-generation logic itself implemented (not present in this module) — is it a separate feature module or a server-side call?
+- Is EnvConfig.adminApiKey / the impersonate flow gated anywhere outside kDebugMode at the UI layer, or only by this config getter?
+- What determines DJ tier ('A'/'B'/'C') referenced in OfferSubmitFailure comments — not defined in this module.
+- What does lib/app.dart (referenced via routerProvider) wire together, and how does it relate to this core module?
+- What is in dj_tilbud_app/core/config/env_config.dart and role_cache.dart, which core/supabase and notifications_service depend on but are not shown?
+- What does the AgentException / AgentLimitException pair connect to on the agent-assist Edge Function side (not shown in this module)?
+- Are there other core/ subfolders (e.g. analytics, config) not included in this file set that are part of this module?
+- lib/core/utils/budget_utils.dart is truncated — the full fee/budget logic (and any further tiers or deductions) is not fully visible.
+- lib/core/widgets/dev_env_banner.dart is truncated — the impersonation feature ('super-owner debug login') references a guard in NotificationsService whose logic is not in this module; worth confirming it cannot reach production.
+- Pricing and fee tables (musician_price.dart, sax_high_season.dart, budget_utils.dart) are explicitly described as mirrors of web-app TypeScript helpers that must be changed in lockstep — no automated sync mechanism is visible in this module, only comments pinning the duplication.
