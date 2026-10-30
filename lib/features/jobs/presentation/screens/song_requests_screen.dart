@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/song_request.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/jobs/presentation/screens/song_requests_screen.dart::SongRequestsScreen
 class SongRequestsScreen extends ConsumerStatefulWidget {
   const SongRequestsScreen({super.key, this.jobId, this.extJobId})
     : assert(jobId != null || extJobId != null, 'jobId or extJobId required');
@@ -138,6 +139,7 @@ class _SongRequestsScreenState extends ConsumerState<SongRequestsScreen> {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/song_requests_screen.dart::_SongRequestTile
 class _SongRequestTile extends StatelessWidget {
   const _SongRequestTile({required this.request});
   final SongRequest request;
