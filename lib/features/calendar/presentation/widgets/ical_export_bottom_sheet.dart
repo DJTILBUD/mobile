@@ -25,6 +25,7 @@ Future<void> showIcalExportBottomSheet(
   );
 }
 
+// @uxid lib/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart::_ICalExportBottomSheet
 class _ICalExportBottomSheet extends ConsumerStatefulWidget {
   const _ICalExportBottomSheet({required this.events, required this.isDj});
 
@@ -306,6 +307,7 @@ class _ICalExportBottomSheetState
   }
 }
 
+// @uxid lib/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart::_SectionHeader
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.icon, required this.title});
 
@@ -331,6 +333,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart::_AppBox
 class _AppBox extends StatelessWidget {
   const _AppBox({required this.icon, required this.title, required this.body});
 
