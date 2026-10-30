@@ -337,6 +337,7 @@ class DSTextStyle {
 //     child: MyScreen(),
 //   )
 
+// @uxid lib/core/design_system/tokens.dart::DSTheme
 class DSTheme extends InheritedWidget {
   const DSTheme({super.key, required this.colors, required super.child});
 
