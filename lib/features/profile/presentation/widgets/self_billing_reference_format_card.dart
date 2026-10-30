@@ -10,6 +10,7 @@ import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_pr
 /// `SelfBillingReferenceFormatCard`: rendered outside the locked form with its
 /// own save, because the setting is deliberately not billing-locked
 /// (web-app/documentation/self-billing-supplier-reference-plan.md).
+// @uxid lib/features/profile/presentation/widgets/self_billing_reference_format_card.dart::SelfBillingReferenceFormatCard
 class SelfBillingReferenceFormatCard extends ConsumerStatefulWidget {
   const SelfBillingReferenceFormatCard({
     super.key,

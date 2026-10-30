@@ -5,6 +5,7 @@ import 'package:dj_tilbud_app/features/referrals/domain/referral_labels.dart';
 
 /// One referred job in the "Dine henvisninger" list. Mirrors the card in the web
 /// `ReferralsPage.tsx`: customer, event summary, the job's state and the reward state.
+// @uxid lib/features/referrals/presentation/widgets/referral_card.dart::ReferralCard
 class ReferralCard extends StatelessWidget {
   const ReferralCard({super.key, required this.referral});
 
