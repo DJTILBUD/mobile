@@ -9,6 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/shared/widgets/recurring_customer_badge.dart';
 
+// @uxid lib/features/jobs/presentation/widgets/job_card.dart::JobCard
 class JobCard extends StatelessWidget {
   const JobCard({
     super.key,
@@ -282,6 +283,7 @@ class JobCard extends StatelessWidget {
 
 // ─── Date Block ─────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/job_card.dart::_DateBlock
 class _DateBlock extends StatelessWidget {
   const _DateBlock({
     required this.date,
@@ -351,6 +353,7 @@ class _DateBlock extends StatelessWidget {
 
 // ─── Meta Details ────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/job_card.dart::_MetaLine
 class _MetaLine extends StatelessWidget {
   const _MetaLine({
     required this.job,
@@ -444,6 +447,7 @@ class _MetaLine extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/job_card.dart::_MetaItem
 class _MetaItem extends StatelessWidget {
   const _MetaItem({
     required this.icon,
@@ -475,6 +479,7 @@ class _MetaItem extends StatelessWidget {
 
 // ─── Price Row ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/job_card.dart::_PriceRow
 class _PriceRow extends StatelessWidget {
   const _PriceRow({
     required this.job,
@@ -522,6 +527,7 @@ class _PriceRow extends StatelessWidget {
 
 // ─── Budget Increase Pulse ───────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/job_card.dart::_BudgetIncreasePulse
 class _BudgetIncreasePulse extends StatefulWidget {
   const _BudgetIncreasePulse({required this.colors});
   final DSColors colors;
