@@ -1,0 +1,321 @@
+# Module: lib/features/jobs [AI]
+
+(part 1 of 7) Implements the jobs/quoting feature's data layer: fetching the musician job feed (biddable jobs), DJ/musician quotes (DjQuotes, ServiceOffers), externally-sourced 'Udvalgte' jobs (ExtJobs), and per-job content clips (video uploads), bridging Supabase table reads with web-app API endpoints for business-rule-gated writes (e.g. creating quotes, marking customer contact, job content uploads). (part 2 of 7) Domain rules, entities, repository contract, and Riverpod providers for the job feed, quoting/bidding, and won-job lifecycle management used by both DJs/musicians (candidates) across the app — covers browsing open jobs, placing quotes/offers, date-collision and bid-eligibility rules, fee/payout math, post-win actions (contact customer, ready-for-billing), extra hours, early setup, and job content (video) uploads. (part 3 of 7) Implements the quoting flow for musicians (DJs and instrumentalists/saxophonists) bidding on customer events: the quote/offer forms used from the job feed, a time-limited quote-edit sheet, and a job detail view, letting musicians submit, edit, or review quotes on jobs. (part 4 of 7) Implements the main jobs feed and calendar shell for musicians (DJs and other musicians), showing available jobs, quotes, and service offers in either a list or calendar view, and gating the view with availability and first-win onboarding dialogs. (part 5 of 7) Screen within the jobs feature that shows a musician the detail of a single quote they've placed on a job, including bid amount/payout, equipment, and the sales pitch sent to the customer, with different layouts depending on whether the quote is pending or won. (part 6 of 7) Musician-facing screens for managing a won job: service_offer_detail_screen.dart shows the details of a service offer/job a musician has won, lets them contact the customer, confirm they're ready, and (for musician_only jobs) close the deal to trigger invoicing; song_requests_screen.dart shows song requests guests have sent in for an event via QR code; extra_hours_options.dart provides the selectable extra-hours dropdown values and Danish labels used when a musician adjusts the hours on a job. (part 7 of 7) Presentation-layer widgets for the jobs feature: rendering job/quote/service-offer cards in the musician's feed, managing the post-win workflow (contacting the customer, viewing event address, invoice/confirmation status, extra-hours logging, sick-leave disclaimer) and job-specific content capture, matching the job feed and quoting rules the candidate app follows.
+
+_This module does not fit in one model call, so it was read in 7 parts and their summaries were combined without a further model call._
+
+## Key files
+- `lib/features/jobs/data/datasources/job_content_remote_datasource.dart`: Lists and labels DJ/musician content clips (video) attached to jobs or ext jobs, resolving thumbnails and a human-readable job label; uploads/ownership verification route through the web API rather than direct table inserts.
+- `lib/features/jobs/data/datasources/jobs_remote_datasource.dart`: Core remote datasource for the jobs feature: wraps Supabase table queries and web-app REST calls (GET/POST/PUT/PATCH/DELETE) for fetching the DJ job feed, DJ quotes, ext jobs, and mapping server error responses to typed exceptions.
+- `lib/features/jobs/data/models/dj_quote_model.dart`: JSON<->entity mapping for a DJ's quote on a job, including early-setup, extra-hours, and payout override fields; falls back to a placeholder job when the API response omits the joined job.
+- `lib/features/jobs/data/models/ext_job_model.dart`: JSON<->entity mapping for 'ExtJobs' (externally curated/assigned jobs), covering assignment, scheduling, customer/venue details, and special event fields.
+- `lib/features/jobs/data/models/job_model.dart`: JSON<->entity mapping for a job posting shown in the feed, including event details, budget, requested instrumentation, pause/quote-send-mode state, and defensive date parsing.
+- `lib/features/jobs/data/models/service_offer_model.dart`: JSON<->entity mapping for a musician's (e.g. saxophonist) service offer on a job or ext job, including payout, sales pitch text, and special-request fee fields.
+- `lib/features/jobs/data/repositories/jobs_repository_impl.dart`: Concrete JobsRepository implementation that orchestrates the datasource and models, exposing the domain-facing API for fetching jobs/quotes/offers, creating quotes/offers, rejecting jobs, and marking customer-contact state.
+- `lib/features/jobs/domain/entities/job.dart`: Core Job entity (internal jobs) with display formatting (budget, location, duration) and a withDateConflict copy helper.
+- `lib/features/jobs/domain/entities/ext_job.dart`: ExtJob entity for externally-sourced/partner jobs, including partner/recurring-customer detection and decision-deadline countdown logic.
+- `lib/features/jobs/domain/entities/dj_quote.dart`: DJ's quote on a job; computes payout, commission, and price breakdown including admin payout overrides.
+- `lib/features/jobs/domain/entities/service_offer.dart`: Musician (sax/other instrument) offer entity on a job or ext job, including payout and customer-contact state.
+- `lib/features/jobs/domain/entities/job_action.dart`: Derives the pending post-win action (contact customer, move to ready, confirm ready) for quotes, ext jobs, and service offers.
+- `lib/features/jobs/domain/entities/song_request.dart`: Guest song request entity tied to a job or ext job.
+- `lib/features/jobs/domain/entities/venue_photo.dart`: Venue photo + team comment shown to performers on partner ext jobs.
+- `lib/features/jobs/domain/date_collision.dart`: Client-side mirror of server date-collision rule limiting a DJ's bids/wins per date.
+- `lib/features/jobs/domain/dj_bid_status.dart`: Client model for server-resolved bid eligibility on an internal job (fails open).
+- `lib/features/jobs/domain/dj_fee.dart`: Platform fee schedule by job creation date and DJ payout-share/percent formatting.
+- `lib/features/jobs/domain/job_duration.dart`: Parses job start/end times into duration hours, handling overnight gigs; mirrors a web helper.
+- `lib/features/jobs/domain/musician_job_availability.dart`: Canonical rule for whether a musician may still bid on a job/ext job, used mainly on the deep-linked offer form.
+- `lib/features/jobs/domain/offer_form_validation.dart`: Value-level (not widget-tree) validation for DJ quote and musician offer forms, including sales-pitch length limits.
+- `lib/features/jobs/domain/ready_for_billing_gate.dart`: Client-side gate and error mapping for the DJ 'close deal and invoice' action requiring musician customer-contact.
+- `lib/features/jobs/domain/sax_offer_conflict.dart`: Same-date/time conflict rule for saxophonist/musician bookings, mirroring a DB function and web helper.
+- `lib/features/jobs/domain/customer_intro_message.dart`: Builds the canonical Danish intro message a performer copies to message the customer after winning a job.
+- `lib/features/jobs/domain/repositories/jobs_repository.dart`: Abstract repository contract defining all job/quote/offer fetch and mutation operations.
+- `lib/features/jobs/presentation/providers/jobs_provider.dart`: Riverpod providers/StateNotifiers exposing job feeds, quotes, ext jobs, and offers with Supabase Realtime sync.
+- `lib/features/jobs/presentation/providers/job_content_provider.dart`: Providers and client-side validation for uploading short vertical video clips attached to a job.
+- `lib/features/jobs/presentation/screens/dj_quote_form_screen.dart`: Quote submission form for DJ jobs, including price, equipment, sales pitch, early setup offer, budget display, and analytics logging for form open/submit/abandon
+- `lib/features/jobs/presentation/screens/edit_quote_bottom_sheet.dart`: Bottom sheet allowing a musician to edit an already-submitted quote (price, equipment, pitch, early setup) within a fixed countdown edit window
+- `lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart`: Quote submission form for instrumentalist (e.g. saxophonist) jobs, mirroring the DJ form's validation, billing-completeness gate, and analytics instrumentation
+- `lib/features/jobs/presentation/screens/job_detail_screen.dart`: Displays job details (date, region, budget) for a given job; per its own code comment, currently unreached since no route pushes to it
+- `lib/features/jobs/presentation/screens/jobs_shell_screen.dart`: Defines JobsShellScreen, a ConsumerStatefulWidget that toggles between a list-based jobs feed and a calendar view per musician role, and triggers availability-gate and first-win onboarding dialogs.
+- `lib/features/jobs/presentation/screens/quote_detail_screen.dart`: ConsumerStatefulWidget (QuoteDetailScreen) rendering quote/job detail, syncing with the quotes provider, and switching between a pending-quote layout and a won-quote layout with a chat entry point.
+- `lib/features/jobs/presentation/screens/service_offer_detail_screen.dart`: Screen showing a won job's details, contact-customer flow, musician-ready confirmation, and ready-for-billing/close-deal action for musician_only ext jobs
+- `lib/features/jobs/presentation/screens/song_requests_screen.dart`: Screen listing guest-submitted song requests for a job, polling every 30s for updates
+- `lib/features/jobs/presentation/utils/extra_hours_options.dart`: Utility generating selectable extra-hours dropdown values and their Danish labels
+- `lib/features/jobs/presentation/widgets/job_card.dart`: Renders a job in the musician's job feed, showing event type, date, price, and status chips (colliding, taken, another round, high season).
+- `lib/features/jobs/presentation/widgets/quote_card.dart`: Renders a musician's own quote (pending/won/lost) including countdown to customer's decision deadline and pending actions.
+- `lib/features/jobs/presentation/widgets/service_offer_card.dart`: Renders an instrumentalist's service offer analogous to QuoteCard, for non-DJ roles/ext jobs.
+- `lib/features/jobs/presentation/widgets/customer_deadline_banner.dart`: Shared countdown banner showing time left for the customer to decide, used on job/ext-job detail views.
+- `lib/features/jobs/presentation/widgets/invoice_status_badge.dart`: Shows whether the customer has confirmed/paid the deal for a job or ext job.
+- `lib/features/jobs/presentation/widgets/contact_customer_sheet.dart`: Bottom sheet for the musician to mark a customer as contacted now or schedule a future contact date.
+- `lib/features/jobs/presentation/widgets/copy_intro_message_card.dart`: Provides a ready-to-send intro SMS/copy message for the performer to contact the customer after winning a job.
+- `lib/features/jobs/presentation/widgets/event_address_section.dart`: Reveals the event's precise address (post-booking) with copy/open-in-maps actions, only for the winning performer.
+- `lib/features/jobs/presentation/widgets/decline_extra_hours.dart`: Lets the performer declare no extra hours were played, persisted server-side to stop reminder notifications.
+- `lib/features/jobs/presentation/widgets/hours_picker_field.dart`: Bottom-sheet field for selecting number of extra hours played.
+- `lib/features/jobs/presentation/widgets/equipment_picker.dart`: Card-grid picker for selecting equipment brought to a gig, including speaker counts.
+- `lib/features/jobs/presentation/widgets/sax_type_info.dart`: Explains lounge vs party saxophonist job types with a tap-to-expand description.
+- `lib/features/jobs/presentation/widgets/sick_disclaimer.dart`: Collapsible disclaimer explaining sick-leave policy and liability for committed jobs, links to terms and a call action.
+- `lib/features/jobs/presentation/widgets/job_content_section.dart`: Prompts the DJ to capture and upload short video content tied to a specific job/quote.
+- `lib/features/jobs/presentation/widgets/content_video_player.dart`: Full-screen video player dialog for viewing uploaded content clips.
+- `lib/features/jobs/presentation/widgets/process_tracker.dart`: Generic step-by-step progress indicator used in job/quote flows.
+- `lib/features/jobs/presentation/widgets/empty_jobs_view.dart`: Empty-state view for job/quote lists with optional primary/secondary CTAs.
+- `lib/features/jobs/presentation/widgets/standard_message_picker_button.dart`: Lets musicians insert or save a standard pitch message template into the quote/offer form.
+
+## Public interface
+- JobContentRemoteDatasource.fetchJobContent()
+- JobContentRemoteDatasource.fetchMyJobContent()
+- JobContentRemoteDatasource.fetchJobSummary()
+- JobsRemoteDatasource.fetchNewDjJobs(userId)
+- JobsRemoteDatasource.fetchDjQuotes(userId)
+- JobsRemoteDatasource.fetchDjExtJobs(userId)
+- JobModel.fromJson()/toEntity()
+- DjQuoteModel.fromJson()/toEntity()
+- ExtJobModel.fromJson()/toEntity()
+- ServiceOfferModel.fromJson()/toEntity()
+- JobsRepositoryImpl.fetchNewDjJobs()
+- JobsRepositoryImpl.fetchDjQuotes()
+- JobsRepositoryImpl.fetchDjExtJobs()
+- JobsRepositoryImpl.fetchNewInstrumentalistJobs()
+- JobsRepositoryImpl.fetchInstrumentalistExtJobs()
+- JobsRepositoryImpl.fetchServiceOffers()
+- JobsRepositoryImpl.createDjQuote()
+- JobsRepositoryImpl.createServiceOffer()
+- JobsRepositoryImpl.rejectDjJob()
+- JobsRepositoryImpl.fetchJobDetail()
+- JobsRepositoryImpl.markJobCustomerContacted()
+- JobsRepositoryImpl.setJobPlannedContact()
+- JobsRepositoryImpl.markExtJobCustomerContacted()
+- JobsRepositoryImpl.setExtJobPlannedContact()
+- buildCustomerIntroMessage
+- isDateColliding
+- dateCollisionMessage
+- DjBidStatus
+- djFeeForJob
+- djPayoutShareForJob
+- formatFeePercent
+- DjQuote
+- QuoteStatus
+- ExtJob
+- ExtJobStatus
+- Job
+- JobStatus
+- ServiceOffer
+- ServiceOfferStatus
+- SongRequest
+- VenuePhoto
+- JobActionType
+- DjQuoteAction.pendingAction
+- ExtJobAction.pendingAction
+- ServiceOfferAction.pendingAction
+- jobDurationHours
+- formatJobDuration
+- MusicianJobAvailability
+- resolveMusicianJobAvailability
+- musicianJobAvailabilityMessage
+- kExtJobStatusesOpenToOffers
+- kJobStatusesOpenToOffers
+- validateDjQuoteInput
+- validateMusicianOfferInput
+- kSalesPitchMinLength
+- kSalesPitchMaxLength
+- isBlockedByMusicianContact
+- musicianContactBlockedMessage
+- readyForBillingErrorMessage
+- JobsRepository
+- saxBookingsConflict
+- saxEndTime
+- saxDateKey
+- saxMinGapMinutes
+- SaxConflictQuery
+- JobContentKey
+- jobContentProvider
+- myJobContentProvider
+- scopedJobSummaryProvider
+- validateContentVideo
+- jobsRepositoryProvider
+- newDjJobsProvider
+- djQuotesProvider
+- djExtJobsProvider
+- djExtJobRecurringNamesProvider
+- djExtJobVenuePhotosProvider
+- DjQuoteFormScreen
+- EditQuoteBottomSheet
+- showEditQuoteBottomSheet
+- InstrumentalistOfferFormScreen
+- JobDetailScreen
+- JobsShellScreen
+- QuoteDetailScreen
+- ServiceOfferDetailScreen
+- SongRequestsScreen
+- extraHoursOptions
+- extraHoursLabel(double value)
+- extraHoursSelectedValue(double? stored)
+- ContactCustomerSheet
+- showContentVideoPlayer
+- CopyIntroMessageCard
+- CustomerDeadlineBanner
+- DeclineExtraHours
+- EmptyJobsView
+- EquipmentPicker
+- EventAddressSection
+- HoursPickerField
+- InvoiceStatusBadge
+- JobCard
+- JobContentSection
+- ProcessTracker
+- QuoteCard
+- SaxTypeDescription
+- saxTypeLabel
+- ServiceOfferCard
+- SickDisclaimer
+- StandardMessagePickerButton
+- SaveTemplateButton
+
+## Dependencies
+- supabase_flutter
+- http
+- video_thumbnail
+- dj_tilbud_app/core/config/env_config.dart
+- dj_tilbud_app/core/error/app_exception.dart
+- dj_tilbud_app/features/profile/domain/entities/user_file.dart
+- dj_tilbud_app/features/jobs/domain/entities/job.dart
+- dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart
+- dj_tilbud_app/features/jobs/domain/entities/service_offer.dart
+- dj_tilbud_app/features/jobs/domain/entities/ext_job.dart
+- dj_tilbud_app/features/jobs/domain/entities/song_request.dart
+- dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart
+- dj_tilbud_app/features/jobs/domain/repositories/jobs_repository.dart
+- dj_tilbud_app/features/jobs/domain/sax_offer_conflict.dart
+- dj_tilbud_app/features/jobs/domain/dj_bid_status.dart
+- dj_tilbud_app/core/error/error_messages.dart
+- dj_tilbud_app/core/supabase/supabase_provider.dart
+- dj_tilbud_app/core/supabase/supabase_client.dart
+- dj_tilbud_app/features/profile/domain/entities/dj_job_filters.dart
+- dj_tilbud_app/features/profile/domain/entities/musician_job_filters.dart
+- dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart
+- dj_tilbud_app/features/jobs/data/datasources/jobs_remote_datasource.dart
+- dj_tilbud_app/features/jobs/data/datasources/job_content_remote_datasource.dart
+- dj_tilbud_app/features/jobs/data/repositories/jobs_repository_impl.dart
+- flutter_riverpod
+- video_player
+- lib/core/design_system/components.dart
+- lib/core/error/app_exception.dart
+- lib/core/error/error_messages.dart
+- lib/core/router/app_routes.dart
+- lib/core/supabase/supabase_client.dart
+- lib/core/utils/budget_utils.dart
+- lib/core/utils/customer_name.dart
+- lib/core/utils/event_type_labels.dart
+- lib/core/utils/equipment_description.dart
+- lib/core/utils/musician_price.dart
+- lib/core/utils/unsaved_changes_dialog.dart
+- lib/core/utils/birthday_person_age.dart
+- lib/core/analytics/analytics_service.dart
+- lib/features/auth/domain/entities/musician_role.dart
+- lib/features/jobs/domain/dj_fee.dart
+- lib/features/jobs/domain/date_collision.dart
+- lib/features/jobs/domain/dj_bid_status.dart
+- lib/features/jobs/domain/entities/job.dart
+- lib/features/jobs/domain/entities/dj_quote.dart
+- lib/features/jobs/domain/entities/service_offer.dart
+- lib/features/jobs/domain/sax_offer_conflict.dart
+- lib/features/jobs/domain/musician_job_availability.dart
+- lib/features/jobs/domain/offer_form_validation.dart
+- lib/features/jobs/presentation/providers/jobs_provider.dart
+- lib/features/jobs/presentation/widgets/equipment_picker.dart
+- lib/features/jobs/presentation/widgets/standard_message_picker_button.dart
+- lib/features/jobs/presentation/widgets/sax_type_info.dart
+- lib/features/calendar/presentation/providers/calendar_provider.dart
+- lib/features/profile/domain/self_billing_complete.dart
+- lib/features/profile/presentation/providers/profile_provider.dart
+- lib/features/agent/presentation/widgets/agent_ai_button.dart
+- lib/shared/widgets/job_id_badge.dart
+- lib/shared/widgets/copy_hint_row.dart
+- go_router
+- intl
+- lucide_icons
+- dj_tilbud_app/core/design_system/components.dart
+- dj_tilbud_app/core/utils/musician_price.dart
+- dj_tilbud_app/core/utils/budget_utils.dart
+- dj_tilbud_app/core/router/app_routes.dart
+- dj_tilbud_app/core/widgets/animated_card.dart
+- dj_tilbud_app/core/widgets/skeleton_loading.dart
+- dj_tilbud_app/core/analytics/analytics_service.dart
+- dj_tilbud_app/features/auth/domain/entities/musician_role.dart
+- dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart
+- dj_tilbud_app/features/calendar/presentation/providers/calendar_provider.dart
+- dj_tilbud_app/features/calendar/presentation/providers/calendar_reminder_provider.dart
+- dj_tilbud_app/features/calendar/presentation/widgets/calendar_event_card.dart
+- dj_tilbud_app/features/calendar/presentation/widgets/calendar_grid.dart
+- dj_tilbud_app/features/calendar/presentation/widgets/calendar_header.dart
+- dj_tilbud_app/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart
+- dj_tilbud_app/features/jobs/domain/date_collision.dart
+- dj_tilbud_app/features/jobs/domain/entities/job_action.dart
+- dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/job_card.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/quote_card.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/service_offer_card.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/empty_jobs_view.dart
+- dj_tilbud_app/features/first_win/domain/entities/first_win_decision.dart
+- dj_tilbud_app/features/first_win/presentation/providers/first_win_provider.dart
+- dj_tilbud_app/features/first_win/presentation/widgets/first_win_dialog.dart
+- cached_network_image
+- dj_tilbud_app/core/utils/equipment_description.dart
+- dj_tilbud_app/core/utils/customer_name.dart
+- dj_tilbud_app/core/utils/event_type_labels.dart
+- dj_tilbud_app/features/jobs/domain/ready_for_billing_gate.dart
+- dj_tilbud_app/shared/widgets/locked_info_banner.dart
+- dj_tilbud_app/features/jobs/presentation/utils/extra_hours_options.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/hours_picker_field.dart
+- dj_tilbud_app/features/jobs/presentation/screens/song_requests_screen.dart
+- dj_tilbud_app/features/jobs/presentation/screens/edit_quote_bottom_sheet.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/process_tracker.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/job_content_section.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/sick_disclaimer.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/invoice_status_badge.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/copy_intro_message_card.dart
+- dj_tilbud_app/shared/widgets/job_id_badge.dart
+- dj_tilbud_app/shared/widgets/conversation_card.dart
+- dj_tilbud_app/shared/widgets/chat_bubble_fab.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/contact_customer_sheet.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/event_address_section.dart
+- dj_tilbud_app/core/utils/birthday_person_age.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/decline_extra_hours.dart
+- dj_tilbud_app/core/utils/planned_contact.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/customer_deadline_banner.dart
+- dj_tilbud_app/shared/widgets/copy_hint_row.dart
+- dj_tilbud_app/shared/widgets/partner_event_wishes_card.dart
+- dj_tilbud_app/core/utils/phone_utils.dart
+- dj_tilbud_app/features/jobs/domain/customer_intro_message.dart
+- dj_tilbud_app/features/jobs/presentation/providers/job_content_provider.dart
+- dj_tilbud_app/features/profile/domain/entities/standard_message.dart
+- dj_tilbud_app/shared/widgets/recurring_customer_badge.dart
+- url_launcher
+- chewie
+
+## AI touchpoints [AI]
+- `lib/features/jobs/presentation/widgets/job_content_section.dart`
+- `lib/features/jobs/presentation/screens/dj_quote_form_screen.dart`
+- `lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart`
+
+## Open questions
+- No AI/LLM or prompt logic is visible in these jobs-feature files, even though a sales-pitch text field (salesPitch) exists on DjQuoteModel/ServiceOfferModel — where is that text generated/polished, if at all, within this module?
+- Both job_content_remote_datasource.dart and jobs_remote_datasource.dart were truncated; full behavior (e.g. upload/signed-URL flow, remaining JobsRemoteDatasource methods like createDjQuote, createServiceOffer, markJobCustomerContacted) is not fully visible.
+- The 'business/visibility rules' for the job feed (pending-quote cap, tier quotas, sax capability, etc.) are stated to live in the web app's /api/dj/biddable-jobs route, which is outside this module — not verifiable from the given files.
+- sax_offer_conflict.dart is imported but not shown, so its role in bid-status/conflict logic is unclear.
+- No AI/LLM agent code (e.g. for profile or sales-pitch generation) appears in this module despite that being a stated selling point — is it implemented elsewhere (e.g. in a distinct 'profile' or 'ai' feature) or server-side only?
+- lib/features/jobs/domain/entities/job.dart, lib/features/jobs/domain/entities/ext_job.dart, lib/features/jobs/domain/repositories/jobs_repository.dart, and lib/features/jobs/presentation/providers/jobs_provider.dart were truncated in the provided excerpt — full entity fields, repository methods, and provider set are not fully visible.
+- How musician-side profile/pitch 'polishing' mentioned in product rules relates to the sales-pitch fields (salesPitch, equipmentDescription) validated here is unclear from this module alone.
+- job_detail_screen.dart's own comment states no route currently pushes AppRoutes.jobDetail, so it appears to be dead/unused code — is it still needed or scheduled for removal?
+- Full contents of dj_quote_form_screen.dart and job_detail_screen.dart are truncated, so the complete submit logic and remaining UI (e.g. after the budget band) are not visible here.
+- The file is truncated after the DJ/musician calendar-mode branch; the remainder of JobsShellScreen's build method (list view, quoting UI, service offer handling) is not shown.
+- No other files from lib/features were provided, so the full scope and public interface of the jobs feature (and the broader lib/features module) cannot be fully characterized.
+- It's unclear from this file alone how quoting on jobs or viewing won quotes is implemented beyond referencing DjQuote and QuoteCard widgets.
+- File is truncated after the pending-body ListView begins, so the full set of UI sections (e.g. decline/extra-hours flow, song requests, contact-customer sheet usage) is not fully visible.
+- Only one file from the lib/features module was provided, so the broader structure of the jobs feature (and other features like profile) and where the 'salesPitch' text is generated cannot be described from these files.
+- No AI/LLM or agent code is visible in this file; whether sales-pitch generation involves an AI agent is not shown here.
+- Is there a corresponding provider/backend route (e.g. ready-for-billing, confirmMusicianReadyProvider, markMusicianExtJobReadyForBillingProvider) in this codebase, or only referenced here?
+- What distinguishes a regular job from an 'ext job' / 'musician_only' role type, and where is that modeled outside this file?
+- Why is ServiceOffers excluded from the realtime publication, requiring manual refetchKeepingData() calls on screen open?
+- Is song_requests_screen's 30-second polling the only sync mechanism, or is there a realtime alternative elsewhere in the app?
+- Where is the quoting/bidding submission logic (the actual form that creates a Job/ExtJob quote or service offer) — not shown in this file set beyond pickers like EquipmentPicker, HoursPickerField, StandardMessagePickerButton?
+- Is there an AI agent for profile/pitch generation elsewhere in the codebase (per product description) that isn't present in this jobs/presentation/widgets module?
+- What does jobs_provider.dart / job_content_provider.dart actually implement (state management, API calls) since only their consumption is shown here?

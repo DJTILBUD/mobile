@@ -1,0 +1,2545 @@
+{
+  "sections": [
+    {
+      "key": "auth",
+      "label": "Auth"
+    },
+    {
+      "key": "onboarding",
+      "label": "Onboarding"
+    },
+    {
+      "key": "other",
+      "label": "Other"
+    },
+    {
+      "key": "jobs",
+      "label": "Jobs"
+    },
+    {
+      "key": "featured_jobs",
+      "label": "Featured jobs"
+    },
+    {
+      "key": "chat",
+      "label": "Chat"
+    },
+    {
+      "key": "profile",
+      "label": "Profile"
+    },
+    {
+      "key": "referrals",
+      "label": "Referrals"
+    },
+    {
+      "key": "calendar",
+      "label": "Calendar"
+    },
+    {
+      "key": "notifications",
+      "label": "Notifications"
+    }
+  ],
+  "sectionsFrom": "features",
+  "navigation": null,
+  "pages": [
+    {
+      "id": "/login",
+      "label": "Login",
+      "section": "auth",
+      "file": "lib/features/auth/presentation/screens/login_screen.dart",
+      "groups": [
+        "lib/features/agent",
+        "lib/features/app_config",
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/chat",
+        "lib/features/featured_jobs",
+        "lib/features/first_win",
+        "lib/features/jobs",
+        "lib/features/notifications",
+        "lib/features/onboarding",
+        "lib/features/profile",
+        "lib/features/referrals",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "read",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read",
+        "DeviceTokens": "write",
+        "UserNotifications": "write",
+        "DjInfos": "read",
+        "Musicians": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/auth/presentation/screens/login_screen.dart::LoginScreen"
+      ]
+    },
+    {
+      "id": "/signup",
+      "label": "Signup",
+      "section": "auth",
+      "file": "lib/features/auth/presentation/screens/signup_screen.dart",
+      "groups": [
+        "lib/features/auth"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/auth/presentation/screens/signup_screen.dart::SignupScreen"
+      ]
+    },
+    {
+      "id": "/forgot-password",
+      "label": "Forgot password",
+      "section": "auth",
+      "file": "lib/features/auth/presentation/screens/forgot_password_screen.dart",
+      "groups": [
+        "lib/features/auth"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/auth/presentation/screens/forgot_password_screen.dart::ForgotPasswordScreen"
+      ]
+    },
+    {
+      "id": "/profile-setup",
+      "label": "Profile setup",
+      "section": "auth",
+      "file": "lib/features/auth/presentation/screens/profile_setup_screen.dart",
+      "groups": [
+        "lib/features/agent",
+        "lib/features/app_config",
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/chat",
+        "lib/features/featured_jobs",
+        "lib/features/first_win",
+        "lib/features/jobs",
+        "lib/features/notifications",
+        "lib/features/onboarding",
+        "lib/features/profile",
+        "lib/features/referrals",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "read",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read",
+        "DeviceTokens": "write",
+        "UserNotifications": "write",
+        "DjInfos": "read",
+        "Musicians": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_chip.dart::DSChip",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_switch.dart::DSSwitch",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/auth/presentation/screens/profile_setup_screen.dart::ProfileSetupScreen",
+        "lib/features/auth/presentation/screens/profile_setup_screen.dart::_RoleCard"
+      ]
+    },
+    {
+      "id": "/onboarding",
+      "label": "Onboarding",
+      "section": "onboarding",
+      "file": "lib/features/onboarding/presentation/screens/onboarding_screen.dart",
+      "groups": [
+        "lib/features/agent",
+        "lib/features/app_config",
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/chat",
+        "lib/features/featured_jobs",
+        "lib/features/first_win",
+        "lib/features/jobs",
+        "lib/features/notifications",
+        "lib/features/onboarding",
+        "lib/features/profile",
+        "lib/features/referrals",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "read",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read",
+        "DeviceTokens": "write",
+        "UserNotifications": "write",
+        "DjInfos": "read",
+        "Musicians": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_range_slider.dart::DSRangeSlider",
+        "lib/core/design_system/ds_surface.dart::DSSurface",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::OnboardingScreen",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_AddReviewSheet",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_EditProfileSheet",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_FilterSectionHeader",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_FilterSectionLabel",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_FiltersStep",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ImageTile",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_MediaSectionHeader",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_OnboardingFilterChip",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_PicturesStep",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ProfileFieldRow",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ProfileStep",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ReviewsStep",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_UploadTile",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_VideoTile",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_VideoUploadTile"
+      ]
+    },
+    {
+      "id": "/design-system",
+      "label": "Design system",
+      "section": "other",
+      "file": "lib/core/design_system/showcase_screen.dart",
+      "groups": [],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_checkbox.dart::DSCheckbox",
+        "lib/core/design_system/ds_chip.dart::DSChip",
+        "lib/core/design_system/ds_info_chip.dart::DSInfoChip",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_radio.dart::DSRadio",
+        "lib/core/design_system/ds_segmented_control.dart::DSSegmentedControl",
+        "lib/core/design_system/ds_slider.dart::DSSlider",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/ds_surface.dart::DSSurface",
+        "lib/core/design_system/ds_switch.dart::DSSwitch",
+        "lib/core/design_system/showcase_screen.dart::DesignSystemShowcase",
+        "lib/core/design_system/showcase_screen.dart::_ButtonsPage",
+        "lib/core/design_system/showcase_screen.dart::_CardsToastsPage",
+        "lib/core/design_system/showcase_screen.dart::_ColorGroup",
+        "lib/core/design_system/showcase_screen.dart::_ControlsPage",
+        "lib/core/design_system/showcase_screen.dart::_FormsPage",
+        "lib/core/design_system/showcase_screen.dart::_FoundationPage",
+        "lib/core/design_system/showcase_screen.dart::_InputsPage",
+        "lib/core/design_system/showcase_screen.dart::_MusicianCard",
+        "lib/core/design_system/showcase_screen.dart::_PageHeader",
+        "lib/core/design_system/showcase_screen.dart::_RowLabel",
+        "lib/core/design_system/showcase_screen.dart::_SectionHeader",
+        "lib/core/design_system/showcase_screen.dart::_TypeRow",
+        "lib/core/design_system/showcase_screen.dart::_VariantLabels",
+        "lib/core/design_system/tokens.dart::DSTheme"
+      ]
+    },
+    {
+      "id": "/dj/home",
+      "label": "Home",
+      "section": "jobs",
+      "file": "lib/features/jobs/presentation/screens/jobs_shell_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/first_win",
+        "lib/features/jobs",
+        "lib/features/profile",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "UnavailableDates": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/ds_tab_bar.dart::DSTabBar",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/core/widgets/animated_card.dart::AnimatedCard",
+        "lib/core/widgets/skeleton_loading.dart::SkeletonCard",
+        "lib/core/widgets/skeleton_loading.dart::SkeletonListView",
+        "lib/features/calendar/presentation/widgets/calendar_event_card.dart::CalendarEventCard",
+        "lib/features/calendar/presentation/widgets/calendar_grid.dart::CalendarGrid",
+        "lib/features/calendar/presentation/widgets/calendar_header.dart::CalendarHeader",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::JobsShellScreen",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_AvailabilityGateDialog",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjCalendarView",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjExpiredTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjNewJobsTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjQuotesTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjWonQuotesTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_ErrorView",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_FilterTogglePill",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_IconSegment",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistCalendarView",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistNewJobsTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistOffersTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistWonOffersTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_KindChip",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_ModeTogglePill",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_MonthGroupHeader",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_MusicianFilterTogglePill",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_UnavailableDatesPanel",
+        "lib/features/jobs/presentation/widgets/empty_jobs_view.dart::EmptyJobsView",
+        "lib/features/jobs/presentation/widgets/job_card.dart::JobCard",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::QuoteCard",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::ServiceOfferCard",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge",
+        "lib/shared/widgets/recurring_customer_badge.dart::RecurringCustomerBadge"
+      ]
+    },
+    {
+      "id": "/dj/featured",
+      "label": "Featured",
+      "section": "featured_jobs",
+      "file": "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart",
+      "groups": [
+        "lib/features/featured_jobs",
+        "lib/features/jobs",
+        "lib/features/profile",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_tab_bar.dart::DSTabBar",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/core/widgets/animated_card.dart::AnimatedCard",
+        "lib/core/widgets/skeleton_loading.dart::SkeletonCard",
+        "lib/core/widgets/skeleton_loading.dart::SkeletonListView",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::FeaturedJobsScreen",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_DateBlock",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_ErrorView",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_ExtJobActionChip",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_ExtJobCard",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_JobList",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_MetaItem",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_MetaList",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_PriceRow",
+        "lib/features/jobs/presentation/widgets/empty_jobs_view.dart::EmptyJobsView",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge",
+        "lib/shared/widgets/recurring_customer_badge.dart::RecurringCustomerBadge"
+      ]
+    },
+    {
+      "id": "/dj/chat",
+      "label": "Chat",
+      "section": "chat",
+      "file": "lib/features/chat/presentation/screens/chat_screen.dart",
+      "groups": [
+        "lib/features/chat",
+        "lib/shared"
+      ],
+      "tables": {
+        "FeatureFlags": "read",
+        "Conversations": "read",
+        "UserFiles": "read",
+        "ChatMessages": "write",
+        "ChatMessageReactions": "write"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/chat/presentation/screens/chat_screen.dart::ChatScreen",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_AdminSupportTab",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_AdminThreadTile",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_ConversationListSkeleton",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_ConversationTile",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_EmptyConversationsView",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_ErrorView",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_HighlightedText",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_MyConversationsTab",
+        "lib/features/chat/presentation/widgets/new_support_message_sheet.dart::NewSupportMessageSheet",
+        "lib/shared/widgets/conversation_avatar.dart::ConversationAvatar"
+      ]
+    },
+    {
+      "id": "/dj/profile",
+      "label": "Profile",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/profile_screen.dart",
+      "groups": [
+        "lib/features/agent",
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/jobs",
+        "lib/features/notifications",
+        "lib/features/profile"
+      ],
+      "tables": {
+        "AgentInteractions": "write",
+        "UserNotifications": "write",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_avatar.dart::DSAvatar",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/core/widgets/restart_widget.dart::RestartWidget",
+        "lib/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart::ProfileBioBottomSheet",
+        "lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::ProfileCoachBottomSheet",
+        "lib/features/notifications/presentation/widgets/notification_bell.dart::NotificationBell",
+        "lib/features/profile/presentation/screens/profile_screen.dart::ProfileScreen",
+        "lib/features/profile/presentation/screens/profile_screen.dart::_MenuItem"
+      ]
+    },
+    {
+      "id": "/instrumentalist/home",
+      "label": "Home",
+      "section": "jobs",
+      "file": "lib/features/jobs/presentation/screens/jobs_shell_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/first_win",
+        "lib/features/jobs",
+        "lib/features/profile",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "UnavailableDates": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/ds_tab_bar.dart::DSTabBar",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/core/widgets/animated_card.dart::AnimatedCard",
+        "lib/core/widgets/skeleton_loading.dart::SkeletonCard",
+        "lib/core/widgets/skeleton_loading.dart::SkeletonListView",
+        "lib/features/calendar/presentation/widgets/calendar_event_card.dart::CalendarEventCard",
+        "lib/features/calendar/presentation/widgets/calendar_grid.dart::CalendarGrid",
+        "lib/features/calendar/presentation/widgets/calendar_header.dart::CalendarHeader",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::JobsShellScreen",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_AvailabilityGateDialog",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjCalendarView",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjExpiredTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjNewJobsTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjQuotesTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjWonQuotesTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_ErrorView",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_FilterTogglePill",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_IconSegment",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistCalendarView",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistNewJobsTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistOffersTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistWonOffersTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_KindChip",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_ModeTogglePill",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_MonthGroupHeader",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_MusicianFilterTogglePill",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_UnavailableDatesPanel",
+        "lib/features/jobs/presentation/widgets/empty_jobs_view.dart::EmptyJobsView",
+        "lib/features/jobs/presentation/widgets/job_card.dart::JobCard",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::QuoteCard",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::ServiceOfferCard",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge",
+        "lib/shared/widgets/recurring_customer_badge.dart::RecurringCustomerBadge"
+      ]
+    },
+    {
+      "id": "/instrumentalist/chat",
+      "label": "Chat",
+      "section": "chat",
+      "file": "lib/features/chat/presentation/screens/chat_screen.dart",
+      "groups": [
+        "lib/features/chat",
+        "lib/shared"
+      ],
+      "tables": {
+        "FeatureFlags": "read",
+        "Conversations": "read",
+        "UserFiles": "read",
+        "ChatMessages": "write",
+        "ChatMessageReactions": "write"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/chat/presentation/screens/chat_screen.dart::ChatScreen",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_AdminSupportTab",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_AdminThreadTile",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_ConversationListSkeleton",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_ConversationTile",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_EmptyConversationsView",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_ErrorView",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_HighlightedText",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_MyConversationsTab",
+        "lib/features/chat/presentation/widgets/new_support_message_sheet.dart::NewSupportMessageSheet",
+        "lib/shared/widgets/conversation_avatar.dart::ConversationAvatar"
+      ]
+    },
+    {
+      "id": "/instrumentalist/profile",
+      "label": "Profile",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/profile_screen.dart",
+      "groups": [
+        "lib/features/agent",
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/jobs",
+        "lib/features/notifications",
+        "lib/features/profile"
+      ],
+      "tables": {
+        "AgentInteractions": "write",
+        "UserNotifications": "write",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_avatar.dart::DSAvatar",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/core/widgets/restart_widget.dart::RestartWidget",
+        "lib/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart::ProfileBioBottomSheet",
+        "lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::ProfileCoachBottomSheet",
+        "lib/features/notifications/presentation/widgets/notification_bell.dart::NotificationBell",
+        "lib/features/profile/presentation/screens/profile_screen.dart::ProfileScreen",
+        "lib/features/profile/presentation/screens/profile_screen.dart::_MenuItem"
+      ]
+    },
+    {
+      "id": "/job-detail",
+      "label": "Job detail",
+      "section": "jobs",
+      "file": "lib/features/jobs/presentation/screens/job_detail_screen.dart",
+      "groups": [
+        "lib/features/jobs",
+        "lib/features/profile",
+        "lib/shared"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_chip.dart::DSChip",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/jobs/presentation/screens/job_detail_screen.dart::JobDetailScreen",
+        "lib/features/jobs/presentation/screens/job_detail_screen.dart::_BudgetIncreasePulse",
+        "lib/features/jobs/presentation/screens/job_detail_screen.dart::_InfoRow",
+        "lib/features/jobs/presentation/screens/job_detail_screen.dart::_SectionCard",
+        "lib/features/jobs/presentation/widgets/sax_type_info.dart::SaxTypeDescription",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge"
+      ]
+    },
+    {
+      "id": "/dj/quote-form",
+      "label": "Quote form",
+      "section": "jobs",
+      "file": "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart",
+      "groups": [
+        "lib/features/agent",
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/jobs",
+        "lib/features/profile",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "UnavailableDates": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read",
+        "AgentInteractions": "write"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_checkbox.dart::DSCheckbox",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_surface.dart::DSSurface",
+        "lib/core/design_system/ds_switch.dart::DSSwitch",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/agent/presentation/widgets/agent_ai_button.dart::AgentAiButton",
+        "lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::AgentBottomSheet",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::DjQuoteFormScreen",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_BidClosedBanner",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_BudgetWarningBanner",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_CollisionBanner",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_EarlySetupSection",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_JobSummary",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_NotInterestedSheet",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_ReasonRow",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_SummaryRow",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_WaveClosedBanner",
+        "lib/features/jobs/presentation/widgets/equipment_picker.dart::EquipmentPicker",
+        "lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::SaveTemplateButton",
+        "lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::StandardMessagePickerButton",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge"
+      ]
+    },
+    {
+      "id": "/instrumentalist/offer-form",
+      "label": "Offer form",
+      "section": "jobs",
+      "file": "lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart",
+      "groups": [
+        "lib/features/agent",
+        "lib/features/auth",
+        "lib/features/jobs",
+        "lib/features/profile",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read",
+        "AgentInteractions": "write"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_surface.dart::DSSurface",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/agent/presentation/widgets/agent_ai_button.dart::AgentAiButton",
+        "lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::AgentBottomSheet",
+        "lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::InstrumentalistOfferFormScreen",
+        "lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::_InfoRow",
+        "lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::_MultiOfferNotice",
+        "lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::_RuleLine",
+        "lib/features/jobs/presentation/widgets/sax_type_info.dart::SaxTypeDescription",
+        "lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::SaveTemplateButton",
+        "lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::StandardMessagePickerButton",
+        "lib/shared/widgets/copy_hint_row.dart::CopyHintRow",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge"
+      ]
+    },
+    {
+      "id": "/quote-detail",
+      "label": "Quote detail",
+      "section": "jobs",
+      "file": "lib/features/jobs/presentation/screens/quote_detail_screen.dart",
+      "groups": [
+        "lib/features/chat",
+        "lib/features/jobs",
+        "lib/features/profile",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read",
+        "FeatureFlags": "read",
+        "Conversations": "read",
+        "ChatMessages": "write",
+        "ChatMessageReactions": "write"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_chip.dart::DSChip",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::QuoteDetailScreen",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_BidSummaryCard",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ContactLine",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ContactRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_CustomerDeadlineBanner",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_DeleteButton",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_DjNotesSection",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_DoneButton",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_EarlySetupRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_EditWindowBanner",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ExtraHoursSection",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ExtraHoursSummary",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_JobHeroCard",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_MetaRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_MusicianOfferRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_PlannedContactBanner",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ProfileAvatar",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_Section",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ServiceOffersSection",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_SongRequestsRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_SummaryRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_TopStatusRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_WonSection",
+        "lib/features/jobs/presentation/screens/song_requests_screen.dart::SongRequestsScreen",
+        "lib/features/jobs/presentation/widgets/contact_customer_sheet.dart::ContactCustomerSheet",
+        "lib/features/jobs/presentation/widgets/copy_intro_message_card.dart::CopyIntroMessageCard",
+        "lib/features/jobs/presentation/widgets/decline_extra_hours.dart::DeclineExtraHours",
+        "lib/features/jobs/presentation/widgets/event_address_section.dart::EventAddressSection",
+        "lib/features/jobs/presentation/widgets/hours_picker_field.dart::HoursPickerField",
+        "lib/features/jobs/presentation/widgets/invoice_status_badge.dart::InvoiceStatusBadge",
+        "lib/features/jobs/presentation/widgets/job_content_section.dart::JobContentSection",
+        "lib/features/jobs/presentation/widgets/process_tracker.dart::ProcessTracker",
+        "lib/features/jobs/presentation/widgets/sick_disclaimer.dart::SickDisclaimer",
+        "lib/shared/widgets/chat_bubble_fab.dart::ChatBubbleFab",
+        "lib/shared/widgets/conversation_card.dart::ConversationCard",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge",
+        "lib/shared/widgets/locked_info_banner.dart::LockedInfoBanner"
+      ]
+    },
+    {
+      "id": "/service-offer-detail",
+      "label": "Service offer detail",
+      "section": "jobs",
+      "file": "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart",
+      "groups": [
+        "lib/features/chat",
+        "lib/features/jobs",
+        "lib/features/profile",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read",
+        "FeatureFlags": "read",
+        "Conversations": "read",
+        "ChatMessages": "write",
+        "ChatMessageReactions": "write"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::ServiceOfferDetailScreen",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_BidSummaryCard",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_ContactRow",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_DoneButton",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_InfoBanner",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_JobHeroCard",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_LostBanner",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_MetaRow",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_MusicianExtraHoursSection",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_MusicianNotesSection",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_PlannedContactBanner",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_PriceKpi",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_Section",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_SpecialRequestFeeSection",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_TopStatusRow",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_WonDjSection",
+        "lib/features/jobs/presentation/widgets/contact_customer_sheet.dart::ContactCustomerSheet",
+        "lib/features/jobs/presentation/widgets/copy_intro_message_card.dart::CopyIntroMessageCard",
+        "lib/features/jobs/presentation/widgets/customer_deadline_banner.dart::CustomerDeadlineBanner",
+        "lib/features/jobs/presentation/widgets/decline_extra_hours.dart::DeclineExtraHours",
+        "lib/features/jobs/presentation/widgets/event_address_section.dart::EventAddressSection",
+        "lib/features/jobs/presentation/widgets/invoice_status_badge.dart::InvoiceStatusBadge",
+        "lib/features/jobs/presentation/widgets/process_tracker.dart::ProcessTracker",
+        "lib/features/jobs/presentation/widgets/sick_disclaimer.dart::SickDisclaimer",
+        "lib/shared/widgets/chat_bubble_fab.dart::ChatBubbleFab",
+        "lib/shared/widgets/copy_hint_row.dart::CopyHintRow",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge",
+        "lib/shared/widgets/partner_event_wishes_card.dart::PartnerEventWishesCard"
+      ]
+    },
+    {
+      "id": "/ext-job-detail",
+      "label": "Ext job detail",
+      "section": "featured_jobs",
+      "file": "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart",
+      "groups": [
+        "lib/features/chat",
+        "lib/features/featured_jobs",
+        "lib/features/jobs",
+        "lib/features/profile",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read",
+        "FeatureFlags": "read",
+        "Conversations": "read",
+        "ChatMessages": "write",
+        "ChatMessageReactions": "write"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/ds_tab_bar.dart::DSTabBar",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::ExtJobDetailScreen",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_CanceledBanner",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ContactRow",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_DoneButton",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobDeleteButton",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobEarlySetupSection",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobEarlySetupSummary",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobExtraHoursSection",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobExtraHoursSummary",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobSongRequestsRow",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobSummaryRow",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_InfoRow",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_JobInfoCard",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_PlannedContactBanner",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_SectionCard",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_VenueEmptyState",
+        "lib/features/jobs/presentation/screens/song_requests_screen.dart::SongRequestsScreen",
+        "lib/features/jobs/presentation/widgets/contact_customer_sheet.dart::ContactCustomerSheet",
+        "lib/features/jobs/presentation/widgets/customer_deadline_banner.dart::CustomerDeadlineBanner",
+        "lib/features/jobs/presentation/widgets/decline_extra_hours.dart::DeclineExtraHours",
+        "lib/features/jobs/presentation/widgets/event_address_section.dart::EventAddressSection",
+        "lib/features/jobs/presentation/widgets/hours_picker_field.dart::HoursPickerField",
+        "lib/features/jobs/presentation/widgets/invoice_status_badge.dart::InvoiceStatusBadge",
+        "lib/features/jobs/presentation/widgets/job_content_section.dart::JobContentSection",
+        "lib/features/jobs/presentation/widgets/process_tracker.dart::ProcessTracker",
+        "lib/features/jobs/presentation/widgets/sick_disclaimer.dart::SickDisclaimer",
+        "lib/shared/widgets/chat_bubble_fab.dart::ChatBubbleFab",
+        "lib/shared/widgets/conversation_card.dart::ConversationCard",
+        "lib/shared/widgets/copy_hint_row.dart::CopyHintRow",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge",
+        "lib/shared/widgets/locked_info_banner.dart::LockedInfoBanner",
+        "lib/shared/widgets/partner_event_wishes_card.dart::PartnerEventWishesCard",
+        "lib/shared/widgets/recurring_customer_badge.dart::RecurringCustomerBadge",
+        "lib/shared/widgets/venue_photos_card.dart::VenuePhotoViewerScreen",
+        "lib/shared/widgets/venue_photos_card.dart::VenuePhotosCard"
+      ]
+    },
+    {
+      "id": "/conversation-detail",
+      "label": "Conversation detail",
+      "section": "chat",
+      "file": "lib/features/chat/presentation/screens/conversation_detail_screen.dart",
+      "groups": [
+        "lib/features/chat",
+        "lib/features/jobs",
+        "lib/features/profile"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "FeatureFlags": "read",
+        "Conversations": "read",
+        "UserFiles": "read",
+        "ChatMessages": "write",
+        "ChatMessageReactions": "write",
+        "Musicians": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::ConversationDetailScreen",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_ChatAvatar",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_DateDivider",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_FormattedText",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_JobBanner",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_JobChip",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_MentionPicker",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_MessageBubble",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_MessageList",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_SwipeToReply",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_UnavailableJobNote",
+        "lib/features/chat/presentation/widgets/chat_message_input.dart::ChatMessageInput"
+      ]
+    },
+    {
+      "id": "/admin-support-thread",
+      "label": "Admin support thread",
+      "section": "chat",
+      "file": "lib/features/chat/presentation/screens/admin_support_thread_screen.dart",
+      "groups": [
+        "lib/features/chat",
+        "lib/shared"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::AdminSupportThreadScreen",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_AdminFormattedText",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_AdminJobChip",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_AdminMentionPicker",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_Bubble",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_MessageList",
+        "lib/features/chat/presentation/widgets/chat_message_input.dart::ChatMessageInput",
+        "lib/shared/widgets/conversation_avatar.dart::ConversationAvatar"
+      ]
+    },
+    {
+      "id": "/edit-profile",
+      "label": "Edit profile",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/edit_profile_screen.dart",
+      "groups": [
+        "lib/features/agent",
+        "lib/features/auth",
+        "lib/features/jobs",
+        "lib/features/profile"
+      ],
+      "tables": {
+        "AgentInteractions": "write"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_chip.dart::DSChip",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_switch.dart::DSSwitch",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart::ProfileBioBottomSheet",
+        "lib/features/profile/presentation/screens/edit_profile_screen.dart::EditProfileScreen"
+      ]
+    },
+    {
+      "id": "/reviews",
+      "label": "Reviews",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/reviews_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/profile"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_surface.dart::DSSurface",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/reviews_screen.dart::ReviewsScreen",
+        "lib/features/profile/presentation/screens/reviews_screen.dart::_ReviewCard",
+        "lib/features/profile/presentation/screens/reviews_screen.dart::_ReviewForm"
+      ]
+    },
+    {
+      "id": "/stats",
+      "label": "Stats",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/stats_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/jobs",
+        "lib/features/profile"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_surface.dart::DSSurface",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/stats_screen.dart::StatsScreen",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_BarLegend",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_BarRow",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_Basis",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_CategorySection",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_EmptyState",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_ExcludedNote",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_GoodToKnow",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_LegendSwatch",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_MonthlyEarnings",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_SectionHeader",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_StatCard",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_SummaryRow",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_YearFilter"
+      ]
+    },
+    {
+      "id": "/media",
+      "label": "Media",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/media_screen.dart",
+      "groups": [
+        "lib/features/profile"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/media_screen.dart::MediaScreen",
+        "lib/features/profile/presentation/screens/media_screen.dart::_AddTile",
+        "lib/features/profile/presentation/screens/media_screen.dart::_MediaSection",
+        "lib/features/profile/presentation/screens/media_screen.dart::_MediaTile",
+        "lib/features/profile/presentation/screens/media_screen.dart::_MixesSection",
+        "lib/features/profile/presentation/screens/media_screen.dart::_NoVideoPreview"
+      ]
+    },
+    {
+      "id": "/my-content",
+      "label": "My content",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/my_content_screen.dart",
+      "groups": [
+        "lib/features/jobs",
+        "lib/features/profile"
+      ],
+      "tables": {
+        "UserFiles": "read",
+        "Quotes": "read",
+        "ExtJobs": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/my_content_screen.dart::MyContentScreen"
+      ]
+    },
+    {
+      "id": "/standard-messages",
+      "label": "Standard messages",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/standard_messages_screen.dart",
+      "groups": [
+        "lib/features/profile"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_surface.dart::DSSurface",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/standard_messages_screen.dart::StandardMessagesScreen",
+        "lib/features/profile/presentation/screens/standard_messages_screen.dart::_MessageCard",
+        "lib/features/profile/presentation/screens/standard_messages_screen.dart::_MessageForm"
+      ]
+    },
+    {
+      "id": "/referrals",
+      "label": "Referrals",
+      "section": "referrals",
+      "file": "lib/features/referrals/presentation/screens/referrals_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/referrals"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_checkbox.dart::DSCheckbox",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/ds_surface.dart::DSSurface",
+        "lib/core/design_system/ds_tab_bar.dart::DSTabBar",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::ReferralsScreen",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_MyReferralsTab",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_NewReferralTab",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_Note",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_ReferralTermsGate",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_TermsLoadError",
+        "lib/features/referrals/presentation/widgets/referral_card.dart::ReferralCard",
+        "lib/features/referrals/presentation/widgets/referral_form.dart::ReferralForm"
+      ]
+    },
+    {
+      "id": "/payment",
+      "label": "Payment",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/payment_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/profile"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_radio.dart::DSRadio",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/payment_screen.dart::PaymentScreen",
+        "lib/features/profile/presentation/screens/payment_screen.dart::_BusinessTypeSelector",
+        "lib/features/profile/presentation/screens/payment_screen.dart::_PaymentTypeSelector",
+        "lib/features/profile/presentation/screens/payment_screen.dart::_TypeCard",
+        "lib/features/profile/presentation/widgets/billing_lock_card.dart::BillingLockCard",
+        "lib/features/profile/presentation/widgets/self_billing_reference_format_card.dart::SelfBillingReferenceFormatCard"
+      ]
+    },
+    {
+      "id": "/profile-preview",
+      "label": "Profile preview",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/profile_preview_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/profile"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::ProfilePreviewScreen",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_CheckTag",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_ContentSection",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_ImageCarousel",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_ImagePage",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_MediaTile",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_MediaViewerScreen",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_PlaceholderTile",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_ReviewCard",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_VideoPage"
+      ]
+    },
+    {
+      "id": "/dj/calendar",
+      "label": "Calendar",
+      "section": "calendar",
+      "file": "lib/features/calendar/presentation/screens/calendar_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/jobs",
+        "lib/features/profile"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "UnavailableDates": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/calendar/presentation/screens/calendar_screen.dart::CalendarScreen",
+        "lib/features/calendar/presentation/screens/calendar_screen.dart::_CalFilterChip",
+        "lib/features/calendar/presentation/widgets/calendar_event_card.dart::CalendarEventCard",
+        "lib/features/calendar/presentation/widgets/calendar_grid.dart::CalendarGrid",
+        "lib/features/calendar/presentation/widgets/calendar_header.dart::CalendarHeader",
+        "lib/features/calendar/presentation/widgets/unavailable_dates_panel.dart::UnavailableDatesPanel"
+      ]
+    },
+    {
+      "id": "/instrumentalist/calendar",
+      "label": "Calendar",
+      "section": "calendar",
+      "file": "lib/features/calendar/presentation/screens/calendar_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/jobs",
+        "lib/features/profile"
+      ],
+      "tables": {
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "UnavailableDates": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/calendar/presentation/screens/calendar_screen.dart::CalendarScreen",
+        "lib/features/calendar/presentation/screens/calendar_screen.dart::_CalFilterChip",
+        "lib/features/calendar/presentation/widgets/calendar_event_card.dart::CalendarEventCard",
+        "lib/features/calendar/presentation/widgets/calendar_grid.dart::CalendarGrid",
+        "lib/features/calendar/presentation/widgets/calendar_header.dart::CalendarHeader",
+        "lib/features/calendar/presentation/widgets/unavailable_dates_panel.dart::UnavailableDatesPanel"
+      ]
+    },
+    {
+      "id": "/admin-messages",
+      "label": "Admin messages",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/admin_messages_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/profile"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/admin_messages_screen.dart::AdminMessagesScreen",
+        "lib/features/profile/presentation/screens/admin_messages_screen.dart::_CenteredScrollable",
+        "lib/features/profile/presentation/screens/admin_messages_screen.dart::_FormattedText",
+        "lib/features/profile/presentation/screens/admin_messages_screen.dart::_MessageCard"
+      ]
+    },
+    {
+      "id": "/feedback",
+      "label": "Feedback",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/feedback_screen.dart",
+      "groups": [
+        "lib/features/profile"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/feedback_screen.dart::FeedbackScreen"
+      ]
+    },
+    {
+      "id": "/notifications",
+      "label": "Notifications",
+      "section": "notifications",
+      "file": "lib/features/notifications/presentation/screens/notifications_screen.dart",
+      "groups": [
+        "lib/features/agent",
+        "lib/features/app_config",
+        "lib/features/auth",
+        "lib/features/calendar",
+        "lib/features/chat",
+        "lib/features/featured_jobs",
+        "lib/features/first_win",
+        "lib/features/jobs",
+        "lib/features/notifications",
+        "lib/features/onboarding",
+        "lib/features/profile",
+        "lib/features/referrals",
+        "lib/shared"
+      ],
+      "tables": {
+        "Quotes": "read",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read",
+        "DeviceTokens": "write",
+        "UserNotifications": "write",
+        "DjInfos": "read",
+        "Musicians": "read",
+        "UserFiles": "read"
+      },
+      "components": [
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::NotificationsScreen",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_CenteredScrollable",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_Chip",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_EmptyOrError",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_FilterBar",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_NotificationList",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_NotificationTile",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_SectionHeader",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_SwipeReadHint"
+      ]
+    },
+    {
+      "id": "/faq",
+      "label": "FAQ",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/faq_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/profile"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/faq_screen.dart::FaqScreen",
+        "lib/features/profile/presentation/screens/faq_screen.dart::_FaqTile"
+      ]
+    },
+    {
+      "id": "/terms",
+      "label": "Terms",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/terms_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/profile"
+      ],
+      "tables": {},
+      "components": [
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/terms_screen.dart::TermsScreen",
+        "lib/features/profile/presentation/screens/terms_screen.dart::_TermsRow"
+      ]
+    },
+    {
+      "id": "/notification-settings",
+      "label": "Notification settings",
+      "section": "profile",
+      "file": "lib/features/profile/presentation/screens/notification_settings_screen.dart",
+      "groups": [
+        "lib/features/auth",
+        "lib/features/chat",
+        "lib/features/jobs",
+        "lib/features/notifications",
+        "lib/features/profile"
+      ],
+      "tables": {
+        "DeviceTokens": "write",
+        "UserNotifications": "write",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read"
+      },
+      "components": [
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/features/profile/presentation/screens/notification_settings_screen.dart::NotificationSettingsScreen",
+        "lib/features/profile/presentation/screens/notification_settings_screen.dart::_SectionHeader",
+        "lib/features/profile/presentation/screens/notification_settings_screen.dart::_ToggleTile"
+      ]
+    }
+  ],
+  "actions": [],
+  "groups": [
+    {
+      "id": "lib/features/agent",
+      "label": "agent",
+      "section": "profile",
+      "files": 10,
+      "tables": {
+        "AgentInteractions": "write"
+      },
+      "pages": [
+        "/dj/profile",
+        "/dj/quote-form",
+        "/edit-profile",
+        "/instrumentalist/offer-form",
+        "/instrumentalist/profile",
+        "/login",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/agent/presentation/widgets/agent_ai_button.dart::AgentAiButton",
+        "lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::AgentBottomSheet",
+        "lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_ActionBar",
+        "lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_Chip",
+        "lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_DraftText",
+        "lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_ErrorView",
+        "lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_LoadingDots",
+        "lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_RefinementStrip",
+        "lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::JobSummaryBottomSheet",
+        "lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::_BottomBar",
+        "lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::_ErrorView",
+        "lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::_LoadingDots",
+        "lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::_SummaryText",
+        "lib/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart::ProfileBioBottomSheet",
+        "lib/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart::_GeneratingPhase",
+        "lib/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart::_QuestionsPhase",
+        "lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::ProfileCoachBottomSheet",
+        "lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::_AssessmentText",
+        "lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::_CompleteBadge",
+        "lib/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart::_GapCard"
+      ]
+    },
+    {
+      "id": "lib/features/app_config",
+      "label": "app_config",
+      "section": "auth",
+      "files": 8,
+      "tables": {
+        "AppConfig": "read"
+      },
+      "pages": [
+        "/login",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/app_config/presentation/screens/force_update_screen.dart::ForceUpdateScreen",
+        "lib/features/app_config/presentation/widgets/update_gate.dart::UpdateGate"
+      ]
+    },
+    {
+      "id": "lib/features/auth",
+      "label": "auth",
+      "section": "auth",
+      "files": 9,
+      "tables": {},
+      "pages": [
+        "/admin-messages",
+        "/dj/calendar",
+        "/dj/home",
+        "/dj/profile",
+        "/dj/quote-form",
+        "/edit-profile",
+        "/faq",
+        "/forgot-password",
+        "/instrumentalist/calendar",
+        "/instrumentalist/home",
+        "/instrumentalist/offer-form",
+        "/instrumentalist/profile",
+        "/login",
+        "/notification-settings",
+        "/notifications",
+        "/onboarding",
+        "/payment",
+        "/profile-preview",
+        "/profile-setup",
+        "/referrals",
+        "/reviews",
+        "/signup",
+        "/stats",
+        "/terms"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/auth/presentation/screens/forgot_password_screen.dart::ForgotPasswordScreen",
+        "lib/features/auth/presentation/screens/login_screen.dart::LoginScreen",
+        "lib/features/auth/presentation/screens/profile_setup_screen.dart::ProfileSetupScreen",
+        "lib/features/auth/presentation/screens/profile_setup_screen.dart::_RoleCard",
+        "lib/features/auth/presentation/screens/signup_screen.dart::SignupScreen"
+      ]
+    },
+    {
+      "id": "lib/features/calendar",
+      "label": "calendar",
+      "section": "calendar",
+      "files": 13,
+      "tables": {
+        "Quotes": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read",
+        "UnavailableDates": "write"
+      },
+      "pages": [
+        "/dj/calendar",
+        "/dj/home",
+        "/dj/profile",
+        "/dj/quote-form",
+        "/instrumentalist/calendar",
+        "/instrumentalist/home",
+        "/instrumentalist/profile",
+        "/login",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/calendar/presentation/screens/calendar_screen.dart::CalendarScreen",
+        "lib/features/calendar/presentation/screens/calendar_screen.dart::_CalFilterChip",
+        "lib/features/calendar/presentation/widgets/calendar_event_card.dart::CalendarEventCard",
+        "lib/features/calendar/presentation/widgets/calendar_event_card.dart::_InfoRow",
+        "lib/features/calendar/presentation/widgets/calendar_grid.dart::CalendarGrid",
+        "lib/features/calendar/presentation/widgets/calendar_grid.dart::_DayCell",
+        "lib/features/calendar/presentation/widgets/calendar_header.dart::CalendarHeader",
+        "lib/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart::_AppBox",
+        "lib/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart::_ICalExportBottomSheet",
+        "lib/features/calendar/presentation/widgets/ical_export_bottom_sheet.dart::_SectionHeader",
+        "lib/features/calendar/presentation/widgets/unavailable_dates_panel.dart::UnavailableDatesPanel"
+      ]
+    },
+    {
+      "id": "lib/features/chat",
+      "label": "chat",
+      "section": "chat",
+      "files": 22,
+      "tables": {
+        "FeatureFlags": "read",
+        "Conversations": "read",
+        "UserFiles": "read",
+        "ChatMessages": "write",
+        "ChatMessageReactions": "write",
+        "Quotes": "read",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read"
+      },
+      "pages": [
+        "/admin-support-thread",
+        "/conversation-detail",
+        "/dj/chat",
+        "/dj/profile",
+        "/ext-job-detail",
+        "/forgot-password",
+        "/instrumentalist/chat",
+        "/instrumentalist/profile",
+        "/login",
+        "/notification-settings",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup",
+        "/quote-detail",
+        "/service-offer-detail",
+        "/signup",
+        "/stats"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::AdminSupportThreadScreen",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_AdminFormattedText",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_AdminJobChip",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_AdminMentionPicker",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_Bubble",
+        "lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_MessageList",
+        "lib/features/chat/presentation/screens/chat_screen.dart::ChatScreen",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_AdminSupportTab",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_AdminThreadTile",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_ConversationListSkeleton",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_ConversationTile",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_EmptyConversationsView",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_ErrorView",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_HighlightedText",
+        "lib/features/chat/presentation/screens/chat_screen.dart::_MyConversationsTab",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::ConversationDetailScreen",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_ChatAvatar",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_DateDivider",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_FormattedText",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_JobBanner",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_JobChip",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_MentionPicker",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_MessageBubble",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_MessageList",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_SwipeToReply",
+        "lib/features/chat/presentation/screens/conversation_detail_screen.dart::_UnavailableJobNote",
+        "lib/features/chat/presentation/widgets/chat_message_input.dart::ChatMessageInput",
+        "lib/features/chat/presentation/widgets/new_support_message_sheet.dart::NewSupportMessageSheet",
+        "lib/features/chat/presentation/widgets/new_support_message_sheet.dart::_Avatar"
+      ]
+    },
+    {
+      "id": "lib/features/featured_jobs",
+      "label": "featured_jobs",
+      "section": "featured_jobs",
+      "files": 2,
+      "tables": {},
+      "pages": [
+        "/dj/featured",
+        "/ext-job-detail",
+        "/login",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::ExtJobDetailScreen",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_CanceledBanner",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ContactRow",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_DoneButton",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobDeleteButton",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobEarlySetupSection",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobEarlySetupSummary",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobExtraHoursSection",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobExtraHoursSummary",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobSongRequestsRow",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_ExtJobSummaryRow",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_InfoRow",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_JobInfoCard",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_PlannedContactBanner",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_SectionCard",
+        "lib/features/featured_jobs/presentation/screens/ext_job_detail_screen.dart::_VenueEmptyState",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::FeaturedJobsScreen",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_DateBlock",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_ErrorView",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_ExtJobActionChip",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_ExtJobCard",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_JobList",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_MetaItem",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_MetaList",
+        "lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_PriceRow"
+      ]
+    },
+    {
+      "id": "lib/features/first_win",
+      "label": "first_win",
+      "section": "jobs",
+      "files": 6,
+      "tables": {
+        "DjInfos": "read",
+        "Quotes": "read",
+        "Musicians": "read",
+        "ServiceOffers": "read",
+        "ExtJobs": "read"
+      },
+      "pages": [
+        "/dj/home",
+        "/instrumentalist/home",
+        "/login",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/first_win/presentation/widgets/first_win_dialog.dart::_ChecklistCard",
+        "lib/features/first_win/presentation/widgets/first_win_dialog.dart::_FirstWinDialog",
+        "lib/features/first_win/presentation/widgets/first_win_dialog.dart::_InfoBox",
+        "lib/features/first_win/presentation/widgets/first_win_dialog.dart::_StepDots"
+      ]
+    },
+    {
+      "id": "lib/features/jobs",
+      "label": "jobs",
+      "section": "jobs",
+      "files": 53,
+      "tables": {
+        "UserFiles": "read",
+        "Quotes": "write",
+        "ExtJobs": "read",
+        "ServiceOffers": "write",
+        "Musicians": "read",
+        "Jobs": "read",
+        "DjJobRejections": "write",
+        "SongRequests": "read",
+        "DjInfos": "read"
+      },
+      "pages": [
+        "/conversation-detail",
+        "/dj/calendar",
+        "/dj/featured",
+        "/dj/home",
+        "/dj/profile",
+        "/dj/quote-form",
+        "/edit-profile",
+        "/ext-job-detail",
+        "/forgot-password",
+        "/instrumentalist/calendar",
+        "/instrumentalist/home",
+        "/instrumentalist/offer-form",
+        "/instrumentalist/profile",
+        "/job-detail",
+        "/login",
+        "/my-content",
+        "/notification-settings",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup",
+        "/quote-detail",
+        "/service-offer-detail",
+        "/signup",
+        "/stats"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::DjQuoteFormScreen",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_BidClosedBanner",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_BudgetWarningBanner",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_CollisionBanner",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_EarlySetupSection",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_JobSummary",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_NotInterestedSheet",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_ReasonRow",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_SummaryRow",
+        "lib/features/jobs/presentation/screens/dj_quote_form_screen.dart::_WaveClosedBanner",
+        "lib/features/jobs/presentation/screens/edit_quote_bottom_sheet.dart::EditQuoteBottomSheet",
+        "lib/features/jobs/presentation/screens/edit_quote_bottom_sheet.dart::_CountdownBanner",
+        "lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::InstrumentalistOfferFormScreen",
+        "lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::_InfoRow",
+        "lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::_MultiOfferNotice",
+        "lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::_RuleLine",
+        "lib/features/jobs/presentation/screens/job_detail_screen.dart::JobDetailScreen",
+        "lib/features/jobs/presentation/screens/job_detail_screen.dart::_BudgetIncreasePulse",
+        "lib/features/jobs/presentation/screens/job_detail_screen.dart::_InfoRow",
+        "lib/features/jobs/presentation/screens/job_detail_screen.dart::_SectionCard",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::JobsShellScreen",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_AvailabilityGateDialog",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjCalendarView",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjExpiredTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjNewJobsTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjQuotesTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_DjWonQuotesTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_ErrorView",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_FilterTogglePill",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_IconSegment",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistCalendarView",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistNewJobsTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistOffersTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_InstrumentalistWonOffersTab",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_KindChip",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_ModeTogglePill",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_MonthGroupHeader",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_MusicianFilterTogglePill",
+        "lib/features/jobs/presentation/screens/jobs_shell_screen.dart::_UnavailableDatesPanel",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::QuoteDetailScreen",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_BidSummaryCard",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ContactLine",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ContactRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_CustomerDeadlineBanner",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_DeleteButton",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_DjNotesSection",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_DoneButton",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_EarlySetupRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_EditWindowBanner",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ExtraHoursSection",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ExtraHoursSummary",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_JobHeroCard",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_MetaRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_MusicianOfferRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_PlannedContactBanner",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ProfileAvatar",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_Section",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_ServiceOffersSection",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_SongRequestsRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_SummaryRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_TopStatusRow",
+        "lib/features/jobs/presentation/screens/quote_detail_screen.dart::_WonSection",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::ServiceOfferDetailScreen",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_BidSummaryCard",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_ContactRow",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_DoneButton",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_InfoBanner",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_JobHeroCard",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_LostBanner",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_MetaRow",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_MusicianExtraHoursSection",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_MusicianNotesSection",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_PlannedContactBanner",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_PriceKpi",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_Section",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_SpecialRequestFeeSection",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_TopStatusRow",
+        "lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_WonDjSection",
+        "lib/features/jobs/presentation/screens/song_requests_screen.dart::SongRequestsScreen",
+        "lib/features/jobs/presentation/screens/song_requests_screen.dart::_SongRequestTile",
+        "lib/features/jobs/presentation/widgets/contact_customer_sheet.dart::ContactCustomerSheet",
+        "lib/features/jobs/presentation/widgets/contact_customer_sheet.dart::_OptionTile",
+        "lib/features/jobs/presentation/widgets/content_video_player.dart::_ContentVideoDialog",
+        "lib/features/jobs/presentation/widgets/copy_intro_message_card.dart::CopyIntroMessageCard",
+        "lib/features/jobs/presentation/widgets/customer_deadline_banner.dart::CustomerDeadlineBanner",
+        "lib/features/jobs/presentation/widgets/decline_extra_hours.dart::DeclineExtraHours",
+        "lib/features/jobs/presentation/widgets/empty_jobs_view.dart::EmptyJobsView",
+        "lib/features/jobs/presentation/widgets/equipment_picker.dart::EquipmentPicker",
+        "lib/features/jobs/presentation/widgets/equipment_picker.dart::_CounterButton",
+        "lib/features/jobs/presentation/widgets/equipment_picker.dart::_CounterRow",
+        "lib/features/jobs/presentation/widgets/equipment_picker.dart::_EquipmentCard",
+        "lib/features/jobs/presentation/widgets/event_address_section.dart::EventAddressSection",
+        "lib/features/jobs/presentation/widgets/event_address_section.dart::_AddressCard",
+        "lib/features/jobs/presentation/widgets/hours_picker_field.dart::HoursPickerField",
+        "lib/features/jobs/presentation/widgets/invoice_status_badge.dart::InvoiceStatusBadge",
+        "lib/features/jobs/presentation/widgets/job_card.dart::JobCard",
+        "lib/features/jobs/presentation/widgets/job_card.dart::_BudgetIncreasePulse",
+        "lib/features/jobs/presentation/widgets/job_card.dart::_DateBlock",
+        "lib/features/jobs/presentation/widgets/job_card.dart::_MetaItem",
+        "lib/features/jobs/presentation/widgets/job_card.dart::_MetaLine",
+        "lib/features/jobs/presentation/widgets/job_card.dart::_PriceRow",
+        "lib/features/jobs/presentation/widgets/job_content_section.dart::JobContentSection",
+        "lib/features/jobs/presentation/widgets/process_tracker.dart::ProcessTracker",
+        "lib/features/jobs/presentation/widgets/process_tracker.dart::_StepCircle",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::QuoteCard",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::_ActionChip",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::_AwaitingSendRow",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::_BidRow",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::_CountdownRow",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::_DateBlock",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::_MetaItem",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::_MetaList",
+        "lib/features/jobs/presentation/widgets/quote_card.dart::_StatusRow",
+        "lib/features/jobs/presentation/widgets/sax_type_info.dart::SaxTypeDescription",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::ServiceOfferCard",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::_ActionChip",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::_AwaitingSendRow",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::_BidRow",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::_CountdownRow",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::_DateBlock",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::_MetaItem",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::_MetaList",
+        "lib/features/jobs/presentation/widgets/service_offer_card.dart::_StatusRow",
+        "lib/features/jobs/presentation/widgets/sick_disclaimer.dart::SickDisclaimer",
+        "lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::SaveTemplateButton",
+        "lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::StandardMessagePickerButton",
+        "lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::_StandardMessagePickerSheet"
+      ]
+    },
+    {
+      "id": "lib/features/notifications",
+      "label": "notifications",
+      "section": "notifications",
+      "files": 6,
+      "tables": {
+        "UserNotifications": "write",
+        "Jobs": "read",
+        "ExtJobs": "read",
+        "ServiceOffers": "read"
+      },
+      "pages": [
+        "/dj/profile",
+        "/forgot-password",
+        "/instrumentalist/profile",
+        "/login",
+        "/notification-settings",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup",
+        "/signup",
+        "/stats"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::NotificationsScreen",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_CenteredScrollable",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_Chip",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_EmptyOrError",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_FilterBar",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_NotificationList",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_NotificationTile",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_SectionHeader",
+        "lib/features/notifications/presentation/screens/notifications_screen.dart::_SwipeReadHint",
+        "lib/features/notifications/presentation/widgets/notification_bell.dart::NotificationBell"
+      ]
+    },
+    {
+      "id": "lib/features/onboarding",
+      "label": "onboarding",
+      "section": "onboarding",
+      "files": 1,
+      "tables": {},
+      "pages": [
+        "/login",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::OnboardingScreen",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_AddReviewSheet",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_EditProfileSheet",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_FilterSectionHeader",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_FilterSectionLabel",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_FiltersStep",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ImageTile",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_MediaSectionHeader",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_OnboardingFilterChip",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_PicturesStep",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ProfileFieldRow",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ProfileStep",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ReviewsStep",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_UploadTile",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_VideoTile",
+        "lib/features/onboarding/presentation/screens/onboarding_screen.dart::_VideoUploadTile"
+      ]
+    },
+    {
+      "id": "lib/features/profile",
+      "label": "profile",
+      "section": "profile",
+      "files": 49,
+      "tables": {
+        "DjInfos": "write",
+        "Musicians": "write",
+        "FeatureFlags": "read",
+        "DjJobFilters": "write",
+        "MusicianJobFilters": "write",
+        "Reviews": "write",
+        "UserFiles": "write",
+        "StandardMessages": "write",
+        "AdminMessages": "read",
+        "AdminMessageReads": "write",
+        "DeviceTokens": "write"
+      },
+      "pages": [
+        "/admin-messages",
+        "/conversation-detail",
+        "/dj/calendar",
+        "/dj/featured",
+        "/dj/home",
+        "/dj/profile",
+        "/dj/quote-form",
+        "/edit-profile",
+        "/ext-job-detail",
+        "/faq",
+        "/feedback",
+        "/instrumentalist/calendar",
+        "/instrumentalist/home",
+        "/instrumentalist/offer-form",
+        "/instrumentalist/profile",
+        "/job-detail",
+        "/login",
+        "/media",
+        "/my-content",
+        "/notification-settings",
+        "/notifications",
+        "/onboarding",
+        "/payment",
+        "/profile-preview",
+        "/profile-setup",
+        "/quote-detail",
+        "/reviews",
+        "/service-offer-detail",
+        "/standard-messages",
+        "/stats",
+        "/terms"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/profile/presentation/screens/admin_messages_screen.dart::AdminMessagesScreen",
+        "lib/features/profile/presentation/screens/admin_messages_screen.dart::_CenteredScrollable",
+        "lib/features/profile/presentation/screens/admin_messages_screen.dart::_FormattedText",
+        "lib/features/profile/presentation/screens/admin_messages_screen.dart::_MessageCard",
+        "lib/features/profile/presentation/screens/dj_job_filters_screen.dart::DjJobFiltersScreen",
+        "lib/features/profile/presentation/screens/dj_job_filters_screen.dart::_ChipSectionHeader",
+        "lib/features/profile/presentation/screens/dj_job_filters_screen.dart::_FilterChip",
+        "lib/features/profile/presentation/screens/dj_job_filters_screen.dart::_SectionHeader",
+        "lib/features/profile/presentation/screens/edit_profile_screen.dart::EditProfileScreen",
+        "lib/features/profile/presentation/screens/faq_screen.dart::FaqScreen",
+        "lib/features/profile/presentation/screens/faq_screen.dart::_FaqTile",
+        "lib/features/profile/presentation/screens/feedback_screen.dart::FeedbackScreen",
+        "lib/features/profile/presentation/screens/media_screen.dart::MediaScreen",
+        "lib/features/profile/presentation/screens/media_screen.dart::_AddTile",
+        "lib/features/profile/presentation/screens/media_screen.dart::_MediaSection",
+        "lib/features/profile/presentation/screens/media_screen.dart::_MediaTile",
+        "lib/features/profile/presentation/screens/media_screen.dart::_MixesSection",
+        "lib/features/profile/presentation/screens/media_screen.dart::_NoVideoPreview",
+        "lib/features/profile/presentation/screens/musician_job_filters_screen.dart::MusicianJobFiltersScreen",
+        "lib/features/profile/presentation/screens/musician_job_filters_screen.dart::_ChipSectionHeader",
+        "lib/features/profile/presentation/screens/musician_job_filters_screen.dart::_FilterChip",
+        "lib/features/profile/presentation/screens/musician_job_filters_screen.dart::_SectionHeader",
+        "lib/features/profile/presentation/screens/my_content_screen.dart::MyContentScreen",
+        "lib/features/profile/presentation/screens/notification_settings_screen.dart::NotificationSettingsScreen",
+        "lib/features/profile/presentation/screens/notification_settings_screen.dart::_SectionHeader",
+        "lib/features/profile/presentation/screens/notification_settings_screen.dart::_ToggleTile",
+        "lib/features/profile/presentation/screens/payment_screen.dart::PaymentScreen",
+        "lib/features/profile/presentation/screens/payment_screen.dart::_BusinessTypeSelector",
+        "lib/features/profile/presentation/screens/payment_screen.dart::_PaymentTypeSelector",
+        "lib/features/profile/presentation/screens/payment_screen.dart::_TypeCard",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::ProfilePreviewScreen",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_CheckTag",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_ContentSection",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_ImageCarousel",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_ImagePage",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_MediaTile",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_MediaViewerScreen",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_PlaceholderTile",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_ReviewCard",
+        "lib/features/profile/presentation/screens/profile_preview_screen.dart::_VideoPage",
+        "lib/features/profile/presentation/screens/profile_screen.dart::ProfileScreen",
+        "lib/features/profile/presentation/screens/profile_screen.dart::_MenuItem",
+        "lib/features/profile/presentation/screens/reviews_screen.dart::ReviewsScreen",
+        "lib/features/profile/presentation/screens/reviews_screen.dart::_ReviewCard",
+        "lib/features/profile/presentation/screens/reviews_screen.dart::_ReviewForm",
+        "lib/features/profile/presentation/screens/standard_messages_screen.dart::StandardMessagesScreen",
+        "lib/features/profile/presentation/screens/standard_messages_screen.dart::_MessageCard",
+        "lib/features/profile/presentation/screens/standard_messages_screen.dart::_MessageForm",
+        "lib/features/profile/presentation/screens/stats_screen.dart::StatsScreen",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_BarLegend",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_BarRow",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_Basis",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_CategorySection",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_EmptyState",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_ExcludedNote",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_GoodToKnow",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_LegendSwatch",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_MonthlyEarnings",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_SectionHeader",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_StatCard",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_SummaryRow",
+        "lib/features/profile/presentation/screens/stats_screen.dart::_YearFilter",
+        "lib/features/profile/presentation/screens/terms_screen.dart::TermsScreen",
+        "lib/features/profile/presentation/screens/terms_screen.dart::_TermsRow",
+        "lib/features/profile/presentation/widgets/billing_lock_card.dart::BillingLockCard",
+        "lib/features/profile/presentation/widgets/billing_lock_card.dart::_Panel",
+        "lib/features/profile/presentation/widgets/billing_lock_card.dart::_RequestChangeDialog",
+        "lib/features/profile/presentation/widgets/self_billing_reference_format_card.dart::SelfBillingReferenceFormatCard",
+        "lib/features/profile/presentation/widgets/self_billing_terms_gate.dart::SelfBillingTermsGate",
+        "lib/features/profile/presentation/widgets/self_billing_terms_gate.dart::_TermsDialog"
+      ]
+    },
+    {
+      "id": "lib/features/referrals",
+      "label": "referrals",
+      "section": "referrals",
+      "files": 13,
+      "tables": {},
+      "pages": [
+        "/login",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup",
+        "/referrals"
+      ],
+      "calls": [],
+      "components": [
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::ReferralsScreen",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_MyReferralsTab",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_NewReferralTab",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_Note",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_ReferralTermsGate",
+        "lib/features/referrals/presentation/screens/referrals_screen.dart::_TermsLoadError",
+        "lib/features/referrals/presentation/widgets/referral_card.dart::ReferralCard",
+        "lib/features/referrals/presentation/widgets/referral_form.dart::ReferralForm",
+        "lib/features/referrals/presentation/widgets/referral_success_overlay.dart::ReferralSuccessOverlay"
+      ]
+    },
+    {
+      "id": "lib/main",
+      "label": "main",
+      "section": null,
+      "files": 1,
+      "tables": {},
+      "pages": [],
+      "calls": [],
+      "components": []
+    },
+    {
+      "id": "lib/shared",
+      "label": "shared",
+      "section": "jobs",
+      "files": 9,
+      "tables": {},
+      "pages": [
+        "/admin-support-thread",
+        "/dj/chat",
+        "/dj/featured",
+        "/dj/home",
+        "/dj/quote-form",
+        "/ext-job-detail",
+        "/instrumentalist/chat",
+        "/instrumentalist/home",
+        "/instrumentalist/offer-form",
+        "/job-detail",
+        "/login",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup",
+        "/quote-detail",
+        "/service-offer-detail"
+      ],
+      "calls": [],
+      "components": [
+        "lib/shared/widgets/chat_bubble_fab.dart::ChatBubbleFab",
+        "lib/shared/widgets/chat_bubble_fab.dart::_AvatarStack",
+        "lib/shared/widgets/conversation_avatar.dart::ConversationAvatar",
+        "lib/shared/widgets/conversation_avatar.dart::_InitialsAvatar",
+        "lib/shared/widgets/conversation_card.dart::ConversationCard",
+        "lib/shared/widgets/copy_hint_row.dart::CopyHintRow",
+        "lib/shared/widgets/job_id_badge.dart::JobIdBadge",
+        "lib/shared/widgets/locked_info_banner.dart::LockedInfoBanner",
+        "lib/shared/widgets/partner_event_wishes_card.dart::PartnerEventWishesCard",
+        "lib/shared/widgets/partner_event_wishes_card.dart::_Field",
+        "lib/shared/widgets/recurring_customer_badge.dart::RecurringCustomerBadge",
+        "lib/shared/widgets/venue_photos_card.dart::VenuePhotoViewerScreen",
+        "lib/shared/widgets/venue_photos_card.dart::VenuePhotosCard",
+        "lib/shared/widgets/venue_photos_card.dart::_Thumb"
+      ]
+    }
+  ],
+  "quiet": [
+    {
+      "id": "lib/app",
+      "label": "app",
+      "section": "auth",
+      "files": 1,
+      "tables": {},
+      "pages": [
+        "/login",
+        "/notifications",
+        "/onboarding",
+        "/profile-setup"
+      ],
+      "calls": [],
+      "components": [
+        "lib/app.dart::App",
+        "lib/app.dart::ReserveKeyboardDismissBar",
+        "lib/app.dart::_KeyboardDismissBar",
+        "lib/app.dart::_MissingRouteDataScreen"
+      ]
+    }
+  ],
+  "offMap": [
+    {
+      "id": "lib/core",
+      "label": "core",
+      "section": "other",
+      "files": 52,
+      "tables": {
+        "DeviceTokens": "write",
+        "NotificationLogs": "write",
+        "Jobs": "read",
+        "Quotes": "read",
+        "ServiceOffers": "read",
+        "Conversations": "read",
+        "ExtJobs": "read"
+      },
+      "pages": [
+        "/admin-messages",
+        "/admin-support-thread",
+        "/conversation-detail",
+        "/design-system",
+        "/dj/calendar",
+        "/dj/chat",
+        "/dj/featured",
+        "/dj/home",
+        "/dj/profile",
+        "/dj/quote-form",
+        "/edit-profile",
+        "/ext-job-detail",
+        "/faq",
+        "/feedback",
+        "/forgot-password",
+        "/instrumentalist/calendar",
+        "/instrumentalist/chat",
+        "/instrumentalist/home",
+        "/instrumentalist/offer-form",
+        "/instrumentalist/profile",
+        "/job-detail",
+        "/login",
+        "/media",
+        "/my-content",
+        "/notification-settings",
+        "/notifications",
+        "/onboarding",
+        "/payment",
+        "/profile-preview",
+        "/profile-setup",
+        "/quote-detail",
+        "/referrals",
+        "/reviews",
+        "/service-offer-detail",
+        "/signup",
+        "/standard-messages",
+        "/stats",
+        "/terms"
+      ],
+      "calls": [],
+      "components": [
+        "lib/core/design_system/ds_avatar.dart::DSAvatar",
+        "lib/core/design_system/ds_button.dart::DSButton",
+        "lib/core/design_system/ds_button.dart::DSIconButton",
+        "lib/core/design_system/ds_checkbox.dart::DSCheckbox",
+        "lib/core/design_system/ds_chip.dart::DSChip",
+        "lib/core/design_system/ds_dialog.dart::DSDialog",
+        "lib/core/design_system/ds_dropdown.dart::DSDropdown",
+        "lib/core/design_system/ds_info_chip.dart::DSInfoChip",
+        "lib/core/design_system/ds_input.dart::DSInput",
+        "lib/core/design_system/ds_navigation_bar.dart::DSNavigationBar",
+        "lib/core/design_system/ds_navigation_bar.dart::_Badge",
+        "lib/core/design_system/ds_navigation_bar.dart::_DSNavItem",
+        "lib/core/design_system/ds_radio.dart::DSRadio",
+        "lib/core/design_system/ds_range_slider.dart::DSRangeSlider",
+        "lib/core/design_system/ds_segmented_control.dart::DSSegmentedControl",
+        "lib/core/design_system/ds_slider.dart::DSSlider",
+        "lib/core/design_system/ds_status_badge.dart::DSStatusBadge",
+        "lib/core/design_system/ds_surface.dart::DSSurface",
+        "lib/core/design_system/ds_switch.dart::DSSwitch",
+        "lib/core/design_system/ds_tab_bar.dart::DSTabBar",
+        "lib/core/design_system/ds_tab_bar.dart::_TabBadge",
+        "lib/core/design_system/showcase_screen.dart::DesignSystemShowcase",
+        "lib/core/design_system/showcase_screen.dart::_ButtonsPage",
+        "lib/core/design_system/showcase_screen.dart::_CardsToastsPage",
+        "lib/core/design_system/showcase_screen.dart::_ColorGroup",
+        "lib/core/design_system/showcase_screen.dart::_ControlsPage",
+        "lib/core/design_system/showcase_screen.dart::_FormsPage",
+        "lib/core/design_system/showcase_screen.dart::_FoundationPage",
+        "lib/core/design_system/showcase_screen.dart::_InputsPage",
+        "lib/core/design_system/showcase_screen.dart::_MusicianCard",
+        "lib/core/design_system/showcase_screen.dart::_PageHeader",
+        "lib/core/design_system/showcase_screen.dart::_RowLabel",
+        "lib/core/design_system/showcase_screen.dart::_SectionHeader",
+        "lib/core/design_system/showcase_screen.dart::_TypeRow",
+        "lib/core/design_system/showcase_screen.dart::_VariantLabels",
+        "lib/core/design_system/tokens.dart::DSTheme",
+        "lib/core/navigation/main_shell.dart::MainShell",
+        "lib/core/notifications/in_app_notification_banner.dart::InAppNotificationBanner",
+        "lib/core/widgets/animated_card.dart::AnimatedCard",
+        "lib/core/widgets/dev_env_banner.dart::DevEnvBanner",
+        "lib/core/widgets/restart_widget.dart::RestartWidget",
+        "lib/core/widgets/skeleton_loading.dart::SkeletonCard",
+        "lib/core/widgets/skeleton_loading.dart::SkeletonListView"
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "id": "AdminMessageReads",
+      "section": "profile",
+      "sections": [
+        "profile"
+      ]
+    },
+    {
+      "id": "AdminMessages",
+      "section": "profile",
+      "sections": [
+        "profile"
+      ]
+    },
+    {
+      "id": "AgentInteractions",
+      "section": "profile",
+      "sections": [
+        "jobs",
+        "profile"
+      ]
+    },
+    {
+      "id": "AppConfig",
+      "section": "auth",
+      "sections": [
+        "auth"
+      ]
+    },
+    {
+      "id": "ChatMessageReactions",
+      "section": "chat",
+      "sections": [
+        "chat",
+        "featured_jobs",
+        "jobs"
+      ]
+    },
+    {
+      "id": "ChatMessages",
+      "section": "chat",
+      "sections": [
+        "chat",
+        "featured_jobs",
+        "jobs"
+      ]
+    },
+    {
+      "id": "Conversations",
+      "section": "chat",
+      "sections": [
+        "chat",
+        "featured_jobs",
+        "jobs"
+      ]
+    },
+    {
+      "id": "DeviceTokens",
+      "section": "auth",
+      "sections": [
+        "auth",
+        "notifications",
+        "onboarding",
+        "profile"
+      ]
+    },
+    {
+      "id": "DjInfos",
+      "section": "jobs",
+      "sections": [
+        "auth",
+        "calendar",
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "notifications",
+        "onboarding",
+        "profile"
+      ]
+    },
+    {
+      "id": "DjJobFilters",
+      "section": "jobs",
+      "sections": [
+        "profile"
+      ]
+    },
+    {
+      "id": "DjJobRejections",
+      "section": "jobs",
+      "sections": [
+        "calendar",
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "profile"
+      ]
+    },
+    {
+      "id": "ExtJobs",
+      "section": "jobs",
+      "sections": [
+        "auth",
+        "calendar",
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "notifications",
+        "onboarding",
+        "profile"
+      ]
+    },
+    {
+      "id": "FeatureFlags",
+      "section": "chat",
+      "sections": [
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "profile"
+      ]
+    },
+    {
+      "id": "Jobs",
+      "section": "jobs",
+      "sections": [
+        "auth",
+        "calendar",
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "notifications",
+        "onboarding",
+        "profile"
+      ]
+    },
+    {
+      "id": "MusicianJobFilters",
+      "section": "jobs",
+      "sections": [
+        "profile"
+      ]
+    },
+    {
+      "id": "Musicians",
+      "section": "jobs",
+      "sections": [
+        "auth",
+        "calendar",
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "notifications",
+        "onboarding",
+        "profile"
+      ]
+    },
+    {
+      "id": "Quotes",
+      "section": "jobs",
+      "sections": [
+        "auth",
+        "calendar",
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "notifications",
+        "onboarding",
+        "profile"
+      ]
+    },
+    {
+      "id": "Reviews",
+      "section": "profile",
+      "sections": [
+        "profile"
+      ]
+    },
+    {
+      "id": "ServiceOffers",
+      "section": "jobs",
+      "sections": [
+        "auth",
+        "calendar",
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "notifications",
+        "onboarding",
+        "profile"
+      ]
+    },
+    {
+      "id": "SongRequests",
+      "section": "jobs",
+      "sections": [
+        "calendar",
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "profile"
+      ]
+    },
+    {
+      "id": "StandardMessages",
+      "section": "profile",
+      "sections": [
+        "profile"
+      ]
+    },
+    {
+      "id": "UnavailableDates",
+      "section": "calendar",
+      "sections": [
+        "calendar",
+        "jobs"
+      ]
+    },
+    {
+      "id": "UserFiles",
+      "section": "jobs",
+      "sections": [
+        "auth",
+        "calendar",
+        "chat",
+        "featured_jobs",
+        "jobs",
+        "notifications",
+        "onboarding",
+        "profile"
+      ]
+    },
+    {
+      "id": "UserNotifications",
+      "section": "notifications",
+      "sections": [
+        "auth",
+        "notifications",
+        "onboarding",
+        "profile"
+      ]
+    }
+  ],
+  "ai": [
+    {
+      "id": "lib/features/agent",
+      "label": "Agent assist",
+      "file": "lib/features/agent/data/datasources/agent_remote_datasource.dart",
+      "section": "profile",
+      "reads": [
+        "AgentInteractions"
+      ],
+      "via": "agent-assist",
+      "servedBy": null
+    }
+  ],
+  "services": [
+    {
+      "id": "fn:agent-assist",
+      "label": "agent-assist",
+      "kind": "function",
+      "groups": [
+        "lib/features/agent"
+      ],
+      "files": 1,
+      "section": "profile"
+    },
+    {
+      "id": "fn:invoice-status",
+      "label": "invoice-status",
+      "kind": "function",
+      "groups": [
+        "lib/features/jobs"
+      ],
+      "files": 1,
+      "section": "jobs"
+    },
+    {
+      "id": "fn:notify-chat-message",
+      "label": "notify-chat-message",
+      "kind": "function",
+      "groups": [
+        "lib/features/chat"
+      ],
+      "files": 1,
+      "section": "chat"
+    },
+    {
+      "id": "fn:notify-chat-reaction",
+      "label": "notify-chat-reaction",
+      "kind": "function",
+      "groups": [
+        "lib/features/chat"
+      ],
+      "files": 1,
+      "section": "chat"
+    },
+    {
+      "id": "fn:notify-log-received",
+      "label": "notify-log-received",
+      "kind": "function",
+      "groups": [
+        "lib/main"
+      ],
+      "files": 1,
+      "section": null
+    }
+  ],
+  "shared": [
+    "lib/core"
+  ],
+  "gaps": [
+    "No navigation menu was found, so sections are the feature folders the screens live in.",
+    "1 of 38 pages reach no code that reads data or calls an API (Design system): static screens, or data loaded in a way this cannot follow.",
+    "1 of 14 code groups are used by no page this map can follow, so they belong to no section (background jobs, webhooks, or code reached another way).",
+    "The AI runs in agent-assist, a function that is in none of this project's repositories, so its prompts and model calls cannot be read. Add the repository that holds it to this project.",
+    "90 of 389 components with an id are rendered by no page this map can follow (a layout, a page outside the menu, a screen opened at runtime, or unused), so they are listed under their code only."
+  ]
+}

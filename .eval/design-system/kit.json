@@ -1,0 +1,367 @@
+{
+  "dir": "lib/core/design_system",
+  "evidence": "a `lib/core/design_system` directory of 21 files",
+  "components": [
+    {
+      "name": "DSButton",
+      "id": "DSButton",
+      "file": "lib/core/design_system/ds_button.dart",
+      "line": 9,
+      "axes": [
+        {
+          "name": "variant",
+          "values": [
+            "primary",
+            "secondary",
+            "tertiary",
+            "ghost"
+          ],
+          "defaultValue": "primary"
+        },
+        {
+          "name": "size",
+          "values": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "defaultValue": "md"
+        }
+      ],
+      "states": [
+        "loading",
+        "disabled"
+      ],
+      "uses": 153,
+      "usedInFiles": 53
+    },
+    {
+      "name": "DSInput",
+      "id": "DSInput",
+      "file": "lib/core/design_system/ds_input.dart",
+      "line": 10,
+      "axes": [
+        {
+          "name": "state",
+          "values": [
+            "normal",
+            "success",
+            "error"
+          ],
+          "defaultValue": "normal"
+        }
+      ],
+      "states": [
+        "loading",
+        "disabled"
+      ],
+      "uses": 78,
+      "usedInFiles": 25
+    },
+    {
+      "name": "DSIconButton",
+      "id": "DSIconButton",
+      "file": "lib/core/design_system/ds_button.dart",
+      "line": 159,
+      "axes": [
+        {
+          "name": "variant",
+          "values": [
+            "primary",
+            "secondary",
+            "tertiary",
+            "ghost",
+            "brand"
+          ],
+          "defaultValue": "ghost"
+        },
+        {
+          "name": "size",
+          "values": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "defaultValue": "md"
+        }
+      ],
+      "states": [
+        "loading",
+        "disabled"
+      ],
+      "uses": 34,
+      "usedInFiles": 13
+    },
+    {
+      "name": "DSStatusBadge",
+      "id": "DSStatusBadge",
+      "file": "lib/core/design_system/ds_status_badge.dart",
+      "line": 16,
+      "axes": [],
+      "states": [],
+      "uses": 27,
+      "usedInFiles": 12
+    },
+    {
+      "name": "DSSurface",
+      "id": "DSSurface",
+      "file": "lib/core/design_system/ds_surface.dart",
+      "line": 6,
+      "axes": [],
+      "states": [],
+      "uses": 44,
+      "usedInFiles": 9
+    },
+    {
+      "name": "DSChip",
+      "id": "DSChip",
+      "file": "lib/core/design_system/ds_chip.dart",
+      "line": 28,
+      "axes": [],
+      "states": [
+        "selected",
+        "disabled"
+      ],
+      "uses": 11,
+      "usedInFiles": 5
+    },
+    {
+      "name": "DSSwitch",
+      "id": "DSSwitch",
+      "file": "lib/core/design_system/ds_switch.dart",
+      "line": 6,
+      "axes": [],
+      "states": [],
+      "uses": 9,
+      "usedInFiles": 5
+    },
+    {
+      "name": "DSCheckbox",
+      "id": "DSCheckbox",
+      "file": "lib/core/design_system/ds_checkbox.dart",
+      "line": 6,
+      "axes": [],
+      "states": [
+        "disabled"
+      ],
+      "uses": 15,
+      "usedInFiles": 4
+    },
+    {
+      "name": "DSTabBar",
+      "id": "DSTabBar",
+      "file": "lib/core/design_system/ds_tab_bar.dart",
+      "line": 52,
+      "axes": [],
+      "states": [],
+      "uses": 4,
+      "usedInFiles": 4
+    },
+    {
+      "name": "DSDialog",
+      "id": "DSDialog",
+      "file": "lib/core/design_system/ds_dialog.dart",
+      "line": 9,
+      "axes": [],
+      "states": [],
+      "uses": 2,
+      "usedInFiles": 2
+    },
+    {
+      "name": "DSRadio",
+      "id": "DSRadio",
+      "file": "lib/core/design_system/ds_radio.dart",
+      "line": 5,
+      "axes": [],
+      "states": [
+        "disabled"
+      ],
+      "uses": 10,
+      "usedInFiles": 2
+    },
+    {
+      "name": "DSRangeSlider",
+      "id": "DSRangeSlider",
+      "file": "lib/core/design_system/ds_range_slider.dart",
+      "line": 5,
+      "axes": [],
+      "states": [],
+      "uses": 5,
+      "usedInFiles": 2
+    },
+    {
+      "name": "DSAvatar",
+      "id": "DSAvatar",
+      "file": "lib/core/design_system/ds_avatar.dart",
+      "line": 15,
+      "axes": [],
+      "states": [],
+      "uses": 1,
+      "usedInFiles": 1
+    },
+    {
+      "name": "DSInfoChip",
+      "id": "DSInfoChip",
+      "file": "lib/core/design_system/ds_info_chip.dart",
+      "line": 15,
+      "axes": [],
+      "states": [],
+      "uses": 8,
+      "usedInFiles": 1
+    },
+    {
+      "name": "DSNavigationBar",
+      "id": "DSNavigationBar",
+      "file": "lib/core/design_system/ds_navigation_bar.dart",
+      "line": 47,
+      "axes": [],
+      "states": [],
+      "uses": 1,
+      "usedInFiles": 1
+    },
+    {
+      "name": "DSSegmentedControl",
+      "id": "DSSegmentedControl",
+      "file": "lib/core/design_system/ds_segmented_control.dart",
+      "line": 6,
+      "axes": [],
+      "states": [],
+      "uses": 2,
+      "usedInFiles": 1
+    },
+    {
+      "name": "DSSlider",
+      "id": "DSSlider",
+      "file": "lib/core/design_system/ds_slider.dart",
+      "line": 5,
+      "axes": [],
+      "states": [],
+      "uses": 4,
+      "usedInFiles": 1
+    },
+    {
+      "name": "DSDropdown",
+      "id": "DSDropdown",
+      "file": "lib/core/design_system/ds_dropdown.dart",
+      "line": 16,
+      "axes": [],
+      "states": [
+        "disabled"
+      ],
+      "uses": 0,
+      "usedInFiles": 0
+    }
+  ],
+  "outside": [
+    {
+      "name": "JobIdBadge",
+      "id": "JobIdBadge",
+      "file": "lib/shared/widgets/job_id_badge.dart",
+      "line": 6,
+      "axes": [],
+      "states": [],
+      "uses": 14,
+      "usedInFiles": 10
+    },
+    {
+      "name": "RecurringCustomerBadge",
+      "id": "RecurringCustomerBadge",
+      "file": "lib/shared/widgets/recurring_customer_badge.dart",
+      "line": 11,
+      "axes": [],
+      "states": [],
+      "uses": 5,
+      "usedInFiles": 4
+    },
+    {
+      "name": "ChatBubbleFab",
+      "id": "ChatBubbleFab",
+      "file": "lib/shared/widgets/chat_bubble_fab.dart",
+      "line": 19,
+      "axes": [],
+      "states": [],
+      "uses": 3,
+      "usedInFiles": 3
+    },
+    {
+      "name": "ContactCustomerSheet",
+      "id": "ContactCustomerSheet",
+      "file": "lib/features/jobs/presentation/widgets/contact_customer_sheet.dart",
+      "line": 12,
+      "axes": [],
+      "states": [],
+      "uses": 3,
+      "usedInFiles": 3
+    },
+    {
+      "name": "CopyHintRow",
+      "id": "CopyHintRow",
+      "file": "lib/shared/widgets/copy_hint_row.dart",
+      "line": 10,
+      "axes": [],
+      "states": [],
+      "uses": 3,
+      "usedInFiles": 3
+    },
+    {
+      "name": "DeclineExtraHours",
+      "id": "DeclineExtraHours",
+      "file": "lib/features/jobs/presentation/widgets/decline_extra_hours.dart",
+      "line": 27,
+      "axes": [],
+      "states": [],
+      "uses": 6,
+      "usedInFiles": 3
+    },
+    {
+      "name": "EventAddressSection",
+      "id": "EventAddressSection",
+      "file": "lib/features/jobs/presentation/widgets/event_address_section.dart",
+      "line": 18,
+      "axes": [],
+      "states": [],
+      "uses": 4,
+      "usedInFiles": 3
+    },
+    {
+      "name": "InvoiceStatusBadge",
+      "id": "InvoiceStatusBadge",
+      "file": "lib/features/jobs/presentation/widgets/invoice_status_badge.dart",
+      "line": 10,
+      "axes": [],
+      "states": [],
+      "uses": 3,
+      "usedInFiles": 3
+    },
+    {
+      "name": "ProcessTracker",
+      "id": "ProcessTracker",
+      "file": "lib/features/jobs/presentation/widgets/process_tracker.dart",
+      "line": 5,
+      "axes": [],
+      "states": [],
+      "uses": 3,
+      "usedInFiles": 3
+    },
+    {
+      "name": "RestartWidget",
+      "id": "RestartWidget",
+      "file": "lib/core/widgets/restart_widget.dart",
+      "line": 5,
+      "axes": [],
+      "states": [],
+      "uses": 5,
+      "usedInFiles": 3
+    },
+    {
+      "name": "SickDisclaimer",
+      "id": "SickDisclaimer",
+      "file": "lib/features/jobs/presentation/widgets/sick_disclaimer.dart",
+      "line": 15,
+      "axes": [],
+      "states": [],
+      "uses": 3,
+      "usedInFiles": 3
+    }
+  ]
+}
