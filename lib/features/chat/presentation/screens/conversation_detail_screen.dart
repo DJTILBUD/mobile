@@ -56,6 +56,7 @@ void _showFullImage(BuildContext context, String url) {
   );
 }
 
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::ConversationDetailScreen
 class ConversationDetailScreen extends ConsumerStatefulWidget {
   const ConversationDetailScreen({super.key, required this.conversation});
 
@@ -1030,6 +1031,7 @@ class _ConversationDetailScreenState
 
 // ─── Job navigation banner ────────────────────────────────────────────────────
 
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_JobBanner
 class _JobBanner extends ConsumerWidget {
   const _JobBanner({required this.conversation});
 
@@ -1120,6 +1122,7 @@ class _JobBanner extends ConsumerWidget {
 
 // ─── Message list ─────────────────────────────────────────────────────────────
 
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_MessageList
 class _MessageList extends StatelessWidget {
   const _MessageList({
     required this.messages,
@@ -1260,6 +1263,7 @@ class _MessageList extends StatelessWidget {
 
 // ─── Date divider ─────────────────────────────────────────────────────────────
 
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_DateDivider
 class _DateDivider extends StatelessWidget {
   const _DateDivider({required this.date});
 
@@ -1319,6 +1323,7 @@ class _DateDivider extends StatelessWidget {
 
 // ─── Message bubble ───────────────────────────────────────────────────────────
 
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_MessageBubble
 class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     required this.message,
@@ -1809,6 +1814,7 @@ class _MessageBubble extends StatelessWidget {
 
 // Swipe a message to the right to reply (Messenger style): the bubble slides, a reply icon is
 // revealed, and crossing the threshold fires onReply before snapping back.
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_SwipeToReply
 class _SwipeToReply extends StatefulWidget {
   const _SwipeToReply({required this.child, required this.onReply});
 
@@ -1868,6 +1874,7 @@ class _SwipeToReplyState extends State<_SwipeToReply> {
 }
 
 // Small avatar using DS tokens — shows a photo when available, else initials.
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_ChatAvatar
 class _ChatAvatar extends StatelessWidget {
   const _ChatAvatar({required this.name, this.imageUrl});
 
@@ -1918,6 +1925,7 @@ class _ChatAvatar extends StatelessWidget {
 
 // ─── Formatted text (bold + bullets + paragraphs) ────────────────────────────
 
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_FormattedText
 class _FormattedText extends StatelessWidget {
   const _FormattedText({
     required this.text,
@@ -2073,6 +2081,7 @@ class _FormattedText extends StatelessWidget {
 
 /// A small explanatory line shown UNDER a message when one of its job links can't be opened by the
 /// viewer, spelling out which job and why (instead of leaving a silently greyed chip).
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_UnavailableJobNote
 class _UnavailableJobNote extends StatelessWidget {
   const _UnavailableJobNote({
     required this.ref,
@@ -2116,6 +2125,7 @@ class _UnavailableJobNote extends StatelessWidget {
 
 // A job reference rendered inline as a bold id (`#2313`, or `#E2313` for ext
 // jobs). Tappable when the viewer may open it, greyed + inert otherwise.
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_JobChip
 class _JobChip extends StatelessWidget {
   const _JobChip({
     required this.ref,
@@ -2186,6 +2196,7 @@ class _JobChip extends StatelessWidget {
 }
 
 // The composer "@" job picker, shown above the input.
+// @uxid lib/features/chat/presentation/screens/conversation_detail_screen.dart::_MentionPicker
 class _MentionPicker extends StatelessWidget {
   const _MentionPicker({required this.results, required this.onSelect});
 
