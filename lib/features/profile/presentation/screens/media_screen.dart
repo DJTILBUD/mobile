@@ -12,6 +12,7 @@ import 'package:dj_tilbud_app/features/profile/domain/validate_profile_video.dar
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/profile/presentation/screens/media_screen.dart::MediaScreen
 class MediaScreen extends ConsumerWidget {
   const MediaScreen({super.key});
 
@@ -112,6 +113,7 @@ class MediaScreen extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/media_screen.dart::_MediaSection
 class _MediaSection extends ConsumerStatefulWidget {
   const _MediaSection({
     required this.title,
@@ -394,6 +396,7 @@ class _MediaSectionState extends ConsumerState<_MediaSection> {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/media_screen.dart::_MediaTile
 class _MediaTile extends StatelessWidget {
   const _MediaTile({
     required this.file,
@@ -514,6 +517,7 @@ class _MediaTile extends StatelessWidget {
 /// Deliberately DARK: it has to read as "a video with no preview yet", never as an empty slot.
 /// The tile is stacked under the same play badge every other video tile gets, so a thumbnail-less
 /// clip is visually a sibling of the ones that do have previews — which is what it is.
+// @uxid lib/features/profile/presentation/screens/media_screen.dart::_NoVideoPreview
 class _NoVideoPreview extends StatelessWidget {
   const _NoVideoPreview();
 
@@ -532,6 +536,7 @@ class _NoVideoPreview extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/media_screen.dart::_AddTile
 class _AddTile extends StatelessWidget {
   const _AddTile({
     required this.isVideo,
@@ -597,6 +602,7 @@ class _AddTile extends StatelessWidget {
 
 /// DJ party mixes (audio). Upload via the file picker with a short title, list with a play
 /// (opens the audio externally) + delete. Max [maxCount]. Shown to customers on the web profile.
+// @uxid lib/features/profile/presentation/screens/media_screen.dart::_MixesSection
 class _MixesSection extends ConsumerStatefulWidget {
   const _MixesSection({required this.files, required this.maxCount});
 

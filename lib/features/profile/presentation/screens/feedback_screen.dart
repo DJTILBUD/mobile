@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/profile/presentation/screens/feedback_screen.dart::FeedbackScreen
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
 
