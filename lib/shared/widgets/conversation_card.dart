@@ -16,6 +16,7 @@ import 'package:dj_tilbud_app/features/chat/presentation/providers/chat_provider
 /// [showPartnerName] toggles the partner-name subtitle — set false to keep the
 /// card compact when the name is already shown elsewhere.
 /// [compact] reduces the icon size and padding for inline use.
+// @uxid lib/shared/widgets/conversation_card.dart::ConversationCard
 class ConversationCard extends ConsumerWidget {
   const ConversationCard({
     super.key,
