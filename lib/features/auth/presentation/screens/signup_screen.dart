@@ -13,6 +13,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// profile setup, where mobile's existing flow takes over (role select → profile
 /// → onboarding). If confirmations are ever enabled, we instead show a
 /// "check your mail" state (mirrors the web register flow).
+// @uxid lib/features/auth/presentation/screens/signup_screen.dart::SignupScreen
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 

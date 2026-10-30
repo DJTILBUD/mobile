@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 
+// @uxid lib/core/widgets/skeleton_loading.dart::SkeletonCard
 class SkeletonCard extends StatefulWidget {
   const SkeletonCard({super.key});
 
@@ -120,6 +121,7 @@ class _SkeletonCardState extends State<SkeletonCard>
   }
 }
 
+// @uxid lib/core/widgets/skeleton_loading.dart::SkeletonListView
 class SkeletonListView extends StatelessWidget {
   const SkeletonListView({super.key, this.itemCount = 5});
 

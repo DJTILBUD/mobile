@@ -21,6 +21,7 @@ String saxTypeLabel(String saxType) => switch (saxType) {
 /// Mirrors the badge tooltip in web
 /// `instrumentalist/jobs/[job_id]/_components/JobInfo.tsx` — keep the copy in
 /// sync with it. Self-hides for an unknown or empty sax type.
+// @uxid lib/features/jobs/presentation/widgets/sax_type_info.dart::SaxTypeDescription
 class SaxTypeDescription extends StatefulWidget {
   const SaxTypeDescription({super.key, required this.saxType});
 

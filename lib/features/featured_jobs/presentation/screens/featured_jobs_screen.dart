@@ -29,6 +29,7 @@ const _kVisibleExtJobStatuses = <ExtJobStatus>{
   ExtJobStatus.readyForBilling,
 };
 
+// @uxid lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::FeaturedJobsScreen
 class FeaturedJobsScreen extends ConsumerWidget {
   const FeaturedJobsScreen({super.key});
 
@@ -127,6 +128,7 @@ class FeaturedJobsScreen extends ConsumerWidget {
 
 // ─── Job List ────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_JobList
 class _JobList extends StatelessWidget {
   const _JobList({
     required this.jobs,
@@ -180,6 +182,7 @@ class _JobList extends StatelessWidget {
 
 // ─── Ext Job Card ────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_ExtJobCard
 class _ExtJobCard extends StatelessWidget {
   const _ExtJobCard({
     required this.extJob,
@@ -323,6 +326,7 @@ class _ExtJobCard extends StatelessWidget {
 
 // ─── Date Block ──────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_DateBlock
 class _DateBlock extends StatelessWidget {
   const _DateBlock({required this.date, required this.bg, required this.fg});
 
@@ -389,6 +393,7 @@ class _DateBlock extends StatelessWidget {
 
 // ─── Meta List ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_MetaList
 class _MetaList extends StatelessWidget {
   const _MetaList({required this.extJob, required this.c});
 
@@ -421,6 +426,7 @@ class _MetaList extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_MetaItem
 class _MetaItem extends StatelessWidget {
   const _MetaItem({required this.icon, required this.label, required this.c});
 
@@ -449,6 +455,7 @@ class _MetaItem extends StatelessWidget {
 
 // ─── Price Row ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_PriceRow
 class _PriceRow extends StatelessWidget {
   const _PriceRow({required this.extJob, required this.c});
 
@@ -492,6 +499,7 @@ class _PriceRow extends StatelessWidget {
 
 // ─── Action Chip ─────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_ExtJobActionChip
 class _ExtJobActionChip extends StatelessWidget {
   const _ExtJobActionChip({required this.action, required this.c});
 
@@ -549,6 +557,7 @@ class _ExtJobActionChip extends StatelessWidget {
 
 // ─── Error View ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/featured_jobs/presentation/screens/featured_jobs_screen.dart::_ErrorView
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message, required this.onRetry});
 

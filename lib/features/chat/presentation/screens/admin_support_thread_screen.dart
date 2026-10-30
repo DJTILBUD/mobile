@@ -26,6 +26,7 @@ class AdminSupportThreadArgs {
 
 /// The admin-side view of a single DJTILBUD support thread (mobile Support tab). Reads/sends via the
 /// web-app admin endpoints. Own-ness is by sender_type — the admin ('admin') is "us" (right side).
+// @uxid lib/features/chat/presentation/screens/admin_support_thread_screen.dart::AdminSupportThreadScreen
 class AdminSupportThreadScreen extends ConsumerStatefulWidget {
   const AdminSupportThreadScreen({
     super.key,
@@ -722,6 +723,7 @@ class _AdminSupportThreadScreenState
   }
 }
 
+// @uxid lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_MessageList
 class _MessageList extends StatelessWidget {
   const _MessageList({
     required this.messages,
@@ -786,6 +788,7 @@ class _MessageList extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_Bubble
 class _Bubble extends StatelessWidget {
   const _Bubble({
     super.key,
@@ -936,6 +939,7 @@ class _Bubble extends StatelessWidget {
 /// chips are display-only (the mobile app has no admin job-detail screen), so
 /// they're not tappable — they just show the reference clearly instead of the
 /// raw token.
+// @uxid lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_AdminFormattedText
 class _AdminFormattedText extends StatelessWidget {
   const _AdminFormattedText({
     required this.text,
@@ -1012,6 +1016,7 @@ class _AdminFormattedText extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_AdminJobChip
 class _AdminJobChip extends StatelessWidget {
   const _AdminJobChip({
     required this.ref,
@@ -1058,6 +1063,7 @@ class _AdminJobChip extends StatelessWidget {
 
 /// The composer "@" job picker for the admin thread, shown above the input.
 /// Each option warns when the DJ/musician in the thread can't see that job.
+// @uxid lib/features/chat/presentation/screens/admin_support_thread_screen.dart::_AdminMentionPicker
 class _AdminMentionPicker extends StatelessWidget {
   const _AdminMentionPicker({
     required this.results,

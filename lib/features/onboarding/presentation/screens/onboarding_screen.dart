@@ -94,6 +94,7 @@ const _reviewEventTypes = [
   'andet',
 ];
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::OnboardingScreen
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -426,6 +427,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
 // ── Step 1: Profile ───────────────────────────────────────────────────────────
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ProfileStep
 class _ProfileStep extends ConsumerWidget {
   const _ProfileStep({required this.isDj});
 
@@ -517,6 +519,7 @@ class _ProfileStep extends ConsumerWidget {
   ];
 }
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ProfileFieldRow
 class _ProfileFieldRow extends StatelessWidget {
   const _ProfileFieldRow({required this.label, required this.value});
 
@@ -567,6 +570,7 @@ class _ProfileFieldRow extends StatelessWidget {
 
 // ── Edit profile sheet ────────────────────────────────────────────────────────
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_EditProfileSheet
 class _EditProfileSheet extends ConsumerStatefulWidget {
   const _EditProfileSheet({required this.isDj});
 
@@ -892,6 +896,7 @@ class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
 
 // ── Step 2: Pictures & video ──────────────────────────────────────────────────
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_PicturesStep
 class _PicturesStep extends ConsumerStatefulWidget {
   const _PicturesStep();
 
@@ -1236,6 +1241,7 @@ class _PicturesStepState extends ConsumerState<_PicturesStep> {
   }
 }
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ImageTile
 class _ImageTile extends StatelessWidget {
   const _ImageTile({
     required this.file,
@@ -1309,6 +1315,7 @@ class _ImageTile extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_UploadTile
 class _UploadTile extends StatelessWidget {
   const _UploadTile({
     required this.isLoading,
@@ -1384,6 +1391,7 @@ class _UploadTile extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_MediaSectionHeader
 class _MediaSectionHeader extends StatelessWidget {
   const _MediaSectionHeader({
     required this.title,
@@ -1441,6 +1449,7 @@ class _MediaSectionHeader extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_VideoTile
 class _VideoTile extends StatelessWidget {
   const _VideoTile({
     required this.file,
@@ -1536,6 +1545,7 @@ class _VideoTile extends StatelessWidget {
   );
 }
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_VideoUploadTile
 class _VideoUploadTile extends StatelessWidget {
   const _VideoUploadTile({
     required this.isLoading,
@@ -1608,6 +1618,7 @@ class _VideoUploadTile extends StatelessWidget {
 
 // ── Step 3: Reviews ───────────────────────────────────────────────────────────
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_ReviewsStep
 class _ReviewsStep extends ConsumerWidget {
   const _ReviewsStep({required this.isDj});
 
@@ -1799,6 +1810,7 @@ class _ReviewsStep extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_AddReviewSheet
 class _AddReviewSheet extends StatefulWidget {
   const _AddReviewSheet({required this.onSave});
 
@@ -1973,6 +1985,7 @@ class _AddReviewSheetState extends State<_AddReviewSheet> {
 
 // ── Step 4: DJ Filters (full) ─────────────────────────────────────────────────
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_FiltersStep
 class _FiltersStep extends ConsumerStatefulWidget {
   const _FiltersStep({required this.onChanged});
 
@@ -2301,6 +2314,7 @@ class _FiltersStepState extends ConsumerState<_FiltersStep> {
 
 // ── Filter step helpers ───────────────────────────────────────────────────────
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_FilterSectionLabel
 class _FilterSectionLabel extends StatelessWidget {
   const _FilterSectionLabel({required this.title, this.subtitle});
   final String title;
@@ -2330,6 +2344,7 @@ class _FilterSectionLabel extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_FilterSectionHeader
 class _FilterSectionHeader extends StatelessWidget {
   const _FilterSectionHeader({
     required this.title,
@@ -2381,6 +2396,7 @@ class _FilterSectionHeader extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/onboarding/presentation/screens/onboarding_screen.dart::_OnboardingFilterChip
 class _OnboardingFilterChip extends StatelessWidget {
   const _OnboardingFilterChip({
     required this.label,

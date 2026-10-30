@@ -8,6 +8,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 ///
 /// Every musician gets two links: the customer terms (the vilkår the customer
 /// accepts) and their own role-specific terms (DJ or instrumentalist/sax).
+// @uxid lib/features/profile/presentation/screens/terms_screen.dart::TermsScreen
 class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key, required this.role});
 
@@ -77,6 +78,7 @@ class TermsScreen extends StatelessWidget {
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
 }
 
+// @uxid lib/features/profile/presentation/screens/terms_screen.dart::_TermsRow
 class _TermsRow extends StatelessWidget {
   const _TermsRow({
     required this.icon,

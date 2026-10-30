@@ -30,6 +30,7 @@ import 'package:dj_tilbud_app/core/utils/planned_contact.dart';
 String _fmt(num n) =>
     NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::ServiceOfferDetailScreen
 class ServiceOfferDetailScreen extends ConsumerStatefulWidget {
   const ServiceOfferDetailScreen({super.key, required this.offer});
 
@@ -614,6 +615,7 @@ class _ServiceOfferDetailScreenState
 
 // ─── Job Hero Card ────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_JobHeroCard
 class _JobHeroCard extends StatelessWidget {
   const _JobHeroCard({required this.offer});
 
@@ -896,6 +898,7 @@ class _JobHeroCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_MetaRow
 class _MetaRow extends StatelessWidget {
   const _MetaRow({required this.icon, required this.label});
   final IconData icon;
@@ -920,6 +923,7 @@ class _MetaRow extends StatelessWidget {
 
 // ─── Bid Summary Card ─────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_BidSummaryCard
 class _BidSummaryCard extends StatelessWidget {
   const _BidSummaryCard({required this.offer});
 
@@ -1014,6 +1018,7 @@ class _BidSummaryCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_PriceKpi
 class _PriceKpi extends StatelessWidget {
   const _PriceKpi({
     required this.label,
@@ -1064,6 +1069,7 @@ class _PriceKpi extends StatelessWidget {
 
 // ─── Top Status Row (primary status pill + invoice pill if won) ──────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_TopStatusRow
 class _TopStatusRow extends StatelessWidget {
   const _TopStatusRow({required this.offer});
 
@@ -1096,6 +1102,7 @@ class _TopStatusRow extends StatelessWidget {
 
 // ─── Lost Banner ──────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_LostBanner
 class _LostBanner extends StatelessWidget {
   const _LostBanner();
 
@@ -1133,6 +1140,7 @@ class _LostBanner extends StatelessWidget {
 
 // ─── Contact Row ─────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_ContactRow
 class _ContactRow extends StatelessWidget {
   const _ContactRow({required this.icon, required this.label, this.onCopy});
 
@@ -1167,6 +1175,7 @@ class _ContactRow extends StatelessWidget {
 
 // ─── Section ─────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_Section
 class _Section extends StatelessWidget {
   const _Section({required this.title, required this.children});
 
@@ -1205,6 +1214,7 @@ class _Section extends StatelessWidget {
 
 // ─── Won DJ Section (internal jobs, musician view) ───────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_WonDjSection
 class _WonDjSection extends ConsumerWidget {
   const _WonDjSection({required this.jobId});
   final int jobId;
@@ -1299,6 +1309,7 @@ class _WonDjSection extends ConsumerWidget {
 
 // ─── Musician Extra Hours Section ─────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_MusicianExtraHoursSection
 class _MusicianExtraHoursSection extends ConsumerStatefulWidget {
   const _MusicianExtraHoursSection({required this.offer});
   final ServiceOffer offer;
@@ -1469,6 +1480,7 @@ class _MusicianExtraHoursSectionState
 
 // ─── Special Request Fee Section ─────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_SpecialRequestFeeSection
 class _SpecialRequestFeeSection extends ConsumerStatefulWidget {
   const _SpecialRequestFeeSection({required this.offer});
   final ServiceOffer offer;
@@ -1780,6 +1792,7 @@ class _SpecialRequestFeeSectionState
 
 // ─── Musician Notes Section ───────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_MusicianNotesSection
 class _MusicianNotesSection extends ConsumerStatefulWidget {
   const _MusicianNotesSection({required this.offer});
   final ServiceOffer offer;
@@ -1930,6 +1943,7 @@ class _MusicianNotesSectionState extends ConsumerState<_MusicianNotesSection> {
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_DoneButton
 class _DoneButton extends StatelessWidget {
   const _DoneButton({required this.label});
   final String label;
@@ -1965,6 +1979,7 @@ class _DoneButton extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_PlannedContactBanner
 class _PlannedContactBanner extends StatelessWidget {
   const _PlannedContactBanner({required this.date});
   final DateTime date;
@@ -2010,6 +2025,7 @@ class _PlannedContactBanner extends StatelessWidget {
 
 // ─── Info Banner ─────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/screens/service_offer_detail_screen.dart::_InfoBanner
 class _InfoBanner extends StatelessWidget {
   const _InfoBanner({required this.title, required this.body});
   final String title;

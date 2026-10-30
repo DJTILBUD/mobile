@@ -11,6 +11,7 @@ import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_pr
 /// Mirrors web `SelfBillingTermsModal` (same copy; change both together): no close button, no
 /// barrier tap, no back gesture. Accepting goes through the web-app endpoint
 /// `POST /api/self-billing/accept-terms`, the only writer of `self_billing_terms_accepted_at`.
+// @uxid lib/features/profile/presentation/widgets/self_billing_terms_gate.dart::SelfBillingTermsGate
 class SelfBillingTermsGate extends ConsumerStatefulWidget {
   const SelfBillingTermsGate({
     super.key,
@@ -51,6 +52,7 @@ class _SelfBillingTermsGateState extends ConsumerState<SelfBillingTermsGate> {
   }
 }
 
+// @uxid lib/features/profile/presentation/widgets/self_billing_terms_gate.dart::_TermsDialog
 class _TermsDialog extends ConsumerStatefulWidget {
   const _TermsDialog({required this.isDj});
 

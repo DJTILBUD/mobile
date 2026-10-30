@@ -64,6 +64,7 @@ const _hoursMin = 1.0;
 const _hoursMax = 12.0;
 const _hoursDivisions = 11; // step = 1 hour
 
+// @uxid lib/features/profile/presentation/screens/dj_job_filters_screen.dart::DjJobFiltersScreen
 class DjJobFiltersScreen extends ConsumerStatefulWidget {
   const DjJobFiltersScreen({super.key, required this.djId});
 
@@ -528,6 +529,7 @@ class _DjJobFiltersScreenState extends ConsumerState<DjJobFiltersScreen> {
 
 // ── Section headers ───────────────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/dj_job_filters_screen.dart::_SectionHeader
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.title, {this.subtitle});
   final String title;
@@ -557,6 +559,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/dj_job_filters_screen.dart::_ChipSectionHeader
 class _ChipSectionHeader extends StatelessWidget {
   const _ChipSectionHeader({
     required this.title,
@@ -610,6 +613,7 @@ class _ChipSectionHeader extends StatelessWidget {
 
 // ── Filter chip ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/dj_job_filters_screen.dart::_FilterChip
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.label,

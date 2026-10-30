@@ -9,6 +9,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 ///   2. "Jeg har aftalt at snakke med kunden senere" — picks a future date
 ///
 /// Callbacks return `true` on success so the caller can update local state.
+// @uxid lib/features/jobs/presentation/widgets/contact_customer_sheet.dart::ContactCustomerSheet
 class ContactCustomerSheet extends StatefulWidget {
   const ContactCustomerSheet({
     super.key,
@@ -228,6 +229,7 @@ enum _Mode { contacted, planned }
 
 // ── Option tile ──────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/contact_customer_sheet.dart::_OptionTile
 class _OptionTile extends StatelessWidget {
   const _OptionTile({
     required this.selected,
