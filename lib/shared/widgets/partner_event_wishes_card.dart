@@ -8,6 +8,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 /// saxophonist subsection. Mirrors the web DJ udvalgte-jobs / instrumentalist ext-job "Til festen" card
 /// so a DJ (ext-job detail) and a won saxophonist (offer detail) see the same info. Self-hides when
 /// nothing is set, so it's safe to drop in unconditionally.
+// @uxid lib/shared/widgets/partner_event_wishes_card.dart::PartnerEventWishesCard
 class PartnerEventWishesCard extends StatelessWidget {
   const PartnerEventWishesCard({
     super.key,
@@ -212,6 +213,7 @@ class PartnerEventWishesCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/shared/widgets/partner_event_wishes_card.dart::_Field
 class _Field extends StatelessWidget {
   const _Field({
     required this.icon,
