@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider
 /// Mirrors the web app's InvoiceStatusBadge component.
 /// Pass exactly one of [jobId] or [extJobId]. [expand] controls whether the
 /// badge renders as a full-width banner (default) or an inline pill.
+// @uxid lib/features/jobs/presentation/widgets/invoice_status_badge.dart::InvoiceStatusBadge
 class InvoiceStatusBadge extends ConsumerWidget {
   const InvoiceStatusBadge({
     super.key,

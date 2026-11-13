@@ -44,6 +44,7 @@ class DSNavigationItem {
 ///   ),
 /// )
 /// ```
+// @uxid lib/core/design_system/ds_navigation_bar.dart::DSNavigationBar
 class DSNavigationBar extends StatelessWidget {
   const DSNavigationBar({
     super.key,
@@ -84,6 +85,7 @@ class DSNavigationBar extends StatelessWidget {
   }
 }
 
+// @uxid lib/core/design_system/ds_navigation_bar.dart::_DSNavItem
 class _DSNavItem extends StatelessWidget {
   const _DSNavItem({
     required this.item,
@@ -175,6 +177,7 @@ class _DSNavItem extends StatelessWidget {
   }
 }
 
+// @uxid lib/core/design_system/ds_navigation_bar.dart::_Badge
 class _Badge extends StatelessWidget {
   const _Badge({required this.count});
   final int count;

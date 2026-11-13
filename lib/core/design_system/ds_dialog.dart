@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/core/design_system/ds_button.dart';
 /// title, an optional message or custom [content], and a right-aligned row of
 /// action buttons (use [DSButton]s). Prefer [showDSConfirm] for yes/no prompts
 /// and [showDSDialog] for everything else, instead of bare Material AlertDialogs.
+// @uxid lib/core/design_system/ds_dialog.dart::DSDialog
 class DSDialog extends StatelessWidget {
   const DSDialog({
     super.key,

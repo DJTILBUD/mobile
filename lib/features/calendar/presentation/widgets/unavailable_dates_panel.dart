@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// Inline panel with an edit-mode toggle for marking calendar dates as
 /// "optaget" (unavailable). Shared by the Jobs-tab calendar and the profile
 /// Calendar screen so the availability UX stays identical in both places.
+// @uxid lib/features/calendar/presentation/widgets/unavailable_dates_panel.dart::UnavailableDatesPanel
 class UnavailableDatesPanel extends StatelessWidget {
   const UnavailableDatesPanel({
     super.key,

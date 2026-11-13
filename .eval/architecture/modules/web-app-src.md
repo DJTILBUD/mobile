@@ -1,0 +1,1294 @@
+# Module: web-app/src [AI]
+
+(part 1 of 33) Provides frontend customer dashboard UI components along with core backend repository and domain service abstractions for managing marketplace jobs, DJ/musician quotes, user management, billing locks, S3 file storage, and CVR verification. (part 2 of 33) Provides core backend domain services and security helpers for DJTILBUD, covering equipment delivery logistics, job quote selection and tier classification, referral workflows, magic link authentication, auth/role validation, Google Ads conversion tracking, and performer private billing verification. (part 3 of 33) Provides Next.js API route handlers and domain services for authentication, admin operations, performer/venue job lifecycle handling, billing change requests, recurring customer event generation, and notification management. (part 4 of 33) Provides Next.js API route handlers and support services for calendar feed generation (iCal), chat notifications, chat job-link parsing/resolution, admin support conversation management, AI support outcome tracking, and cron job scheduling. (part 5 of 33) Implements scheduled cron endpoints for marketplace lifecycle automation, including job state transitions (open -> sent -> expired), quote/offer invalidation, push/SMS/email reminders to musicians and customers, Make flow maintenance, and Google Ads click analytics backfill. (part 6 of 33) Provides API route handlers and cron background jobs for DJ bidding eligibility, wave status, postcodes, job feedback, equipment delivery tracking, and billing snapshot management for internal and external jobs. (part 7 of 33) Implements DJ availability resolution, matching algorithms, tier-based filtering, and wave-based notification cascade logic for matching DJs to open customer jobs. (part 8 of 33) Provides Next.js API route handlers for DJ lookup/availability, external DJ authentication and job lifecycle workflows, external job status and billing management, as well as file and media upload/reorder/deletion operations backed by Supabase and S3. (part 9 of 33) Provides Next.js API route handlers managing internal DJ/musician job lookups, partner venue metadata, customer invoice retrieval and PDF proxying, job metadata updates, and job lifecycle actions such as canceling, closing/duo booking, wave advancing, saxophone upsells, customer contact tracking, and magic link generation. (part 10 of 33) Provides API route handlers, request validation schemas, and domain guard logic for managing marketplace jobs, including quote submissions by DJs, service offers by musicians, tier quota validations, job status lifecycles (ready-for-billing, reopen, reopen-canceled), and admin reminder/notification triggers. (part 11 of 33) Provides Next.js API route handlers and internal services for the web application, handling job creation and validation, musician availability querying and filtering, partner portal operations (venues, bookings, locations, commissions, DJ showcase, guest song/first dance management), performer self-billing payouts retrieval, and encrypted private DJ billing profile management. (part 12 of 33) Provides Next.js server route handlers, API endpoints, and client web pages for customer job overviews, DJ quotes, musician service offers, private profile and billing management, song request handling, and referral workflows. (part 13 of 33) Provides DJ portal UI pages and components within the web application, including calendar and schedule management with unavailable date configuration, chat conversations with instrumentalists and support, FAQ documentation, DJ feedback submissions, referral tracking, and shared DJ-specific UI widgets. (part 14 of 33) Provides the web interface for DJs to view and bid on event jobs, manage profile information (details, media, payout settings, reviews, standard messages, job filters), handle onboarding, authenticate (login, registration, password recovery), and review system messages. (part 15 of 33) Provides the DJ quote management and detail page in the web app, allowing musicians (DJs) to view submitted quotes, track job status and deadlines, edit notes, log extra hours, handle customer contact records, confirm event readiness, view delivery logistics, and mark jobs as ready for billing. (part 16 of 33) Provides DJ portal interfaces for viewing job feeds, handling assigned external jobs (udvalgte jobs), tracking customer contacts, managing early setup and extra hours, and managing external DJ authentication and DAC7 billing compliance. (part 17 of 33) Provides customer-facing pages (invoices, FAQ, external job quote overview) and musician/instrumentalist portal routes (calendar, chat conversations, external job detail and bidding views, error boundaries, and referral tracking). (part 18 of 33) Provides musician-facing (instrumentalist/saxophonist) web application pages and workflow components for authentication, onboarding, browsing/viewing job details, submitting service offers, handling customer communications, requesting extra hours and special fees, and viewing admin messages. (part 19 of 33) Provides the frontend UI for instrumentalists and musicians in DJTILBUD, enabling musicians to browse available and external jobs, manage sent/won service offers, filter jobs, update profile information, configure payout/billing details, manage media and reviews, and set up communication preferences. (part 20 of 33) Provides the customer-facing web views and UI components for managing and viewing an event job request, reviewing quotes and service offers from DJs and musicians/saxophonists, selecting/booking quotes, and handling job cancellation or FAQs. (part 21 of 33) Provides user-facing web pages and interactive UI components for customers to browse, compare, inspect, and accept quotes and service offers from DJs and musicians, including equipment visualizations, media carousels, pricing breakdowns, and client reviews. (part 22 of 33) Front-end routing, authentication providers, base layout, and customer/partner/performer user interfaces for the DJTILBUD marketplace web application. (part 23 of 33) Provides reusable frontend UI components for the web marketplace, covering DJ profile management (media uploads, bio, genres, regions, payment/billing details), customer-facing quote presentation and badges, DJ profile previews, and modal flows for job confirmation, duo booking (DJ + Saxophonist), and post-booking callback scheduling. (part 24 of 33) Provides UI components for DJ and musician profiles, quote editing, image and video handling, drag-and-drop media reordering, job expiration and cancellation modals, customer metadata collection, and error boundaries. (part 25 of 33) Provides UI components for review management (creating, editing, viewing, and deleting reviews), navigation sidebars (for customer, DJ, and musician roles), multimedia/video uploading, Trustpilot branding, and real-time chat functionality (message list, reactions, mentions, and floating trigger). (part 26 of 33) Provides shared and feature-specific React UI components for the DJTILBUD web application, supporting customer and musician workflows including job browsing, quote countdowns, delivery logistics, referrals, company billing, DJ filters, contact cards, and calendar views. (part 27 of 33) A reusable UI component library for the web application, providing modals, cards, badges, tooltips, and forms for DJs, musicians, and customers across job matching, quote creation, invoicing/payouts, and onboarding flows. (part 28 of 33) Provide shared domain logic, UI components, date/string helpers, and calculation utilities for the DJTILBUD web application, including job bidding qualification, budget adjustments, musician pricing, and UI widgets. (part 29 of 33) A utility and domain helper library for web-app, providing timezone-aware date/time calculations, job/musician filtering logic, quote collision rules, partner pricing comparisons, equipment logistics, rate limiting, and encryption helpers. (part 30 of 33) Domain and business logic helpers for partner pricing, commission calculations, self-billing payout forecasting, quote budget constraints, customer phone formatting, musician referrals, and review sorting. (part 31 of 33) Core business logic helpers and React hooks for the web application, handling musician (saxophone) and DJ booking workflows, high season pricing, schedule resolution, self-billing validations, tier quotas, equipment delivery calculations, and chat/in-app messaging state. (part 32 of 33) Provides custom React and TanStack Query hooks for managing client-side data fetching, caching, mutations, and domain logic across customer jobs, DJ quotes, musician service offers, calendar events, reviews, media uploads, and profile configurations in the DJTILBUD web marketplace. (part 33 of 33) Provides core frontend hooks, UI styling configurations, domain constants, static geographic and FAQ data, encryption helpers, telemetry/logging utilities, and test infrastructure for the DJTILBUD web application.
+
+_This module does not fit in one model call, so it was read in 33 parts and their summaries were combined without a further model call._
+
+## Key files
+- `web-app/src/app/_components/CustomerHome.tsx`: Customer dashboard view (Min side) showing event progress, booking status, and follow-up actions.
+- `web-app/src/app/api/_repositories/BaseRepository/getElevatedSupabase.ts`: Elevated Supabase client factory using the service role key for server-side database access.
+- `web-app/src/app/api/_repositories/JobRepository.ts`: Database access layer for standard customer event jobs, job analytics, status transitions, and billing snapshot queries.
+- `web-app/src/app/api/_repositories/ExtJobRepository.ts`: Database access layer for external job bookings, analytics, date collision checking, and billing snapshots.
+- `web-app/src/app/api/_repositories/QuoteRepository.ts`: Data access for quotes submitted by DJs, handling date collision overwrites and status transitions.
+- `web-app/src/app/api/_services/closeJob/closeJobInSupabase.ts`: Domain logic for closing a job when a quote is accepted, updating winning/losing quotes, triggering notifications, and calculating conversion profit.
+- `web-app/src/app/api/_services/billingLock/billingLock.ts`: Rules and guards for locking performer billing details upon initial completion and managing change requests.
+- `web-app/src/app/api/_services/cvr/lookupCvr.ts`: External integration with cvrapi.dk to lookup and validate legal Danish company names by CVR number.
+- `web-app/src/app/api/_services/equipmentDeliveries/deliveries.ts`: Data access and DTO formatters for equipment delivery operations between DJs, WKNDS delivery partner, and jobs.
+- `web-app/src/app/api/_services/equipmentDeliveries/syncDeliveries.ts`: Cron synchronization service for booking, rebooking, canceling, and sending Klaviyo email notifications for equipment deliveries.
+- `web-app/src/app/api/_services/chooseServiceOffer.ts`: Handles musician/saxophonist offer acceptance cascades, setting competing offers to lost, checking booking conflicts, and updating job status.
+- `web-app/src/app/api/_services/jobs/classifyJobTier.ts`: Classifies incoming customer jobs into tiers (A, B, Z) based on budget thresholds for DJ allocation.
+- `web-app/src/app/api/_services/referrals/createReferral.ts`: Creates referral ExtJobs and Referrals records when DJs or saxophonists refer leads, triggering notifications and admin follow-up actions.
+- `web-app/src/app/api/_services/magicLink/generateMagicLink.ts`: Generates cryptographically random one-time keys and stores them in Supabase for user authentication via magic links.
+- `web-app/src/app/api/_services/getAuthedUser.ts`: Extracts and authenticates Supabase users from Authorization headers supporting both web (bare token) and mobile (Bearer token) formats.
+- `web-app/src/app/api/_services/googleAds/clickCampaigns.ts`: Queries the Google Ads API click_view resource via REST to backfill campaign IDs from GCLIDs.
+- `web-app/src/app/api/_services/selfBilling/acceptSelfBillingTerms.ts`: Records explicit acceptance of self-billing terms for performers on Invoice payment methods.
+- `web-app/src/app/api/_services/fetchInIdBatches.ts`: Utility that splits large ID collections into chunks of 200 before executing PostgREST .in() queries to avoid URI length limits.
+- `web-app/src/app/api/_services/notifyJobReopened.ts`: Resolves audiences and triggers push notifications when jobs/quotes are reopened or tier restrictions are lifted.
+- `web-app/src/app/api/_services/recurringLocation.ts`: Calculates location selection, billing configuration, and metadata snapshots for recurring/partner customer accounts.
+- `web-app/src/app/api/_services/spawnRecurringExtJob.ts`: Core domain logic to spawn external bookings (ExtJobs) and associate JobMetadata from recurring customer accounts.
+- `web-app/src/app/api/_services/updateRecurringExtJob.ts`: Handles partner/recurring customer modifications to existing bookings and recalculates server-side pricing.
+- `web-app/src/app/api/_services/resolveSaxOfferPricing.ts`: Enforces server-side recalculation of musician quote pricing and performer payout to prevent stale mobile client figures.
+- `web-app/src/app/api/_services/resolveExtJobSaxPrice.ts`: Resolves customer sax price and performer budget according to partner/venue configuration.
+- `web-app/src/app/api/_services/resolveVenueAddOnPolicy.ts`: Evaluates venue policies for early setup and extra hours add-ons on recurring jobs.
+- `web-app/src/app/api/_services/setExtraHoursDeclined.ts`: Handles performer declination of extra hours on quotes, ext jobs, and service offers.
+- `web-app/src/app/api/_services/syncUnsentInvoiceBilling.ts`: Synchronizes customer B2B or private billing metadata onto unsent invoice records.
+- `web-app/src/app/api/billing-change-requests/route.ts`: Route handler allowing performers (DJs and musicians) to view and create billing info change requests.
+- `web-app/src/app/api/auth/magic/route.ts`: Handles verification and redirection for magic link authentication.
+- `web-app/src/app/api/admin/recurring-customers/[id]/spawn/route.ts`: Admin route handler to book partner events via phone by triggering spawnRecurringExtJob.
+- `web-app/src/app/api/calendar/ical/route.ts`: Generates public, token-authenticated iCal (.ics) calendar feeds for DJs and musicians based on won quotes, offers, and assigned external jobs.
+- `web-app/src/app/api/calendar/token/route.ts`: Fetches or regenerates the calendar subscription token for authenticated DJs and musicians.
+- `web-app/src/app/api/chat/_services/jobLinkQuery.ts`: Parses '@' job link search queries to differentiate external jobs ('E' prefix) from internal jobs or event text.
+- `web-app/src/app/api/chat/_services/resolveJobLink.ts`: Resolves '@job:<id>' and '@extjob:<id>' references based on user role and visibility permissions.
+- `web-app/src/app/api/chat/job-links/resolve/route.ts`: POST endpoint resolving job references in chat messages for the current authenticated viewer.
+- `web-app/src/app/api/chat/linkable-jobs/route.ts`: GET endpoint providing accessible biddable/owned jobs for the composer '@' picker.
+- `web-app/src/app/api/chat/notify/route.ts`: Triggers the 'notify-chat-message' push notification edge function for the newest chat message.
+- `web-app/src/app/api/chat/support/ensure/route.ts`: Ensures an authenticated musician or DJ has a pinned support conversation, seeding an initial welcome message.
+- `web-app/src/app/api/chat/support/admin/threads/route.ts`: Lists support conversation threads for admins with search, unread tracking, and last activity metrics.
+- `web-app/src/app/api/chat/support/admin/[conversationId]/messages/route.ts`: Retrieves support conversation messages or posts an admin reply, closing pending AI decisions.
+- `web-app/src/app/api/chat/support/admin/_aiOutcome.ts`: Closes pending AI support triage decisions and tracks outcome status (such as replied_same_as_draft or dismissed).
+- `web-app/src/app/api/cron/calculate-badges/route.ts`: Cron route computing dynamic badge qualifications and thresholds for DJs based on bookings, reviews, and response stats.
+- `web-app/src/app/api/cron/chat-reminders/route.ts`: Cron route triggering 'notify-chat-reminder' for unused auto-created DJ-musician chats.
+- `web-app/src/app/api/cron/check-quote/route.ts`: Orchestrates periodic job status updates from open to sent, sent to expired, and ensures expired jobs have their quotes and service offers transitioned to lost.
+- `web-app/src/app/api/cron/check-quote/_helpers/fromOpenToSent/fromOpenToSent.ts`: Advances open jobs to sent status once minimum quote count and time thresholds or quote_send_mode conditions are met.
+- `web-app/src/app/api/cron/check-quote/_helpers/fromSentToExpiredExtJobs/fromSentToExpiredExtJobs.ts`: Auto-expires external musician jobs whose decision deadline elapsed, flips active offers to lost, and triggers push notifications.
+- `web-app/src/app/api/cron/customer-call-sms/route.ts`: Dispatches SMS notifications via Make webhook to customers 2 days after job quote delivery to arrange follow-up calls.
+- `web-app/src/app/api/cron/event-info-reminders/route.ts`: Mails customers magic links with performer and booking details at 45-day and 20-day pre-event milestones via Klaviyo.
+- `web-app/src/app/api/cron/reopen-followups/route.ts`: Emails customers with canceled jobs at scheduled follow-up due dates to prompt reopening.
+- `web-app/src/app/api/cron/gclid-campaigns/route.ts`: Queries the Google Ads API to resolve campaign IDs for pending GCLID clicks and saves them to JobsAnalytics.
+- `web-app/src/app/api/cron/musician-second-wave/route.ts`: Broadcasts second-wave job opportunities to out-of-region saxophonists when jobs remain unfilled after 24 hours.
+- `web-app/src/app/api/cron/content-reminders/route.ts`: Dispatches push notifications reminding DJs to record and upload content around event start/end times.
+- `web-app/src/app/api/cron/snapshot-billing/route.ts`: Cron route that freezes/snapshots payment method types on completed jobs and external jobs
+- `web-app/src/app/api/cron/snapshot-billing/_helpers/snapshotBillingForPlayedJobs/snapshotBillingForPlayedJobs.ts`: Helper for capturing and recording billing snapshot data for completed internal DJ jobs
+- `web-app/src/app/api/cron/snapshot-billing/_helpers/snapshotBillingForPlayedExtJobs/snapshotBillingForPlayedExtJobs.ts`: Helper for capturing and recording billing snapshot data for completed external jobs (DJs and musicians)
+- `web-app/src/app/api/cron/tier-fallback/route.ts`: Cron route lifting tier restrictions on jobs older than 24 hours without quotes and notifying DJs
+- `web-app/src/app/api/cron/widen-job-waves/route.ts`: Cron route for supply/matching cascade expansion that advances wave stages and sends push reminders
+- `web-app/src/app/api/deliveries/[id]/complete/route.ts`: API route for delivery partners and admins to mark an equipment delivery as completed or undo completion
+- `web-app/src/app/api/deliveries/job/[job_id]/route.ts`: API route for DJs to view and update logistics and access conditions for equipment deliveries on won jobs
+- `web-app/src/app/api/deliveries/mine/route.ts`: API route returning upcoming equipment deliveries and action levels for the authenticated DJ
+- `web-app/src/app/api/deliveries/partner/route.ts`: API route providing the overview of past and upcoming deliveries for delivery partner accounts and admins
+- `web-app/src/app/api/dj/biddable-jobs/route.ts`: API route returning customized, filtered, and budget-adjusted biddable jobs for the requesting DJ
+- `web-app/src/app/api/dj/jobs/[job_id]/bid-status/route.ts`: API route verifying if the calling DJ is eligible to place a bid on a specific job
+- `web-app/src/app/api/dj/jobs/[job_id]/feedback/route.ts`: API route for querying and submitting DJ feedback reasons for not bidding on a job
+- `web-app/src/app/api/dj/jobs/[job_id]/wave-status/route.ts`: API route to check if a job's matching wave has opened for the requesting DJ
+- `web-app/src/app/api/dj/postcode-status/route.ts`: API route reporting whether the DJ is missing a postcode or has locked billing info
+- `web-app/src/app/api/djs/available/_services/advanceJobWave.ts`: Calculates and executes wave widening for a job's matching cascade based on existing ranked scores, tier quotas, and availability exclusions.
+- `web-app/src/app/api/djs/available/_services/getAvailableDjInfos.ts`: Filters eligible DJs based on region, date availability, suppression, quote status, and equipment delivery criteria.
+- `web-app/src/app/api/djs/available/_services/rankAvailableDjs.ts`: Calculates multi-dimensional match scores (price fit, win rate, genres, distance decay, fairness exposure) and persists ranking/selection decisions to JobDjScores.
+- `web-app/src/app/api/djs/available/_services/scoreDj.ts`: Provides pure scoring mathematical functions (Bayesian win rate, distance decay, price fit, genre fit, tier matching) and wave selection.
+- `web-app/src/app/api/djs/available/_services/matchingConfig.ts`: Defines configuration constants, weights, and thresholds for the supply/matching algorithm.
+- `web-app/src/app/api/djs/available/_services/resolveCascadeSettings.ts`: Retrieves runtime cascade settings from the database (MatchingSettings) with fallback to config constants.
+- `web-app/src/app/api/djs/available/_services/resolveJobFilterContext.ts`: Merges explicit request parameters with database job row attributes for complete filtering context.
+- `web-app/src/app/api/djs/available/_services/resolveMatchingMode.ts`: Checks the feature flag to determine whether matching runs in 'live' or 'shadow' mode.
+- `web-app/src/app/api/djs/available/_services/fetchReachableDjIds.ts`: Checks device tokens to filter reachable DJs who have not disabled push notifications for new jobs.
+- `web-app/src/app/api/djs/available/_services/getEmailsWithMagicLinks.ts`: Fetches DJ auth emails and generates one-time magic links for notifications.
+- `web-app/src/app/api/djs/available/route.ts`: Calculates available DJs for a given region and date with support for ranking, job filter fallbacks, and magic link distribution
+- `web-app/src/app/api/djs/region/route.ts`: Retrieves DJ emails within a specific region for authorized administrators
+- `web-app/src/app/api/ext-dj/jobs/route.ts`: Fetches confirmed internal and external jobs for external DJs via session token or OTP authentication
+- `web-app/src/app/api/ext-dj/send-otp/route.ts`: Generates and sends login OTP codes to external DJs via Klaviyo
+- `web-app/src/app/api/ext-dj/update-billing-info/route.ts`: Saves and locks DAC7 billing details (encrypted CPR, bank account, address) for external DJs
+- `web-app/src/app/api/ext-jobs/route.ts`: Creates new external job records with validation, analytics recording, and push notification triggers
+- `web-app/src/app/api/ext-jobs/[ext_job_id]/ready-for-billing/route.ts`: Transitions external jobs to ready_for_billing status after verifying customer contact and musician completion
+- `web-app/src/app/api/files/route.ts`: Handles user media file retrieval, upload (including video thumbnail processing), and authenticated S3/DB deletion
+- `web-app/src/app/api/files/signed-url/route.ts`: Generates authorized S3 presigned upload URLs with scoped key generation
+- `web-app/src/app/api/files/reorder/route.ts`: Persists custom display order for performer media galleries
+- `web-app/src/app/api/internal-dj/ext-jobs/route.ts`: Returns external jobs assigned to a specific internal DJ enriched with venue photos, metadata, and partner recurring customer names while stripping internal ops columns.
+- `web-app/src/app/api/internal-musician/ext-job-recurring-names/route.ts`: Resolves partner recurring-customer names for external jobs visible to musicians to display venue badge chips on job cards.
+- `web-app/src/app/api/internal-musician/partner-ext-job-ids/route.ts`: Returns external job IDs that belong to partner-portal recurring accounts so musician client-side feed hooks can filter appropriately.
+- `web-app/src/app/api/invoices/[invoicing_id]/pdf/route.ts`: Validates customer ownership and proxies PDF downloads from the admin Dinero integration endpoint.
+- `web-app/src/app/api/invoices/route.ts`: Lists customer-facing sent base and supplementary invoices scoped to the authenticated user's jobs.
+- `web-app/src/app/api/job-metadata/route.ts`: Reads and persists additional job metadata (contact preferences, billing details, event addresses) with role-based access scoping.
+- `web-app/src/app/api/jobs/[job_id]/add-sax-and-trigger-musicians/route.ts`: Updates job flags to request a saxophonist, dispatches musician push notifications, and triggers the Make sax campaign webhook.
+- `web-app/src/app/api/jobs/[job_id]/advance-wave/route.ts`: Admin route to advance and widen the DJ matching wave for a job immediately and send push reminders.
+- `web-app/src/app/api/jobs/[job_id]/cancel/route.ts`: Handles job cancellation by the lead customer and marks associated quotes as lost.
+- `web-app/src/app/api/jobs/[job_id]/close/route.ts`: Closes a job with a winning quote and handles single DJ or duo bookings (DJ plus saxophone service offer).
+- `web-app/src/app/api/jobs/[job_id]/customer-contact/route.ts`: Allows winning DJs to record whether customer contact is completed or planned for a future date.
+- `web-app/src/app/api/jobs/[job_id]/invoice-status/route.ts`: Returns the first-invoice payment status for a job to authorized leads, winning DJs, or winning musicians.
+- `web-app/src/app/api/jobs/[job_id]/magic-link/route.ts`: Generates authenticated magic links for a job's customer lead or admin.
+- `web-app/src/app/api/jobs/[job_id]/quotes/route.ts`: Handles quote creation on a job by an authenticated DJ or admin with validations for pause state, archive state, biddable status, quote caps, budget limits, tier quotas, and equipment delivery.
+- `web-app/src/app/api/jobs/[job_id]/quotes/_helpers/validateTierQuota.ts`: Enforces tier quotas on jobs (A-hold vs B-hold quota limits for A, B, and Z tier jobs).
+- `web-app/src/app/api/jobs/[job_id]/ready-for-billing/route.ts`: Handles transition of won jobs to 'ready_for_billing' after verifying the winning DJ has contacted the customer and all winning musicians have contacted the customer.
+- `web-app/src/app/api/jobs/[job_id]/remind-available/route.ts`: Provides admin dry-run (GET) and trigger (POST) endpoints for push notifications to eligible DJs and musicians with per-cohort cooldowns.
+- `web-app/src/app/api/jobs/[job_id]/reopen/route.ts`: Allows customers to reopen expired jobs, overwriting existing quotes and resetting the expiry timer.
+- `web-app/src/app/api/jobs/[job_id]/reopen-canceled/route.ts`: Allows customers to reopen canceled jobs, setting existing quotes to overwritten and job status to reopened.
+- `web-app/src/app/api/jobs/[job_id]/service-offers/route.ts`: Creates musician service offers for a job, authorized via internal API key.
+- `web-app/src/app/api/jobs/no-quotes/route.ts`: Returns open and another_round jobs that have existed for more than 24 hours without any quotes.
+- `web-app/src/app/api/jobs/notify-reopened/route.ts`: Triggers push notifications when jobs are reopened for another round or when tiers open.
+- `web-app/src/app/api/jobs/validations/NewJobRequestSchema.ts`: Zod schema validating new job creation requests including date, region, contact info, genres, budget, musician requests, and analytics.
+- `web-app/src/app/api/jobs/route.ts`: API handler for creating jobs with tier classification, database persistence, and new job notification edge function dispatch.
+- `web-app/src/app/api/musicians/available/route.ts`: API handler querying available musicians by date/instrument with regional window and job filter checks, generating magic links if requested.
+- `web-app/src/app/api/musicians/available/_services/getAvailableMusicians.ts`: Service querying active musicians not marked unavailable, checking both regular and external jobs/service offers on a target date.
+- `web-app/src/app/api/partner/bookings/route.ts`: API handler for listing partner bookings and creating/spawning recurring external partner bookings.
+- `web-app/src/app/api/partner/public/[slug]/bookings/route.ts`: Public unauthenticated route handler for venue customers to book events by slug, including bot/rate limiting and magic link delivery.
+- `web-app/src/app/api/partner/commission/route.ts`: API handler calculating partner commission earnings, upcoming and paid amounts, including saxophonist line commissions.
+- `web-app/src/app/api/payouts/mine/route.ts`: Performer endpoint retrieving self-billing payout details, execution dates, forecast state, and credit note document access tokens.
+- `web-app/src/app/api/private-dj-info/route.ts`: Performer endpoint managing encrypted private DJ billing information, bank account validations, and billing locks.
+- `web-app/src/app/api/quotes/[id]/route.ts`: Route handler managing quote updates, edit window validations, budget lock checks, and early setup pricing adjustments.
+- `web-app/src/app/api/service-offers/route.ts`: Route handler for creating and validating musician service offers on standard and external jobs.
+- `web-app/src/app/api/service-offer/[offerId]/choose/route.ts`: Route handler executing customer selection and admin assignment cascades for musician offers.
+- `web-app/src/app/api/service-offer/[offerId]/route.ts`: Route handler for 10-minute offer withdrawal and automatic job reopening.
+- `web-app/src/app/api/private-musician-info/route.ts`: Route handler providing encrypted persistence and retrieval of sensitive musician banking, tax, and billing details.
+- `web-app/src/app/api/referrals/route.ts`: Route handler managing DJ and musician customer referrals.
+- `web-app/src/app/api/song-request/[token]/route.ts`: Public rate-limited endpoints for scanning QR tokens and submitting live guest song requests with push notification alerts.
+- `web-app/src/app/arrangementer/page.tsx`: Customer UI page rendering event cards and job request statuses.
+- `web-app/src/app/change-email/page.tsx`: UI page facilitating user email address update requests.
+- `web-app/src/app/dj/calendar/page.tsx`: DJ calendar page displaying unified calendar views of new, pending/sent, and won jobs.
+- `web-app/src/app/dj/_components/DjUnifiedCalendarSection.tsx`: Unified calendar component combining unbid jobs, sent quotes, won quotes, external jobs, and iCal export modal.
+- `web-app/src/app/dj/_components/OverviewJobsCalendar.tsx`: Interactive calendar grid rendering events and handling manual unavailable dates queries and mutations for DJs or musicians.
+- `web-app/src/app/dj/chat/[conversation_id]/page.tsx`: DJ direct chat page for communicating with musicians/instrumentalists or DJTILBUD support, featuring typing channels and reactions.
+- `web-app/src/app/dj/chats/page.tsx`: Chat listing page showing all active conversations for the DJ.
+- `web-app/src/app/dj/faq/page.tsx`: Frequently asked questions page covering equipment, payment, quoting processes, and won job workflows.
+- `web-app/src/app/dj/feedback/page.tsx`: Form for DJs to submit feedback to DJTILBUD.
+- `web-app/src/app/dj/henvisninger/page.tsx`: Referrals page wrapper passing the 'dj' role to the shared referrals component.
+- `web-app/src/app/dj/_components/DjJobStatusBadge.tsx`: Status badge component visualizing job states from the DJ perspective (e.g. open, bid placed, won, lost, expired).
+- `web-app/src/app/dj/_components/DjMessageCard.tsx`: Renders broadcast/announcement admin messages with markdown formatting and mark-as-read mutation support.
+- `web-app/src/app/dj/_components/DjOverviewTd.tsx`: Wrapper component for scrollable table cells in overview layouts.
+- `web-app/src/app/dj/_components/constants.ts`: Style constants for border color and border width.
+- `web-app/src/app/dj/jobs/[id]/page.tsx`: DJ job detail view where the DJ inspects event details and submits a quote or rejects the job
+- `web-app/src/app/dj/jobs/[id]/_components/QuoteForm/QuoteForm.tsx`: Form component used by DJs to prepare and submit quotes (pricing, equipment configuration, early setup, sales pitch)
+- `web-app/src/app/dj/jobs/[id]/_components/JobFeedbackPrompt.tsx`: Inline prompt for collecting feedback from DJs about why they chose not to bid on a specific job
+- `web-app/src/app/dj/onboarding/page.tsx`: Multi-step onboarding wizard for newly registered DJs to configure profile, upload media, submit reviews, and set filters
+- `web-app/src/app/dj/profile/page.tsx`: DJ profile dashboard for updating personal details, viewing delivered equipment info, managing song request QR codes, and previewing the profile
+- `web-app/src/app/dj/profile/job-filters/page.tsx`: Job filters configuration screen enabling DJs to filter incoming job opportunities
+- `web-app/src/app/dj/profile/payment/page.tsx`: DJ payout and billing information management page
+- `web-app/src/app/dj/profile/content/page.tsx`: Media content upload and management page for event video clips
+- `web-app/src/app/dj/quotes/[id]/page.tsx`: Main page component rendering the quote details, status badges, timers, logistics cards, withdrawal dialog, and related sub-views.
+- `web-app/src/app/dj/quotes/[id]/_components/AddExtraHours.tsx`: Modal/form component for calculating and submitting or removing additional performance hours and payout adjustments.
+- `web-app/src/app/dj/quotes/[id]/_components/CustomerDetailsModal.tsx`: Modal for viewing customer contact info and logging whether customer contact was completed or scheduled.
+- `web-app/src/app/dj/quotes/[id]/_components/DeliveryProcessSteps.tsx`: Component tracking the step-by-step progress for equipment delivery jobs.
+- `web-app/src/app/dj/quotes/[id]/_components/DjNotes.tsx`: Card allowing DJs to save and edit private preparation notes for a quote.
+- `web-app/src/app/dj/quotes/[id]/_components/LeadInfo.tsx`: Component displaying customer lead details, event countdown, contact status, and action buttons for customer contact and readiness confirmation.
+- `web-app/src/app/dj/quotes/[id]/_components/QuoteForm.tsx`: Form for submitting a quote with price, equipment description, and sales pitch.
+- `web-app/src/app/dj/quotes/[id]/_components/QuoteInfo.tsx`: Breakdown component showing customer pricing, early setup, extra hours, platform commission, and net DJ payout.
+- `web-app/src/app/dj/quotes/[id]/_components/ReadyForBillingModal.tsx`: Modal for closing the deal, recording early setup acceptance, and triggering invoice generation.
+- `web-app/src/app/dj/quotes/[id]/_components/SongRequestsSection.tsx`: Component displaying guest song requests submitted for the event.
+- `web-app/src/app/dj/quotes/[id]/_helpers/getCountdownTargetDate/getCountdownTargetDate.ts`: Calculates the quote acceptance countdown deadline based on event date, sent date, and manual extensions.
+- `web-app/src/app/dj/page.tsx`: DJ overview dashboard displaying unbid jobs, pending quotes, won jobs, lost jobs, and view mode toggling.
+- `web-app/src/app/dj/udvalgte-jobs/page.tsx`: List view of assigned external jobs (udvalgte jobs) for internal DJs with upcoming and past job filtering.
+- `web-app/src/app/dj/udvalgte-jobs/[id]/page.tsx`: Detail view for an assigned external job, managing workflow steps, customer contact status, billing readiness, and extra hours.
+- `web-app/src/app/dj/udvalgte-jobs/_components/ExtJobCustomerDetailsModal.tsx`: Modal for viewing customer contact info and recording contact confirmations or planned call dates.
+- `web-app/src/app/ext-dj/page.tsx`: External DJ portal providing email OTP authentication, DAC7 compliance gates, billing lock management, and won job views.
+- `web-app/src/app/ext-dj/_components/AddExtExtraHours.tsx`: Component allowing DJs to submit, update, or remove agreed extra performance hours and recalculate payouts.
+- `web-app/src/app/ext-dj/_components/AddExtEarlySetup.tsx`: Component enabling DJs to manage early setup fees and times on assigned external jobs.
+- `web-app/src/app/ext-dj/_components/ExtDjBillingForm.tsx`: Full-page DAC7 billing form validating CPR, bank account, and postal address before unlocking external DJ jobs.
+- `web-app/src/app/ext-dj/_components/ExtDjJobCard.tsx`: Job display card for external DJs rendering event specifics, contact information, and extra hours actions.
+- `web-app/src/app/ext-dj/_components/ExtDjLoginForm.tsx`: Authentication form handling email input and 6-digit OTP entry for external DJ access.
+- `web-app/src/app/ext-dj/_components/ExtDjHeader.tsx`: Header bar for external DJs showing user metadata and session logout.
+- `web-app/src/app/ext-job/[ext_job_id]/page.tsx`: Client page rendering external job details, DJ and Musician quote cards, status badges, and booking metadata for customers or shared links.
+- `web-app/src/app/ext-job/[ext_job_id]/quote/page.tsx`: Route redirecting external job quote requests directly to the main external job status page.
+- `web-app/src/app/faktura/page.tsx`: Customer billing and invoice portal displaying invoice summaries, payment statuses, and PDF download triggers.
+- `web-app/src/app/faq/page.tsx`: Customer FAQ page categorizing frequently asked questions before and during events.
+- `web-app/src/app/instrumentalist/_components/MusicianUnifiedCalendarSection.tsx`: Unified calendar view for musicians showing available internal jobs, external jobs, sent offers, and won bookings with filtering and iCal export.
+- `web-app/src/app/instrumentalist/calendar/page.tsx`: Page displaying the musician's schedule and available job opportunities via the unified calendar section.
+- `web-app/src/app/instrumentalist/chat/[conversation_id]/page.tsx`: Musician chat interface supporting DJ-to-musician messaging and support thread communication with read receipts and typing indicators.
+- `web-app/src/app/instrumentalist/chats/page.tsx`: Overview page listing active chat threads for musicians.
+- `web-app/src/app/instrumentalist/ext-jobs/[ext_job_id]/_components/ExtJobInfo.tsx`: Presentation component displaying external job requirements, playing hours, location, sax style, and estimated payout.
+- `web-app/src/app/instrumentalist/ext-jobs/[ext_job_id]/page.tsx`: External job details and offer submission page for musicians to review venue details, active offers, date conflicts, and submit service offers.
+- `web-app/src/app/instrumentalist/henvisninger/page.tsx`: Musician referral page for managing and viewing referral commissions.
+- `web-app/src/app/instrumentalist/_components/MusicianErrorBoundary.tsx`: React error boundary component handling and recovering from uncaught runtime UI errors in the musician portal.
+- `web-app/src/app/instrumentalist/_components/ErrorState.tsx`: UI alert components for displaying generic error states and not-found states across musician screens.
+- `web-app/src/app/instrumentalist/_components/LoadingState.tsx`: Full-height loading spinner component for musician views.
+- `web-app/src/app/instrumentalist/_types/index.ts`: TypeScript type definitions and type guards discriminating between internal and external musician jobs.
+- `web-app/src/app/instrumentalist/jobs/[job_id]/page.tsx`: Job detail page for instrumentalists to inspect job specs, manage quotes/offers, view DJ details, and submit service offers.
+- `web-app/src/app/instrumentalist/offers/[offer_id]/page.tsx`: Detail page for musician service offers, supporting bid withdrawal, status checks, invoice tracking, extra hours, and special request fee adjustments.
+- `web-app/src/app/instrumentalist/onboarding/page.tsx`: Multi-step onboarding wizard guiding musicians through profile creation, media uploads (images and videos), and customer reviews.
+- `web-app/src/app/instrumentalist/login/page.tsx`: Musician-specific login screen with routing back to dashboard or login redirects.
+- `web-app/src/app/instrumentalist/messages/page.tsx`: Musician inbox for system and administrative messages from DJTILBUD.
+- `web-app/src/app/instrumentalist/jobs/[job_id]/_components/OfferForm.tsx`: Form component for writing/submitting service offers with sales pitches and standard templates.
+- `web-app/src/app/instrumentalist/jobs/[job_id]/_components/CustomerDetailsModal.tsx`: Modal for viewing customer contact info and tracking contacted/planned outreach states.
+- `web-app/src/app/instrumentalist/jobs/[job_id]/_components/AddServiceOfferExtraHours.tsx`: Component allowing musicians to add, edit, or remove overtime/extra hours on service offers within the allowed window.
+- `web-app/src/app/instrumentalist/jobs/[job_id]/_components/AddServiceOfferSpecialRequestFee.tsx`: Component allowing musicians to register and manage additional custom fees for special requests.
+- `web-app/src/app/instrumentalist/page.tsx`: Overview dashboard page displaying available/external jobs, job filtering, calendar view, and sent/won service offers
+- `web-app/src/app/instrumentalist/profile/page.tsx`: Musician profile editor page for general info, instruments, rates, genres, regions, and past venues
+- `web-app/src/app/instrumentalist/profile/job-filters/page.tsx`: Musician job filters settings page with unsaved change detection and route navigation guards
+- `web-app/src/app/instrumentalist/profile/payment/page.tsx`: Payout and private billing details configuration page for musicians
+- `web-app/src/app/instrumentalist/profile/media/page.tsx`: Media management page for uploading musician profile photos and promotional/greeting videos
+- `web-app/src/app/instrumentalist/profile/reviews/page.tsx`: Musician client review display and upsert management modal container
+- `web-app/src/app/instrumentalist/profile/_components/VenuesTagInput.tsx`: Tag input component for musician/DJ experience and past performance venues
+- `web-app/src/app/instrumentalist/profile/_djSaxCollaborationSelector/DjSaxCollaborationSelector.tsx`: Radio selector component for musician DJ-Sax collaboration experience levels
+- `web-app/src/app/instrumentalist/profile/_musicianGenresSelector/MusicianGenresSelector.tsx`: Interactive tag list component for selecting musician genres
+- `web-app/src/app/job/[job_id]/page.tsx`: Customer overview page for an event job showing description, timing, location, contact details, status progress, and a cancellation modal trigger.
+- `web-app/src/app/job/[job_id]/_components/CancelEventModal.tsx`: Modal for customer-initiated event cancellation with structured reason selection and feedback notes.
+- `web-app/src/app/job/[job_id]/question/page.tsx`: FAQ and customer support guidance page for pre- and during-event inquiries.
+- `web-app/src/app/job/[job_id]/quote/_components/StatusSentJobPage/StatusSentJobPage.tsx`: Customer view for open/sent job quotes and musician offers, supporting quote comparison, early setup pricing, and duo bookings.
+- `web-app/src/app/job/[job_id]/quote/_components/StatusClosedJobPage.tsx`: Post-booking confirmation view for finalized jobs displaying winning DJ/musician contact details, celebration feedback, and call scheduling.
+- `web-app/src/app/job/[job_id]/quote/_components/StatusClosedJobPage/ChooseSaxModal.tsx`: Modal for choosing and scheduling call times with a saxophonist/musician for duo bookings.
+- `web-app/src/app/job/[job_id]/quote/_components/StatusSentJobPage/MusicianOfferCard.tsx`: Card UI component displaying individual musician/saxophonist service offers, reviews, media, and venue match badges.
+- `web-app/src/app/job/[job_id]/quote/_helpers/rankQuotes.ts`: Utility helper for ordering DJ quotes by calculated customer price.
+- `web-app/src/app/job/[job_id]/quote/page.tsx`: Root page for job quote overview, handling status switching (open, sent, closed, expired) and quote acceptance dialogs.
+- `web-app/src/app/job/[job_id]/quote/[quote_id]/page.tsx`: Detailed individual DJ quote view displaying media, pitch message, equipment setup, pricing, reviews, and sticky booking CTAs.
+- `web-app/src/app/job/[job_id]/quote/[quote_id]/_components/QuoteMessageSection.tsx`: Renders the DJ's sales pitch message and equipment chip list, triggering the DJ setup visualizer modal.
+- `web-app/src/app/job/[job_id]/quote/[quote_id]/_components/DJBoothScene.tsx`: Interactive SVG visualizer rendering DJ booth equipment configurations (speakers, deck, lights, fog machine).
+- `web-app/src/app/job/[job_id]/quote/[quote_id]/_components/PriceAndBookingSection.tsx`: Sticky pricing summary sidebar displaying calculated total cost, early setup toggles, DJ guarantees, and booking actions.
+- `web-app/src/app/job/[job_id]/quote/[quote_id]/_components/QuoteNavigation.tsx`: Navigation tab component to compare and switch between competing DJ offers for a job.
+- `web-app/src/app/job/[job_id]/quote/serviceoffer/[offer_id]/_components/ArthurMusicianMessage.tsx`: Customer-facing promotional message component highlighting musician matchmaking for special instruments.
+- `web-app/src/app/job/[job_id]/quote/serviceoffer/[offer_id]/_components/MusicianPriceSection.tsx`: Pricing and booking panel tailored to instrumentalist/musician service offers.
+- `web-app/src/app/Redirecter.tsx`: Client-side routing guard enforcing authentication states, role boundaries (customer vs DJ vs instrumentalist), and onboarding/payment completion rules.
+- `web-app/src/auth/AuthContext.tsx`: React context and provider managing user sessions, session tokens, sign out, and password changes.
+- `web-app/src/auth/getSupabase.ts`: Supabase client factory and cache supporting dev/local configurations and environment handling.
+- `web-app/src/app/job/[job_id]/quote/serviceoffer/[offer_id]/page.tsx`: Customer page for viewing and confirming a musician/saxophonist's service offer quote for a job.
+- `web-app/src/app/levering/page.tsx`: Delivery partner portal interface for tracking and managing equipment deliveries.
+- `web-app/src/app/song-request/[token]/page.tsx`: Public song request submission form for event guests.
+- `web-app/src/app/vaelg-din-dj/page.tsx`: Visual customer walkthrough and educational guide on selecting DJs and understanding quotes.
+- `web-app/src/components/BillingLock/BillingLockPanel.tsx`: UI component managing locked billing details and change request submissions for musicians/DJs.
+- `web-app/src/components/ConfirmJobModal/ConfirmJobModalBody.tsx`: Implements the stepped booking confirmation flow for customer jobs, handling single DJ and DJ + Saxophonist duo selections, optional saxophone add-ons, and callback time window submissions.
+- `web-app/src/components/CallTimePicker/CallTimePicker.tsx`: Offers a time-window selection UI for arranging customer phone calls or SMS coordination with the musician.
+- `web-app/src/components/CustomerSideQuoteCard/CustomerSideQuoteCard.tsx`: Renders quote cards on the customer side, displaying DJ details, dynamic and pre-calculated badges, ratings, venue matches, and early setup pricing options.
+- `web-app/src/components/DjProfile/DjProfile.tsx`: Renders a comprehensive public/customer-facing DJ profile view including photos, video/mix galleries, verified badges, reviews, pricing, and quote sales pitch.
+- `web-app/src/components/DjInfoForm/DjInfoForm.tsx`: Manages form state and validation for editing DJ profile information such as bio, genres, regions, extra hour rates, and saxophone play readiness.
+- `web-app/src/components/DjInfoForm/DjPaymentForm.tsx`: Handles musician payout and billing form fields including CPR, CVR, bank registration/account numbers, address, and billing email configuration.
+- `web-app/src/components/EditQuoteModal/EditQuoteModal.tsx`: Modal dialog allowing DJs to edit existing quotes, adjusting price, equipment selection, and early setup options within an allowed time window
+- `web-app/src/components/ErrorBoundary/ErrorBoundary.tsx`: React class component for catching UI rendering errors, reporting them to Sentry, and displaying fallback error views
+- `web-app/src/components/ExpiredExtJobModal/ExpiredExtJobModal.tsx`: Modal for external job requests that have expired or been canceled, providing customer reopening workflows
+- `web-app/src/components/ExpiredJobModal/ExpiredJobModal.tsx`: Modal for standard customer job requests that expired, were canceled, or were reopened
+- `web-app/src/components/Gallery/Gallery.tsx`: Media gallery component rendering image and video thumbnails with lightbox preview triggers
+- `web-app/src/components/ImageLightbox/ImageLightbox.tsx`: Fullscreen media viewer supporting image viewing and video playback with navigation controls
+- `web-app/src/components/ImageUploader/ImageUploader.tsx`: File upload dropzone that validates file types/sizes, compresses images, and uploads them to user storage
+- `web-app/src/components/JobMetadataModal/JobMetadataModal.tsx`: Customer modal for specifying event contact notes and optional B2B/private billing metadata via API
+- `web-app/src/components/LogoutButton/LogoutButton.tsx`: Authentication signout button supporting sidebar and standalone presentations
+- `web-app/src/components/MusicianInfoForm/MusicianPaymentForm.tsx`: Form for musicians to input and validate CPR/CVR, address, and bank payout information
+- `web-app/src/components/MusicianInfoForm/MusicianPicturesForm.tsx`: Form component managing musician profile and gallery picture uploads with drag-and-drop reordering
+- `web-app/src/components/MusicianInfoForm/MusicianVideosForm.tsx`: Form component managing musician profile and portfolio video uploads and sorting
+- `web-app/src/components/ProfilePreview/ProfilePreview.tsx`: Public profile preview rendering media carousels, bio text, genres, venues, mixes, and review sections
+- `web-app/src/components/RecommendationsBadge/RecommendationsBadge.tsx`: Displays total recommendations computed from reviews and played jobs, scrolling to reviews on click
+- `web-app/src/components/ReorderableMedia/ReorderableMediaGrid.tsx`: Dnd-kit based drag-and-drop container for reordering media galleries and persisting order to the server
+- `web-app/src/components/Review/Modal/DeleteReviewConfirmationModal.tsx`: Modal for confirming deletion of a DJ review
+- `web-app/src/components/Review/Modal/EditReviewConfirmationModal.tsx`: Modal for triggering edit confirmation on reviews
+- `web-app/src/components/Review/Modal/UpsertMusicianReviewModal.tsx`: Modal and form controller for musicians to create and update their external event reviews
+- `web-app/src/components/Review/Modal/UpsertReviewModal.tsx`: Modal and form controller for DJs to create and update their external event reviews
+- `web-app/src/components/Review/Modal/ViewReviewsModal.tsx`: Modal displaying a list of customer reviews and ratings for a DJ profile
+- `web-app/src/components/Review/ReviewCard.tsx`: Card component rendering individual review details, recommendations, and truncated review content
+- `web-app/src/components/Review/UpsertReviewController.tsx`: Action block encouraging DJs to add or review past testimonials
+- `web-app/src/components/Sidebar/AvailabilityGateModal.tsx`: Enforcement modal asking musicians and DJs to specify unavailable dates in at least two distinct months
+- `web-app/src/components/Sidebar/CustomerSidebar.tsx`: Sidebar configuration and navigation links for customer accounts
+- `web-app/src/components/Sidebar/DjSidebar.tsx`: Sidebar wrapper for DJ accounts handling action item badges, calendar availability gating, and self-billing acceptance
+- `web-app/src/components/Sidebar/MusicianSidebar.tsx`: Sidebar wrapper for musician accounts managing navigation, unread messages, availability gating, and self-billing
+- `web-app/src/components/Sidebar/Sidebar.tsx`: Responsive sidebar layout container providing desktop view and mobile drawer navigation
+- `web-app/src/components/Sidebar/SidebarContent.tsx`: Internal sidebar layout rendering nav items, submenus, logout button, and footer trust badges
+- `web-app/src/components/VideoUploader/VideoUploader.tsx`: File upload dropzone and selector validating video file sizes, durations, and uploading to storage
+- `web-app/src/components/chat/ChatInput.tsx`: Chat message composer with support for text edits, image uploads, keyboard navigation, and @job reference autocompletion
+- `web-app/src/components/chat/ChatMessages.tsx`: Chat message feed supporting system messages, quote replies, emoji reactions, mention highlights, and search match tracking
+- `web-app/src/components/chat/ConversationList.tsx`: Conversation list component displaying active user and support chats with unread badges and job metadata
+- `web-app/src/components/chat/FloatingChatButton.tsx`: Floating quick-access trigger button to navigate to conversations
+- `web-app/src/components/referrals/ReferralsPage.tsx`: Lead referral submission and terms acceptance page for DJs and saxophonists.
+- `web-app/src/components/DeliveryLogisticsCard.tsx`: Logistics and gear setup details form for non-equipped DJ equipment deliveries.
+- `web-app/src/components/CompanyBillingCard.tsx`: Customer-facing card and modal for adding B2B company invoice information to jobs.
+- `web-app/src/components/CalendarView.tsx`: Interactive monthly calendar and event list component for internal and external jobs.
+- `web-app/src/components/DjSideQuoteCard.tsx`: DJ quote card displaying job details, countdown timers, budget adjustments, and edit/withdraw actions.
+- `web-app/src/components/ExtJobCard.tsx`: External job card for musician and DJ roles displaying budget, time, and schedule conflict warnings.
+- `web-app/src/components/DjJobFiltersForm.tsx`: Form for DJs to configure job filtering preferences (regions, genres, event types, budget, guest count, and hours).
+- `web-app/src/components/AddressAutocompleteInput.tsx`: Danish address input field with autosuggestions powered by DAWA (Dataforsyningen).
+- `web-app/src/components/CustomerDecisionCountdown.tsx`: Decision window countdown timer with educational modal explaining the 7-day selection period.
+- `web-app/src/components/FirstWinPopup.tsx`: Modal wizard onboarding DJs and musicians after their first won job, showing role-specific steps and checklists.
+- `web-app/src/components/JobCard.tsx`: Card rendering job details, offer slot mini badges, and budget calculations adjusted for DJ views.
+- `web-app/src/components/MusicianJobCard.tsx`: Card displaying available jobs to musicians/saxophonists with time conflict checks and price calculation.
+- `web-app/src/components/ServiceOfferCard.tsx`: Card displaying musician offers across internal and external jobs with withdrawal timers and status tags.
+- `web-app/src/components/ICalExportModal.tsx`: Modal providing single-download and automatic calendar synchronization via iCal feeds.
+- `web-app/src/components/PayoutStatusCard.tsx`: Card displaying self-billing payout status, scheduled execution date, and PDF statements for performers.
+- `web-app/src/components/SelfBillingTermsModal.tsx`: Mandatory gate modal requiring performers to accept self-billing terms before invoicing.
+- `web-app/src/components/StandardMessageSelector.tsx`: Dropdown component allowing DJs and musicians to select and insert pre-written standard messages by event type.
+- `web-app/src/domain/biddableJobs.ts`: Single source of truth for filtering and ordering biddable jobs for DJs based on tiers, regions, dates, equipment status, and wave availability.
+- `web-app/src/domain/djBidStatus.ts`: Evaluates read-only bid eligibility for DJs on internal jobs, enforcing pending quote caps and tier quotas.
+- `web-app/src/helpers/adjustBudgetForDjView.ts`: Calculates the DJ-facing budget from the customer budget by deducting platform fees, musician/sax costs, and equipment delivery fees.
+- `web-app/src/helpers/calculateMusicianOfferPrice.ts`: Calculates musician/saxophonist payouts based on requested hours and high-season pricing rules.
+- `web-app/src/helpers/calculateCustomerMusicianPrice.ts`: Computes customer pricing for musician/saxophonist requests based on hours and seasonal pricing tiers.
+- `web-app/src/helpers/bankAccountGuard.ts`: Validates performer bank registration and account numbers to prevent accidental entry of CVR/CPR numbers.
+- `web-app/src/helpers/bidWithdrawal.ts`: Defines rules and deadlines for withdrawing DJ quotes and musician service offers within a 10-minute window.
+- `web-app/src/components/StandardMessagesManager.tsx`: React UI component for managing reusable canned messages by event type for DJ bids.
+- `web-app/src/components/WithdrawBidDialog.tsx`: Confirmation modal for withdrawing placed bids and quotes via API endpoints.
+- `web-app/src/components/VenuePhotosSection.tsx`: Venue photo gallery modal and grid for partner venue inspections.
+- `web-app/src/helpers/cascadeQuietHours.ts`: Determines Copenhagen quiet hour windows to pause supply matching and job wave expansions during the night.
+- `web-app/src/helpers/copenhagenTime.ts`: Calculates DST-aware Europe/Copenhagen time conversions and date additions for events and scheduling.
+- `web-app/src/helpers/djJobFilters.ts`: Filters DJ marketplace jobs according to DJ preferences such as event types, regions, genres, weekdays, budgets, guest limits, age, and duration.
+- `web-app/src/helpers/musicianJobFilters.ts`: Filters jobs for musicians/saxophonists based on saxophone performance style and geographic region.
+- `web-app/src/helpers/jobWaveVisibility.ts`: Evaluates whether a job is visible to a DJ based on job wave matching stages with fail-open safeguards.
+- `web-app/src/helpers/equipmentDelivery.ts`: Encapsulates delivery rules, logistics completeness checks, cancellation fees, and reminder calculations for WKNDS equipment deliveries.
+- `web-app/src/helpers/equipmentDescription.ts`: Parses, formats, and serializes structured equipment package selections (e.g. speakers, disco ball, smoke machine) for jobs.
+- `web-app/src/helpers/earlySetupPricing.ts`: Rebuilds total job amount and DJ honorarium when early setup fees are modified.
+- `web-app/src/helpers/invoiceRecipient.ts`: Resolves whether the venue or the customer is the invoice recipient for partner-portal bookings.
+- `web-app/src/helpers/partnerBookingPriceDrivers.ts`: Tracks core booking attributes that determine partner pricing to detect whether a booking needs repricing.
+- `web-app/src/helpers/encryption.ts`: Provides AES-256-GCM encryption and decryption utilities for sensitive data such as CPR numbers.
+- `web-app/src/helpers/partnerCommission.ts`: Calculates revenue and commission splits between the venue partner, platform, and performer (legacy sequential split and v2 commission line engine).
+- `web-app/src/helpers/partnerPricing.ts`: Configures and computes partner-portal booking prices including venue-specific base rates, add-ons (sax, equipment, early setup), and discounts.
+- `web-app/src/helpers/partnerCommissionEarned.ts`: Determines whether partner booking commission is officially earned or upcoming based on booking status and Danish event dates.
+- `web-app/src/helpers/publicVenuePricing.ts`: Filters and marks up venue pricing configuration for public booking pages without exposing sensitive commercial commission terms.
+- `web-app/src/helpers/payoutDates.ts`: Calculates and forecasts payout batch dates, bank execution dates, and account deposit dates for self-billed performers.
+- `web-app/src/helpers/payoutView.ts`: Resolves user-facing payout view state (scheduled, paid, waiting, preparing, or manual) for performer jobs.
+- `web-app/src/helpers/quoteBudgetLock.ts`: Enforces budget constraints preventing DJs from quoting more than 10% over the customer budget during the first 4 hours of job creation.
+- `web-app/src/helpers/referrals.ts`: Provides data mapping and validation for DJ and saxophonist lead referrals, rewards, and external job creation.
+- `web-app/src/helpers/phoneCountries.ts`: Normalizes and formats country dial codes and local phone numbers to E.164 standard.
+- `web-app/src/helpers/reviewEventType.ts`: Normalizes event types and prioritizes customer reviews matching the current event type.
+- `web-app/src/helpers/salesPitchLimits.ts`: Defines minimum and maximum character limits for musician sales pitches.
+- `web-app/src/helpers/saxCallNote.ts`: Appends and updates customer call time instructions for saxophonists within job customer notes without exposing B2B data.
+- `web-app/src/helpers/recurringMatchKey.ts`: Computes normalized matching keys based on phone, email, or lead name for CRM account reconciliation.
+- `web-app/src/helpers/pluralize.ts`: Provides Danish pluralization and formatting for time duration strings.
+- `web-app/src/helpers/saxHighSeason.ts`: Calculates saxophone high-season pricing active windows based on job creation cutoffs and event dates.
+- `web-app/src/helpers/saxOfferConflict.ts`: Determines whether same-day saxophone bookings conflict based on a 3-hour buffer between performance intervals.
+- `web-app/src/helpers/saxSchedule.ts`: Resolves actual performance calendar dates and formatted Danish labels when saxophone sets cross midnight.
+- `web-app/src/helpers/selfBillingComplete.ts`: Validates payment profile completeness and payout readiness for DJs and musicians under Invoice and B-income schemes.
+- `web-app/src/helpers/wkndsDelivery.ts`: Calculates equipment delivery fees, deductions, postal zone eligibility, and margins for non-equipped DJs partnered with WKNDS.
+- `web-app/src/helpers/tierSlots.ts`: Computes remaining quote slots per DJ tier (A/B/Z) on jobs before quota exhaustion or 24-hour open fallback.
+- `web-app/src/helpers/venueMatch.ts`: Extracts and matches prior venue experience entries from musician and DJ profiles against customer job texts.
+- `web-app/src/hooks/useChat.ts`: Provides React hooks, typing, and helpers for chat messaging, @job / @extjob link resolution, and conversation handling.
+- `web-app/src/hooks/useAvailableJobsForMusicians.ts`: React Query hook fetching and filtering open customer jobs available for musicians based on availability, regional windows, and service offer statuses.
+- `web-app/src/hooks/useBidWithdrawWindow.ts`: React hook and countdown timer managing the 10-minute post-submission window for withdrawing or pinning active bids.
+- `web-app/src/hooks/useJobs.ts`: Fetches and manages customer/internal/external jobs and handles job lifecycle status mutations via API endpoints.
+- `web-app/src/hooks/useQuotes.ts`: Fetches and creates DJ quotes with associated job data, handling query invalidation and retry logic.
+- `web-app/src/hooks/useServiceOffers.ts`: Manages musician service offers on standard and external jobs, computing status groups (sent, won, lost) and handling conflict-aware queries.
+- `web-app/src/hooks/useFiles.ts`: Handles S3 file and video thumbnail uploads, reordering, and deletion with progress tracking and Supabase metadata records.
+- `web-app/src/hooks/useDjInfos.ts`: Retrieves and updates DJ profile information in Supabase.
+- `web-app/src/hooks/useMusicians.ts`: Retrieves and mutates musician profile data in Supabase.
+- `web-app/src/hooks/useExtJobsForMusicians.ts`: Filters and provides external jobs available for musicians based on instrument, regional windows, busy dates, and active offers.
+- `web-app/src/hooks/useCollidingOffer.ts`: Evaluates time collisions between musician target bookings and existing won service offers.
+- `web-app/src/hooks/useDjWaveSelection.ts`: Gates visible candidate jobs in the feed based on supply/matching wave decisions (JobDjScores) and feature flag status.
+- `web-app/src/constants.ts`: Defines core marketplace business constants including fee fractions, video length constraints, payout payment days, saxophonist pricing tiers, and referral rewards.
+- `web-app/src/middleware.ts`: Next.js middleware managing Supabase authentication session cookies and token refresh.
+- `web-app/src/useTheme.ts`: Defines the Chakra UI custom theme, color palettes, typography, and component styling variants across the web app.
+- `web-app/src/lib/encryption.ts`: Cryptographic utilities using AES-256-GCM for encrypting and decrypting sensitive database fields.
+- `web-app/src/lib/cloki/logger.ts`: Structured logging wrapper capturing logs and dispatching them to Sentry in production or console in development.
+- `web-app/src/lib/notifications.ts`: Helper for dispatching requests to Supabase push notification Edge Functions.
+- `web-app/src/lib/songRequests.ts`: Resolves guest song-request tokens to matching DJ profiles or specific upcoming Jobs/ExtJobs.
+- `web-app/src/hooks/useTypingChannel.ts`: Real-time ephemeral typing status indicator hook for support chat powered by Supabase Broadcast channels.
+- `web-app/src/hooks/useUnbidJobsFromMyRegions.ts`: React hook integrating job tier filtering, region matching, DJ rejections, and wave selection to display biddable jobs.
+- `web-app/src/hooks/useUnavailableDates.ts`: TanStack Query hooks for querying, adding, and deleting unavailable calendar dates for DJs and musicians.
+- `web-app/src/staticData/danishPostalCentroids.ts`: Static geographic coordinates (lat/lng centroids) for Danish postcodes used for offline spatial job-matching.
+- `web-app/src/staticData/static-faqs.ts`: Static FAQ definitions rendered for DJ bookings, musician-only bookings, and duo (DJ + saxophonist) bookings.
+
+## Public interface
+- CustomerHome()
+- HomeRail({ job })
+- PostBookingSection({ job })
+- ProcessSteps(props)
+- SaxUpsellTeaser({ job })
+- SaveContactCard()
+- JobRepository
+- ExtJobRepository
+- QuoteRepository
+- DjInfoRepository
+- PrivateDjInfoRepository
+- PrivateMusicianInfoRepository
+- UserFileRepository
+- UserRepository
+- ServiceOfferRepository
+- closeJob(job, winningQuoteId, customerNote)
+- closeJobInSupabase(job, winningQuote, customerNote, notify, notifyReopened)
+- applyBillingLock(body, existing)
+- createBillingChangeRequest(opts)
+- getLatestBillingChangeRequest(performerType, performerId)
+- lookupCvr(raw)
+- createS3SignedUploadUrl(fileName, contentType)
+- addS3Object(img, key, type)
+- deleteS3Object(fileName)
+- isOwnS3Key(url, userId)
+- isVenuePhotoKey(key)
+- softDeleteUser(userId)
+- hardDeleteUser(userId)
+- chooseServiceOffer({ offerId, caller, customerNote, notify })
+- classifyJobTier(job)
+- createReferral(referrer, body)
+- listReferralsForUser(userId)
+- acceptReferralTerms(referrer)
+- getReferralTermsAcceptedAt(referrer)
+- resolveReferrer(userId)
+- generateMagicLink(email, redirectUrl)
+- userIsAuthorizedToUseLink(email, magicLinkKey)
+- isJobCustomerOrAdmin(user, customerEmail)
+- isPlainCustomerEmail(email)
+- getAuthedUser(req)
+- getAdminUser(request)
+- hasValidAdminKey(req)
+- isCronAuthorized(authHeader)
+- getPartnerAccountIds(userId)
+- partnerOwnsAccount(userId, recurringCustomerId)
+- isPartnerExtJob(extJobId)
+- isFeatureEnabled(key)
+- isJobWaveOpenForDj(jobId, djId)
+- syncEquipmentDeliveries(now)
+- ensureDeliveryRow(job, quote)
+- toDjView(row, job)
+- toPartnerView(row, job, quote, now)
+- createGoogleAdsClickClient(config)
+- triggerKlaviyoEvent(opts)
+- applyServerOwnedPrivateInfoFields(body, existing)
+- checkBankAccount(body, existing)
+- acceptSelfBillingTerms(userId)
+- createDocumentAccessToken(lineId, payeeId)
+- createUserFile(file, newFile)
+- verifyJobContentOwnership(userId, quoteId, extJobId)
+- fetchInIdBatches(ids, buildQuery, batchSize)
+- resolveInternalJobAudience(job)
+- resolveInternalJobDjIds(job)
+- ServiceResponse
+- POST /api/admin/avatar
+- POST /api/admin/extend-deadline
+- POST /api/admin/job-links/resolve-for-user
+- POST /api/admin/magic/generate
+- GET /api/admin/magic
+- POST /api/admin/magic/token
+- PUT /api/admin/messages/[id]
+- DELETE /api/admin/messages/[id]
+- POST /api/admin/messages
+- GET /api/admin/postcode-nudge
+- POST /api/admin/postcode-nudge
+- GET /api/admin/preview-link
+- POST /api/admin/recurring-customers/[id]/spawn
+- DELETE /api/admin/user/[id]
+- GET /api/auth/callback
+- POST /api/auth/change-email
+- GET /api/auth/magic
+- POST /api/auth/sign-in
+- POST /api/auth/sign-out
+- POST /api/auth/sign-up
+- GET /api/billing-change-requests
+- POST /api/billing-change-requests
+- notifyJobsReopened(jobIds: number[], reason: JobReopenReason, options?: { excludeUserIds?: string[] }): Promise<void>
+- notifyMusiciansJobReopened(target: { jobId: number } | { extJobId: number }, options?: { excludeUserIds?: string[] }): Promise<void>
+- pickBookingLocation(locations: RecurringLocation[], requestedId: number | null | undefined): BookingLocationResult
+- pickBillingSource(account: { is_partner: boolean | null }, locations: RecurringLocation[], requestedId: number | null | undefined): BillingSourceResult
+- billingSnapshot(location: BillingSettings, declaration: CustomerBillingDeclaration): JobMetadataBillingSnapshot
+- spawnRecurringExtJob(accountId: number, overrides: SpawnRecurringExtJobOverrides): Promise<SpawnRecurringExtJobResult>
+- updateRecurringExtJob(extJobId: number, accountId: number, overrides: SpawnRecurringExtJobOverrides): Promise<UpdateRecurringExtJobResult>
+- resolveSaxOfferPricing(params: { jobId?: number | null; extJobId?: number | null; fallbackPriceDkk: number; fallbackMusicianPayoutDkk: number }): Promise<ResolvedSaxOfferPricing>
+- resolveExtJobSaxPrice(extJobId: number | null | undefined, fallbackPriceDkk: number): Promise<number>
+- resolveExtJobSaxPayoutBudget(extJobId: number | null | undefined): Promise<number | null>
+- resolveVenueAddOnPolicy(extJob: { recurring_customer_id?: number | null; channel?: string | null; partner_dj_tier?: string | null }): Promise<VenueAddOnPolicy>
+- setExtraHoursDeclined(params: { target: ExtraHoursDeclineTarget; id: number; userId: string; declined: boolean }): Promise<SetExtraHoursDeclinedResult>
+- syncUnsentInvoiceBilling(supabase: SupabaseClient, target: { jobId?: number; extJobId?: number }, billing: CustomerBillingInput): Promise<InvoiceSyncResult>
+- validateUser(req: NextRequest): Promise<ServiceResponse<{ userId: string } | undefined>>
+- GET /api/calendar/ical?token=<uuid>
+- POST /api/calendar/token
+- POST /api/chat/job-links/resolve
+- GET /api/chat/linkable-jobs
+- POST /api/chat/notify
+- POST /api/chat/support/ensure
+- GET /api/chat/support/admin/threads
+- GET /api/chat/support/admin/recipients
+- POST /api/chat/support/admin/start
+- GET /api/chat/support/admin/unread-count
+- GET /api/chat/support/admin/linkable-jobs
+- GET /api/chat/support/admin/job-links/resolve
+- GET /api/chat/support/admin/[conversationId]/messages
+- POST /api/chat/support/admin/[conversationId]/messages
+- PATCH /api/chat/support/admin/[conversationId]/messages/[messageId]
+- POST /api/chat/support/admin/[conversationId]/handled
+- POST /api/chat/support/admin/[conversationId]/read
+- POST /api/chat/support/admin/[conversationId]/unread
+- POST /api/chat/support/admin/[conversationId]/reactions
+- GET /api/cron/calculate-badges
+- GET /api/cron/chat-reminders
+- GET /api/cron/check-quote
+- GET /api/cron/content-reminders
+- GET /api/cron/customer-call-sms
+- GET /api/cron/equipment-deliveries
+- GET /api/cron/event-info-reminders
+- GET /api/cron/extra-hours-reminders
+- GET /api/cron/gclid-campaigns
+- GET /api/cron/musician-second-wave
+- GET /api/cron/no-quotes/notification
+- GET /api/cron/process-reminders
+- GET /api/cron/ready-reminders
+- GET /api/cron/reopen-followups
+- GET /api/cron/snapshot-billing
+- GET /api/cron/tier-fallback
+- GET /api/cron/widen-job-waves
+- POST /api/deliveries/{id}/complete
+- GET /api/deliveries/job/{job_id}
+- PUT /api/deliveries/job/{job_id}
+- GET /api/deliveries/mine
+- GET /api/deliveries/partner
+- GET /api/dj/biddable-jobs
+- GET /api/dj/jobs/{job_id}/bid-status
+- GET /api/dj/jobs/{job_id}/feedback
+- POST /api/dj/jobs/{job_id}/feedback
+- GET /api/dj/jobs/{job_id}/wave-status
+- GET /api/dj/postcode-status
+- planWaveAdvance(rows, nextWave, cascade, remainingSlots, extra): WavePlan
+- getAvailableDjInfos(params): Promise<ServiceResponse<DjInfo[]>>
+- rankAvailableDjs(eligible, job, wave): Promise<RankResult>
+- resolveCascadeSettings(): Promise<CascadeSettings>
+- resolveJobFilterContext(explicit, jobRow): ResolvedJobFilters
+- resolveMatchingMode(): Promise<MatchingMode>
+- fetchReachableDjIds(djIds): Promise<Set<string> | null>
+- getEmailsWithMagicLinks(djInfos, djRedirectUrl): Promise<{ email: string; magicLink: string }[]>
+- GET(req: NextRequest)
+- GET /api/djs/available
+- GET /api/djs/region
+- POST /api/echo
+- POST /api/ext-dj/billing-change-request
+- GET /api/ext-dj/jobs
+- POST /api/ext-dj/send-otp
+- POST /api/ext-dj/update-billing-info
+- POST /api/ext-jobs
+- PUT /api/ext-jobs/[ext_job_id]/close-musician-offer
+- PUT /api/ext-jobs/[ext_job_id]/customer-contact
+- PUT /api/ext-jobs/[ext_job_id]/customer-note
+- PUT /api/ext-jobs/[ext_job_id]/early-setup
+- PATCH /api/ext-jobs/[ext_job_id]/extra-hours
+- PUT /api/ext-jobs/[ext_job_id]/extra-hours/declined
+- GET /api/ext-jobs/[ext_job_id]/invoice-status
+- GET /api/ext-jobs/[ext_job_id]/magic-link
+- PATCH /api/ext-jobs/[ext_job_id]/ready
+- PUT /api/ext-jobs/[ext_job_id]/ready-for-billing
+- GET /api/ext-jobs/[ext_job_id]/remind-available
+- POST /api/ext-jobs/[ext_job_id]/remind-available
+- PUT /api/ext-jobs/[ext_job_id]/reopen
+- PUT /api/ext-jobs/[ext_job_id]/reopen-canceled
+- POST /api/files
+- GET /api/files
+- DELETE /api/files
+- POST /api/files/admin-delete
+- POST /api/files/admin-delete-object
+- POST /api/files/job-content
+- PATCH /api/files/reorder
+- GET /api/files/signed-url
+- GET /api/internal-dj/ext-jobs
+- GET /api/internal-musician/ext-job-recurring-names
+- GET /api/internal-musician/partner-ext-job-ids
+- GET /api/invoices/[invoicing_id]/pdf
+- GET /api/invoices
+- GET /api/job-metadata
+- POST /api/job-metadata
+- POST /api/jobs/[job_id]/add-sax-and-trigger-musicians
+- POST /api/jobs/[job_id]/advance-wave
+- PUT /api/jobs/[job_id]/cancel
+- PUT /api/jobs/[job_id]/close
+- PUT /api/jobs/[job_id]/customer-contact
+- GET /api/jobs/[job_id]/invoice-status
+- GET /api/jobs/[job_id]/magic-link
+- CustomerInvoiceDocument (interface)
+- ICloseJobRequestBody (interface)
+- POST /api/jobs/[job_id]/quotes
+- PUT /api/jobs/[job_id]/ready-for-billing
+- GET /api/jobs/[job_id]/remind-available
+- POST /api/jobs/[job_id]/remind-available
+- PUT /api/jobs/[job_id]/reopen
+- PUT /api/jobs/[job_id]/reopen-canceled
+- POST /api/jobs/[job_id]/service-offers
+- GET /api/jobs/no-quotes
+- POST /api/jobs/notify-reopened
+- validateTierQuota(job, djId, activeQuotes)
+- checkTierQuotaLimits(jobTier, djTier, aHoldQuotes, bHoldQuotes)
+- NewJobRequestSchema
+- ICancelJobRequestBody
+- POST /api/jobs
+- POST /api/make-helper/split-full-name
+- GET /api/me/is-admin
+- GET /api/musicians/available
+- GET /api/partner/accounts
+- PATCH /api/partner/accounts/[account_id]
+- PATCH /api/partner/accounts/[account_id]/locations/[location_id]
+- GET /api/partner/bookings
+- POST /api/partner/bookings
+- GET /api/partner/bookings/[booking_id]
+- PATCH /api/partner/bookings/[booking_id]
+- POST /api/partner/bookings/[booking_id]/cancel
+- GET /api/partner/bookings/[booking_id]/dj
+- GET /api/partner/commission
+- GET /api/partner/dj-showcase
+- GET /api/partner/guest/[token]
+- POST /api/partner/guest/[token]
+- GET /api/partner/invoices
+- GET /api/partner/public/[slug]
+- POST /api/partner/public/[slug]/bookings
+- GET /api/partner/public/[slug]/dj-showcase
+- GET /api/payouts/mine
+- GET /api/private-dj-info
+- POST /api/private-dj-info
+- GET, POST /api/private-musician-info
+- GET /api/public/dj/[id]
+- GET /api/public/files
+- GET /api/public/musician/[id]
+- PUT, DELETE /api/quotes/[id]
+- PATCH, DELETE /api/quotes/[id]/extra-hours
+- PUT /api/quotes/[id]/extra-hours/declined
+- PATCH /api/quotes/[id]/ready
+- GET /api/quotes/[id]/song-requests
+- GET, POST /api/referrals
+- GET, POST /api/referrals/terms
+- POST /api/self-billing/accept-terms
+- GET /api/self-billing/document
+- POST /api/service-offers
+- DELETE /api/service-offer/[offerId]
+- POST /api/service-offer/[offerId]/choose
+- POST /api/service-offer/[offerId]/customer-contacted
+- PATCH, DELETE /api/service-offer/[offerId]/extra-hours
+- PUT /api/service-offer/[offerId]/extra-hours/declined
+- PATCH /api/service-offer/[offerId]/ready
+- PATCH, DELETE /api/service-offer/[offerId]/special-request-fee
+- GET, POST /api/song-request/[token]
+- POST /api/song-request/my-token
+- default export ArrangementerPage()
+- default export ChangeEmailPage()
+- default function DjCalendarPage()
+- export function DjUnifiedCalendarSection(props: DjUnifiedCalendarSectionProps)
+- export function OverviewJobsCalendar(props: OverviewJobsCalendarProps)
+- default function DjChatPage(props: { params: Promise<{ conversation_id: string }> })
+- default function DjChatListPage()
+- default function DjFaqPage()
+- default function DjFeedbackPage()
+- default function DjReferralsPage()
+- default function StatusBadge({ status }: { status?: JobStatusFromDjPerspective })
+- default function AdminMessageCard({ message, markAsReadMutation }: AdminMessageCardProps)
+- default function DjOverviewTd({ children }: { children: React.ReactNode })
+- export const borderColor: string
+- export const borderWidth: string
+- QuotePage({ params: Promise<{ id: number }> })
+- QuoteForm({ jobId: number, job: Job })
+- JobFeedbackPrompt({ jobId: number })
+- JobInfo({ job: Job })
+- LeadInfo({ job: Job })
+- QuoteInfo({ quote: Quote })
+- MarkBusyDateButton
+- MarkBusyDateModal
+- NotInterestedButton
+- NotInterestedModal
+- ConflictingQuotesModal
+- JobCollissionNotificationBanner
+- EarlySetup
+- DjOnboardingPage()
+- DjProfilePage()
+- DjPreviewPage()
+- DjMessagesPage()
+- DjJobFiltersPage()
+- DjStandardMessagesPage()
+- DjReviewsPage()
+- LoginPage()
+- RegisterPage()
+- ForgotPasswordPage()
+- ResetPasswordPage()
+- SetupDjProfilePage()
+- GenresSelector
+- RegionSelector
+- InsuranceSelector
+- PositiveNumberInput
+- PrivateOrBureauSelector
+- DeliveredEquipmentCard
+- SongRequestQrCard
+- useCanDjQuote
+- useInitialQuoteTemplate
+- useJobStatusFromDjPerspective
+- useMarkDateUnavailable
+- useNotInterested
+- useRedirectIfJobIsNotOpen
+- useRedirectIfTierMismatch
+- useToastIfJobIsExpired
+- useToastIfNoImages
+- useToastIfNoReviews
+- default QuotePage(props: { params: Promise<{ id: number }> })
+- AddExtraHours({ quote, defaultPricePerHour, onSuccess }: AddExtraHoursProps)
+- CountdownTimer({ targetDate }: CountdownTimerProps)
+- default CustomerDetailsModal({ isOpen, onClose, job, quote, onContacted }: CustomerDetailsModalProps)
+- DeliveryProcessSteps({ steps }: { steps: DeliveryProcessStep[] })
+- default DjNotes({ quote, onSubmit, isLoading }: DjNotesProps)
+- default JobInfo({ job }: IJobInfoProps)
+- default LeadInfo({ job, quote, onSuccess, onCustomerContacted }: ILeadInfoProps)
+- QuoteForm({ jobId }: { jobId: number })
+- QuoteInfo({ quote, job }: { quote: Quote; job?: Job | null })
+- default ReadyForBillingModal({ isOpen, onClose, job, quote, onSuccess }: ReadyForBillingModalProps)
+- SongRequestsSection({ quoteId }: Props)
+- getCountdownTargetDate(jobDate?: Date | string, sentAt?: Date | string | null, deadlineExtendedUntil?: Date | string | null): Date
+- default useJobPageSubtitleComponent(job: JobWithQuotes | null | undefined, djId: string | undefined): ReactNode
+- default useJobPageTitleText(job: JobWithQuotes | null | undefined, djId: string | undefined): ReactNode
+- default useJobStatusFromDjPerspective(job: JobWithQuotes | null | undefined): JobStatusFromDjPerspective | undefined
+- useToastIfJobIsExpired(job?: Job | null): void
+- default function UdvalgteJobsPage()
+- default function UdvalgtJobDetailPage(props: { params: Promise<{ id: string }> })
+- default function ExtJobCustomerDetailsModal(props: ExtJobCustomerDetailsModalProps)
+- default function ExtDjJobsPage()
+- export function AddExtEarlySetup(props: AddExtEarlySetupProps)
+- export function AddExtExtraHours(props: AddExtExtraHoursProps)
+- export function ExtDjBillingForm(props: ExtDjBillingFormProps)
+- export function ExtDjHeader(props: ExtDjHeaderProps)
+- export function ExtDjJobCard(props: ExtDjJobCardProps)
+- export function ExtDjLoginForm(props: ExtDjLoginFormProps)
+- ExternalJobQuotePage
+- CustomerFaqPage
+- MusicianErrorState
+- MusicianNotFoundState
+- MusicianPageLoading
+- MusicianErrorBoundary
+- MusicianUnifiedCalendarSection
+- MusicianCalendarPage
+- InstrumentalistChatPage
+- MusicianChatListPage
+- ExtJobInfo
+- MusicianExtJobDetailPage
+- MusicianReferralsPage
+- isInternalJob
+- isExternalJob
+- getJobDate
+- getJobId
+- type MusicianJobItem
+- default function MusicianJobDetailPage(props: { params: Promise<{ job_id: string }> })
+- default function MusicianOfferDetailPage(props: { params: Promise<{ offer_id: string }> })
+- default function MusicianOnboardingPage()
+- default function LoginPage()
+- default function RegisterPage()
+- default function ForgotPasswordPage()
+- default function ResetPasswordPage()
+- default function MusicianMessagesPage()
+- export function AddServiceOfferExtraHours(props: AddServiceOfferExtraHoursProps)
+- export function AddServiceOfferSpecialRequestFee(props: AddServiceOfferSpecialRequestFeeProps)
+- export default function CustomerDetailsModal(props: CustomerDetailsModalProps)
+- export function JobInfo(props: JobInfoProps)
+- export default function LeadInfo(props: ILeadInfoProps)
+- export default function MusicianNotes(props: MusicianNotesProps)
+- export default function MusicianProcessCard(props: MusicianProcessCardProps)
+- export function OfferForm(props: OfferFormProps)
+- export function OfferView(props: OfferViewProps)
+- default (MusicianOverviewPage from web-app/src/app/instrumentalist/page.tsx)
+- default (MusicianProfilePage from web-app/src/app/instrumentalist/profile/page.tsx)
+- default (MusicianJobFiltersPage from web-app/src/app/instrumentalist/profile/job-filters/page.tsx)
+- default (MusicianPaymentPage from web-app/src/app/instrumentalist/profile/payment/page.tsx)
+- default (MusicianMediaPage from web-app/src/app/instrumentalist/profile/media/page.tsx)
+- default (MusicianReviewsPage from web-app/src/app/instrumentalist/profile/reviews/page.tsx)
+- default (MusicianStandardMessagesPage from web-app/src/app/instrumentalist/profile/standard-messages/page.tsx)
+- default (MusicianProfileSetupPage from web-app/src/app/instrumentalist/profile/setup/page.tsx)
+- VenuesTagInput(props: VenuesTagInputProps): JSX.Element
+- DjSaxCollaborationSelector(props: IDjSaxCollaborationSelectorProps): JSX.Element
+- MusicianGenresSelector(props: IMusicianGenresSelectorProps): JSX.Element
+- AboutForm(props: AboutFormProps): JSX.Element
+- BasicInfoForm(props: BasicInfoFormProps): JSX.Element
+- DjCollaborationForm(props: DjCollaborationFormProps): JSX.Element
+- GenresForm(props: GenresFormProps): JSX.Element
+- RatesForm(props: RatesFormProps): JSX.Element
+- RegionsForm(props: RegionsFormProps): JSX.Element
+- VenuesForm(props: VenuesFormProps): JSX.Element
+- MyEventPage({ params }) - Next.js page component for the customer job overview
+- QuestionPage({ params }) - Next.js page component for customer FAQ and inquiries
+- CancelEventModal({ isOpen, onClose, jobId }) - React modal component for job cancellation
+- StatusSentJobPage({ job, djsInfo, onBookClick, onOpenExpiredModal, preferSax, onPreferSaxChange }) - Sent status quote comparison component
+- StatusClosedJobPage({ job }) - Closed status job confirmation component
+- ChooseSaxModal({ isOpen, onClose, jobId, offerId, musicianName }) - Duo booking saxophonist selection modal
+- rankQuotes(quotes) - Sorts quotes by customer quote price when 3 quotes exist
+- DjInfoPage(props: { params: Promise<{ quote_id: string; job_id: string }> })
+- JobQuotesPage(props: { params: Promise<{ job_id: number }> })
+- DJBoothScene(props: DJBoothSceneProps)
+- DjImageCarousel(props: DjImageCarouselProps)
+- DjSetupDetailsSection(props: DjSetupDetailsSectionProps)
+- EquipmentScene(props: { equipment: ParsedEquipmentState })
+- PriceAndBookingSection(props: PriceAndBookingSectionProps)
+- QuoteMessageSection(props: QuoteMessageSectionProps)
+- QuoteNavigation(props: QuoteNavigationProps)
+- ReviewsSection(props: ReviewsSectionProps)
+- ArthurMusicianMessage(props: ArthurMusicianMessageProps)
+- MusicianImageCarousel(props: MusicianImageCarouselProps)
+- MusicianPriceSection(props: MusicianPriceSectionProps)
+- RootLayout({ children }: { children: React.ReactNode })
+- Providers({ children }: { children: React.ReactNode })
+- Redirecter({ children }: { children: React.ReactNode })
+- AuthProvider({ children }: { children: React.ReactNode })
+- useAuth(): IAuthContextData
+- getSupabase(): SupabaseClient
+- ServiceOfferPage(props: { params: Promise<{ offer_id: string; job_id: string }> })
+- PublicDjPreviewPage()
+- PublicMusicianPreviewPage()
+- SongRequestPage(props: { params: Promise<{ token: string }> })
+- ConfirmJobModal(props)
+- ConfirmJobModalBody(props)
+- CallTimePicker(props)
+- useCallTimeSelection()
+- CustomerSideQuoteCard(props)
+- CustomerSideQuoteCardMobile(props)
+- DjProfile(props)
+- DjBadge({ type, size })
+- DjBadges({ badges, size, maxBadges })
+- DjInfoForm(props)
+- DjMixesForm(props)
+- DjPaymentForm(props)
+- DjPicturesForm(props)
+- DjVideosForm(props)
+- GenreBadges(props)
+- QuoteDescriptor(props)
+- EditQuoteModal({ isOpen, onClose, quote, job, onSuccess, onWithdrawn }: EditQuoteModalProps)
+- ErrorBoundary
+- ExpiredExtJobModal({ isOpen, onClose, extJobId, extJobStatus, isFollowUp }: IExpiredExtJobModalProps)
+- ExpiredJobModal({ isOpen, onClose, jobStatus, job, isFollowUp }: IExpiredJobModalProps)
+- Gallery({ title, icon, imagesOrVideos, ...boxProps }: GalleryProps)
+- ImageLightbox({ isOpen, onClose, files, currentIndex, onPrevious, onNext }: ImageLightboxProps)
+- ImageModal({ isOpen, onClose, imageUrl, alt }: ImageModalProps)
+- ImageUploader({ id, type, maxAmount, multiple }: ImageUploaderProps)
+- JobMetadataModal({ isOpen, onClose, jobId, extJobId, onSaveNote }: JobMetadataModalProps)
+- LogoutButton({ variant }: LogoutButtonProps)
+- MusicianPaymentForm({ children, onSubmit, isLoading, initialMusicianInfo }: IMusicianPaymentFormProps)
+- MusicianPicturesForm({ children }: IMusicianPicturesFormProps)
+- MusicianVideosForm({ children }: IMusicianVideosFormProps)
+- ProfilePreview({ name, isDj, media, mediaLoading, mixes, aboutTitle, aboutText, venuesAndEvents, genres, reviews, musicianId }: ProfilePreviewProps)
+- RecommendationsBadge({ reviewCount, playedJobsCount }: RecommendationsBadgeProps)
+- ReorderableMediaGrid({ type, files, children, layout }: ReorderableMediaGridProps)
+- ReorderHint({ label }: { label?: string })
+- SortableMediaItem({ id, children, showHandle }: SortableMediaItemProps)
+- DeleteReviewConfirmationModal
+- EditReviewConfirmationModal
+- UpsertMusicianReviewModal
+- UpsertReviewModal
+- ViewReviewsModal
+- ReviewCard
+- UpsertReviewController
+- AvailabilityGateModal
+- CustomerSidebar
+- DjSidebar
+- MusicianSidebar
+- MobileNav
+- NavItem
+- Sidebar
+- SidebarContent
+- SidebarLogo
+- ToggleButton
+- TrustpilotRating
+- VideoUploader
+- ChatInput
+- ConversationList
+- ConversationListItem
+- FloatingChatButton
+- ReferralsPage({ role: ReferrerRole })
+- AddressAutocompleteInput({ value, onChange, placeholder, maxW })
+- AdminMessageCard({ message, markAsReadMutation })
+- BackButton({ backHref, text, hideTextOnMobile, ...rest })
+- BoogieBusterButton({ children, ...rest })
+- BudgetIncreasePulseIcon()
+- CalendarView({ events, onDayClick, showTypeDifferentiation, emptyMonthText, showEventListOnDaySelectOnly, selectionTone })
+- CompanyBillingCard({ jobId, extJobId })
+- CopyIntroMessage({ leadName, role, performerName })
+- CustomDatePicker({ dateEvent, setDateEvent })
+- CustomerCountdown({ timeLeft, variant })
+- CustomerCountdownFromSentAt({ job, variant })
+- CustomerDecisionCountdown({ job, profession })
+- DeclineExtraHours({ endpoint, declinedAt, isDisabled, onSuccess })
+- DeliveredSetupNotice()
+- DeliveryLogisticsCard({ jobId })
+- DevToggleButton()
+- YourEvent({ job })
+- DjContactCard({ djId, fallbackName, showContactInfo, jobId, extJobId })
+- DjJobFiltersForm({ onSaveSuccess, saveButtonLabel })
+- DjMixes({ media, heading })
+- DjQuoteCards({ job, quotes, isLoading, showContactInfo })
+- DjSideQuoteCard({ quote, href, showCustomerStatus })
+- DjUrgencyIndicator({ djId, djName, jobDate, isMobile, isHidden })
+- DjVerifiedTooltip({ mt, boxSize, isWhite, label })
+- ExtDjContactCard({ extDjId, fallbackName, extJobId, showContactInfo })
+- ExtJobCard({ extJob, href })
+- FAQCard({ question, answer })
+- FirstWinPopup({ role: 'dj' | 'musician' })
+- Footer()
+- FooterInfoInCard()
+- FormStarRating({ rating, count, size, onRatingChange })
+- GreenCheckIcon(props: IconProps)
+- HelpButtonPopoverBody({ onClose })
+- ICalExportModal({ isOpen, onClose, events: CalendarEvent[] })
+- IOSPWAPrompt()
+- IconHeaderTextGridItem({ icon, title, additionalInfo, children, alertInfo, isCopyable, ...props })
+- InstrumentalistOffersDisplay({ jobId: number })
+- InvoiceBillingInfoCard({ alertText })
+- InvoiceStatusBadge({ firstInvoicePaid, isLoading, ml })
+- JobCard({ job, href, showCustomerStatus, showDjStatus })
+- JobContentSection({ quoteId, extJobId }: JobContentRef)
+- MobileFriendlyTooltip({ children, ...tooltipProps })
+- MusicianCard({ musician, status, price, showContactInfo, hideVenues, jobId, extJobId, showFloatingChatButton })
+- MusicianJobCard({ job, extJob, href, hasOtherOffers, recurringCustomerName })
+- MusicianJobFiltersForm({ onSaveSuccess, saveButtonLabel })
+- PartnerEventWishesCard({ job, musicianView })
+- PayoutStatusCard({ jobId, extJobId, role })
+- PrimaryLogoForDjLogin()
+- RatingInfo({ aggregatedRating, amountOfRatings })
+- ReopenFollowUpBody({ onReopen, isReopening, onClose })
+- ScrollableBox({ children, ...rest })
+- SearchingPlaceholderCard({ label, sublabel, icon })
+- SelfBillingReferenceFormatCard({ role, savedFormat })
+- SelfBillingTermsModal({ isOpen, isSubmitting, onAccept })
+- ServiceOfferCard({ offer, href, recurringCustomerName })
+- ServiceOffersExtJobDisplay({ extJobId: number })
+- ShareMagicLinkButton({ jobId, extJobId, variant, size })
+- SickDisclaimer({ role: 'dj' | 'musician' })
+- StandardMessageSelector({ eventType, onSelect, isDisabled })
+- selectBiddableJobsForDj(input: SelectBiddableJobsInput<T>): T[]
+- resolveDjBidStatus(args: { job, djId, djTier, quoterTiers }): DjBidStatus
+- adjustBudgetForDjView(budget, requestedSaxophonist, requestedMusicianHours, djTier, maxBudget, jobCreatedAt, eventDate, equipmentStatus): number | null
+- calculateMusicianOfferPrice(requestedHours, jobCreatedAt, eventDate): number
+- calculateCustomerMusicianPrice(requestedHours, jobCreatedAt, eventDate): number
+- bankAccountProblem(input: BankAccountGuardInput): BankAccountProblem | null
+- bankAccountError(input: BankAccountGuardInput): string | null
+- isWithinBidWithdrawWindow(createdAt: string, now?: Date): boolean
+- jobStatusAfterQuoteWithdrawal(input): 'open' | 'another_round' | null
+- extJobShouldReopenAfterOfferWithdrawal(input): boolean
+- StandardMessagesManager(): JSX.Element
+- WithdrawBidDialog(props: WithdrawBidDialogProps): JSX.Element
+- VenuePhotosSection(props: { photos?: VenuePhoto[] | null; title?: string }): JSX.Element | null
+- VenueMatchBadge(props: { matches: readonly VenueMatch[] }): JSX.Element | null
+- StarRating(props: IStarsConfigProps): JSX.Element
+- copenhagenHour(at: Date): number
+- isInCascadeQuietHours(at: Date, start: number | null | undefined, end: number | null | undefined): boolean
+- copenhagenWallClockToInstant(dateStr: string, timeStr: string): Date
+- addDaysToDateString(dateStr: string, days: number): string
+- copenhagenToday(at: Date): string
+- isJobExcludedByDjFilters(job: FilterableJobShape, filters: DjJobFiltersShape | null | undefined): boolean
+- toDjJobFiltersFormValues(filters: DjJobFilter | null | undefined): DjJobFiltersShape
+- isJobExcludedByMusicianFilters(job: MusicianFilterableJobShape, filters: MusicianJobFiltersShape | null | undefined): boolean
+- toMusicianJobFiltersFormValues(filters: MusicianJobFilter | null | undefined): MusicianJobFiltersShape
+- isJobOpenToDjWave(jobId: number, selectionByJobId: DjWaveSelectionByJobId): boolean
+- collidingQuote(job: Job, djQuotes: QuoteWithJob[], extJobs: ExtJob[] | null): CollidingItem | undefined
+- getDjProcessStep(quote: DjProcessQuote, now?: Date): number
+- djDeliveryProcessSteps(input: { currentStep: number; isContacted: boolean; isReadyForBilling: boolean; deliveryDone: boolean; dueDate: string | null; today: string; }): DeliveryProcessStep[]
+- parseEquipmentDescription(raw: string | null | undefined): ParsedEquipmentState
+- serializeEquipmentDescription(selectedEquipment: EquipmentLabel[], topSpeakerCount: number, bottomSpeakerCount: number, bottomSpeakerMin?: number): string
+- foldEarlySetup(job: EarlySetupFoldInput, nextPrice: number): EarlySetupFoldResult
+- extDjPayoutShare(extJobCreatedAt: string): number
+- getFeeForJob(jobCreatedAt: string): number
+- isExtDjDac7Complete(info: ExtDjDac7Shape | null | undefined): boolean
+- resolveInvoiceRecipient(booking: InvoiceRecipientBooking, account: InvoiceRecipientAccount | null | undefined): InvoiceRecipient
+- resolveCustomerBillingContact(booking: InvoiceRecipientBooking): CustomerBillingContact | null
+- resolveBookingRoleType(accountRoleType: string | null | undefined, hasSax: boolean): ExternalJobRoleType
+- priceDrivers(input: { date: string; fullDay: boolean; tier: string | null | undefined; saxType: string | null | undefined; saxHours: number | null | undefined; startTime: string | null | undefined; endTime: string | null | undefined; equipmentDescription: string | null | undefined; accountEquipmentDescription: string | null | undefined; }): PriceDrivers
+- priceDriversChanged(before: PriceDrivers, after: PriceDrivers): boolean
+- encrypt(text: string): string
+- decrypt(encryptedData: string): string
+- chatMessagePreview(message: string | null | undefined, attachmentUrl: string | null | undefined): string
+- isChatRateLimitError(error: unknown): boolean
+- computeCommissionSplit(fullAmount, cfg, extJobCreatedAt)
+- computeLineCommission(inputPrice, cfg)
+- resolvePlatformCommissionPct(cfg, extJobCreatedAt)
+- resolvePartnerCommissionPct(cfg)
+- isCommissionEarned(job, today)
+- commissionToday(at)
+- toPublicVenuePricing(cfg, defaultFullAmount)
+- computeExecutionDate(eventDate)
+- computeExecutionDateWithFloor(eventDate, batchDay)
+- forecastBatchDay(eventDate, today)
+- forecastExecutionDate(eventDate, today)
+- latestOnAccountDate(executionDate)
+- resolvePayoutView(payout, document, line, today)
+- djVisibleBudgetMax(job, dj)
+- isWithinOverBudgetLock(jobCreatedAt, now)
+- isPriceBlockedByBudgetLock(price, job, dj, now)
+- buildReferralExtJobInsert(body, referrer, today)
+- buildReferralInsert(extJobId, referrer)
+- buildReferralActionNote(referrer, body)
+- formatReferralJobRef(row)
+- referralTypeForRole(role)
+- findPhoneCountry(code)
+- normalizePhoneLocal(raw, dialCode)
+- formatE164Phone(countryCode, local)
+- reviewEventTypeLabel(raw)
+- isSameEventType(reviewEventType, jobEventType)
+- sortReviewsForEvent(reviews, jobEventType)
+- withSaxCallNote(existing, saxNote)
+- computeMatchKey(input)
+- pluralizeDanish(count, singular, plural)
+- formatDanishTimeString(hours, minutes)
+- SALES_PITCH_MIN_LENGTH
+- SALES_PITCH_MAX_LENGTH
+- OVER_BUDGET_LOCK_HOURS
+- OVER_BUDGET_TOLERANCE
+- OVER_BUDGET_LOCK_MESSAGE
+- isSaxHighSeason(eventDate: string | Date | null | undefined): boolean
+- isSaxSeasonPricingActive(jobCreatedAt?: string | Date | null, eventDate?: string | Date | null): boolean
+- saxBookingsConflict(a: SaxBooking, b: SaxBooking): boolean
+- resolveSaxDate(date: string | null | undefined, musicianStartTime: string | null | undefined, djStartTime: string | null | undefined): string | null
+- formatSaxSchedule(date: string | null | undefined, musicianStartTime: string | null | undefined, djStartTime: string | null | undefined): string | null
+- isPaymentInfoComplete(info: PaymentInfoShape | null | undefined): boolean
+- isSelfBillingPayoutReady(info: PaymentInfoShape | null | undefined): boolean
+- remainingTierSlots(jobTier: string | null | undefined, pending: PendingByTier, tierFallbackActive?: boolean): { A: number; B: number }
+- canDjServeJobPostalCode(equipmentStatus: string | null | undefined, postalCode: string | number | null | undefined): boolean
+- quoteDeliverySnapshot(equipmentStatus: string | null | undefined, postalCode: string | number | null | undefined): QuoteDeliverySnapshot | null
+- matchVenues(venues: readonly string[] | null | undefined, jobTexts: readonly (string | null | undefined)[]): VenueMatch[]
+- useAvailableJobsForMusicians()
+- useBidWithdrawWindow(createdAt: string | null | undefined, active: boolean): UseBidWithdrawWindowReturn
+- usePinnedBidsInWithdrawWindow<T>(items: T[], getCreatedAt: (item: T) => string | null | undefined): T[]
+- useBillingChangeRequest()
+- useCreateBillingChangeRequest()
+- useAcceptSelfBillingTerms()
+- useJobLinkResolutions(refs: string[])
+- useLinkableJobsSearch(queryText: string, enabled: boolean)
+- useJobs(jobStatus?: JobStatus | JobStatus[], regions?: Region[])
+- useJobById(id?: number)
+- useViewableCustomerJobs()
+- useMutateJobStatusThroughApi(endpoint)
+- useQuotesWithJobs()
+- useDjQuoteByJobId(jobId: number)
+- useQuoteWithJobById(id?: number)
+- useCreateQuote()
+- useServiceOffers()
+- useServiceOfferById(offerId: number)
+- useServiceOffersForJob(jobId?: number, options?: { includeLost?: boolean; statuses?: ServiceOfferStatus[] })
+- useExtJobsByDjId()
+- useExtJobsForMusicians()
+- useCollidingOffer(jobId: number | undefined)
+- collidingOfferForJobDate(targetBooking, serviceOffers, excludeJobId?, excludeExtJobId?)
+- useDjInfo()
+- useUpdateDjInfo()
+- useJoinedDjInfo()
+- useUpdateJoinedDjInfo()
+- useMusician()
+- useUpdateMusician()
+- useCreateFile({ isVideo, onProgress })
+- useDeleteFile()
+- useReorderFiles()
+- useCountdown(targetDate: Date)
+- useFeatureFlag(key: string)
+- useDjWaveSelection(jobIds: number[] | undefined)
+- useTheme()
+- useTypingChannel(conversationId, selfRole)
+- useCreateUnavailableDate()
+- useDeleteUnavailableDate()
+- useUnavailableDates(profileType, profileId)
+- useUnbidJobsFromMyRegions(applyFilters)
+- useUpdateServiceOfferCustomerContacted(job)
+- useWindowDimensions()
+- encrypt(value)
+- decrypt(value)
+- encryptField(value)
+- decryptField(value)
+- callPushEdgeFunction(endpoint, payload)
+- logError(error, context)
+- logWarning(message, context)
+- logInfo(message, context)
+- resolveDjUpcomingEvent(supabase, djId, now)
+- resolveSongRequestTarget(supabase, token, now)
+- DANISH_POSTAL_CENTROIDS
+- staticFAQSBeforeEvent
+- staticFAQSDuringEvent
+- staticFAQsMusicianOnly
+- staticFAQsDuo
+- feeFraction
+- DEFAULT_PAYOUT_PAYMENT_DAYS
+- musicianExtraHalfHourPayout(jobCreatedAt)
+- specialRequestMusicianShare(jobCreatedAt)
+- REFERRAL_REWARD_DKK
+- BadgeType
+- BADGE_DEFINITIONS
+
+## Dependencies
+- @chakra-ui/react
+- @aws-sdk/client-s3
+- @aws-sdk/s3-request-presigner
+- @supabase/supabase-js
+- next/navigation
+- next/server
+- react-icons/fa
+- react-icons/fa6
+- react-icons/gi
+- @tanstack/react-query
+- node:crypto
+- stream
+- fs
+- @supabase/auth-helpers-nextjs
+- next/headers
+- zod
+- crypto
+- vitest
+- @api/_repositories/JobRepository
+- @api/_repositories/ExtJobRepository
+- @api/_repositories/QuoteRepository
+- @api/_repositories/ServiceOfferRepository
+- @api/_repositories/BaseRepository/getElevatedSupabase
+- @/lib/cloki/logger
+- @/lib/notifications
+- @/app/api/_services/isCronAuthorized
+- @/app/api/_services/magicLink/getMagicLink
+- @/app/api/_services/magicLink/generateMagicLink
+- @/app/api/_services/klaviyo/triggerKlaviyoEvent
+- @/app/api/_services/googleAds/clickCampaigns
+- @/app/api/_services/equipmentDeliveries/syncDeliveries
+- @/helpers/copenhagenTime
+- @/helpers/isRecurringCustomerExtJob
+- @/app/api/_repositories/BaseRepository/getElevatedSupabase
+- @/app/api/_repositories/ExtJobRepository
+- @/app/api/_repositories/PrivateDjInfoRepository
+- @/app/api/_repositories/ExtDjRepository
+- @/app/api/_repositories/PrivateMusicianInfoRepository
+- @/app/api/_repositories/QuoteRepository
+- @/app/api/_repositories/JobRepository
+- @/app/api/_repositories/DjInfoRepository
+- @/app/api/_services/ServiceResponse
+- @/app/api/_services/safeExec
+- @/app/api/_services/getAuthedUser
+- @/app/api/_services/notifyJobReopened
+- @/app/api/_services/fetchInIdBatches
+- @/app/api/_services/equipmentDeliveries/deliveries
+- @/app/api/_services/equipmentDeliveries/partnerView
+- @/app/api/djs/available/_services/matchingConfig
+- @/app/api/djs/available/_services/advanceJobWave
+- @/app/api/djs/available/_services/resolveMatchingMode
+- @/app/api/djs/available/_services/resolveCascadeSettings
+- @/app/api/_services/jobReminderAudience
+- @/app/api/_services/djPostcode
+- @/app/api/_services/clientFeatures
+- @/domain/biddableJobs
+- @/domain/djBidStatus
+- @/helpers/equipmentDelivery
+- @/helpers/wkndsDelivery
+- @/helpers/djJobFilters
+- @/helpers/jobWaveVisibility
+- @/helpers/bookedExtJobStatuses
+- @/helpers/cascadeQuietHours
+- @/helpers/tierSlots
+- @/helpers/jobFeedback
+- @/app/api/_repositories/ServiceOfferRepository
+- @/auth/getSupabase
+- @/app/api/_services/hasValidAdminKey
+- @/app/api/_services/isJobWaveOpenForDj
+- @/helpers/quoteBudgetLock
+- @/helpers/collidingQuote
+- @/helpers/djExcludedRegions
+- @/helpers/salesPitchLimits
+- @/types/database.types
+- @/types/schema.gen
+- @/lib/encryption
+- @/helpers/parseFullName
+- @/helpers/saxRegionalWindow
+- @/helpers/musicianJobFilters
+- @/helpers/equipmentDescription
+- @/helpers/publicVenuePricing
+- @/helpers/partnerPricing
+- @/helpers/partnerCommission
+- @/helpers/partnerCommissionEarned
+- @/helpers/secondaryBillingEmail
+- @/helpers/selfBillingReferenceFormat
+- @/helpers/recurringMatchKey
+- @/helpers/getUrl
+- @/helpers/payoutView
+- @/app/api/_repositories/AuthRepository
+- @/app/api/_services/getAdminUser
+- @/app/api/_services/getPartnerAccounts
+- @/app/api/_services/recurringLocation
+- @/app/api/_services/spawnRecurringExtJob
+- @/app/api/_services/updateRecurringExtJob
+- @/app/api/_services/magicLink/isPlainCustomerEmail
+- @/app/api/_services/jobs/classifyJobTier
+- @/app/api/_services/privateInfo/applyServerOwnedPrivateInfoFields
+- @/app/api/_services/privateInfo/checkBankAccount
+- @/app/api/_services/billingLock/billingLock
+- @/app/api/_services/billingLock/billingChangeRequests
+- @/app/api/_services/selfBilling/documentAccessToken
+- next
+- react-icons/md
+- next/link
+- @/components/Sidebar/DjSidebar
+- @/components/ICalExportModal
+- @/components/CalendarView
+- @/components/DjSideQuoteCard
+- @/components/JobCard
+- @/components/ExtJobCard
+- @/components/MusicianJobCard
+- @/components/ServiceOfferCard
+- @/components/chat/ConversationList
+- @/components/chat/ChatMessages
+- @/components/chat/ChatInput
+- @/components/referrals/ReferralsPage
+- @/hooks/useQuotes
+- @/hooks/useUnbidJobsFromMyRegions
+- @/hooks/useInternalDjExtJobs
+- @/hooks/useDjInfos
+- @/hooks/useChat
+- @/hooks/useTypingChannel
+- @/auth/useAuth
+- @/helpers/getFirstName
+- @/types/types.global
+- @chakra-ui/icons
+- react-icons/lu
+- react-icons/ai
+- qrcode.react
+- react
+- react-icons/fi
+- @emotion/react
+- react-confetti
+- @/components/BackButton
+- @/components/CompanyBillingCard
+- @/components/CustomerDecisionCountdown
+- @/components/DjContactCard
+- @/components/ExpiredExtJobModal/ExpiredExtJobModal
+- @/components/FAQCard
+- @/components/Footer
+- @/components/IconHeaderTextGridItem
+- @/components/JobMetadataModal/JobMetadataModal
+- @/components/LogoutButton
+- @/components/PartnerEventWishesCard
+- @/components/ShareMagicLinkButton
+- @/components/Sidebar/CustomerSidebar
+- @/components/Sidebar/MusicianSidebar
+- @/components/Trustpilot/TrustpilotRating
+- @/config/customerLinks
+- @/helpers/calculateCustomerMusicianPrice
+- @/helpers/calculateMusicianOfferPrice
+- @/helpers/date-time/convertDateToDDMMYYYY
+- @/helpers/date-time/convertTimeToHHMMSSToHHMM
+- @/helpers/extDjPublicColumns
+- @/helpers/formatNumber
+- @/helpers/formValidation
+- @/helpers/getEventTypeDisplay
+- @/helpers/saxOfferConflict
+- @/hooks/useAvailableJobsForMusicians
+- @/hooks/useCustomerInvoices
+- @/hooks/useExtJobs
+- @/hooks/useExtJobsForMusicians
+- @/hooks/useFiles
+- @/hooks/useHasDateConflict
+- @/hooks/useJobsWithOtherOffers
+- @/hooks/useMusicianJobFilters
+- @/hooks/useMusicianMedia
+- @/hooks/useMusicianReviews
+- @/hooks/useMusicians
+- @/hooks/useMusicianExtJobRecurringNames
+- @/hooks/useServiceOffers
+- @/hooks/useShowBackButton
+- @/hooks/useWindowDimensions
+- @/staticData/static-faqs
+- react-icons
+- @/constants
+- @/helpers/saxSchedule
+- @/helpers/customerContactStatus
+- @/hooks/useJobs
+- @/hooks/useJobQuotes
+- @/hooks/useBidWithdrawWindow
+- @/hooks/useInvoiceStatusByJobId
+- @/hooks/useInvoiceStatusByExtJobId
+- @/hooks/useMusicianMessages
+- @/hooks/useServiceOfferNotes
+- @/hooks/useStandardMessages
+- @/hooks/useUpdateServiceOfferCustomerContacted
+- @/helpers/venues
+- @/hooks/usePrivateMusiciansInfo
+- @/components/MusicianJobFiltersForm
+- @/components/MusicianInfoForm/MusicianPicturesForm
+- @/components/MusicianInfoForm/MusicianVideosForm
+- @/components/MusicianInfoForm/MusicianPaymentForm
+- @/components/Review/Modal/UpsertMusicianReviewModal
+- @/components/ProfilePreview/ProfilePreview
+- @/components/StandardMessagesManager
+- @/components/FirstWinPopup
+- next/image
+- react-icons/io
+- @sentry/nextjs
+- next/font/google
+- next/script
+- react-icons/bs
+- framer-motion
+- @dnd-kit/core
+- @dnd-kit/modifiers
+- @dnd-kit/sortable
+- @dnd-kit/utilities
+- react-icons/bi
+- date-fns
+- react-datepicker
+- react-icons/io5
+- react-icons/ri
+- browser-image-compression
+- @rajesh896/video-thumbnails-generator
+- @chakra-ui/theme-tools
+
+## AI touchpoints [AI]
+- `web-app/src/app/_components/SaxUpsellTeaser.tsx`
+- `web-app/src/app/dj/chat/[conversation_id]/page.tsx`
+- `web-app/src/app/instrumentalist/chat/[conversation_id]/page.tsx`
+- `web-app/src/app/job/[job_id]/quote/_components/StatusSentJobPage/StatusSentJobPage.tsx`
+- `web-app/src/app/layout.tsx`
+- `web-app/src/app/providers.tsx`
+- `web-app/src/components/IOSPWAPrompt.tsx`
+- `web-app/src/components/JobContentSection.tsx`
+- `web-app/src/fontsource.d.ts`
+- `web-app/src/useTheme.ts`
+- `web-app/src/app/api/chat/support/admin/_aiOutcome.ts`
+- `web-app/src/app/api/chat/support/admin/[conversationId]/messages/route.ts`
+- `web-app/src/app/api/chat/support/admin/[conversationId]/handled/route.ts`
+
+## Open questions
+- In web-app/src/app/dj/feedback/page.tsx, handleSubmit displays a success toast without executing any network mutation or API call to persist the feedback.

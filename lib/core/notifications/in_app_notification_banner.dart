@@ -12,6 +12,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// Animated top banner shown when a foreground FCM notification arrives.
 /// Slides in from above, auto-dismisses after 4 seconds.
 /// Tap → navigates to the relevant screen. Swipe up → dismisses.
+// @uxid lib/core/notifications/in_app_notification_banner.dart::InAppNotificationBanner
 class InAppNotificationBanner extends ConsumerStatefulWidget {
   const InAppNotificationBanner({super.key});
 

@@ -24,6 +24,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider
 /// Two states: the CTA, and (once declined) a confirmed row with **Fortryd**.
 /// Callers decide *whether* to show it — only offer it while no hours are
 /// logged, since the server rejects that contradiction.
+// @uxid lib/features/jobs/presentation/widgets/decline_extra_hours.dart::DeclineExtraHours
 class DeclineExtraHours extends ConsumerWidget {
   const DeclineExtraHours({
     super.key,

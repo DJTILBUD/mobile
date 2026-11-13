@@ -9,6 +9,7 @@ import 'package:dj_tilbud_app/features/notifications/domain/entities/app_notific
 import 'package:dj_tilbud_app/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 
+// @uxid lib/features/notifications/presentation/screens/notifications_screen.dart::NotificationsScreen
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -107,6 +108,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 }
 
+// @uxid lib/features/notifications/presentation/screens/notifications_screen.dart::_FilterBar
 class _FilterBar extends StatelessWidget {
   const _FilterBar({required this.unreadOnly, required this.onChanged});
 
@@ -143,6 +145,7 @@ class _FilterBar extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/notifications/presentation/screens/notifications_screen.dart::_Chip
 class _Chip extends StatelessWidget {
   const _Chip({
     required this.label,
@@ -183,6 +186,7 @@ class _Chip extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/notifications/presentation/screens/notifications_screen.dart::_NotificationList
 class _NotificationList extends ConsumerWidget {
   const _NotificationList({required this.items});
 
@@ -206,6 +210,7 @@ class _NotificationList extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/notifications/presentation/screens/notifications_screen.dart::_SectionHeader
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.label);
 
@@ -233,6 +238,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/notifications/presentation/screens/notifications_screen.dart::_NotificationTile
 class _NotificationTile extends ConsumerWidget {
   const _NotificationTile({required this.notification});
 
@@ -345,6 +351,7 @@ class _NotificationTile extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/notifications/presentation/screens/notifications_screen.dart::_SwipeReadHint
 class _SwipeReadHint extends StatelessWidget {
   const _SwipeReadHint({required this.alignment});
 
@@ -375,6 +382,7 @@ class _SwipeReadHint extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/notifications/presentation/screens/notifications_screen.dart::_CenteredScrollable
 class _CenteredScrollable extends StatelessWidget {
   const _CenteredScrollable({required this.child});
 
@@ -395,6 +403,7 @@ class _CenteredScrollable extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/notifications/presentation/screens/notifications_screen.dart::_EmptyOrError
 class _EmptyOrError extends StatelessWidget {
   const _EmptyOrError({
     required this.icon,

@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/features/agent/presentation/providers/agent_provid
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::JobSummaryBottomSheet
 class JobSummaryBottomSheet extends ConsumerStatefulWidget {
   const JobSummaryBottomSheet({super.key, required this.job});
 
@@ -148,6 +149,7 @@ class _JobSummaryBottomSheetState extends ConsumerState<JobSummaryBottomSheet> {
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::_LoadingDots
 class _LoadingDots extends StatefulWidget {
   const _LoadingDots();
 
@@ -193,6 +195,7 @@ class _LoadingDotsState extends State<_LoadingDots>
   }
 }
 
+// @uxid lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::_SummaryText
 class _SummaryText extends StatelessWidget {
   const _SummaryText({required this.text, required this.streaming});
 
@@ -222,6 +225,7 @@ class _SummaryText extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::_ErrorView
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message});
 
@@ -256,6 +260,7 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/agent/presentation/widgets/job_summary_bottom_sheet.dart::_BottomBar
 class _BottomBar extends StatelessWidget {
   const _BottomBar({
     required this.agentState,

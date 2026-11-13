@@ -25,6 +25,7 @@ Future<bool> showEditQuoteBottomSheet(
   return result == true;
 }
 
+// @uxid lib/features/jobs/presentation/screens/edit_quote_bottom_sheet.dart::EditQuoteBottomSheet
 class EditQuoteBottomSheet extends ConsumerStatefulWidget {
   const EditQuoteBottomSheet({super.key, required this.quote});
 
@@ -380,6 +381,7 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/edit_quote_bottom_sheet.dart::_CountdownBanner
 class _CountdownBanner extends StatelessWidget {
   const _CountdownBanner({
     required this.isExpired,

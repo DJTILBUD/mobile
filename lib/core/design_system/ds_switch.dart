@@ -3,6 +3,7 @@ import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 
 /// Design-system switch — matches web marketplace `Switch`.
 /// Custom track+thumb, not Material Switch.
+// @uxid lib/core/design_system/ds_switch.dart::DSSwitch
 class DSSwitch extends StatelessWidget {
   const DSSwitch({
     super.key,

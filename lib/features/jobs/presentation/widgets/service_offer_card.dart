@@ -9,6 +9,7 @@ import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/shared/widgets/recurring_customer_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
 
+// @uxid lib/features/jobs/presentation/widgets/service_offer_card.dart::ServiceOfferCard
 class ServiceOfferCard extends StatelessWidget {
   const ServiceOfferCard({
     super.key,
@@ -182,6 +183,7 @@ class ServiceOfferCard extends StatelessWidget {
 
 // ─── Date Block ──────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/service_offer_card.dart::_DateBlock
 class _DateBlock extends StatelessWidget {
   const _DateBlock({required this.date, required this.bg, required this.fg});
 
@@ -248,6 +250,7 @@ class _DateBlock extends StatelessWidget {
 
 // ─── Meta List ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/service_offer_card.dart::_MetaList
 class _MetaList extends StatelessWidget {
   const _MetaList({required this.job, required this.c});
 
@@ -315,6 +318,7 @@ class _MetaList extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/service_offer_card.dart::_MetaItem
 class _MetaItem extends StatelessWidget {
   const _MetaItem({required this.icon, required this.label, required this.c});
 
@@ -343,6 +347,7 @@ class _MetaItem extends StatelessWidget {
 
 // ─── Bid Row ─────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/service_offer_card.dart::_BidRow
 class _BidRow extends StatelessWidget {
   const _BidRow({required this.offer, required this.c});
 
@@ -397,6 +402,7 @@ class _BidRow extends StatelessWidget {
 
 // ─── Countdown Row ───────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/service_offer_card.dart::_CountdownRow
 class _CountdownRow extends StatelessWidget {
   const _CountdownRow({required this.deadline, required this.c});
 
@@ -452,6 +458,7 @@ class _CountdownRow extends StatelessWidget {
 
 // ─── Awaiting-Send Row (offer submitted, job not yet sent to customer) ───────
 
+// @uxid lib/features/jobs/presentation/widgets/service_offer_card.dart::_AwaitingSendRow
 class _AwaitingSendRow extends StatelessWidget {
   const _AwaitingSendRow({required this.c});
 
@@ -479,6 +486,7 @@ class _AwaitingSendRow extends StatelessWidget {
 
 // ─── Status Row ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/service_offer_card.dart::_StatusRow
 class _StatusRow extends StatelessWidget {
   const _StatusRow({required this.offer, required this.c});
 
@@ -500,6 +508,7 @@ class _StatusRow extends StatelessWidget {
 
 // ─── Action Chip ─────────────────────────────────────────────────────────────
 
+// @uxid lib/features/jobs/presentation/widgets/service_offer_card.dart::_ActionChip
 class _ActionChip extends StatelessWidget {
   const _ActionChip({required this.action, required this.c});
 

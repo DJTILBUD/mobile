@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/jobs/presentation/widgets/process_tracker.dart::ProcessTracker
 class ProcessTracker extends StatelessWidget {
   const ProcessTracker({
     super.key,
@@ -69,6 +70,7 @@ class ProcessTracker extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/process_tracker.dart::_StepCircle
 class _StepCircle extends StatelessWidget {
   const _StepCircle({
     required this.isCompleted,

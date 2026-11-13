@@ -179,6 +179,7 @@ const _instrumentalistFaqData = [
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/faq_screen.dart::FaqScreen
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key, required this.role});
 
@@ -304,6 +305,7 @@ class FaqScreen extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/faq_screen.dart::_FaqTile
 class _FaqTile extends StatefulWidget {
   const _FaqTile({required this.item});
   final _FaqItem item;

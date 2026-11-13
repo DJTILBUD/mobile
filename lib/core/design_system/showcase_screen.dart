@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/core/design_system/showcase_screen.dart::DesignSystemShowcase
 class DesignSystemShowcase extends StatefulWidget {
   const DesignSystemShowcase({super.key});
 
@@ -117,6 +118,7 @@ class _DesignSystemShowcaseState extends State<DesignSystemShowcase>
 // FOUNDATION PAGE — colors, typography, spacing, radius, shadows
 // ═══════════════════════════════════════════════════════════════
 
+// @uxid lib/core/design_system/showcase_screen.dart::_FoundationPage
 class _FoundationPage extends StatelessWidget {
   const _FoundationPage({required this.c});
   final DSColors c;
@@ -453,6 +455,7 @@ class _FoundationPage extends StatelessWidget {
   }
 }
 
+// @uxid lib/core/design_system/showcase_screen.dart::_ColorGroup
 class _ColorGroup extends StatelessWidget {
   const _ColorGroup({
     required this.c,
@@ -533,6 +536,7 @@ class _ColorGroup extends StatelessWidget {
   }
 }
 
+// @uxid lib/core/design_system/showcase_screen.dart::_TypeRow
 class _TypeRow extends StatelessWidget {
   const _TypeRow({
     required this.c,
@@ -579,6 +583,7 @@ class _TypeRow extends StatelessWidget {
 // BUTTONS PAGE
 // ═══════════════════════════════════════════════════════════════
 
+// @uxid lib/core/design_system/showcase_screen.dart::_ButtonsPage
 class _ButtonsPage extends StatefulWidget {
   const _ButtonsPage({required this.c});
   final DSColors c;
@@ -1107,6 +1112,7 @@ class _ButtonsPageState extends State<_ButtonsPage> {
 // INPUTS PAGE
 // ═══════════════════════════════════════════════════════════════
 
+// @uxid lib/core/design_system/showcase_screen.dart::_InputsPage
 class _InputsPage extends StatelessWidget {
   const _InputsPage({required this.c});
   final DSColors c;
@@ -1256,6 +1262,7 @@ class _InputsPage extends StatelessWidget {
 // FORMS PAGE (Radio + Checkbox)
 // ═══════════════════════════════════════════════════════════════
 
+// @uxid lib/core/design_system/showcase_screen.dart::_FormsPage
 class _FormsPage extends StatefulWidget {
   const _FormsPage({required this.c});
   final DSColors c;
@@ -1579,6 +1586,7 @@ class _FormsPageState extends State<_FormsPage> {
 // CONTROLS PAGE (Segmented + Slider + Switch + Section Titles)
 // ═══════════════════════════════════════════════════════════════
 
+// @uxid lib/core/design_system/showcase_screen.dart::_ControlsPage
 class _ControlsPage extends StatefulWidget {
   const _ControlsPage({required this.c});
   final DSColors c;
@@ -2081,6 +2089,7 @@ class _ControlsPageState extends State<_ControlsPage> {
 // CARDS & TOASTS PAGE
 // ═══════════════════════════════════════════════════════════════
 
+// @uxid lib/core/design_system/showcase_screen.dart::_CardsToastsPage
 class _CardsToastsPage extends StatelessWidget {
   const _CardsToastsPage({required this.c});
   final DSColors c;
@@ -2380,6 +2389,7 @@ class _CardsToastsPage extends StatelessWidget {
 // SHOWCASE-ONLY LAYOUT HELPERS (private, not reusable)
 // ═══════════════════════════════════════════════════════════════
 
+// @uxid lib/core/design_system/showcase_screen.dart::_PageHeader
 class _PageHeader extends StatelessWidget {
   const _PageHeader({
     required this.c,
@@ -2413,6 +2423,7 @@ class _PageHeader extends StatelessWidget {
   }
 }
 
+// @uxid lib/core/design_system/showcase_screen.dart::_SectionHeader
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.c,
@@ -2443,6 +2454,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+// @uxid lib/core/design_system/showcase_screen.dart::_RowLabel
 class _RowLabel extends StatelessWidget {
   const _RowLabel({required this.c, required this.label});
   final DSColors c;
@@ -2462,6 +2474,7 @@ class _RowLabel extends StatelessWidget {
   }
 }
 
+// @uxid lib/core/design_system/showcase_screen.dart::_VariantLabels
 class _VariantLabels extends StatelessWidget {
   const _VariantLabels({required this.c, required this.labels});
   final DSColors c;
@@ -2490,6 +2503,7 @@ class _VariantLabels extends StatelessWidget {
 }
 
 // Musician Card (showcase-specific, complex layout)
+// @uxid lib/core/design_system/showcase_screen.dart::_MusicianCard
 class _MusicianCard extends StatelessWidget {
   const _MusicianCard({
     required this.c,

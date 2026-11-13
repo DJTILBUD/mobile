@@ -23,6 +23,7 @@ import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/widgets/unavailable_dates_panel.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_reminder_provider.dart';
 
+// @uxid lib/features/calendar/presentation/screens/calendar_screen.dart::CalendarScreen
 class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key, required this.role});
 
@@ -565,6 +566,7 @@ CalendarEvent _offerToEvent(ServiceOffer offer) => CalendarEvent(
 
 // ── Filter chip ──
 
+// @uxid lib/features/calendar/presentation/screens/calendar_screen.dart::_CalFilterChip
 class _CalFilterChip extends StatelessWidget {
   const _CalFilterChip({
     required this.label,

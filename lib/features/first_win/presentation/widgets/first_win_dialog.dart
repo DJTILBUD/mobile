@@ -167,6 +167,7 @@ Future<void> showFirstWinDialog(
   );
 }
 
+// @uxid lib/features/first_win/presentation/widgets/first_win_dialog.dart::_FirstWinDialog
 class _FirstWinDialog extends ConsumerStatefulWidget {
   const _FirstWinDialog({required this.role, required this.musicianVariant});
 
@@ -396,6 +397,7 @@ class _FirstWinDialogState extends ConsumerState<_FirstWinDialog> {
   }
 }
 
+// @uxid lib/features/first_win/presentation/widgets/first_win_dialog.dart::_InfoBox
 class _InfoBox extends StatelessWidget {
   const _InfoBox({required this.text, required this.c});
 
@@ -420,6 +422,7 @@ class _InfoBox extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/first_win/presentation/widgets/first_win_dialog.dart::_ChecklistCard
 class _ChecklistCard extends StatelessWidget {
   const _ChecklistCard({
     required this.text,
@@ -480,6 +483,7 @@ class _ChecklistCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/first_win/presentation/widgets/first_win_dialog.dart::_StepDots
 class _StepDots extends StatelessWidget {
   const _StepDots({
     required this.count,

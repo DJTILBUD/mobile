@@ -9,6 +9,7 @@ import 'package:dj_tilbud_app/features/referrals/domain/referral_labels.dart';
 /// event date, event type and region are required (the two dropdowns use the customer DJ-form's
 /// own lists); everything else is optional context for the team.
 /// Validation is done on VALUES (not `Form.validate()`), see mobile CLAUDE.md on lazy ListViews.
+// @uxid lib/features/referrals/presentation/widgets/referral_form.dart::ReferralForm
 class ReferralForm extends StatefulWidget {
   const ReferralForm({
     super.key,

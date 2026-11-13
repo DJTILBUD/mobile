@@ -3,6 +3,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 
 /// Bold job ID shown on all job cards and detail screens.
 /// Internal jobs: #230  — External (Udvalgte) jobs: #E342
+// @uxid lib/shared/widgets/job_id_badge.dart::JobIdBadge
 class JobIdBadge extends StatelessWidget {
   const JobIdBadge({super.key, required this.id, this.isExtJob = false});
 

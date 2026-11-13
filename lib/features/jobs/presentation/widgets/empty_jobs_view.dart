@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/jobs/presentation/widgets/empty_jobs_view.dart::EmptyJobsView
 class EmptyJobsView extends StatelessWidget {
   const EmptyJobsView({
     super.key,

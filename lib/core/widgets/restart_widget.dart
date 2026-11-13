@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Wraps the entire app and allows a full widget-tree restart.
 /// Used by DevEnvBanner to apply environment switches.
+// @uxid lib/core/widgets/restart_widget.dart::RestartWidget
 class RestartWidget extends StatefulWidget {
   const RestartWidget({super.key, required this.child});
 

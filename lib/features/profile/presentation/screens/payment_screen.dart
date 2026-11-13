@@ -13,6 +13,7 @@ import 'package:dj_tilbud_app/features/profile/presentation/widgets/self_billing
 import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/profile/presentation/screens/payment_screen.dart::PaymentScreen
 class PaymentScreen extends ConsumerStatefulWidget {
   const PaymentScreen({super.key, required this.role});
 
@@ -689,6 +690,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/payment_screen.dart::_PaymentTypeSelector
 class _PaymentTypeSelector extends StatelessWidget {
   const _PaymentTypeSelector({required this.value, required this.onChanged});
 
@@ -722,6 +724,7 @@ class _PaymentTypeSelector extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/payment_screen.dart::_BusinessTypeSelector
 class _BusinessTypeSelector extends StatelessWidget {
   const _BusinessTypeSelector({required this.value, required this.onChanged});
 
@@ -759,6 +762,7 @@ class _BusinessTypeSelector extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/payment_screen.dart::_TypeCard
 class _TypeCard extends StatelessWidget {
   const _TypeCard({
     required this.label,

@@ -11,6 +11,7 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 ///
 /// Self-hides when there are no photos. Tapping a tile opens
 /// [VenuePhotoViewerScreen], a swipeable full-screen viewer with the caption.
+// @uxid lib/shared/widgets/venue_photos_card.dart::VenuePhotosCard
 class VenuePhotosCard extends StatelessWidget {
   const VenuePhotosCard({super.key, required this.photos});
 
@@ -95,6 +96,7 @@ class VenuePhotosCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/shared/widgets/venue_photos_card.dart::_Thumb
 class _Thumb extends StatelessWidget {
   const _Thumb({required this.photo, required this.onTap});
 
@@ -150,6 +152,7 @@ class _Thumb extends StatelessWidget {
 
 /// Full-screen, swipeable viewer for a venue's photos. Pinch to zoom; the
 /// team's comment sits under the image so it is readable on a dark backdrop.
+// @uxid lib/shared/widgets/venue_photos_card.dart::VenuePhotoViewerScreen
 class VenuePhotoViewerScreen extends StatefulWidget {
   const VenuePhotoViewerScreen({
     super.key,
