@@ -1,0 +1,160 @@
+# Module: lib/core [AI]
+
+(part 1 of 3) Provides core infrastructure, environment configuration, role caching, Firebase analytics tracking, and reusable UI design system components and tokens for the application. (part 2 of 3) Provides foundational app infrastructure including the design system token and showcase library, app-level shell navigation, Supabase client configuration, global error handling and translation, theme management, and Firebase Cloud Messaging (FCM) push notification handling with badge synchronization. (part 3 of 3) Provides shared utilities, formatters, domain helpers (budget, pricing, season logic, equipment encoding), and reusable UI widgets across the application.
+
+_This module does not fit in one model call, so it was read in 3 parts and their summaries were combined without a further model call._
+
+## Key files
+- `lib/core/analytics/analytics_service.dart`: Centralizes Firebase Analytics tracking, identity management, and offer funnel metrics with Danish server error parsing.
+- `lib/core/config/env_config.dart`: Loads and resolves environment variables from .env files with SharedPreferences override support in debug mode.
+- `lib/core/config/role_cache.dart`: Caches the authenticated musician role (DJ or instrumentalist) locally in SharedPreferences for immediate router access.
+- `lib/core/design_system/components.dart`: Export barrel file providing all design system widgets and design tokens.
+- `lib/core/design_system/ds_button.dart`: Design system pill-shaped button and circular icon button widgets.
+- `lib/core/design_system/ds_input.dart`: Design system form text input with custom scroll padding and state-driven borders.
+- `lib/core/design_system/ds_dialog.dart`: Design system dialog and confirmation modal helpers.
+- `lib/core/design_system/ds_navigation_bar.dart`: Design system bottom navigation bar with active indicators and notification badges.
+- `lib/core/design_system/tokens.dart`: Defines core semantic design tokens including colors (light and dark), typography (DSTextStyle), spacing, shadows, and motion curves.
+- `lib/core/error/app_exception.dart`: Defines the sealed hierarchy of application exceptions (database, network, auth, billing, and AI agent exceptions).
+- `lib/core/error/error_messages.dart`: Translates exceptions and technical error states into user-facing, localized Danish error copy.
+- `lib/core/navigation/main_shell.dart`: Consumer widget providing the role-aware root navigation scaffold (DJ vs Instrumentalist), bottom navigation bar, notification/chat badge bindings, and the self-billing terms popup gate.
+- `lib/core/notifications/notifications_service.dart`: Coordinates FCM token registration, impersonation token guards, push permission requests, device token sync to Supabase DeviceTokens table, and notification routing.
+- `lib/core/notifications/in_app_notification_banner.dart`: Animated in-app foreground notification banner with custom tap navigation and swipe dismissal.
+- `lib/core/notifications/in_app_notification_provider.dart`: Riverpod state providers managing current foreground notification, active conversation ID suppression, and keyboard dismiss bar state.
+- `lib/core/supabase/supabase_client.dart`: Initializes the Supabase client instance with platform-aware host resolution (handling Android emulator loopback).
+- `lib/core/router/app_routes.dart`: Static constants declaring all named route destinations across the app.
+- `lib/core/theme/app_theme.dart`: Defines Flutter ThemeData configurations (light and dark) using Prompt Google Fonts and web-compatible color tokens.
+- `lib/core/theme/theme_provider.dart`: Riverpod notifier persisting and toggling ThemeMode with SharedPreferences.
+- `lib/core/utils/budget_utils.dart`: Calculates platform fees, DJ-facing budget adjustments, tier deductions, and formats budget labels for musicians and DJs.
+- `lib/core/utils/musician_price.dart`: Calculates payouts and customer prices for musician hours, handling legacy, current, and high-season rates.
+- `lib/core/utils/sax_high_season.dart`: Evaluates saxophone high-season date windows and pricing applicability.
+- `lib/core/utils/equipment_description.dart`: Parses and serializes equipment requirements (JSON schema and legacy free-text aliases) for display and updates.
+- `lib/core/utils/ical_generator.dart`: Generates RFC 5545 iCalendar (.ics) formatted strings from a list of calendar events.
+- `lib/core/utils/birthday_person_age.dart`: Formats customer-entered birthday age strings for job headings.
+- `lib/core/utils/customer_name.dart`: Extracts first names from customer lead strings to mask full identity before quotes are won.
+- `lib/core/utils/event_type_labels.dart`: Maps internal event type string keys to human-readable Danish labels.
+- `lib/core/utils/phone_utils.dart`: Normalizes lead phone numbers into dialable standard phone/SMS format.
+- `lib/core/utils/planned_contact.dart`: Determines whether a scheduled customer contact date has become due.
+- `lib/core/utils/unsaved_changes_dialog.dart`: Displays a confirmation dialog when leaving views with unsaved changes.
+- `lib/core/widgets/animated_card.dart`: Provides entry fade/slide animations and press-down scale interactions for list cards.
+- `lib/core/widgets/app_snackbar.dart`: Wrapper around DSToast for quick snackbar/toast feedback messages.
+- `lib/core/widgets/dev_env_banner.dart`: Floating developer UI for switching database environments and user impersonation in debug mode.
+- `lib/core/widgets/restart_widget.dart`: Widget root wrapper to trigger a complete widget tree restart on environment changes.
+- `lib/core/widgets/skeleton_loading.dart`: Shimmer loading placeholder widgets for card lists.
+
+## Public interface
+- AnalyticsService.setEnabled(bool value)
+- AnalyticsService.setUser({required String userId, String? role})
+- AnalyticsService.clearUser()
+- AnalyticsService.logJobViewed(int jobId, String eventType, ...)
+- AnalyticsService.logOfferFormOpened(int jobId, String eventType, ...)
+- AnalyticsService.logOfferSubmitAttempted(int jobId, ...)
+- OfferSubmitFailure.fromServerMessage(String message)
+- EnvConfig.load()
+- EnvConfig.saveEnvPreference(String env)
+- EnvConfig.supabaseUrl
+- EnvConfig.supabaseAnonKey
+- EnvConfig.webAppUrl
+- RoleCache.load()
+- RoleCache.save(MusicianRole role)
+- RoleCache.clear()
+- RoleCache.role
+- showDSDialog<T>(BuildContext context, ...)
+- showDSConfirm(BuildContext context, ...)
+- DSToast.show(BuildContext context, ...)
+- DSButton
+- DSIconButton
+- DSInput
+- DSCheckbox
+- DSRadio
+- DSSwitch
+- DSSurface
+- DSChip
+- DSInfoChip
+- DSStatusBadge
+- DSAvatar
+- DSDropdown
+- DSSlider
+- DSRangeSlider
+- DSSegmentedControl
+- DSTabBar
+- DSNavigationBar
+- DSColors, DSBrandColors, DSBgColors, DSTextColors, DSBorderColors, DSStateColors, DSTrustColors, DSAvailabilityColors, DSRadius, DSShadow, DSMotion, DSSpacing, DSTextStyle, lightColors, darkColors
+- AppException, NetworkException, AuthException, NoMusicianProfileException, NeedsProfileSetupException, DatabaseException, BillingInfoIncompleteException, BillingLockException, AgentException, AgentLimitException
+- friendlyErrorMessage(Object? error, {String? fallback})
+- MainShell
+- setAppIconBadge(int count)
+- InAppNotificationBanner
+- inAppNotificationProvider, activeConversationIdProvider, suppressKeyboardDismissBarProvider
+- NotificationsService.initialize(), NotificationsService.registerToken(), NotificationsService.removeToken(), NotificationsService.setupNavigationHandlers(), NotificationsService.handleInitialMessage(), NotificationsService.feedReadEvents, NotificationsService.extractReferenceId()
+- AppRoutes
+- initSupabase(), supabase, supabaseClientProvider
+- AppColors, buildAppTheme(), buildDarkAppTheme(), themeModeProvider
+- String formatBirthdayPersonAge(String? birthdayPersonAge)
+- double getFeeForJob(DateTime jobCreatedAt)
+- double? adjustBudgetForDjView({required double? budget, bool requestedSaxophonist, double? requestedMusicianHours, String? djTier, double? maxBudget, DateTime? jobCreatedAt, DateTime? eventDate})
+- String? djBudgetLabelFromParts({required double? budgetStart, required double? budgetEnd, required String? djTier, bool requestedSaxophonist, double? requestedMusicianHours, DateTime? jobCreatedAt, DateTime? eventDate, bool isExtJob})
+- String? djAdjustedBudgetLabel(Job job, String? djTier)
+- String musicianBudgetLabel(Job job)
+- String musicianOfferPayoutLabel({required int priceDkk, int? musicianPayoutDkk})
+- bool isWithinFirstFourHours(DateTime jobCreatedAt)
+- String? customerFirstName(String? leadName)
+- ParsedEquipmentState parseEquipmentDescription(String? raw)
+- ParsedEquipmentState? parseStructuredEquipmentDescription(String? raw)
+- String serializeEquipmentDescription(List<String> selectedEquipment, int topSpeakerCount, int bottomSpeakerCount)
+- List<String> getEquipmentDisplayItems(String? raw)
+- String eventTypeLabel(String type)
+- String generateIcal(List<CalendarEvent> events)
+- int calculateMusicianOfferPrice(double? requestedHours, [DateTime? jobCreatedAt, DateTime? eventDate])
+- int calculateCustomerMusicianPrice(double? requestedHours, [DateTime? jobCreatedAt, DateTime? eventDate])
+- String? dialablePhoneNumber(String? raw)
+- bool isPlannedContactDue(DateTime? plannedFor, {DateTime? now})
+- bool isSaxHighSeason(DateTime? eventDate)
+- bool isSaxSeasonPricingActive(DateTime? jobCreatedAt, DateTime? eventDate)
+- Future<bool?> showUnsavedChangesDialog(BuildContext context)
+- AnimatedCard
+- AppSnackbar.show(BuildContext context, {required String message, bool isError})
+- DevEnvBanner
+- RestartWidget
+- SkeletonCard
+- SkeletonListView
+
+## Dependencies
+- package:firebase_analytics/firebase_analytics.dart
+- package:flutter_dotenv/flutter_dotenv.dart
+- package:shared_preferences/shared_preferences.dart
+- package:cached_network_image/cached_network_image.dart
+- package:lucide_icons/lucide_icons.dart
+- package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart
+- flutter
+- flutter_riverpod
+- go_router
+- firebase_messaging
+- supabase_flutter
+- shared_preferences
+- app_badge_plus
+- google_fonts
+- lucide_icons
+- package:flutter/material.dart
+- package:intl/intl.dart
+- package:http/http.dart
+- package:supabase_flutter/supabase_flutter.dart
+- lib/core/design_system/components.dart
+- lib/core/config/env_config.dart
+- lib/core/config/role_cache.dart
+- lib/core/error/app_exception.dart
+- lib/core/notifications/notifications_service.dart
+- lib/core/supabase/supabase_client.dart
+- lib/features/jobs/domain/entities/job.dart
+- lib/features/calendar/domain/entities/calendar_event.dart
+- lib/features/auth/data/datasources/auth_remote_datasource.dart
+- lib/features/auth/data/repositories/auth_repository_impl.dart
+- lib/app.dart
+
+## AI touchpoints [AI]
+- `lib/core/error/error_messages.dart`
+- `lib/core/analytics/analytics_service.dart`
+- `lib/core/error/app_exception.dart`
+
+## Open questions
+- Does AnalyticsService handle all analytics events or are additional analytics providers integrated outside FirebaseAnalytics?
+- How does the rest of the app coordinate with OfferSubmitFailure when Danish server error copy changes on the backend API?
