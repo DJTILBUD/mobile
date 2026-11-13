@@ -8,6 +8,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 /// list + detail (`dj/udvalgte-jobs`). The venue name is resolved server-side
 /// (DJs can't read `RecurringCustomers` via RLS) — see
 /// `djExtJobRecurringNamesProvider`.
+// @uxid lib/shared/widgets/recurring_customer_badge.dart::RecurringCustomerBadge
 class RecurringCustomerBadge extends StatelessWidget {
   const RecurringCustomerBadge({
     super.key,

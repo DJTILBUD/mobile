@@ -10,6 +10,7 @@ import 'package:dj_tilbud_app/features/notifications/presentation/providers/noti
 import 'package:dj_tilbud_app/features/profile/presentation/widgets/self_billing_terms_gate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/core/navigation/main_shell.dart::MainShell
 class MainShell extends ConsumerWidget {
   const MainShell({
     super.key,

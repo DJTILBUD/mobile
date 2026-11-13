@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 
 /// Design-system range slider (two thumbs) — companion to [DSSlider].
+// @uxid lib/core/design_system/ds_range_slider.dart::DSRangeSlider
 class DSRangeSlider extends StatelessWidget {
   const DSRangeSlider({
     super.key,

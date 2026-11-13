@@ -21,6 +21,7 @@ import 'package:dj_tilbud_app/features/referrals/presentation/widgets/referral_s
 /// A plain [ConsumerStatefulWidget] (not [DefaultTabController]) on purpose: submitting the form
 /// needs to programmatically switch to the "Mine henvisninger" tab afterwards, which requires
 /// holding the [TabController] ourselves rather than reaching for an implicit one.
+// @uxid lib/features/referrals/presentation/screens/referrals_screen.dart::ReferralsScreen
 class ReferralsScreen extends ConsumerStatefulWidget {
   const ReferralsScreen({super.key, required this.role});
 
@@ -136,6 +137,7 @@ class _ReferralsScreenState extends ConsumerState<ReferralsScreen>
   }
 }
 
+// @uxid lib/features/referrals/presentation/screens/referrals_screen.dart::_NewReferralTab
 class _NewReferralTab extends ConsumerWidget {
   const _NewReferralTab({required this.role, required this.onSubmit});
 
@@ -185,6 +187,7 @@ class _NewReferralTab extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/referrals/presentation/screens/referrals_screen.dart::_MyReferralsTab
 class _MyReferralsTab extends ConsumerWidget {
   const _MyReferralsTab();
 
@@ -251,6 +254,7 @@ class _MyReferralsTab extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/referrals/presentation/screens/referrals_screen.dart::_Note
 class _Note extends StatelessWidget {
   const _Note({required this.icon, required this.text});
 
@@ -277,6 +281,7 @@ class _Note extends StatelessWidget {
 
 /// Shown until the performer has accepted the referral terms: a link to the terms and an accept
 /// button. Mirrors the web card in `ReferralsPage.tsx` (same copy).
+// @uxid lib/features/referrals/presentation/screens/referrals_screen.dart::_ReferralTermsGate
 class _ReferralTermsGate extends ConsumerStatefulWidget {
   const _ReferralTermsGate({required this.termsUrl});
 
@@ -373,6 +378,7 @@ class _ReferralTermsGateState extends ConsumerState<_ReferralTermsGate> {
   }
 }
 
+// @uxid lib/features/referrals/presentation/screens/referrals_screen.dart::_TermsLoadError
 class _TermsLoadError extends StatelessWidget {
   const _TermsLoadError({required this.onRetry});
 

@@ -3,6 +3,7 @@ import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 
 /// Design-system surface card — matches web marketplace card container.
 /// White background, subtle border, small shadow, large radius.
+// @uxid lib/core/design_system/ds_surface.dart::DSSurface
 class DSSurface extends StatelessWidget {
   const DSSurface({
     super.key,

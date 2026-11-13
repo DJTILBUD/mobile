@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 enum _Phase { questions, generating }
 
+// @uxid lib/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart::ProfileBioBottomSheet
 class ProfileBioBottomSheet extends ConsumerStatefulWidget {
   const ProfileBioBottomSheet({
     super.key,
@@ -170,6 +171,7 @@ class _ProfileBioBottomSheetState extends ConsumerState<ProfileBioBottomSheet> {
 
 // ── Phase 1: Questions ────────────────────────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart::_QuestionsPhase
 class _QuestionsPhase extends StatelessWidget {
   const _QuestionsPhase({
     required this.isDj,
@@ -274,6 +276,7 @@ class _QuestionsPhase extends StatelessWidget {
 
 // ── Phase 2: Streaming result ─────────────────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart::_GeneratingPhase
 class _GeneratingPhase extends ConsumerWidget {
   const _GeneratingPhase({
     required this.scrollController,

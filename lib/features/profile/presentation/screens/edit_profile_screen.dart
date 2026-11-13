@@ -59,6 +59,7 @@ const _djSaxOptions = [
   ('never_done_before', 'Har aldrig prøvet'),
 ];
 
+// @uxid lib/features/profile/presentation/screens/edit_profile_screen.dart::EditProfileScreen
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key, required this.role});
 

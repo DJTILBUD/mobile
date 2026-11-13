@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/core/router/app_routes.dart';
 import 'package:dj_tilbud_app/features/notifications/presentation/providers/notifications_provider.dart';
 
 /// App-bar bell that opens the notification center and shows an unread badge.
+// @uxid lib/features/notifications/presentation/widgets/notification_bell.dart::NotificationBell
 class NotificationBell extends ConsumerWidget {
   const NotificationBell({super.key});
 

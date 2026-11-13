@@ -25,6 +25,7 @@ const _eventTypes = [
   'andet',
 ];
 
+// @uxid lib/features/profile/presentation/screens/reviews_screen.dart::ReviewsScreen
 class ReviewsScreen extends ConsumerWidget {
   const ReviewsScreen({super.key, required this.role});
 
@@ -252,6 +253,7 @@ class ReviewsScreen extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/reviews_screen.dart::_ReviewCard
 class _ReviewCard extends StatelessWidget {
   const _ReviewCard({
     required this.review,
@@ -334,6 +336,7 @@ class _ReviewCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/reviews_screen.dart::_ReviewForm
 class _ReviewForm extends StatefulWidget {
   const _ReviewForm({this.existing, required this.onSave});
 

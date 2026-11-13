@@ -15,6 +15,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider
 /// other state (loading, missing, unauthorized) this collapses to an empty box.
 ///
 /// Pass exactly one of [jobId] / [extJobId].
+// @uxid lib/features/jobs/presentation/widgets/event_address_section.dart::EventAddressSection
 class EventAddressSection extends ConsumerWidget {
   const EventAddressSection({super.key, this.jobId, this.extJobId})
     : assert(
@@ -37,6 +38,7 @@ class EventAddressSection extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/event_address_section.dart::_AddressCard
 class _AddressCard extends StatelessWidget {
   const _AddressCard({required this.address});
 

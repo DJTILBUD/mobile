@@ -13,6 +13,7 @@ import 'package:dj_tilbud_app/features/chat/presentation/widgets/new_support_mes
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/shared/widgets/conversation_avatar.dart';
 
+// @uxid lib/features/chat/presentation/screens/chat_screen.dart::ChatScreen
 class ChatScreen extends ConsumerWidget {
   const ChatScreen({super.key});
 
@@ -86,6 +87,7 @@ class ChatScreen extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/chat/presentation/screens/chat_screen.dart::_MyConversationsTab
 class _MyConversationsTab extends ConsumerWidget {
   const _MyConversationsTab();
 
@@ -126,6 +128,7 @@ class _MyConversationsTab extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/chat/presentation/screens/chat_screen.dart::_AdminSupportTab
 class _AdminSupportTab extends ConsumerStatefulWidget {
   const _AdminSupportTab();
 
@@ -293,6 +296,7 @@ class _AdminSupportTabState extends ConsumerState<_AdminSupportTab> {
   }
 }
 
+// @uxid lib/features/chat/presentation/screens/chat_screen.dart::_AdminThreadTile
 class _AdminThreadTile extends ConsumerWidget {
   const _AdminThreadTile({required this.thread, this.searchTerm});
 
@@ -609,6 +613,7 @@ class _AdminThreadTile extends ConsumerWidget {
 
 /// Text that highlights every case-insensitive occurrence of [term] with an amber background.
 /// [term] null/empty renders plain text.
+// @uxid lib/features/chat/presentation/screens/chat_screen.dart::_HighlightedText
 class _HighlightedText extends StatelessWidget {
   const _HighlightedText({
     required this.text,
@@ -664,6 +669,7 @@ class _HighlightedText extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/chat/presentation/screens/chat_screen.dart::_ConversationTile
 class _ConversationTile extends StatelessWidget {
   const _ConversationTile({required this.conversation});
 
@@ -848,6 +854,7 @@ class _ConversationTile extends StatelessWidget {
 
 // ─── Conversation Avatar ──────────────────────────────────────────────────────
 
+// @uxid lib/features/chat/presentation/screens/chat_screen.dart::_ConversationListSkeleton
 class _ConversationListSkeleton extends StatelessWidget {
   const _ConversationListSkeleton();
 
@@ -917,6 +924,7 @@ class _ConversationListSkeleton extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/chat/presentation/screens/chat_screen.dart::_EmptyConversationsView
 class _EmptyConversationsView extends StatelessWidget {
   const _EmptyConversationsView();
 
@@ -945,6 +953,7 @@ class _EmptyConversationsView extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/chat/presentation/screens/chat_screen.dart::_ErrorView
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.onRetry});
 

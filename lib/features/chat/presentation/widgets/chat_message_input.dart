@@ -8,6 +8,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 /// they look and behave identically. The image preview and the "@" job picker are
 /// rendered by the parent ABOVE this bar (they differ per screen). `onChanged` is
 /// optional so a screen that drives the "@" picker can hook composer edits.
+// @uxid lib/features/chat/presentation/widgets/chat_message_input.dart::ChatMessageInput
 class ChatMessageInput extends StatelessWidget {
   const ChatMessageInput({
     super.key,

@@ -16,6 +16,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider
 /// it is safe to drop into a [Stack] unconditionally.
 ///
 /// Provide exactly one of [jobId] (internal job) or [extJobId] (ext job).
+// @uxid lib/shared/widgets/chat_bubble_fab.dart::ChatBubbleFab
 class ChatBubbleFab extends ConsumerWidget {
   const ChatBubbleFab({super.key, this.jobId, this.extJobId})
     : assert(
@@ -122,6 +123,7 @@ class ChatBubbleFab extends ConsumerWidget {
 /// Two overlapping circular avatars (current user behind, partner in front),
 /// each ringed with the surface colour — the mobile equivalent of the web
 /// app's `AvatarGroup`.
+// @uxid lib/shared/widgets/chat_bubble_fab.dart::_AvatarStack
 class _AvatarStack extends StatelessWidget {
   const _AvatarStack({
     required this.c,

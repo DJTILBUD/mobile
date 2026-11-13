@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 /// A small tappable "Kopier" affordance that copies [text] to the clipboard and shows a success
 /// toast. Used under the customer-request / notes blocks so a DJ/musician can grab the text in one
 /// tap (selecting text by hand is painful on mobile).
+// @uxid lib/shared/widgets/copy_hint_row.dart::CopyHintRow
 class CopyHintRow extends StatelessWidget {
   const CopyHintRow({
     super.key,

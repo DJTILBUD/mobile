@@ -12,6 +12,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// DSInfoChip(icon: LucideIcons.users, label: '120 gæster')
 /// DSInfoChip(icon: LucideIcons.banknote,  label: '4.500 kr.', highlight: true)
 /// ```
+// @uxid lib/core/design_system/ds_info_chip.dart::DSInfoChip
 class DSInfoChip extends StatelessWidget {
   const DSInfoChip({
     super.key,

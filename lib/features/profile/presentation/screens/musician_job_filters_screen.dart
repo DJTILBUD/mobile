@@ -22,6 +22,7 @@ const _allRegions = [
 const _allSaxTypes = ['lounge', 'party'];
 const _saxTypeLabels = {'lounge': 'Lounge', 'party': 'Party'};
 
+// @uxid lib/features/profile/presentation/screens/musician_job_filters_screen.dart::MusicianJobFiltersScreen
 class MusicianJobFiltersScreen extends ConsumerStatefulWidget {
   const MusicianJobFiltersScreen({super.key, required this.musicianId});
 
@@ -254,6 +255,7 @@ class _MusicianJobFiltersScreenState
 
 // ── Section headers ───────────────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/musician_job_filters_screen.dart::_SectionHeader
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.title, {this.subtitle});
   final String title;
@@ -283,6 +285,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/musician_job_filters_screen.dart::_ChipSectionHeader
 class _ChipSectionHeader extends StatelessWidget {
   const _ChipSectionHeader({
     required this.title,
@@ -336,6 +339,7 @@ class _ChipSectionHeader extends StatelessWidget {
 
 // ── Filter chip ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/musician_job_filters_screen.dart::_FilterChip
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
     required this.label,

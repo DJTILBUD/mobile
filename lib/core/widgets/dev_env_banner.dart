@@ -20,6 +20,7 @@ import 'package:dj_tilbud_app/features/auth/data/repositories/auth_repository_im
 /// Shows current env as a pill (orange = local, blue = dev, red = prod).
 /// Tap to open a panel that can: switch DB env, and impersonate any user
 /// (super-owner debug login — see [NotificationsService] impersonation guard).
+// @uxid lib/core/widgets/dev_env_banner.dart::DevEnvBanner
 class DevEnvBanner extends StatefulWidget {
   const DevEnvBanner({super.key});
 

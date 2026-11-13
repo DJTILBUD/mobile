@@ -1,0 +1,175 @@
+# Module: lib/core [AI]
+
+(part 1 of 3) Provides core foundational infrastructure and UI library for the DJTILBUD mobile app, including analytics tracking with GA4, environment configuration, local role persistence, and a complete suite of design system widgets matching the marketplace design language. (part 2 of 3) Provides foundational app infrastructure, shared design tokens, UI theme configurations, custom exceptions, Danish user-facing error formatting, navigation shells, Supabase client initialization, and push notification management for the musician mobile application. (part 3 of 3) Provides shared core utilities and UI components for the Flutter mobile application, including domain calculations (DJ/musician pricing, season adjustments, fees, equipment parsing), formatting helpers (phone, names, birthdays, event labels, iCal generation), and cross-cutting UI widgets (skeleton loaders, animated cards, unsaved changes dialog, environment switching).
+
+_This module does not fit in one model call, so it was read in 3 parts and their summaries were combined without a further model call._
+
+## Key files
+- `lib/core/analytics/analytics_service.dart`: Central wrapper for Firebase Analytics managing user identification, offer funnel tracking (including AI pitch usage), and Danish error mapping.
+- `lib/core/config/env_config.dart`: Manages environment settings across local, dev, and prod environments using flutter_dotenv and SharedPreferences.
+- `lib/core/config/role_cache.dart`: Persists and restores the authenticated user's role (DJ or instrumentalist) locally via SharedPreferences.
+- `lib/core/design_system/components.dart`: Barrel file exporting all design system components and design tokens.
+- `lib/core/design_system/ds_button.dart`: Pill-shaped and circular action buttons supporting multiple variants, sizes, and loading states.
+- `lib/core/design_system/ds_dialog.dart`: Custom themed dialogs and confirmation modal helpers (showDSDialog, showDSConfirm).
+- `lib/core/design_system/ds_input.dart`: Form text field component with dynamic scroll padding, input validation states, and label positioning.
+- `lib/core/design_system/ds_navigation_bar.dart`: Bottom navigation bar component featuring icon badges and active indicators.
+- `lib/core/design_system/ds_tab_bar.dart`: Custom tab bar supporting badge counts and scrollable/custom-colored active indicators.
+- `lib/core/design_system/ds_toast.dart`: Toast notification helper utilizing floating snackbars for success, info, warning, and error states.
+- `lib/core/supabase/supabase_client.dart`: Initializes and provides the shared SupabaseClient instance with local host mapping for Android emulators.
+- `lib/core/error/app_exception.dart`: Defines custom sealed application exceptions including auth, billing lock, database, and AI agent quota exceptions.
+- `lib/core/error/error_messages.dart`: Maps application exceptions and general errors into safe, user-friendly Danish messages.
+- `lib/core/navigation/main_shell.dart`: Scaffold widget rendering role-based bottom navigation tabs (Jobs, Udvalgte, Chat, Profil) and unread badge counts for musicians.
+- `lib/core/notifications/notifications_service.dart`: Manages FCM push tokens, device registration in Supabase, notification routing, and impersonation bypass.
+- `lib/core/notifications/in_app_notification_banner.dart`: Displays animated in-app foreground notification alerts with tap navigation and dismiss gestures.
+- `lib/core/design_system/tokens.dart`: Defines semantic design tokens for light and dark themes including colors, typography, spacing, shadows, and animations.
+- `lib/core/theme/app_theme.dart`: Builds Material 3 light and dark ThemeData using Google Fonts and brand palette colors.
+- `lib/core/router/app_routes.dart`: Central registry of string route identifiers used across the app navigation graph.
+- `lib/core/utils/budget_utils.dart`: Calculates platform fees, sax deductions, DJ-tier adjustments, and formats display budget/payout labels for DJs and musicians.
+- `lib/core/utils/musician_price.dart`: Calculates customer prices and musician offer payouts across standard and high-season tiers based on requested hours.
+- `lib/core/utils/sax_high_season.dart`: Determines high-season pricing eligibility for saxophone performances based on event dates and job creation cutoffs.
+- `lib/core/utils/equipment_description.dart`: Parses, serializes, and formats structured JSON and legacy equipment specifications (e.g. speakers, smoke machines, decks).
+- `lib/core/utils/customer_name.dart`: Extracts first names from raw lead names to ensure privacy before quotes are accepted.
+- `lib/core/utils/phone_utils.dart`: Normalizes lead phone numbers into dialable SMS/phone formats and discards invalid placeholders.
+- `lib/core/utils/ical_generator.dart`: Generates RFC 5545 iCalendar (.ics) files from calendar event entities.
+- `lib/core/widgets/dev_env_banner.dart`: Debug floating tool for environment switching (local/dev/prod) and user impersonation.
+- `lib/core/widgets/skeleton_loading.dart`: Shimmer skeleton card and list placeholders for asynchronous loading states.
+- `lib/core/widgets/animated_card.dart`: Wrapper providing staggered entrance transitions and press scale animations for cards.
+- `lib/core/widgets/restart_widget.dart`: Widget tree root wrapper enabling hot application resets.
+- `lib/core/widgets/app_snackbar.dart`: Utility helper for triggering design system toast notifications.
+- `lib/core/utils/birthday_person_age.dart`: Formats birthday age descriptions with Danish suffixing rules.
+- `lib/core/utils/event_type_labels.dart`: Maps Danish event type keys to localized display labels.
+- `lib/core/utils/planned_contact.dart`: Determines whether a planned customer contact date has arrived.
+- `lib/core/utils/unsaved_changes_dialog.dart`: Presents a confirmation modal when leaving unsaved form changes.
+
+## Public interface
+- AnalyticsService.setEnabled(bool value)
+- AnalyticsService.setUser({required String userId, String? role})
+- AnalyticsService.clearUser()
+- AnalyticsService.logJobViewed(int jobId, String eventType, {required String source, String jobStatus, bool isExtJob})
+- AnalyticsService.logOfferFormOpened(int jobId, String eventType, {required String role, required String source, required bool hasConflict, required bool hasActiveOffer, bool isExtJob, String? tier})
+- AnalyticsService.logOfferSubmitAttempted(int jobId, {required String role, bool isExtJob, int pitchLength, bool usedAiDraft, int? msSinceFormOpen})
+- OfferSubmitFailure.fromServerMessage(String message)
+- EnvConfig.load()
+- EnvConfig.saveEnvPreference(String env)
+- EnvConfig.supabaseUrl
+- EnvConfig.supabaseAnonKey
+- EnvConfig.webAppUrl
+- EnvConfig.adminApiKey
+- RoleCache.load()
+- RoleCache.save(MusicianRole role)
+- RoleCache.clear()
+- showDSDialog<T>(BuildContext context, {required String title, String? message, Widget? content, required List<Widget> Function(BuildContext) actions, bool barrierDismissible})
+- showDSConfirm(BuildContext context, {required String title, String? message, String confirmLabel, String cancelLabel, bool destructive})
+- DSToast.show(BuildContext context, {required DSToastVariant variant, required String title, String? description, Duration duration})
+- DSAvatar
+- DSButton
+- DSIconButton
+- DSCheckbox
+- DSChip
+- DSDialog
+- DSDropdown
+- DSInfoChip
+- DSInput
+- DSNavigationBar
+- DSRadio
+- DSRangeSlider
+- DSSegmentedControl
+- DSSlider
+- DSStatusBadge
+- DSSurface
+- DSSwitch
+- DSTabBar
+- initSupabase()
+- supabase
+- supabaseClientProvider
+- AppRoutes
+- friendlyErrorMessage(Object? error, {String? fallback})
+- AppException
+- NetworkException
+- AuthException
+- NoMusicianProfileException
+- NeedsProfileSetupException
+- DatabaseException
+- BillingInfoIncompleteException
+- BillingLockException
+- AgentException
+- AgentLimitException
+- NotificationsService.initialize()
+- NotificationsService.registerToken()
+- NotificationsService.removeToken()
+- NotificationsService.setupNavigationHandlers(GoRouter router)
+- NotificationsService.handleInitialMessage(GoRouter router)
+- NotificationsService.feedReadEvents
+- NotificationsService.extractReferenceId(Map<String, dynamic> data)
+- setAppIconBadge(int count)
+- inAppNotificationProvider
+- activeConversationIdProvider
+- suppressKeyboardDismissBarProvider
+- MainShell
+- InAppNotificationBanner
+- themeModeProvider
+- ThemeModeNotifier
+- buildAppTheme()
+- buildDarkAppTheme()
+- lightColors
+- darkColors
+- formatBirthdayPersonAge(String? birthdayPersonAge) -> String
+- getFeeForJob(DateTime jobCreatedAt) -> double
+- adjustBudgetForDjView({required double? budget, bool requestedSaxophonist, double? requestedMusicianHours, String? djTier, double? maxBudget, DateTime? jobCreatedAt, DateTime? eventDate}) -> double?
+- djBudgetLabelFromParts({required double? budgetStart, required double? budgetEnd, required String? djTier, bool requestedSaxophonist, double? requestedMusicianHours, DateTime? jobCreatedAt, DateTime? eventDate, bool isExtJob}) -> String?
+- djAdjustedBudgetLabel(Job job, String? djTier) -> String?
+- musicianBudgetLabel(Job job) -> String
+- musicianOfferPayoutLabel({required int priceDkk, int? musicianPayoutDkk}) -> String
+- isWithinFirstFourHours(DateTime jobCreatedAt) -> bool
+- customerFirstName(String? leadName) -> String?
+- parseStructuredEquipmentDescription(String? raw) -> ParsedEquipmentState?
+- parseEquipmentDescription(String? raw) -> ParsedEquipmentState
+- serializeEquipmentDescription(List<String> selectedEquipment, int topSpeakerCount, int bottomSpeakerCount) -> String
+- getEquipmentDisplayItems(String? raw) -> List<String>
+- eventTypeLabel(String type) -> String
+- generateIcal(List<CalendarEvent> events) -> String
+- calculateMusicianOfferPrice(double? requestedHours, [DateTime? jobCreatedAt, DateTime? eventDate]) -> int
+- calculateCustomerMusicianPrice(double? requestedHours, [DateTime? jobCreatedAt, DateTime? eventDate]) -> int
+- dialablePhoneNumber(String? raw) -> String?
+- isPlannedContactDue(DateTime? plannedFor, {DateTime? now}) -> bool
+- isSaxHighSeason(DateTime? eventDate) -> bool
+- isSaxSeasonPricingActive(DateTime? jobCreatedAt, DateTime? eventDate) -> bool
+- showUnsavedChangesDialog(BuildContext context) -> Future<bool?>
+- AppSnackbar.show(BuildContext context, {required String message, bool isError}) -> void
+- RestartWidget.restartApp(BuildContext context) -> void
+
+## Dependencies
+- package:firebase_analytics/firebase_analytics.dart
+- package:flutter_dotenv/flutter_dotenv.dart
+- package:shared_preferences/shared_preferences.dart
+- package:cached_network_image/cached_network_image.dart
+- package:lucide_icons/lucide_icons.dart
+- package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart
+- package:flutter/material.dart
+- package:flutter_riverpod/flutter_riverpod.dart
+- package:firebase_messaging/firebase_messaging.dart
+- package:go_router/go_router.dart
+- package:supabase_flutter/supabase_flutter.dart
+- package:app_badge_plus/app_badge_plus.dart
+- package:google_fonts/google_fonts.dart
+- package:flutter/foundation.dart
+- package:intl/intl.dart
+- package:http/http.dart
+- dj_tilbud_app/core/design_system/components.dart
+- dj_tilbud_app/core/config/env_config.dart
+- dj_tilbud_app/core/config/role_cache.dart
+- dj_tilbud_app/core/error/app_exception.dart
+- dj_tilbud_app/core/notifications/notifications_service.dart
+- dj_tilbud_app/core/supabase/supabase_client.dart
+- dj_tilbud_app/features/auth/data/datasources/auth_remote_datasource.dart
+- dj_tilbud_app/features/auth/data/repositories/auth_repository_impl.dart
+- dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart
+- dj_tilbud_app/features/jobs/domain/entities/job.dart
+
+## AI touchpoints [AI]
+- `lib/core/error/error_messages.dart`
+- `lib/core/analytics/analytics_service.dart`
+- `lib/core/error/app_exception.dart`
+
+## Open questions
+- _none_

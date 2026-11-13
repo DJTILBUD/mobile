@@ -49,6 +49,7 @@ class DSTabItem {
 ///   ),
 /// )
 /// ```
+// @uxid lib/core/design_system/ds_tab_bar.dart::DSTabBar
 class DSTabBar extends StatelessWidget implements PreferredSizeWidget {
   const DSTabBar({
     super.key,
@@ -156,6 +157,7 @@ class DSTabBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
+// @uxid lib/core/design_system/ds_tab_bar.dart::_TabBadge
 class _TabBadge extends StatelessWidget {
   const _TabBadge({required this.count});
   final int count;

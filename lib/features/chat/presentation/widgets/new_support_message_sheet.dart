@@ -12,6 +12,7 @@ import 'package:dj_tilbud_app/features/chat/presentation/providers/admin_support
 /// Bottom sheet to start a NEW support conversation as an admin: pick a DJ/musician, write the
 /// first message, send. Pops with the created [AdminSupportThread] on success so the caller can open
 /// it. Mirrors the admin tool's "Ny besked" composer.
+// @uxid lib/features/chat/presentation/widgets/new_support_message_sheet.dart::NewSupportMessageSheet
 class NewSupportMessageSheet extends ConsumerStatefulWidget {
   const NewSupportMessageSheet({super.key});
 
@@ -519,6 +520,7 @@ class _NewSupportMessageSheetState
 }
 
 /// Small circular avatar: profile image if present, else initials.
+// @uxid lib/features/chat/presentation/widgets/new_support_message_sheet.dart::_Avatar
 class _Avatar extends StatelessWidget {
   const _Avatar({required this.name, this.imageUrl});
 

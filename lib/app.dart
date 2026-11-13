@@ -209,6 +209,7 @@ String _defaultHomePath() {
   return '/login';
 }
 
+// @uxid lib/app.dart::_MissingRouteDataScreen
 class _MissingRouteDataScreen extends StatelessWidget {
   const _MissingRouteDataScreen({required this.label});
 
@@ -807,6 +808,7 @@ double keyboardDismissBarHeight(BuildContext context) =>
 /// identical: reserving space for a bar that is not drawn leaves a dead gap above the keyboard
 /// (which is why the chat screen, that suppresses the bar, must not reserve for it either).
 @visibleForTesting
+// @uxid lib/app.dart::ReserveKeyboardDismissBar
 class ReserveKeyboardDismissBar extends ConsumerWidget {
   const ReserveKeyboardDismissBar({super.key, required this.child});
 
@@ -841,6 +843,7 @@ class ReserveKeyboardDismissBar extends ConsumerWidget {
   }
 }
 
+// @uxid lib/app.dart::_KeyboardDismissBar
 class _KeyboardDismissBar extends ConsumerWidget {
   const _KeyboardDismissBar();
 
@@ -891,6 +894,7 @@ class _KeyboardDismissBar extends ConsumerWidget {
   }
 }
 
+// @uxid lib/app.dart::App
 class App extends ConsumerStatefulWidget {
   const App({super.key});
 

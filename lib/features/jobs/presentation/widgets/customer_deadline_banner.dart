@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// Pass the computed deadline (`Job.customerDeadline` or `ExtJob.decisionDeadline`); the banner
 /// self-labels and self-colors: not-yet-sent (null), urgent (<24h, amber), expired (red), or the
 /// remaining "X dage / t / min". Mirrors the web countdown so both platforms read identically.
+// @uxid lib/features/jobs/presentation/widgets/customer_deadline_banner.dart::CustomerDeadlineBanner
 class CustomerDeadlineBanner extends StatelessWidget {
   const CustomerDeadlineBanner({super.key, required this.deadline});
 

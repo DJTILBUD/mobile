@@ -7,6 +7,7 @@ enum DSInputState { normal, success, error }
 /// Design-system text input — matches web marketplace `Input`.
 /// Label is positioned ABOVE the field (never floating inside the border).
 /// Pill-shaped, filled with inputBg, no visible border by default.
+// @uxid lib/core/design_system/ds_input.dart::DSInput
 class DSInput extends StatelessWidget {
   const DSInput({
     super.key,
