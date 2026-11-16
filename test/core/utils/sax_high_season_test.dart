@@ -13,75 +13,87 @@ void main() {
   // Either side of the rollout cutoff (saxSeasonPricingStart = 2026-08-24).
   final preLaunch = DateTime.utc(2026, 7, 10);
   final postLaunch = DateTime.utc(2026, 8, 25);
+  // After the August-only switch (saxAugustSaturdaysStart = 2026-10-28).
+  final augustOnly = DateTime.utc(2026, 11, 10);
+  final augustSaturday = DateTime(2027, 8, 7);
   // Before the separate 2026-07-06 customer-price cutoff.
   final legacy = DateTime.utc(2026, 6, 1);
 
   final seasonDate = DateTime(2027, 6, 5); // Saturday in June
   final offSeasonDate = DateTime(2027, 6, 6); // Sunday in June
 
-  group('isSaxHighSeason', () {
+  group('isLegacySaxHighSeason (wide window)', () {
     test('matches Fridays and Saturdays from April through September', () {
       expect(
-        isSaxHighSeason(DateTime(2027, 4, 2)),
+        isLegacySaxHighSeason(DateTime(2027, 4, 2)),
         isTrue,
       ); // first Friday of April
-      expect(isSaxHighSeason(DateTime(2028, 4, 1)), isTrue); // Saturday 1 April
-      expect(isSaxHighSeason(DateTime(2027, 6, 4)), isTrue); // Friday in June
-      expect(isSaxHighSeason(DateTime(2027, 6, 5)), isTrue); // Saturday in June
       expect(
-        isSaxHighSeason(DateTime(2028, 9, 29)),
+        isLegacySaxHighSeason(DateTime(2028, 4, 1)),
+        isTrue,
+      ); // Saturday 1 April
+      expect(
+        isLegacySaxHighSeason(DateTime(2027, 6, 4)),
+        isTrue,
+      ); // Friday in June
+      expect(
+        isLegacySaxHighSeason(DateTime(2027, 6, 5)),
+        isTrue,
+      ); // Saturday in June
+      expect(
+        isLegacySaxHighSeason(DateTime(2028, 9, 29)),
         isTrue,
       ); // late-September Friday
       expect(
-        isSaxHighSeason(DateTime(2028, 9, 30)),
+        isLegacySaxHighSeason(DateTime(2028, 9, 30)),
         isTrue,
       ); // late-September Saturday
     });
 
     test('rejects the weekend before April', () {
       expect(
-        isSaxHighSeason(DateTime(2027, 3, 26)),
+        isLegacySaxHighSeason(DateTime(2027, 3, 26)),
         isFalse,
       ); // Friday in March
       expect(
-        isSaxHighSeason(DateTime(2027, 3, 27)),
+        isLegacySaxHighSeason(DateTime(2027, 3, 27)),
         isFalse,
       ); // Saturday in March
       expect(
-        isSaxHighSeason(DateTime(2027, 1, 16)),
+        isLegacySaxHighSeason(DateTime(2027, 1, 16)),
         isFalse,
       ); // Saturday in January
     });
 
     test('includes only the FIRST weekend of October (2026, 2027 and 2028)', () {
       // 2026: 1 Oct is a Thursday, so the first weekend is Fri 2 + Sat 3.
-      expect(isSaxHighSeason(DateTime(2026, 10, 2)), isTrue);
-      expect(isSaxHighSeason(DateTime(2026, 10, 3)), isTrue);
-      expect(isSaxHighSeason(DateTime(2026, 10, 9)), isFalse);
-      expect(isSaxHighSeason(DateTime(2026, 10, 10)), isFalse);
+      expect(isLegacySaxHighSeason(DateTime(2026, 10, 2)), isTrue);
+      expect(isLegacySaxHighSeason(DateTime(2026, 10, 3)), isTrue);
+      expect(isLegacySaxHighSeason(DateTime(2026, 10, 9)), isFalse);
+      expect(isLegacySaxHighSeason(DateTime(2026, 10, 10)), isFalse);
       // 2027: 1 Oct is a Friday, so the first weekend is Fri 1 + Sat 2.
-      expect(isSaxHighSeason(DateTime(2027, 10, 1)), isTrue);
-      expect(isSaxHighSeason(DateTime(2027, 10, 2)), isTrue);
-      expect(isSaxHighSeason(DateTime(2027, 10, 8)), isFalse);
-      expect(isSaxHighSeason(DateTime(2027, 10, 9)), isFalse);
+      expect(isLegacySaxHighSeason(DateTime(2027, 10, 1)), isTrue);
+      expect(isLegacySaxHighSeason(DateTime(2027, 10, 2)), isTrue);
+      expect(isLegacySaxHighSeason(DateTime(2027, 10, 8)), isFalse);
+      expect(isLegacySaxHighSeason(DateTime(2027, 10, 9)), isFalse);
       // 2028: 1 Oct is a Sunday, so the first October weekend is Fri 6 + Sat 7.
-      expect(isSaxHighSeason(DateTime(2028, 10, 6)), isTrue);
-      expect(isSaxHighSeason(DateTime(2028, 10, 7)), isTrue);
-      expect(isSaxHighSeason(DateTime(2028, 10, 13)), isFalse);
-      expect(isSaxHighSeason(DateTime(2028, 10, 14)), isFalse);
+      expect(isLegacySaxHighSeason(DateTime(2028, 10, 6)), isTrue);
+      expect(isLegacySaxHighSeason(DateTime(2028, 10, 7)), isTrue);
+      expect(isLegacySaxHighSeason(DateTime(2028, 10, 13)), isFalse);
+      expect(isLegacySaxHighSeason(DateTime(2028, 10, 14)), isFalse);
     });
 
     test('matches every Friday and Saturday in November and December', () {
-      expect(isSaxHighSeason(DateTime(2026, 11, 6)), isTrue); // Friday
-      expect(isSaxHighSeason(DateTime(2026, 12, 19)), isTrue); // Saturday
-      expect(isSaxHighSeason(DateTime(2028, 12, 29)), isTrue); // Friday
+      expect(isLegacySaxHighSeason(DateTime(2026, 11, 6)), isTrue); // Friday
+      expect(isLegacySaxHighSeason(DateTime(2026, 12, 19)), isTrue); // Saturday
+      expect(isLegacySaxHighSeason(DateTime(2028, 12, 29)), isTrue); // Friday
     });
 
     test('rejects the other weekdays inside the season', () {
-      expect(isSaxHighSeason(DateTime(2027, 6, 3)), isFalse); // Thursday
-      expect(isSaxHighSeason(DateTime(2027, 6, 6)), isFalse); // Sunday
+      expect(isLegacySaxHighSeason(DateTime(2027, 6, 3)), isFalse); // Thursday
+      expect(isLegacySaxHighSeason(DateTime(2027, 6, 6)), isFalse); // Sunday
       expect(
-        isSaxHighSeason(DateTime(2028, 10, 1)),
+        isLegacySaxHighSeason(DateTime(2028, 10, 1)),
         isFalse,
       ); // Sunday 1 October
     });
@@ -90,16 +102,49 @@ void main() {
       'keeps no one-off extra dates: the rule covers every date that used to be listed',
       () {
         expect(saxHighSeasonExtraDates, isEmpty);
-        expect(isSaxHighSeason(DateTime(2026, 8, 21)), isTrue);
-        expect(isSaxHighSeason(DateTime(2026, 9, 26)), isTrue);
-        expect(isSaxHighSeason(DateTime(2026, 11, 27)), isTrue);
-        expect(isSaxHighSeason(DateTime(2027, 12, 10)), isTrue);
+        expect(isLegacySaxHighSeason(DateTime(2026, 8, 21)), isTrue);
+        expect(isLegacySaxHighSeason(DateTime(2026, 9, 26)), isTrue);
+        expect(isLegacySaxHighSeason(DateTime(2026, 11, 27)), isTrue);
+        expect(isLegacySaxHighSeason(DateTime(2027, 12, 10)), isTrue);
       },
     );
 
     test('returns false for a null date', () {
+      expect(isLegacySaxHighSeason(null), isFalse);
+    });
+  });
+
+  group('isSaxHighSeason (Saturdays in August)', () {
+    test('is true on every Saturday in August', () {
+      for (final d in [7, 14, 21, 28]) {
+        expect(isSaxHighSeason(DateTime(2027, 8, d)), isTrue);
+      }
+    });
+
+    test('is false on other August days and Saturdays outside August', () {
+      expect(isSaxHighSeason(DateTime(2027, 8, 6)), isFalse); // Friday
+      expect(isSaxHighSeason(DateTime(2027, 8, 8)), isFalse); // Sunday
+      expect(isSaxHighSeason(DateTime(2027, 7, 31)), isFalse);
+      expect(isSaxHighSeason(DateTime(2027, 9, 4)), isFalse);
+      expect(isSaxHighSeason(DateTime(2026, 12, 19)), isFalse);
       expect(isSaxHighSeason(null), isFalse);
     });
+
+    test(
+      'prices an August Saturday at season rates, other weekends at standard',
+      () {
+        expect(
+          calculateCustomerMusicianPrice(1, augustOnly, augustSaturday),
+          5400,
+        );
+        expect(
+          calculateMusicianOfferPrice(1, augustOnly, augustSaturday),
+          4150,
+        );
+        expect(calculateCustomerMusicianPrice(1, augustOnly, seasonDate), 4350);
+        expect(calculateMusicianOfferPrice(1, augustOnly, seasonDate), 3350);
+      },
+    );
   });
 
   group('isSaxSeasonPricingActive', () {
@@ -123,8 +168,46 @@ void main() {
       );
     });
 
-    test('treats a missing creation date as post-launch', () {
-      expect(isSaxSeasonPricingActive(null, seasonDate), isTrue);
+    test(
+      'uses the wide window for jobs created before the August-only switch',
+      () {
+        expect(
+          isSaxSeasonPricingActive(postLaunch, DateTime(2026, 11, 6)),
+          isTrue,
+        );
+        expect(
+          isSaxSeasonPricingActive(
+            saxAugustSaturdaysStart.subtract(const Duration(milliseconds: 1)),
+            seasonDate,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'uses Saturdays in August only for jobs created on/after the switch',
+      () {
+        expect(
+          isSaxSeasonPricingActive(saxAugustSaturdaysStart, augustSaturday),
+          isTrue,
+        );
+        expect(isSaxSeasonPricingActive(augustOnly, augustSaturday), isTrue);
+        expect(
+          isSaxSeasonPricingActive(augustOnly, DateTime(2027, 8, 6)),
+          isFalse,
+        );
+        expect(isSaxSeasonPricingActive(augustOnly, seasonDate), isFalse);
+        expect(
+          isSaxSeasonPricingActive(augustOnly, DateTime(2026, 12, 19)),
+          isFalse,
+        );
+      },
+    );
+
+    test('treats a missing creation date as a new job (August Saturdays)', () {
+      expect(isSaxSeasonPricingActive(null, augustSaturday), isTrue);
+      expect(isSaxSeasonPricingActive(null, seasonDate), isFalse);
     });
 
     test('is false whenever the event date is missing', () {

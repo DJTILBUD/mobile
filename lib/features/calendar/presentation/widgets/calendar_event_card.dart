@@ -41,7 +41,7 @@ class CalendarEventCard extends StatelessWidget {
         barColor = c.state.warning;
         tagLabel = 'Bud afgivet';
         tagBg = c.state.warning.withValues(alpha: 0.22);
-        tagFg = c.state.warning;
+        tagFg = c.state.warningText;
       case CalendarEventKind.won:
         barColor = c.state.success;
         tagLabel = isExternal ? 'Eksternt' : 'Internt';

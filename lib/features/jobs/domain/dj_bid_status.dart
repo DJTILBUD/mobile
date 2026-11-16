@@ -41,6 +41,7 @@ class DjBidStatus {
   String get title => switch (reason) {
     'already_bid' => 'Du har allerede budt på jobbet',
     'full' || 'tier_quota' => 'Jobbet kan ikke modtage flere tilbud',
+    'app_update_required' => 'Opdater appen',
     _ => 'Jobbet er ikke længere åbent for bud',
   };
 

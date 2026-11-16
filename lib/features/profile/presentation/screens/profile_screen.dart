@@ -16,6 +16,8 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_reminder_provider.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/widgets/song_request_qr_dialog.dart';
+import 'package:dj_tilbud_app/core/utils/wknds_delivery.dart';
+import 'package:dj_tilbud_app/shared/widgets/delivered_setup_notice.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/features/notifications/presentation/widgets/notification_bell.dart';
 
@@ -318,6 +320,33 @@ class ProfileScreen extends ConsumerWidget {
                   );
                 }
               },
+            ),
+          // Non-equipped DJs: the fixed setup WKNDS delivers (web shows the
+          // same as the "Dit udstyr" card on the profile page).
+          if (role == MusicianRole.dj &&
+              isNonEquippedDj(
+                ref.watch(djProfileProvider).valueOrNull?.equipmentStatus,
+              ))
+            _MenuItem(
+              icon: LucideIcons.truck,
+              label: 'Dit udstyr',
+              onTap:
+                  () => showModalBottomSheet<void>(
+                    context: context,
+                    showDragHandle: true,
+                    builder:
+                        (_) => const SafeArea(
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              DSSpacing.s4,
+                              0,
+                              DSSpacing.s4,
+                              DSSpacing.s6,
+                            ),
+                            child: DeliveredSetupNotice(forQuote: false),
+                          ),
+                        ),
+                  ),
             ),
           if (role == MusicianRole.dj)
             _MenuItem(

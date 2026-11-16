@@ -141,7 +141,22 @@ class _InstrumentalistOfferFormScreenState
     );
   }
 
+  /// True from the first tap until the submit flow finishes. The provider's
+  /// AsyncLoading only starts after the payment-info await, so without this a
+  /// second tap in that gap ran the whole flow again (same bug as the DJ form).
+  bool _submitting = false;
+
   Future<void> _handleSubmit() async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await _submit();
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _submit() async {
     AnalyticsService.logOfferSubmitAttempted(
       widget.job.id,
       role: 'musician',
@@ -523,7 +538,7 @@ class _InstrumentalistOfferFormScreenState
                           Icon(
                             LucideIcons.alertTriangle,
                             size: 16,
-                            color: _c.state.warning,
+                            color: _c.state.warningText,
                           ),
                           const SizedBox(width: DSSpacing.s2),
                           Text(
@@ -733,14 +748,14 @@ class _InstrumentalistOfferFormScreenState
                           Icon(
                             LucideIcons.star,
                             size: 14,
-                            color: _c.state.warning,
+                            color: _c.state.warningText,
                           ),
                           const SizedBox(width: DSSpacing.s1),
                           Text(
                             'Særligt ønske til musikeren',
                             style: DSTextStyle.labelSm.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: _c.state.warning,
+                              color: _c.state.warningText,
                             ),
                           ),
                         ],
@@ -864,8 +879,8 @@ class _InstrumentalistOfferFormScreenState
                   label: 'Send tilbud',
                   variant: DSButtonVariant.primary,
                   expand: true,
-                  isLoading: isLoading,
-                  onTap: isLoading ? null : _handleSubmit,
+                  isLoading: isLoading || _submitting,
+                  onTap: isLoading || _submitting ? null : _handleSubmit,
                 ),
               const SizedBox(height: DSSpacing.s8),
             ],
@@ -946,7 +961,7 @@ class _MultiOfferNotice extends StatelessWidget {
               Icon(
                 LucideIcons.calendarClock,
                 size: 16,
-                color: _c.state.warning,
+                color: _c.state.warningText,
               ),
               const SizedBox(width: DSSpacing.s2),
               Expanded(

@@ -453,7 +453,7 @@ class _ChecklistCard extends StatelessWidget {
                 ? Icon(
                   LucideIcons.checkCircle,
                   size: 20,
-                  color: c.brand.primary,
+                  color: c.brand.primaryActive,
                 )
                 : Container(
                   width: 20,

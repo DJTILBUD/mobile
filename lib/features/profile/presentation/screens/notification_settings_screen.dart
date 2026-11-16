@@ -238,29 +238,37 @@ class _NotificationSettingsScreenState
           ),
         ],
       ),
-      const _NotifSection(
+      _NotifSection(
         header: 'Påmindelser',
         groups: [
-          _NotifGroup(
+          const _NotifGroup(
             label: 'Klar-påmindelser',
             subtitle: 'Påmindelser om at bekræfte du er klar til et job',
             types: ['ready_reminder'],
           ),
-          _NotifGroup(
+          const _NotifGroup(
             label: 'Ekstra timer',
             subtitle: 'Påmindelser om at registrere ekstra timer efter et job',
             types: ['extra_hours_reminder'],
           ),
-          _NotifGroup(
+          const _NotifGroup(
             label: 'Kontakt kunden',
             subtitle: 'Påmindelser om at kontakte kunden efter en booking',
             types: ['contact_customer_reminder'],
           ),
-          _NotifGroup(
+          const _NotifGroup(
             label: 'Send faktura',
             subtitle: 'Påmindelser om at markere jobbet klar til fakturering',
             types: ['send_invoice_reminder'],
           ),
+          // DJ-only: WKNDS gear delivery (notify-delivery-reminder), info still missing on a won job.
+          if (isDj)
+            const _NotifGroup(
+              label: 'Levering af udstyr',
+              subtitle:
+                  'Påmindelser om at udfylde info til leveringen af udstyr',
+              types: ['delivery_info_reminder'],
+            ),
         ],
       ),
       if (isDj)
@@ -289,6 +297,11 @@ class _NotificationSettingsScreenState
               subtitle: 'Når en gæst sender et sangønske til dit job',
               types: ['song_request'],
             ),
+          const _NotifGroup(
+            label: 'Henvisninger',
+            subtitle: 'Når en kunde, du har henvist, er afholdt eller aflyst',
+            types: ['referral_closed', 'referral_canceled'],
+          ),
           const _NotifGroup(
             label: 'Beskeder fra DJTilbud',
             subtitle: 'Vigtige beskeder fra DJTilbuds team',

@@ -162,6 +162,11 @@ class AdminSupportDatasource {
 
   final SupabaseClient _client;
 
+  Map<String, String> _signedUrlHeaders() {
+    final token = _client.auth.currentSession?.accessToken;
+    return token == null ? const {} : {'Authorization': 'Bearer $token'};
+  }
+
   String get _webAppBaseUrl {
     String url = EnvConfig.webAppUrl;
     if (EnvConfig.isLocal && Platform.isAndroid) {
@@ -392,7 +397,11 @@ class AdminSupportDatasource {
       '&type=chat_attachment'
       '&userId=${Uri.encodeComponent(userId)}',
     );
-    final signedUrlRes = await http.get(signedUrlUri);
+    final signedUrlRes = await http.get(
+      signedUrlUri,
+      // The web-app only signs uploads for the caller's own userId when a session is sent.
+      headers: _signedUrlHeaders(),
+    );
     if (signedUrlRes.statusCode < 200 || signedUrlRes.statusCode >= 300) {
       throw Exception('Could not get signed URL (${signedUrlRes.statusCode})');
     }

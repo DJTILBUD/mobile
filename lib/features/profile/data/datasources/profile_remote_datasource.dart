@@ -14,6 +14,11 @@ class ProfileRemoteDatasource {
 
   final SupabaseClient _client;
 
+  Map<String, String> _signedUrlHeaders() {
+    final token = _client.auth.currentSession?.accessToken;
+    return token == null ? const {} : {'Authorization': 'Bearer $token'};
+  }
+
   String get _webAppBaseUrl {
     String url = EnvConfig.webAppUrl;
     if (EnvConfig.isLocal && Platform.isAndroid) {
@@ -106,8 +111,14 @@ class ProfileRemoteDatasource {
       },
       body: jsonEncode(data),
     );
-    // 423 = the info is locked (billing lock). The Danish message is user-facing.
+    // 423 = the info is locked (billing lock); 400 + bank_account_invalid = the
+    // bank account guard (an account equal to the CVR/CPR etc.). Both messages are
+    // Danish and user-facing, so they travel as BillingLockException.
     if (response.statusCode == 423) {
+      throw _billingLockException(response.body);
+    }
+    if (response.statusCode == 400 &&
+        response.body.contains('bank_account_invalid')) {
       throw _billingLockException(response.body);
     }
     if (response.statusCode != 200) {
@@ -344,7 +355,11 @@ class ProfileRemoteDatasource {
       '&type=${Uri.encodeComponent(type.toDbString())}'
       '&userId=${Uri.encodeComponent(userId)}',
     );
-    final signedUrlRes = await http.get(signedUrlUri);
+    final signedUrlRes = await http.get(
+      signedUrlUri,
+      // The web-app only signs uploads for the caller's own userId when a session is sent.
+      headers: _signedUrlHeaders(),
+    );
     if (signedUrlRes.statusCode < 200 || signedUrlRes.statusCode >= 300) {
       throw Exception('Could not get signed URL (${signedUrlRes.statusCode})');
     }
@@ -440,7 +455,11 @@ class ProfileRemoteDatasource {
         '&type=thumbnail'
         '&userId=${Uri.encodeComponent(userId)}',
       );
-      final signedUrlRes = await http.get(signedUrlUri);
+      final signedUrlRes = await http.get(
+        signedUrlUri,
+        // The web-app only signs uploads for the caller's own userId when a session is sent.
+        headers: _signedUrlHeaders(),
+      );
       if (signedUrlRes.statusCode < 200 || signedUrlRes.statusCode >= 300) {
         return null;
       }

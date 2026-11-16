@@ -7,14 +7,33 @@ class ProcessTracker extends StatelessWidget {
     super.key,
     required this.steps,
     this.completedSteps = 0,
+    this.completed,
+    this.subtitles,
   });
 
   final List<String> steps;
   final int completedSteps;
 
+  /// Per-step done flags, for a process whose steps can finish out of order (a delivery job's
+  /// "Indhent leveringsdetaljer"). When set it wins over [completedSteps]; the current step is the
+  /// first one not done.
+  final List<bool>? completed;
+
+  /// Optional small line under a step (a deadline, a tip), same length as [steps].
+  final List<String?>? subtitles;
+
+  bool _isDone(int i) => completed != null ? completed![i] : i < completedSteps;
+
+  int get _current {
+    if (completed == null) return completedSteps;
+    final i = completed!.indexOf(false);
+    return i < 0 ? steps.length : i;
+  }
+
   @override
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
+    final current = _current;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -25,18 +44,15 @@ class ProcessTracker extends StatelessWidget {
               Column(
                 children: [
                   _StepCircle(
-                    isCompleted: i < completedSteps,
-                    isCurrent: i == completedSteps,
+                    isCompleted: _isDone(i),
+                    isCurrent: i == current,
                     number: i + 1,
                   ),
                   if (i < steps.length - 1)
                     Container(
                       width: 2,
                       height: 32,
-                      color:
-                          i < completedSteps
-                              ? _c.state.success
-                              : _c.border.strong,
+                      color: _isDone(i) ? _c.state.success : _c.border.strong,
                     ),
                 ],
               ),
@@ -44,20 +60,33 @@ class ProcessTracker extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    steps[i],
-                    style: DSTextStyle.bodyMd.copyWith(
-                      fontWeight:
-                          i == completedSteps
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                      color:
-                          i < completedSteps
-                              ? _c.text.secondary
-                              : i == completedSteps
-                              ? _c.text.primary
-                              : _c.text.muted,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        steps[i],
+                        style: DSTextStyle.bodyMd.copyWith(
+                          fontWeight:
+                              i == current ? FontWeight.w600 : FontWeight.w400,
+                          color:
+                              _isDone(i)
+                                  ? _c.text.secondary
+                                  : i == current
+                                  ? _c.text.primary
+                                  : _c.text.muted,
+                        ),
+                      ),
+                      if (subtitles?[i] case final sub?)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            sub,
+                            style: DSTextStyle.labelMd.copyWith(
+                              color: _c.text.muted,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),

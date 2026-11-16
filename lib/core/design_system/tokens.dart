@@ -84,14 +84,31 @@ class DSStateColors {
   const DSStateColors({
     required this.success,
     required this.warning,
+    required this.warningText,
     required this.danger,
     required this.info,
   });
 
   final Color success;
   final Color warning;
+
+  /// Text/icon colour for warning content. In light mode `warning` is pale
+  /// yellow and only works as a fill/tint, so text on it is black.
+  final Color warningText;
   final Color danger;
   final Color info;
+}
+
+/// Text/icon colour for content drawn on a SOLID [fill]: dark EerieBlack or
+/// white, whichever contrasts more. For fills that vary by status (date
+/// blocks), so a dark fill never gets dark text and a light one never white.
+Color dsContentOn(Color fill) {
+  const dark = Color(0xFF141627);
+  const light = Color(0xFFFFFFFF);
+  final l = fill.computeLuminance();
+  final onDark = (l + 0.05) / (dark.computeLuminance() + 0.05);
+  final onLight = 1.05 / (l + 0.05);
+  return onDark >= onLight ? dark : light;
 }
 
 class DSTrustColors {
@@ -195,7 +212,8 @@ const lightColors = DSColors._(
   ),
   state: DSStateColors(
     success: Color(0xFF5A731A), // SpringGreenDark
-    warning: Color(0xFFFFD365), // SunsetOrange
+    warning: Color(0xFFFFD365), // SunsetOrange — FILL only in light mode
+    warningText: Color(0xFF141627), // EerieBlack — text/icons on/near yellow
     danger: Color(0xFFEC502C), // Flame
     info: Color(0xFF66D0F2), // BlueSky
   ),
@@ -239,6 +257,7 @@ const darkColors = DSColors._(
   state: DSStateColors(
     success: Color(0xFF22C55E),
     warning: Color(0xFFF59E0B),
+    warningText: Color(0xFFF59E0B), // amber reads fine on dark bg
     danger: Color(0xFFEF4444),
     info: Color(0xFF3B82F6),
   ),
@@ -350,4 +369,11 @@ class DSTheme extends InheritedWidget {
 
   @override
   bool updateShouldNotify(DSTheme old) => colors != old.colors;
+}
+
+extension DSColorsForeground on DSColors {
+  /// Text/icon colour for content drawn in a status [color] (usually on that
+  /// colour's own tint). Light-mode yellow is fill-only, so it maps to
+  /// [DSStateColors.warningText]; every other colour is returned as is.
+  Color fg(Color color) => color == state.warning ? state.warningText : color;
 }

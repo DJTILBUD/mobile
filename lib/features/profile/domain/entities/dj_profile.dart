@@ -12,6 +12,7 @@ class DjProfile {
     required this.allowPublicDjProfile,
     this.isSuppressed = false,
     this.tier,
+    this.equipmentStatus,
     this.soundcloudUrl,
     this.venuesAndEvents,
     this.excludedEventTypes = const [],
@@ -31,6 +32,10 @@ class DjProfile {
   final bool allowPublicDjProfile;
   final bool isSuppressed;
   final String? tier;
+
+  /// `DjInfos.equipment_status`: 'equipped' or 'non_equipped' (WKNDS delivers
+  /// the gear). Set by admin only, so it is read here and never written back.
+  final String? equipmentStatus;
   final String? soundcloudUrl;
   final List<String>? venuesAndEvents;
   final List<String> excludedEventTypes;

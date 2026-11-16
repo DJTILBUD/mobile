@@ -503,7 +503,7 @@ class _NewSupportMessageSheetState
                     Text(
                       '⚠ Ikke synlig for ${r.name}',
                       style: DSTextStyle.labelSm.copyWith(
-                        color: _c.state.warning,
+                        color: _c.state.warningText,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

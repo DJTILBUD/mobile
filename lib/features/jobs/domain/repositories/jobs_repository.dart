@@ -5,6 +5,9 @@ import 'package:dj_tilbud_app/features/jobs/domain/entities/ext_job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/song_request.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/job_feedback.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/my_payout.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/equipment_delivery.dart';
 
 abstract class JobsRepository {
   /// Fetches all open jobs for a DJ (not filtered by region — only job filters apply).
@@ -206,6 +209,31 @@ abstract class JobsRepository {
   /// Server-resolved; display aid for the quote form only. Fails OPEN on any error.
   Future<DjBidStatus> fetchDjBidStatus(int jobId);
 
+  /// "Hvorfor bød du ikke?": may the current DJ be asked about this job? Server-resolved
+  /// (`GET /api/dj/jobs/{id}/feedback`). Fails CLOSED on any error.
+  Future<JobFeedbackPrompt> fetchJobFeedbackPrompt(int jobId);
+
+  /// Stores a feedback answer (`POST /api/dj/jobs/{id}/feedback`). Throws on failure.
+  Future<void> submitJobFeedback(int jobId, JobFeedbackAnswer answer);
+
+  /// The signed-in performer's own payout on a played job (date + afregning PDF), via
+  /// `GET /api/payouts/mine`. Null when there is none. Exactly one of [jobId] / [extJobId].
+  Future<MyPayout?> fetchMyPayout({int? jobId, int? extJobId});
+
+  /// The WKNDS gear delivery on the DJ's own won internal job, via
+  /// `GET /api/deliveries/job/{job_id}`. Null when the job has none.
+  Future<EquipmentDelivery?> fetchEquipmentDelivery(int jobId);
+
+  /// The DJ's own deliveries with their action level, via `GET /api/deliveries/mine`, keyed by
+  /// job id. Empty for an equipped DJ.
+  Future<Map<int, DeliveryActionSummary>> fetchMyDeliveryActions();
+
+  /// Saves logistics [changes] via `PUT /api/deliveries/job/{job_id}` and returns the new view.
+  Future<EquipmentDelivery?> saveEquipmentDeliveryLogistics(
+    int jobId,
+    Map<String, dynamic> changes,
+  );
+
   /// Fetches service offers for a given internal job (for DJ view).
   Future<List<ServiceOffer>> fetchServiceOffersForJob(int jobId);
 
@@ -241,6 +269,14 @@ abstract class JobsRepository {
 
   /// Saves private musician notes on a won service offer.
   Future<void> saveMusicianNotes(int offerId, String notes);
+
+  /// Withdraws the DJ's own pending quote within the 10-minute window.
+  /// Returns the server's Danish success message (may be empty).
+  Future<String> withdrawDjQuote(int quoteId);
+
+  /// Withdraws the saxophonist's own `sent` offer within the 10-minute window.
+  /// Returns the server's Danish success message (may be empty).
+  Future<String> withdrawServiceOffer(int offerId);
 
   /// Edits a pending DJ quote within the 10-minute edit window.
   Future<DjQuote> editDjQuote({

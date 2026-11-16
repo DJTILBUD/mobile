@@ -13,6 +13,7 @@ class DjQuoteModel {
     required this.job,
     this.earlySetupStatus,
     this.earlySetupPrice,
+    this.isDeliveryQuote = false,
     this.djReadyConfirmedAt,
     this.extraHours,
     this.extraHoursPricePerHour,
@@ -31,6 +32,7 @@ class DjQuoteModel {
   final JobModel job;
   final String? earlySetupStatus;
   final int? earlySetupPrice;
+  final bool isDeliveryQuote;
   final DateTime? djReadyConfirmedAt;
   final double? extraHours;
   final num? extraHoursPricePerHour;
@@ -60,6 +62,7 @@ class DjQuoteModel {
       job: jobJson != null ? JobModel.fromJson(jobJson) : _emptyJobModel(),
       earlySetupStatus: json['early_setup_status'] as String?,
       earlySetupPrice: (json['early_setup_price'] as num?)?.toInt(),
+      isDeliveryQuote: json['delivery_wknds_price_dkk'] != null,
       djReadyConfirmedAt:
           json['dj_ready_confirmed_at'] != null
               ? DateTime.parse(json['dj_ready_confirmed_at'] as String)
@@ -88,6 +91,7 @@ class DjQuoteModel {
       job: job.toEntity(),
       earlySetupStatus: earlySetupStatus,
       earlySetupPrice: earlySetupPrice,
+      isDeliveryQuote: isDeliveryQuote,
       djReadyConfirmedAt: djReadyConfirmedAt,
       extraHours: extraHours,
       extraHoursPricePerHour: extraHoursPricePerHour,

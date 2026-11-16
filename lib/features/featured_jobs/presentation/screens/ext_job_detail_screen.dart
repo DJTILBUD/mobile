@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -33,6 +34,8 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/decline_extra_h
 import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 import 'package:dj_tilbud_app/shared/widgets/venue_photos_card.dart';
 import 'package:dj_tilbud_app/core/utils/planned_contact.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/payout_status_card.dart';
+import 'package:dj_tilbud_app/core/router/app_routes.dart';
 
 class ExtJobDetailScreen extends ConsumerStatefulWidget {
   const ExtJobDetailScreen({super.key, required this.extJob});
@@ -518,6 +521,13 @@ class _ExtJobDetailScreenState extends ConsumerState<ExtJobDetailScreen> {
         ),
         const SizedBox(height: DSSpacing.s4),
 
+        // Payout for whoever is viewing (assigned DJ or won musician): the
+        // endpoint resolves the caller's own payout and renders nothing otherwise.
+        PayoutStatusCard(
+          extJobId: extJob.id,
+          onOpenPaymentInfo: () => context.pushNamed(AppRoutes.payment),
+        ),
+
         // ── Extra hours (DJ-only, post-event window) ─────────────────────
         if (isAssignedDj) ...[
           _ExtJobExtraHoursSection(extJob: extJob),
@@ -820,12 +830,12 @@ class _JobInfoCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(LucideIcons.star, size: 14, color: _c.state.warning),
+                      Icon(LucideIcons.star, size: 14, color: _c.state.warningText),
                       const SizedBox(width: DSSpacing.s1),
                       Text(
                         'Særligt ønske til musikeren',
                         style: DSTextStyle.labelMd.copyWith(
-                          color: _c.state.warning,
+                          color: _c.state.warningText,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1530,7 +1540,7 @@ class _PlannedContactBanner extends StatelessWidget {
             Icon(
               Icons.calendar_today_outlined,
               size: 14,
-              color: _c.state.warning,
+              color: _c.state.warningText,
             ),
             const SizedBox(width: DSSpacing.s2),
             Text(

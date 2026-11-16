@@ -514,13 +514,20 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
     required List<DjQuote> pendingQuotes,
     required List<CalendarEvent> wonEvents,
     required String? djTier,
+    String? equipmentStatus,
   }) {
     final events = <CalendarEvent>[];
     if (_showNew) {
       events.addAll(
         newJobs.map(
-          (j) =>
-              _jobToEvent(j, budgetDisplay: djAdjustedBudgetLabel(j, djTier)),
+          (j) => _jobToEvent(
+            j,
+            budgetDisplay: djAdjustedBudgetLabel(
+              j,
+              djTier,
+              equipmentStatus: equipmentStatus,
+            ),
+          ),
         ),
       );
     }
@@ -637,12 +644,13 @@ class _DjCalendarViewState extends ConsumerState<_DjCalendarView> {
       for (final e in extJobsAsync.valueOrNull ?? <ExtJob>[]) e.id: e,
     };
 
-    final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
+    final djProfile = ref.watch(djProfileProvider).valueOrNull;
     final allEvents = _buildEvents(
       newJobs: newJobs,
       pendingQuotes: pending,
       wonEvents: won,
-      djTier: djTier,
+      djTier: djProfile?.tier,
+      equipmentStatus: djProfile?.equipmentStatus,
     );
     final visibleEvents = _eventsForView(allEvents);
 
@@ -1355,14 +1363,14 @@ class _KindChip extends StatelessWidget {
               label,
               style: DSTextStyle.labelSm.copyWith(
                 fontWeight: FontWeight.w600,
-                color: active ? activeColor : _c.text.secondary,
+                color: active ? _c.fg(activeColor) : _c.text.secondary,
               ),
             ),
             const SizedBox(width: 4),
             Icon(
               active ? LucideIcons.check : LucideIcons.x,
               size: 11,
-              color: active ? activeColor : _c.text.secondary,
+              color: active ? _c.fg(activeColor) : _c.text.secondary,
             ),
           ],
         ),
@@ -1458,9 +1466,10 @@ class _DjNewJobsTab extends ConsumerWidget {
     final jobsAsync = ref.watch(filteredDjJobsProvider);
     final quotes = ref.watch(djQuotesProvider).valueOrNull ?? [];
     final extJobs = ref.watch(djExtJobsProvider).valueOrNull ?? [];
-    final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
+    final djProfile = ref.watch(djProfileProvider).valueOrNull;
+    final djTier = djProfile?.tier;
 
-    return jobsAsync.when(
+    final list = jobsAsync.when(
       loading: () => const SkeletonListView(),
       error:
           (error, _) => _ErrorView(
@@ -1539,6 +1548,7 @@ class _DjNewJobsTab extends ConsumerWidget {
                           context.pushNamed(AppRoutes.djQuoteForm, extra: job),
                   isColliding: colliding,
                   djTier: djTier,
+                  djEquipmentStatus: djProfile?.equipmentStatus,
                 ),
               );
             },
@@ -1546,6 +1556,7 @@ class _DjNewJobsTab extends ConsumerWidget {
         );
       },
     );
+    return list;
   }
 }
 
@@ -2257,7 +2268,11 @@ class _AvailabilityGateDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.calendarDays, size: 40, color: _c.brand.primary),
+            Icon(
+              LucideIcons.calendarDays,
+              size: 40,
+              color: _c.brand.primaryActive,
+            ),
             const SizedBox(height: DSSpacing.s4),
             Text(
               'Husk dine optagne datoer',

@@ -502,7 +502,7 @@ class _AdminThreadTile extends ConsumerWidget {
                             style: DSTextStyle.labelSm.copyWith(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: _c.state.warning,
+                              color: _c.state.warningText,
                             ),
                           ),
                         ),

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/supabase/supabase_provider.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/bid_withdrawal.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/job_duration.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/musician_job_availability.dart';
@@ -21,6 +24,9 @@ import 'package:dj_tilbud_app/features/jobs/data/datasources/jobs_remote_datasou
 import 'package:dj_tilbud_app/features/jobs/data/repositories/jobs_repository_impl.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/my_payout.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/equipment_delivery.dart';
+import 'package:dj_tilbud_app/core/error/app_exception.dart';
 
 final jobsRepositoryProvider = Provider<JobsRepository>((ref) {
   final client = ref.watch(supabaseClientProvider);
@@ -319,11 +325,28 @@ bool _isJobExcludedByFilters(Job job, DjJobFilters f) {
   return false;
 }
 
+/// Open bids still inside the 10 min edit/withdraw window go on top, the date
+/// order is kept otherwise (web `usePinnedBidsInWithdrawWindow`). The provider
+/// rebuilds the moment the next window ends, so the bid drops back into place
+/// without a refresh.
+List<T> _pinBidsInWithdrawWindow<T>(
+  Ref ref,
+  List<T> sorted,
+  DateTime Function(T item) createdAt,
+) {
+  final next = timeUntilNextBidWindowEnd(sorted.map(createdAt));
+  if (next != null) {
+    final timer = Timer(next + const Duration(seconds: 1), ref.invalidateSelf);
+    ref.onDispose(timer.cancel);
+  }
+  return pinBidsInWithdrawWindow(sorted, createdAt);
+}
+
 final pendingDjQuotesProvider = Provider<AsyncValue<List<DjQuote>>>((ref) {
   return ref.watch(djQuotesProvider).whenData((quotes) {
     final list = quotes.where((q) => q.status == QuoteStatus.pending).toList();
     list.sort((a, b) => a.job.date.compareTo(b.job.date));
-    return list;
+    return _pinBidsInWithdrawWindow(ref, list, (q) => q.createdAt);
   });
 });
 
@@ -568,7 +591,7 @@ final sentServiceOffersProvider = Provider<AsyncValue<List<ServiceOffer>>>((
     final list =
         offers.where((o) => o.status == ServiceOfferStatus.sent).toList();
     list.sort((a, b) => a.job.date.compareTo(b.job.date));
-    return list;
+    return _pinBidsInWithdrawWindow(ref, list, (o) => o.createdAt);
   });
 });
 
@@ -1541,6 +1564,92 @@ final djBidStatusProvider = FutureProvider.autoDispose.family<DjBidStatus, int>(
   },
 );
 
+/// Which job a [myPayoutProvider] lookup is for: exactly one of the two ids.
+typedef MyPayoutJobRef = ({int? jobId, int? extJobId});
+
+/// The signed-in performer's own payout on a played job (see [MyPayout]). Errors resolve to
+/// null so a failed lookup hides the card instead of showing an error on the job screen.
+final myPayoutProvider = FutureProvider.autoDispose
+    .family<MyPayout?, MyPayoutJobRef>((ref, job) async {
+      try {
+        return await ref
+            .watch(jobsRepositoryProvider)
+            .fetchMyPayout(jobId: job.jobId, extJobId: job.extJobId);
+      } catch (_) {
+        return null;
+      }
+    });
+
+/// The WKNDS gear delivery on the DJ's own won internal job (see [EquipmentDelivery]). Errors
+/// resolve to null so a failed lookup hides the section instead of erroring the job screen.
+final equipmentDeliveryProvider = FutureProvider.autoDispose
+    .family<EquipmentDelivery?, int>((ref, jobId) async {
+      try {
+        return await ref
+            .watch(jobsRepositoryProvider)
+            .fetchEquipmentDelivery(jobId);
+      } catch (_) {
+        return null;
+      }
+    });
+
+/// The DJ's own WKNDS deliveries keyed by job id, with how urgent the delivery info is (computed
+/// by the web-app, `GET /api/deliveries/mine`). Drives the "Giv leveringsdetaljer" line on the job
+/// card, the Jobs badge and the red dot on the job's Levering tab. Refetches whenever the quote
+/// list does (pull-to-refresh, reopening a job). Equipped DJs never call it. Errors resolve to an
+/// empty map so a failed lookup hides the hints instead of breaking the list.
+final myDeliveryActionsProvider =
+    FutureProvider<Map<int, DeliveryActionSummary>>((ref) async {
+      ref.watch(djQuotesProvider);
+      final profile = ref.watch(djProfileProvider).valueOrNull;
+      if (profile?.equipmentStatus != 'non_equipped') return const {};
+      try {
+        return await ref.watch(jobsRepositoryProvider).fetchMyDeliveryActions();
+      } catch (_) {
+        return const {};
+      }
+    });
+
+/// Saves the DJ's delivery logistics through the web API. The section `ref.watch`es this for its
+/// spinner (a real listener), and every `state =` after the await is still guarded by `mounted`.
+/// Returns the updated view on success; rethrows so the caller can show the server's Danish
+/// message (`DatabaseException.message`).
+class SaveEquipmentDeliveryNotifier extends StateNotifier<AsyncValue<void>> {
+  SaveEquipmentDeliveryNotifier(this._repository, this._ref)
+    : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<EquipmentDelivery?> save(
+    int jobId,
+    Map<String, dynamic> changes,
+  ) async {
+    state = const AsyncLoading();
+    try {
+      final updated = await _repository.saveEquipmentDeliveryLogistics(
+        jobId,
+        changes,
+      );
+      if (mounted) state = const AsyncData(null);
+      _ref.invalidate(equipmentDeliveryProvider(jobId));
+      // The card action line, Jobs badge and Levering-tab dot follow the saved info at once.
+      _ref.invalidate(myDeliveryActionsProvider);
+      return updated;
+    } catch (e, st) {
+      if (mounted) state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+}
+
+final saveEquipmentDeliveryProvider = StateNotifierProvider.autoDispose<
+  SaveEquipmentDeliveryNotifier,
+  AsyncValue<void>
+>((ref) {
+  return SaveEquipmentDeliveryNotifier(ref.watch(jobsRepositoryProvider), ref);
+});
+
 // ─── Service offers for a job (DJ view) ─────────────────────────────────────
 
 final serviceOffersForJobProvider = FutureProvider.autoDispose
@@ -1706,7 +1815,16 @@ final saveMusicianNotesProvider = StateNotifierProvider.autoDispose<
 /// and the Jobs bottom-nav badge. Mirrors web app "Overblik" badge.
 final djQuoteActionCountProvider = Provider<int>((ref) {
   final wonQuotes = ref.watch(wonDjQuotesProvider).valueOrNull ?? [];
-  return wonQuotes.where((q) => q.hasAction).length;
+  final deliveries =
+      ref.watch(myDeliveryActionsProvider).valueOrNull ?? const {};
+  // A won job counts once, whether it needs a customer step, urgent delivery info, or both.
+  return wonQuotes
+      .where(
+        (q) =>
+            q.hasAction ||
+            deliveries[q.jobId]?.level == DeliveryActionLevel.urgent,
+      )
+      .length;
 });
 
 /// Ext jobs that need an action — for the Udvalgte bottom-nav badge.
@@ -1729,3 +1847,90 @@ final musicianWonActionCountProvider = Provider<int>((ref) {
   final wonOffers = ref.watch(wonServiceOffersProvider).valueOrNull ?? [];
   return wonOffers.where((o) => o.hasAction).length;
 });
+
+// ─── Withdraw a bid ("Træk bud tilbage") ───────────────────────────────────
+
+/// Outcome of a withdraw call. [message] is the route's Danish text: the
+/// success message ("Dit bud er trukket tilbage.") or the rejection reason
+/// (e.g. the window has expired). Empty when the server sent none, so the
+/// screen falls back to its own copy. Returned (not only published as state)
+/// so the caller never has to read the notifier back after the await.
+class WithdrawBidResult {
+  const WithdrawBidResult({required this.success, required this.message});
+
+  final bool success;
+  final String message;
+}
+
+String _withdrawErrorMessage(Object e) => e is AppException ? e.message : '';
+
+/// Withdraws the DJ's own pending quote (web `DELETE /api/quotes/[id]`).
+/// The detail screen `ref.watch`es this for its loading state; the `mounted`
+/// guards cover the moment the screen pops right after success.
+class WithdrawDjQuoteNotifier extends StateNotifier<AsyncValue<void>> {
+  WithdrawDjQuoteNotifier(this._repository, this._ref)
+    : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<WithdrawBidResult> withdraw(int quoteId) async {
+    state = const AsyncLoading();
+    try {
+      final message = await _repository.withdrawDjQuote(quoteId);
+      if (mounted) state = const AsyncData(null);
+      _ref.read(djQuotesProvider.notifier).silentRefresh();
+      // The job may be open to bid on again (also for this DJ).
+      _ref.read(newDjJobsProvider.notifier).silentRefresh();
+      return WithdrawBidResult(success: true, message: message);
+    } catch (e, st) {
+      if (mounted) state = AsyncError(e, st);
+      return WithdrawBidResult(
+        success: false,
+        message: _withdrawErrorMessage(e),
+      );
+    }
+  }
+}
+
+final withdrawDjQuoteProvider = StateNotifierProvider.autoDispose<
+  WithdrawDjQuoteNotifier,
+  AsyncValue<void>
+>((ref) => WithdrawDjQuoteNotifier(ref.watch(jobsRepositoryProvider), ref));
+
+/// Withdraws the saxophonist's own `sent` offer
+/// (web `DELETE /api/service-offer/[offerId]`). Same shape as
+/// [WithdrawDjQuoteNotifier].
+class WithdrawServiceOfferNotifier extends StateNotifier<AsyncValue<void>> {
+  WithdrawServiceOfferNotifier(this._repository, this._ref)
+    : super(const AsyncData(null));
+
+  final JobsRepository _repository;
+  final Ref _ref;
+
+  Future<WithdrawBidResult> withdraw(int offerId) async {
+    state = const AsyncLoading();
+    try {
+      final message = await _repository.withdrawServiceOffer(offerId);
+      if (mounted) state = const AsyncData(null);
+      _ref.read(serviceOffersProvider.notifier).silentRefresh();
+      // The job may be open to offer on again.
+      _ref.read(newInstrumentalistJobsProvider.notifier).silentRefresh();
+      _ref.invalidate(instrumentalistExtJobsProvider);
+      return WithdrawBidResult(success: true, message: message);
+    } catch (e, st) {
+      if (mounted) state = AsyncError(e, st);
+      return WithdrawBidResult(
+        success: false,
+        message: _withdrawErrorMessage(e),
+      );
+    }
+  }
+}
+
+final withdrawServiceOfferProvider = StateNotifierProvider.autoDispose<
+  WithdrawServiceOfferNotifier,
+  AsyncValue<void>
+>(
+  (ref) => WithdrawServiceOfferNotifier(ref.watch(jobsRepositoryProvider), ref),
+);

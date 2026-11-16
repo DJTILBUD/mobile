@@ -4,6 +4,7 @@ import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/error/error_messages.dart';
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
+import 'package:dj_tilbud_app/features/profile/domain/bank_account_guard.dart';
 import 'package:dj_tilbud_app/features/profile/domain/billing_email_validation.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/payment_info.dart';
 import 'package:dj_tilbud_app/features/profile/domain/self_billing_complete.dart';
@@ -218,6 +219,13 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
             : _billingEmailSecondaryCtrl.text.trim(),
   );
 
+  String? _accountNumberError() => bankAccountError(
+    registrationNumber: _regNumCtrl.text,
+    accountNumber: _accountCtrl.text,
+    cvr: _businessType.requiresCvr ? _cvrCtrl.text : null,
+    cpr: _isAps ? null : _cprCtrl.text,
+  );
+
   Future<void> _save() async {
     // The self-billing fields (business type / CVR / CPR / billing email) are
     // always shown, so always run the form validators. The B-income bank fields
@@ -250,15 +258,28 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
       );
       return;
     }
+    // Bank account guard (domain/bank_account_guard.dart, mirror of the web-app
+    // rule the save route enforces): never the CVR, CPR, reg. no. or an impossible
+    // number. Checked on the value, not the field (lazy ListView rule).
+    final bankError = _accountNumberError();
+    if (bankError != null) {
+      DSToast.show(context, variant: DSToastVariant.error, title: bankError);
+      return;
+    }
     // The save that makes the info complete locks it server-side. Make that an
-    // explicit decision; an incomplete save goes through without asking.
+    // explicit decision; an incomplete save goes through without asking. The bank
+    // details are repeated so a mix-up with the CVR is visible before it locks.
     final info = _formInfo();
     if (isPaymentInfoComplete(info.toReadinessInfo())) {
+      final cvrLine =
+          info.cvr == null ? '' : '\nCVR (ikke en konto): ${info.cvr}';
       final confirmed = await showDSConfirm(
         context,
         title: 'Lås dine betalingsoplysninger?',
         message:
-            'Tjek at alt er korrekt, især reg.- og kontonummer. Når du bekræfter, bliver '
+            'Her udbetaler vi til:\nReg.nr. ${info.registrationNumber ?? ''}  '
+            'Kontonr. ${info.accountNumber ?? ''}$cvrLine\n\n'
+            'Tjek reg.- og kontonummer i din netbank. Når du bekræfter, bliver '
             'oplysningerne låst, og de kan derefter kun ændres ved at sende en anmodning til support.',
         confirmLabel: 'Bekræft og lås',
       );
@@ -590,7 +611,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                           Icon(
                             LucideIcons.info,
                             size: 16,
-                            color: _c.state.warning,
+                            color: _c.state.warningText,
                           ),
                           const SizedBox(width: DSSpacing.s2),
                           Expanded(
@@ -620,11 +641,12 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                       enabled: !_locked,
                       controller: _accountCtrl,
                       label: 'Kontonummer',
+                      keyboardType: TextInputType.number,
                       validator:
                           (v) =>
                               (v == null || v.trim().isEmpty)
                                   ? 'Påkrævet'
-                                  : null,
+                                  : _accountNumberError(),
                     ),
                     const SizedBox(height: DSSpacing.s4),
                     DSInput(
@@ -796,7 +818,7 @@ class _TypeCard extends StatelessWidget {
               label,
               style: DSTextStyle.labelLg.copyWith(
                 fontWeight: FontWeight.w600,
-                color: selected ? _c.brand.primary : _c.text.secondary,
+                color: selected ? _c.brand.primaryActive : _c.text.secondary,
               ),
             ),
             const SizedBox(height: 2),

@@ -319,7 +319,9 @@ class _MyContentScreenState extends ConsumerState<MyContentScreen> {
                 children: [
                   Text(
                     'DU UPLOADER TIL',
-                    style: DSTextStyle.labelSm.copyWith(color: c.brand.primary),
+                    style: DSTextStyle.labelSm.copyWith(
+                      color: c.brand.primaryActive,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(

@@ -14,6 +14,9 @@ import 'package:dj_tilbud_app/features/jobs/data/models/service_offer_model.dart
 import 'package:dj_tilbud_app/features/jobs/data/models/ext_job_model.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/job_feedback.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/my_payout.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/equipment_delivery.dart';
 
 class JobsRepositoryImpl implements JobsRepository {
   JobsRepositoryImpl(this._datasource);
@@ -519,6 +522,40 @@ class JobsRepositoryImpl implements JobsRepository {
   }
 
   @override
+  Future<JobFeedbackPrompt> fetchJobFeedbackPrompt(int jobId) {
+    // The datasource already fails closed.
+    return _datasource.fetchJobFeedbackPrompt(jobId);
+  }
+
+  @override
+  Future<void> submitJobFeedback(int jobId, JobFeedbackAnswer answer) {
+    return _datasource.submitJobFeedback(jobId, answer);
+  }
+
+  @override
+  Future<MyPayout?> fetchMyPayout({int? jobId, int? extJobId}) {
+    return _datasource.fetchMyPayout(jobId: jobId, extJobId: extJobId);
+  }
+
+  @override
+  Future<EquipmentDelivery?> fetchEquipmentDelivery(int jobId) {
+    return _datasource.fetchEquipmentDelivery(jobId);
+  }
+
+  @override
+  Future<Map<int, DeliveryActionSummary>> fetchMyDeliveryActions() {
+    return _datasource.fetchMyDeliveryActions();
+  }
+
+  @override
+  Future<EquipmentDelivery?> saveEquipmentDeliveryLogistics(
+    int jobId,
+    Map<String, dynamic> changes,
+  ) {
+    return _datasource.saveEquipmentDeliveryLogistics(jobId, changes);
+  }
+
+  @override
   Future<List<ServiceOffer>> fetchServiceOffersForJob(int jobId) async {
     try {
       final data = await _datasource.fetchServiceOffersForJob(jobId);
@@ -657,6 +694,14 @@ class JobsRepositoryImpl implements JobsRepository {
       throw DatabaseException(e.message);
     }
   }
+
+  @override
+  Future<String> withdrawDjQuote(int quoteId) =>
+      _datasource.withdrawDjQuote(quoteId);
+
+  @override
+  Future<String> withdrawServiceOffer(int offerId) =>
+      _datasource.withdrawServiceOffer(offerId);
 
   @override
   Future<DjQuote> editDjQuote({

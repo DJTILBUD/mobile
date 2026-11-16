@@ -7,6 +7,9 @@ import 'package:dj_tilbud_app/core/config/env_config.dart';
 import 'package:dj_tilbud_app/core/error/app_exception.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/venue_photo.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/job_feedback.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/my_payout.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/equipment_delivery.dart';
 
 class JobsRemoteDatasource {
   JobsRemoteDatasource(this._client);
@@ -21,6 +24,12 @@ class JobsRemoteDatasource {
     return url;
   }
 
+  /// Features this build understands, so the web-app can tell it from an older
+  /// build (web `api/_services/clientFeatures.ts`). `wknds-delivery`: budgets
+  /// with the delivery deduction and no gear/early-setup choice for DJs without
+  /// their own gear; without it the quote route refuses such a DJ's bid.
+  static const _clientFeatureHeaders = {'X-Client-Features': 'wknds-delivery'};
+
   String get _accessToken {
     final token = _client.auth.currentSession?.accessToken;
     if (token == null) throw Exception('Not authenticated');
@@ -34,12 +43,34 @@ class JobsRemoteDatasource {
       headers: {
         'Authorization': 'Bearer $_accessToken',
         'Content-Type': 'application/json',
+        ..._clientFeatureHeaders,
       },
       body: body != null ? jsonEncode(body) : null,
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw _errorFor(response.body);
     }
+  }
+
+  /// PUT that returns the decoded JSON body (for routes that answer with the updated resource).
+  Future<Map<String, dynamic>> _webApiPutJson(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    final uri = Uri.parse('$_webAppBaseUrl$path');
+    final response = await http.put(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+        ..._clientFeatureHeaders,
+      },
+      body: jsonEncode(body),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw _errorFor(response.body);
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> _webApiPost(
@@ -52,6 +83,7 @@ class JobsRemoteDatasource {
       headers: {
         'Authorization': 'Bearer $_accessToken',
         'Content-Type': 'application/json',
+        ..._clientFeatureHeaders,
       },
       body: jsonEncode(body),
     );
@@ -68,6 +100,7 @@ class JobsRemoteDatasource {
       headers: {
         'Authorization': 'Bearer $_accessToken',
         'Content-Type': 'application/json',
+        ..._clientFeatureHeaders,
       },
       body: body != null ? jsonEncode(body) : null,
     );
@@ -83,6 +116,7 @@ class JobsRemoteDatasource {
       headers: {
         'Authorization': 'Bearer $_accessToken',
         'Content-Type': 'application/json',
+        ..._clientFeatureHeaders,
       },
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -90,11 +124,36 @@ class JobsRemoteDatasource {
     }
   }
 
+  /// DELETE that returns the decoded JSON body (e.g. the withdraw routes answer
+  /// with a Danish `message`). An empty or non-JSON body yields an empty map.
+  Future<Map<String, dynamic>> _webApiDeleteJson(String path) async {
+    final uri = Uri.parse('$_webAppBaseUrl$path');
+    final response = await http.delete(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        'Content-Type': 'application/json',
+        ..._clientFeatureHeaders,
+      },
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw _errorFor(response.body);
+    }
+    try {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      return <String, dynamic>{};
+    }
+  }
+
   Future<Map<String, dynamic>> _webApiGet(String path) async {
     final uri = Uri.parse('$_webAppBaseUrl$path');
     final response = await http.get(
       uri,
-      headers: {'Authorization': 'Bearer $_accessToken'},
+      headers: {
+        'Authorization': 'Bearer $_accessToken',
+        ..._clientFeatureHeaders,
+      },
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw _errorFor(response.body);
@@ -321,6 +380,56 @@ class JobsRemoteDatasource {
     } catch (_) {
       return const DjBidStatus.open();
     }
+  }
+
+  /// "Hvorfor bød du ikke?": may the current DJ be asked about this job right now? The rule
+  /// (cooldown, not on a job they bid on or already answered) is server-side in web
+  /// `helpers/jobFeedback.ts`. Fails CLOSED: any error means "do not ask".
+  Future<JobFeedbackPrompt> fetchJobFeedbackPrompt(int jobId) async {
+    try {
+      final body = await _webApiGet('/api/dj/jobs/$jobId/feedback');
+      return JobFeedbackPrompt.fromJson(body);
+    } catch (_) {
+      return const JobFeedbackPrompt.closed();
+    }
+  }
+
+  /// Stores the DJ's answer via `POST /api/dj/jobs/{id}/feedback`. Throws on a non-2xx (incl. the
+  /// 409 `not_allowed` when the server says the DJ may not be asked); callers log and move on.
+  Future<void> submitJobFeedback(int jobId, JobFeedbackAnswer answer) async {
+    await _webApiPost('/api/dj/jobs/$jobId/feedback', answer.toJson());
+  }
+
+  /// The caller's own self-billing payout on one job (see [MyPayout]). Exactly one of [jobId] /
+  /// [extJobId]. Throws on transport errors; the provider renders nothing in that case.
+  Future<MyPayout?> fetchMyPayout({int? jobId, int? extJobId}) async {
+    final query = jobId != null ? 'jobId=$jobId' : 'extJobId=$extJobId';
+    final body = await _webApiGet('/api/payouts/mine?$query');
+    return MyPayout.fromResponse(body);
+  }
+
+  /// The WKNDS gear delivery on the caller's own won internal job (see [EquipmentDelivery]).
+  /// Null when the job has none. Throws on transport errors.
+  Future<EquipmentDelivery?> fetchEquipmentDelivery(int jobId) async {
+    final body = await _webApiGet('/api/deliveries/job/$jobId');
+    return EquipmentDelivery.fromResponse(body);
+  }
+
+  /// The caller's own WKNDS deliveries from today onwards with how urgent each one is
+  /// (`GET /api/deliveries/mine`), keyed by job id. Throws on transport errors.
+  Future<Map<int, DeliveryActionSummary>> fetchMyDeliveryActions() async {
+    final body = await _webApiGet('/api/deliveries/mine');
+    return DeliveryActionSummary.mapFromResponse(body);
+  }
+
+  /// Writes [changes] (any subset of the logistics keys; only sent keys are written) and returns
+  /// the updated view. Rejections carry a Danish `message` (400/404/409) in [DatabaseException].
+  Future<EquipmentDelivery?> saveEquipmentDeliveryLogistics(
+    int jobId,
+    Map<String, dynamic> changes,
+  ) async {
+    final body = await _webApiPutJson('/api/deliveries/job/$jobId', changes);
+    return EquipmentDelivery.fromResponse(body);
   }
 
   Future<Map<int, bool?>> fetchDjExtJobWantsContact(String userId) async {
@@ -978,6 +1087,23 @@ class JobsRemoteDatasource {
         .select('*, job:Jobs(*)')
         .eq('id', quoteId)
         .single();
+  }
+
+  /// Withdraws ("trækker tilbage") the DJ's own pending quote within 10 minutes
+  /// of placing it. Web `DELETE /api/quotes/[id]` owns every rule (pending only,
+  /// the 10-minute window, reopening a job the bid had sent). Returns the
+  /// route's Danish success message, or an empty string if it sent none.
+  Future<String> withdrawDjQuote(int quoteId) async {
+    final json = await _webApiDeleteJson('/api/quotes/$quoteId');
+    return json['message'] as String? ?? '';
+  }
+
+  /// Withdraws the saxophonist's own `sent` offer within 10 minutes of sending
+  /// it, via web `DELETE /api/service-offer/[offerId]`. Returns the route's
+  /// Danish success message, or an empty string if it sent none.
+  Future<String> withdrawServiceOffer(int offerId) async {
+    final json = await _webApiDeleteJson('/api/service-offer/$offerId');
+    return json['message'] as String? ?? '';
   }
 
   /// Returns true if the musician already has a WON offer whose booking time-conflicts with the

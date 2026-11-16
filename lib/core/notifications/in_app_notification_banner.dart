@@ -150,7 +150,7 @@ class _InAppNotificationBannerState
                           child: Icon(
                             _iconForType(type),
                             size: 20,
-                            color: _iconFg(c, type),
+                            color: c.fg(_iconFg(c, type)),
                           ),
                         ),
                         const SizedBox(width: DSSpacing.s3),
@@ -216,7 +216,7 @@ class _InAppNotificationBannerState
     'quote_lost' || 'offer_lost' => LucideIcons.xCircle,
     'chat_message' => LucideIcons.messageCircle,
     'ext_job_assigned' => LucideIcons.star,
-    'ready_reminder' => LucideIcons.alarmClock,
+    'ready_reminder' || 'delivery_info_reminder' => LucideIcons.alarmClock,
     _ => LucideIcons.bell,
   };
 
@@ -227,7 +227,8 @@ class _InAppNotificationBannerState
     'new_job' ||
     'another_round' ||
     'ext_job_assigned' => c.brand.primary.withValues(alpha: 0.35),
-    'ready_reminder' => c.state.warning.withValues(alpha: 0.20),
+    'ready_reminder' ||
+    'delivery_info_reminder' => c.state.warning.withValues(alpha: 0.20),
     _ => c.bg.inputBg,
   };
 
@@ -236,7 +237,7 @@ class _InAppNotificationBannerState
     'quote_lost' || 'offer_lost' => c.state.danger,
     'chat_message' => c.brand.accent,
     'new_job' || 'another_round' || 'ext_job_assigned' => c.brand.primaryActive,
-    'ready_reminder' => c.state.warning,
+    'ready_reminder' || 'delivery_info_reminder' => c.state.warning,
     _ => c.text.secondary,
   };
 
@@ -249,7 +250,7 @@ class _InAppNotificationBannerState
     'offer_lost' => 'Tilbud ikke valgt',
     'chat_message' => 'Ny besked',
     'ext_job_assigned' => 'Ny opgave tildelt',
-    'ready_reminder' => 'Påmindelse',
+    'ready_reminder' || 'delivery_info_reminder' => 'Påmindelse',
     _ => 'Notifikation',
   };
 }

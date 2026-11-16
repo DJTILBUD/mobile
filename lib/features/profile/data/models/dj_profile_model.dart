@@ -14,6 +14,7 @@ class DjProfileModel {
     required this.allowPublicDjProfile,
     this.isSuppressed = false,
     this.tier,
+    this.equipmentStatus,
     this.soundcloudUrl,
     this.venuesAndEvents,
     this.excludedEventTypes = const [],
@@ -33,6 +34,7 @@ class DjProfileModel {
   final bool allowPublicDjProfile;
   final bool isSuppressed;
   final String? tier;
+  final String? equipmentStatus;
   final String? soundcloudUrl;
   final List<String>? venuesAndEvents;
   final List<String> excludedEventTypes;
@@ -53,6 +55,7 @@ class DjProfileModel {
       allowPublicDjProfile: json['allow_public_dj_profile'] as bool? ?? true,
       isSuppressed: json['is_suppressed'] as bool? ?? false,
       tier: json['tier'] as String?,
+      equipmentStatus: json['equipment_status'] as String?,
       soundcloudUrl: json['soundcloud_url'] as String?,
       venuesAndEvents:
           (json['venues_and_events'] as List<dynamic>?)?.cast<String>(),
@@ -98,6 +101,7 @@ class DjProfileModel {
       allowPublicDjProfile: allowPublicDjProfile,
       isSuppressed: isSuppressed,
       tier: tier,
+      equipmentStatus: equipmentStatus,
       soundcloudUrl: soundcloudUrl,
       venuesAndEvents: venuesAndEvents,
       excludedEventTypes: excludedEventTypes,

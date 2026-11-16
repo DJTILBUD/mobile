@@ -2,7 +2,13 @@ import 'package:dj_tilbud_app/features/calendar/domain/entities/calendar_event.d
 
 abstract class CalendarRepository {
   /// [djTier] is needed because the DJ-facing budget label is tier-adjusted.
-  Future<List<CalendarEvent>> fetchDjEvents(String userId, {String? djTier});
+  /// [equipmentStatus] too: a non-equipped DJ's budget has the WKNDS delivery
+  /// deducted.
+  Future<List<CalendarEvent>> fetchDjEvents(
+    String userId, {
+    String? djTier,
+    String? equipmentStatus,
+  });
   Future<List<CalendarEvent>> fetchMusicianEvents(String userId);
 
   Future<Map<String, int>> fetchDjUnavailableDates(String userId);

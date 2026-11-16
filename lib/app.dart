@@ -532,7 +532,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           if (quote is! DjQuote) {
             return const _MissingRouteDataScreen(label: 'tilbudsdetaljer');
           }
-          return QuoteDetailScreen(quote: quote);
+          return QuoteDetailScreen(
+            quote: quote,
+            initialTab: state.uri.queryParameters['tab'],
+          );
         },
       ),
       GoRoute(

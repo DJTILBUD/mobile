@@ -532,14 +532,14 @@ class _ExtJobActionChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: color),
+        Icon(icon, size: 13, color: c.fg(color)),
         const SizedBox(width: 5),
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: color,
+            color: c.fg(color),
           ),
         ),
       ],

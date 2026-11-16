@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 
-enum DSButtonVariant { primary, secondary, tertiary, ghost }
+enum DSButtonVariant {
+  primary,
+  secondary,
+  tertiary,
+  ghost,
+
+  /// Red tint for destructive actions (withdraw, delete), never brand lime.
+  danger,
+}
 
 enum DSButtonSize { sm, md, lg }
 
@@ -69,6 +77,7 @@ class DSButton extends StatelessWidget {
               ),
               DSButtonVariant.tertiary => Colors.transparent,
               DSButtonVariant.ghost => Colors.transparent,
+              DSButtonVariant.danger => c.state.danger.withValues(alpha: 0.1),
             };
 
     final fg =
@@ -81,6 +90,7 @@ class DSButton extends StatelessWidget {
               DSButtonVariant.secondary => c.brand.primaryActive,
               DSButtonVariant.tertiary => c.text.primary,
               DSButtonVariant.ghost => c.text.secondary,
+              DSButtonVariant.danger => c.state.danger,
             };
 
     final borderColor =

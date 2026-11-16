@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/core/utils/customer_name.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/bid_withdrawal.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/withdraw_bid.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/equipment_delivery.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 
 class QuoteCard extends StatelessWidget {
   const QuoteCard({
@@ -35,7 +40,7 @@ class QuoteCard extends StatelessWidget {
 
     // Date block: muted grey for played jobs, accent colour otherwise
     final dateBlockBg = isPlayed ? c.bg.inputBg : accentColor;
-    final dateBlockFg = isPlayed ? c.text.muted : c.brand.onPrimary;
+    final dateBlockFg = isPlayed ? c.text.muted : dsContentOn(accentColor);
 
     return GestureDetector(
       onTap: onTap,
@@ -120,8 +125,8 @@ class QuoteCard extends StatelessWidget {
                       ),
 
                       // Bottom row: countdown (pending+sent) / action chip (won) / status badge
-                      Builder(
-                        builder: (_) {
+                      Consumer(
+                        builder: (context, ref, _) {
                           final deadline = _deadline(quote);
                           final showCountdown =
                               quote.status == QuoteStatus.pending &&
@@ -142,6 +147,44 @@ class QuoteCard extends StatelessWidget {
                             child = _AwaitingSendRow(c: c);
                           } else {
                             child = _StatusRow(quote: quote, c: c);
+                          }
+                          // WKNDS delivery info still missing: its own line UNDER the job's
+                          // action, never instead of it (the DJ needs the customer call first).
+                          DeliveryActionSummary? delivery;
+                          if (quote.status == QuoteStatus.won &&
+                              quote.isDeliveryQuote) {
+                            final deliveries =
+                                ref
+                                    .watch(myDeliveryActionsProvider)
+                                    .valueOrNull;
+                            delivery = deliveries?[quote.jobId];
+                          }
+                          if (delivery?.level != null) {
+                            child = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                child,
+                                const SizedBox(height: DSSpacing.s2),
+                                _DeliveryActionChip(
+                                  level: delivery!.level!,
+                                  c: c,
+                                ),
+                              ],
+                            );
+                          }
+                          // Inside the 10 min edit/withdraw window: say so on the card.
+                          if (quote.status == QuoteStatus.pending &&
+                              isWithinBidWithdrawWindow(quote.createdAt)) {
+                            child = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                BidWindowChip(
+                                  createdAt: quote.createdAt,
+                                  label: 'Redigeringsvindue aktivt',
+                                ),
+                                child,
+                              ],
+                            );
                           }
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(
@@ -409,7 +452,7 @@ class _CountdownRow extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: color),
+        Icon(icon, size: 14, color: c.fg(color)),
         const SizedBox(width: 5),
         Text(
           _label(),
@@ -472,6 +515,38 @@ class _StatusRow extends StatelessWidget {
   }
 }
 
+// ─── Delivery action (WKNDS info still missing) ───────────────────────────────
+
+/// "Giv leveringsdetaljer": red from 3 days before a deadline (and after it), amber before that.
+/// The level comes from the web-app (`GET /api/deliveries/mine`), never computed here.
+class _DeliveryActionChip extends StatelessWidget {
+  const _DeliveryActionChip({required this.level, required this.c});
+
+  final DeliveryActionLevel level;
+  final DSColors c;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        level == DeliveryActionLevel.urgent ? c.state.danger : c.state.warning;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(LucideIcons.truck, size: 13, color: c.fg(color)),
+        const SizedBox(width: 5),
+        Text(
+          'Giv leveringsdetaljer',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: c.fg(color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ─── Action Chip (won quotes with pending action) ─────────────────────────────
 
 class _ActionChip extends StatelessWidget {
@@ -514,14 +589,14 @@ class _ActionChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: color),
+        Icon(icon, size: 13, color: c.fg(color)),
         const SizedBox(width: 5),
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: color,
+            color: c.fg(color),
           ),
         ),
       ],

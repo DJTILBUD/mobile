@@ -67,7 +67,7 @@ class _SaxTypeDescriptionState extends State<SaxTypeDescription> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 14, color: color),
+            Icon(icon, size: 14, color: c.fg(color)),
             const SizedBox(width: DSSpacing.s2),
             Expanded(
               child:
@@ -81,7 +81,7 @@ class _SaxTypeDescriptionState extends State<SaxTypeDescription> {
                       : Text(
                         'Tryk for at læse mere',
                         style: DSTextStyle.bodySm.copyWith(
-                          color: color,
+                          color: c.fg(color),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -89,7 +89,7 @@ class _SaxTypeDescriptionState extends State<SaxTypeDescription> {
             Icon(
               _expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
               size: 14,
-              color: color,
+              color: c.fg(color),
             ),
           ],
         ),

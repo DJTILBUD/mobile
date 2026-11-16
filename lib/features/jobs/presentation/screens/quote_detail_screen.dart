@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -37,11 +38,19 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/event_address_s
 import 'package:dj_tilbud_app/core/utils/birthday_person_age.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/decline_extra_hours.dart';
 import 'package:dj_tilbud_app/core/utils/planned_contact.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/payout_status_card.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/equipment_delivery_section.dart';
+import 'package:dj_tilbud_app/core/router/app_routes.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/bid_withdrawal.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/withdraw_bid.dart';
 
 class QuoteDetailScreen extends ConsumerStatefulWidget {
-  const QuoteDetailScreen({super.key, required this.quote});
+  const QuoteDetailScreen({super.key, required this.quote, this.initialTab});
 
   final DjQuote quote;
+
+  /// `'levering'` opens a won delivery job straight on its Levering tab (the delivery push).
+  final String? initialTab;
 
   @override
   ConsumerState<QuoteDetailScreen> createState() => _QuoteDetailScreenState();
@@ -50,6 +59,11 @@ class QuoteDetailScreen extends ConsumerStatefulWidget {
 class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
   DSColors get _c => DSTheme.of(context);
   late DjQuote _quote;
+
+  /// Double-tap guard for "Træk bud tilbage": set before the confirm dialog
+  /// opens, so a second tap can neither open a second dialog nor fire a
+  /// second DELETE while the first is in flight.
+  bool _withdrawing = false;
 
   @override
   void initState() {
@@ -81,6 +95,31 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     if (updated != null) setState(() => _quote = updated);
   }
 
+  Future<void> _withdrawQuote() async {
+    if (_withdrawing) return;
+    setState(() => _withdrawing = true);
+    try {
+      final withdrawn = await confirmAndWithdrawBid(
+        context,
+        title: 'Træk buddet tilbage?',
+        message:
+            'Buddet bliver slettet, og kunden kan ikke længere se det. Du kan afgive et nyt bud på jobbet bagefter, hvis du ændrer mening.',
+        fallbackSuccess: 'Dit bud er trukket tilbage.',
+        homeRoute: AppRoutes.djHome,
+        withdraw:
+            () =>
+                ref.read(withdrawDjQuoteProvider.notifier).withdraw(_quote.id),
+      );
+      // A rejection (window expired, no longer pending) means our copy is
+      // stale: re-read so the screen shows the real state.
+      if (!withdrawn && mounted) {
+        ref.read(djQuotesProvider.notifier).refetchKeepingData();
+      }
+    } finally {
+      if (mounted) setState(() => _withdrawing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
@@ -96,48 +135,97 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
     // Never derive a different number — the DJ must see what the web app shows.
     final payout = _quote.djPayout;
 
-    return Scaffold(
-      backgroundColor: _c.bg.canvas,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                eventTypeLabel(_quote.job.eventType),
-                overflow: TextOverflow.ellipsis,
+    // A won WKNDS delivery job gets two tabs, "Job" and "Levering", like the "Job"/"Stedet" tabs
+    // on a recurring ext job. The red dot shows while the delivery partner still needs info.
+    final deliveryTabs =
+        _quote.status == QuoteStatus.won && _quote.isDeliveryQuote;
+    final deliveryNeedsInfo =
+        deliveryTabs &&
+        (ref
+                .watch(myDeliveryActionsProvider)
+                .valueOrNull?[_quote.jobId]
+                ?.needsInfo ??
+            false);
+
+    return DefaultTabController(
+      length: 2,
+      initialIndex: deliveryTabs && widget.initialTab == 'levering' ? 1 : 0,
+      child: Scaffold(
+        backgroundColor: _c.bg.canvas,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  eventTypeLabel(_quote.job.eventType),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            JobIdBadge(id: _quote.job.id),
-          ],
+              const SizedBox(width: 8),
+              JobIdBadge(id: _quote.job.id),
+            ],
+          ),
+          backgroundColor: _c.bg.surface,
+          surfaceTintColor: _c.bg.surface,
+          bottom:
+              deliveryTabs
+                  ? DSTabBar(
+                    tabs: [
+                      const DSTabItem(
+                        label: 'Job',
+                        icon: LucideIcons.clipboardList,
+                      ),
+                      DSTabItem(
+                        label: 'Levering',
+                        icon: LucideIcons.truck,
+                        badgeCount: deliveryNeedsInfo ? 1 : 0,
+                      ),
+                    ],
+                  )
+                  : null,
         ),
-        backgroundColor: _c.bg.surface,
-        surfaceTintColor: _c.bg.surface,
-      ),
-      body:
-          _quote.status == QuoteStatus.won
-              ? Stack(
-                children: [
-                  _wonBody(payout),
-                  // Floating "Beskeder" bubble (mirrors the web app + the
-                  // musician won-offer view). Self-hides when no conversation
-                  // exists yet for this job.
-                  Positioned.fill(
-                    child: SafeArea(
-                      child: Align(
-                        alignment: Alignment.bottomRight,
-                        child: Padding(
-                          padding: const EdgeInsets.all(DSSpacing.s4),
-                          child: ChatBubbleFab(jobId: _quote.jobId),
+        body:
+            _quote.status == QuoteStatus.won
+                ? Stack(
+                  children: [
+                    deliveryTabs
+                        ? TabBarView(
+                          children: [
+                            _KeepAlivePage(child: _wonBody(payout)),
+                            _KeepAlivePage(child: _deliveryTab()),
+                          ],
+                        )
+                        : _wonBody(payout),
+                    // Floating "Beskeder" bubble (mirrors the web app + the
+                    // musician won-offer view). Self-hides when no conversation
+                    // exists yet for this job.
+                    Positioned.fill(
+                      child: SafeArea(
+                        child: Align(
+                          alignment: Alignment.bottomRight,
+                          child: Padding(
+                            padding: const EdgeInsets.all(DSSpacing.s4),
+                            child: ChatBubbleFab(jobId: _quote.jobId),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              )
-              : _pendingBody(payout),
+                  ],
+                )
+                : _pendingBody(payout),
+      ),
     );
   }
+
+  // ── Levering tab (won WKNDS delivery job) ──────────────────────────
+  Widget _deliveryTab() => ListView(
+    padding: const EdgeInsets.all(DSSpacing.s4),
+    children: [
+      EquipmentDeliverySection(jobId: _quote.jobId),
+      // Extra clearance so the floating chat bubble never covers the form's Gem button.
+      const SizedBox(height: 96),
+    ],
+  );
 
   Widget _sharedBidSections(int payout) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,7 +270,14 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
       _JobHeroCard(quote: _quote),
       const SizedBox(height: DSSpacing.s3),
       if (_quote.status == QuoteStatus.pending) ...[
-        _EditWindowBanner(quote: _quote, onEdit: _openEdit),
+        _EditWindowBanner(
+          quote: _quote,
+          onEdit: _openEdit,
+          onWithdraw: _withdrawQuote,
+          withdrawing:
+              _withdrawing ||
+              ref.watch(withdrawDjQuoteProvider) is AsyncLoading,
+        ),
         const SizedBox(height: DSSpacing.s2),
         _CustomerDeadlineBanner(quote: _quote),
         const SizedBox(height: DSSpacing.s4),
@@ -201,8 +296,13 @@ class _QuoteDetailScreenState extends ConsumerState<QuoteDetailScreen> {
       _WonSection(quote: _quote),
       EventAddressSection(jobId: _quote.jobId),
       const SizedBox(height: DSSpacing.s4),
+      // WKNDS gear delivery lives on its own "Levering" tab (see build), not inline here.
       _SongRequestsRow(quote: _quote),
       const SizedBox(height: DSSpacing.s4),
+      PayoutStatusCard(
+        jobId: _quote.jobId,
+        onOpenPaymentInfo: () => context.pushNamed(AppRoutes.payment),
+      ),
       _ExtraHoursSection(quote: _quote),
       const SizedBox(height: DSSpacing.s4),
       if (_quote.earlySetupStatus != null) ...[
@@ -270,8 +370,12 @@ class _JobHeroCard extends ConsumerWidget {
     // card's equivalent (dj/jobs/[id]/_components/JobInfo) on the won-quote page
     // too, so the won view must show the SAME adjusted figure as the bidding
     // view — never the raw customer budget.
-    final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
-    final budgetLabel = djAdjustedBudgetLabel(job, djTier);
+    final djProfile = ref.watch(djProfileProvider).valueOrNull;
+    final budgetLabel = djAdjustedBudgetLabel(
+      job,
+      djProfile?.tier,
+      equipmentStatus: djProfile?.equipmentStatus,
+    );
 
     final hasExtra =
         (job.genres != null && job.genres!.isNotEmpty) ||
@@ -573,8 +677,10 @@ class _BidSummaryCard extends StatelessWidget {
               horizontal: DSSpacing.s4,
               vertical: DSSpacing.s3,
             ),
+            // Always dark: text.primary flips to white in dark mode, which
+            // put lime text on white.
             decoration: BoxDecoration(
-              color: _c.text.primary,
+              color: _c.brand.onPrimary,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(DSRadius.lg - 1),
               ),
@@ -630,9 +736,18 @@ class _BidSummaryCard extends StatelessWidget {
                   // Order: customer total first, then what it's made of, then the
                   // commission, then the DJ payout as the single emphasised focal
                   // point. Customer total is normal weight, NOT bold.
-                  label('Samlet pris til kunde'),
+                  // A delivery bid: the customer also pays the WKNDS delivery, which the
+                  // DJ never sees, so the breakdown starts from the DJ's own bid.
+                  label(
+                    quote.isDeliveryQuote ? 'Dit bud' : 'Samlet pris til kunde',
+                  ),
                   const SizedBox(height: DSSpacing.s2),
-                  row('Total pris til kunde', quote.priceDkk),
+                  row(
+                    quote.isDeliveryQuote
+                        ? 'Dit bud i alt'
+                        : 'Total pris til kunde',
+                    quote.priceDkk,
+                  ),
                   row(
                     'Basispris',
                     quote.originalOffer,
@@ -755,7 +870,7 @@ class _CustomerDeadlineBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(icon, size: 14, color: _c.fg(color)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -775,10 +890,20 @@ class _CustomerDeadlineBanner extends StatelessWidget {
 // ─── Edit window banner ───────────────────────────────────────────────────────
 
 class _EditWindowBanner extends StatefulWidget {
-  const _EditWindowBanner({required this.quote, required this.onEdit});
+  const _EditWindowBanner({
+    required this.quote,
+    required this.onEdit,
+    required this.onWithdraw,
+    required this.withdrawing,
+  });
 
   final DjQuote quote;
   final VoidCallback onEdit;
+
+  /// "Træk bud tilbage" shares this banner's 10-minute countdown: the edit
+  /// window and the withdraw window are the same (web `bidWithdrawal.ts`).
+  final VoidCallback onWithdraw;
+  final bool withdrawing;
 
   @override
   State<_EditWindowBanner> createState() => _EditWindowBannerState();
@@ -836,7 +961,28 @@ class _EditWindowBannerState extends State<_EditWindowBanner> {
 
     final isUrgent = _secondsLeft < 120;
     final bannerColor = isUrgent ? _c.state.warning : _c.state.info;
+    final canWithdraw = isWithinBidWithdrawWindow(widget.quote.createdAt);
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _editRow(isUrgent, bannerColor, mLeft),
+        if (canWithdraw) ...[
+          const SizedBox(height: DSSpacing.s2),
+          DSButton(
+            label: 'Træk bud tilbage',
+            variant: DSButtonVariant.danger,
+            size: DSButtonSize.sm,
+            iconLeft: LucideIcons.undo2,
+            isLoading: widget.withdrawing,
+            onTap: widget.withdrawing ? null : widget.onWithdraw,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _editRow(bool isUrgent, Color bannerColor, int mLeft) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -850,7 +996,7 @@ class _EditWindowBannerState extends State<_EditWindowBanner> {
       ),
       child: Row(
         children: [
-          Icon(LucideIcons.timer, size: 16, color: bannerColor),
+          Icon(LucideIcons.timer, size: 16, color: _c.fg(bannerColor)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -919,7 +1065,37 @@ class _WonSectionState extends ConsumerState<_WonSection> {
     return eventMidnight.difference(todayMidnight).inDays <= 5;
   }
 
+  /// "Senest tirsdag 3. november" / "Fristen er passeret" for the delivery step.
+  String? _deliveryDueText(DateTime? due) {
+    if (due == null) return null;
+    final now = DateTime.now();
+    if (due.isBefore(DateTime(now.year, now.month, now.day))) {
+      return 'Fristen er passeret';
+    }
+    return 'Senest ${DateFormat('EEEE d. MMMM', 'da_DK').format(due)}';
+  }
+
+  /// Right after "kunden er kontaktet" on a delivery job with details still missing: offer to fill
+  /// them in now (they were probably just on the phone), or leave it as the step after the invoice.
+  Future<void> _askForDeliveryDetails() async {
+    if (!widget.quote.isDeliveryQuote) return;
+    final delivery =
+        ref.read(equipmentDeliveryProvider(widget.quote.jobId)).valueOrNull;
+    if (delivery == null || delivery.isInfoComplete) return;
+    final fillNow = await showDSConfirm(
+      context,
+      title: 'Fik du leveringsdetaljerne?',
+      message:
+          'Udfyld dem nu, mens du har dem frisk. Ellers er det dit næste skridt efter fakturaen.',
+      confirmLabel: 'Udfyld nu',
+      cancelLabel: 'Senere',
+    );
+    if (fillNow && mounted) DefaultTabController.of(context).animateTo(1);
+  }
+
   Future<void> _openContactSheet(int jobId, DateTime? plannedDate) async {
+    // Only an actual "kontaktet" (not a planned call) prompts for the delivery details.
+    var contactedNow = false;
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -941,6 +1117,7 @@ class _WonSectionState extends ConsumerState<_WonSection> {
                 final success = await ref
                     .read(markJobContactedProvider.notifier)
                     .markContacted(jobId);
+                contactedNow = success;
                 if (mounted && success) {
                   AnalyticsService.logCustomerContacted(jobId, role: 'dj');
                   DSToast.show(
@@ -986,6 +1163,7 @@ class _WonSectionState extends ConsumerState<_WonSection> {
     );
     if (result == true && mounted) {
       setState(() => _contactedOptimistically = true);
+      if (contactedNow) await _askForDeliveryDetails();
     }
   }
 
@@ -1088,8 +1266,13 @@ class _WonSectionState extends ConsumerState<_WonSection> {
   }
 
   Future<void> _handleReadyForBilling(int jobId, DjQuote quote) async {
-    // If early setup was offered, ask about it first.
-    if (quote.earlySetupStatus == 'offered' && mounted) {
+    // If early setup was offered, ask about it first. Not for a delivery quote
+    // (non-equipped DJ): WKNDS always sets up early, so it is included and free
+    // and is recorded as accepted after the normal confirm (mirrors web
+    // ReadyForBillingModal).
+    if (quote.earlySetupStatus == 'offered' &&
+        !quote.isDeliveryQuote &&
+        mounted) {
       final result = await showDSDialog<bool?>(
         context,
         title: 'Valgte kunden tidlig opsætning?',
@@ -1125,6 +1308,12 @@ class _WonSectionState extends ConsumerState<_WonSection> {
         destructive: true,
       );
       if (!confirmed || !mounted) return;
+      if (quote.isDeliveryQuote && quote.earlySetupStatus == 'offered') {
+        await ref
+            .read(resolveEarlySetupProvider.notifier)
+            .resolve(quote.id, accepted: true);
+        if (!mounted) return;
+      }
     }
 
     final success = await ref
@@ -1253,37 +1442,29 @@ class _WonSectionState extends ConsumerState<_WonSection> {
           completedSteps = _isEventDayReached(job.date) ? 4 : 3;
         }
 
+        // A WKNDS delivery job has one more step: collecting the delivery details from the
+        // customer. It is done when nothing required is missing (or the delivery was cancelled),
+        // independent of the invoice/ready steps, so it can finish in any order.
+        final isDelivery = widget.quote.isDeliveryQuote;
+        final delivery =
+            isDelivery
+                ? ref
+                    .watch(equipmentDeliveryProvider(widget.quote.jobId))
+                    .valueOrNull
+                : null;
+        final deliveryDone = delivery?.isInfoComplete ?? false;
+
         return Column(
           children: [
             // ── Contact info ───────────────────────────────────────
             _Section(
               title: 'Kundekontakt',
               children: [
-                if (job.customerNote != null &&
-                    job.customerNote!.isNotEmpty) ...[
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: _c.state.info.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(DSRadius.sm),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(LucideIcons.info, size: 16, color: _c.state.info),
-                        const SizedBox(width: DSSpacing.s2),
-                        Expanded(
-                          child: Text(
-                            job.customerNote!,
-                            style: DSTextStyle.labelMd.copyWith(
-                              color: _c.text.secondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: DSSpacing.s3),
-                ],
+                // The customer's OWN words about how to be contacted ("Send gerne en SMS
+                // først..."). Labelled and quoted so it never reads as an instruction from us.
+                // Mirrors web dj/quotes/[id]/_components/LeadInfo.tsx.
+                _CustomerContactNote(note: job.customerNote),
+                const SizedBox(height: DSSpacing.s3),
                 if (job.leadName != null)
                   _ContactRow(icon: LucideIcons.user, label: job.leadName!),
                 if (job.leadEmail != null) ...[
@@ -1446,16 +1627,67 @@ class _WonSectionState extends ConsumerState<_WonSection> {
             _Section(
               title: 'Din proces',
               children: [
-                ProcessTracker(
-                  steps: const [
-                    'Kontakt kunden',
-                    'Send faktura',
-                    'Bekræft klar',
-                    'Spil jobbet',
-                    'Optag content',
+                if (isDelivery) ...[
+                  // Delivery details sit AFTER "Send faktura", but the step ticks itself off as
+                  // soon as the details are in, so a DJ who got them on the first call never
+                  // sees it as a separate task. Step 1 carries the tip to ask straight away.
+                  ProcessTracker(
+                    steps: const [
+                      'Kontakt kunden',
+                      'Send faktura',
+                      'Indhent leveringsdetaljer',
+                      'Bekræft klar',
+                      'Spil jobbet',
+                      'Optag content',
+                    ],
+                    completed: [
+                      completedSteps >= 1,
+                      completedSteps >= 2,
+                      deliveryDone,
+                      completedSteps >= 3,
+                      completedSteps >= 4,
+                      false,
+                    ],
+                    subtitles: [
+                      !isContacted && !deliveryDone
+                          ? 'Spørg også om leveringsdetaljerne, så er de klaret'
+                          : null,
+                      null,
+                      deliveryDone
+                          ? (isContacted && !isReadyForBilling
+                              ? 'Klaret i første opkald'
+                              : null)
+                          : _deliveryDueText(delivery?.dueDate),
+                      null,
+                      null,
+                      null,
+                    ],
+                  ),
+                  if (isContacted && !deliveryDone) ...[
+                    const SizedBox(height: DSSpacing.s3),
+                    DSButton(
+                      label: 'Udfyld leveringsdetaljer',
+                      variant:
+                          isReadyForBilling
+                              ? DSButtonVariant.primary
+                              : DSButtonVariant.secondary,
+                      iconLeft: LucideIcons.truck,
+                      expand: true,
+                      onTap:
+                          () => DefaultTabController.of(context).animateTo(1),
+                    ),
                   ],
-                  completedSteps: completedSteps,
-                ),
+                ] else
+                  ProcessTracker(
+                    steps: const [
+                      'Kontakt kunden',
+                      'Send faktura',
+                      'Bekræft klar',
+                      'Spil jobbet',
+                      'Optag content',
+                    ],
+                    completedSteps: completedSteps,
+                  ),
               ],
             ),
 
@@ -1590,7 +1822,7 @@ class _EarlySetupRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 15, color: color),
+          Icon(icon, size: 15, color: _c.fg(color)),
           const SizedBox(width: DSSpacing.s2),
           Expanded(
             child: Text(
@@ -2182,7 +2414,7 @@ class _MusicianOfferRow extends ConsumerWidget {
               child: Text(
                 statusLabel,
                 style: DSTextStyle.labelSm.copyWith(
-                  color: statusColor,
+                  color: _c.fg(statusColor),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -2513,7 +2745,7 @@ class _PlannedContactBanner extends StatelessWidget {
             Icon(
               Icons.calendar_today_outlined,
               size: 14,
-              color: _c.state.warning,
+              color: _c.state.warningText,
             ),
             const SizedBox(width: DSSpacing.s2),
             Text(
@@ -2588,6 +2820,90 @@ class _SongRequestsRow extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Keeps a tab's page alive while the other tab is shown, so unsaved delivery info and the
+/// scroll position survive switching between "Job" and "Levering".
+class _KeepAlivePage extends StatefulWidget {
+  const _KeepAlivePage({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeepAlivePage> createState() => _KeepAlivePageState();
+}
+
+class _KeepAlivePageState extends State<_KeepAlivePage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+
+/// "Besked fra kunden": the customer's contact wish from the booking form, quoted. The B2B billing
+/// block that can follow it in `customer_note` is cut off, like on web.
+class _CustomerContactNote extends StatelessWidget {
+  const _CustomerContactNote({required this.note});
+  final String? note;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DSTheme.of(context);
+    final text = (note ?? '').split('\n\nB2B-oplysninger:').first.trim();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(DSSpacing.s3),
+      decoration: BoxDecoration(
+        color: c.bg.canvas,
+        borderRadius: BorderRadius.circular(DSRadius.sm),
+        border: Border(left: BorderSide(color: c.brand.primary, width: 3)),
+      ),
+      child:
+          text.isEmpty
+              ? Text(
+                'Kunden har ikke skrevet noget om, hvornår du må kontakte dem',
+                style: DSTextStyle.labelMd.copyWith(
+                  color: c.text.muted,
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        LucideIcons.messageSquare,
+                        size: 14,
+                        color: c.text.secondary,
+                      ),
+                      const SizedBox(width: DSSpacing.s1),
+                      Text(
+                        'Besked fra kunden',
+                        style: DSTextStyle.labelMd.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: c.text.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: DSSpacing.s1),
+                  Text(
+                    '"$text"',
+                    style: DSTextStyle.bodyMd.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: c.text.secondary,
+                    ),
+                  ),
+                ],
+              ),
     );
   }
 }

@@ -351,17 +351,20 @@ class _DevEnvBannerState extends State<DevEnvBanner> {
   }
 
   Future<String> _fetchTokenHash(String email) async {
-    final apiKey = EnvConfig.adminApiKey;
-    if (apiKey.isEmpty) {
-      throw const AuthException(
-        'ADMIN_API_KEY mangler i .env — sæt den for at impersonate.',
-      );
+    // The web-app checks that THIS session belongs to an admin. It used to send the shared
+    // ADMIN_API_KEY, which meant the key was packaged inside every app build.
+    final token = supabase.auth.currentSession?.accessToken;
+    if (token == null) {
+      throw const AuthException('Log ind som admin først for at impersonate.');
     }
     final http.Response res;
     try {
       res = await http.post(
         Uri.parse('$_webAppBaseUrl/api/admin/magic/token'),
-        headers: {'Content-Type': 'application/json', 'x-api-key': apiKey},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
         body: jsonEncode({'email': email}),
       );
     } catch (e) {

@@ -558,7 +558,7 @@ class _AdminSupportThreadScreenState
                                 style: DSTextStyle.bodySm.copyWith(
                                   color:
                                       needsHandling
-                                          ? _c.state.warning
+                                          ? _c.state.warningText
                                           : _c.text.muted,
                                   fontWeight:
                                       needsHandling
@@ -1156,7 +1156,7 @@ class _AdminMentionPicker extends StatelessWidget {
                     Text(
                       '⚠ Ikke synlig for $recipientName',
                       style: DSTextStyle.labelSm.copyWith(
-                        color: _c.state.warning,
+                        color: _c.state.warningText,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

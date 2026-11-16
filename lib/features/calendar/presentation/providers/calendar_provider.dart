@@ -15,7 +15,12 @@ final calendarRepositoryProvider = Provider<CalendarRepository>((ref) {
 
 class CalendarEventsNotifier
     extends StateNotifier<AsyncValue<List<CalendarEvent>>> {
-  CalendarEventsNotifier(this._repository, this._role, this._djTier)
+  CalendarEventsNotifier(
+    this._repository,
+    this._role,
+    this._djTier, [
+    this._equipmentStatus,
+  ])
     : super(const AsyncLoading()) {
     _load();
   }
@@ -23,13 +28,18 @@ class CalendarEventsNotifier
   final CalendarRepository _repository;
   final MusicianRole _role;
   final String? _djTier;
+  final String? _equipmentStatus;
 
   Future<void> _load() async {
     final userId = supabase.auth.currentUser!.id;
     try {
       final events =
           _role == MusicianRole.dj
-              ? await _repository.fetchDjEvents(userId, djTier: _djTier)
+              ? await _repository.fetchDjEvents(
+                userId,
+                djTier: _djTier,
+                equipmentStatus: _equipmentStatus,
+              )
               : await _repository.fetchMusicianEvents(userId);
       state = AsyncData(events);
     } catch (e, st) {
@@ -51,14 +61,13 @@ final calendarEventsProvider = StateNotifierProvider.family<
   // The DJ budget label is tier-adjusted, so the tier has to reach the model
   // that builds it. Watching the profile means the events rebuild once the tier
   // resolves, rather than being stuck on a null-tier (A-tier-looking) figure.
-  final djTier =
-      role == MusicianRole.dj
-          ? ref.watch(djProfileProvider).valueOrNull?.tier
-          : null;
+  final djProfile =
+      role == MusicianRole.dj ? ref.watch(djProfileProvider).valueOrNull : null;
   return CalendarEventsNotifier(
     ref.watch(calendarRepositoryProvider),
     role,
-    djTier,
+    djProfile?.tier,
+    djProfile?.equipmentStatus,
   );
 });
 

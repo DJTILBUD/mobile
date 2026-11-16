@@ -188,6 +188,7 @@ class NotificationsService {
       case 'extra_hours_reminder':
       case 'contact_customer_reminder':
       case 'send_invoice_reminder':
+      case 'delivery_info_reminder':
       case 'content_record_reminder':
       case 'content_upload_reminder':
       case 'content_accepted':
@@ -210,6 +211,9 @@ class NotificationsService {
         return data['conversation_id'] as String?;
       case 'admin_message':
         return data['message_id'] as String?;
+      case 'referral_closed':
+      case 'referral_canceled':
+        return data['referral_id'] as String?;
       default:
         return null;
     }
@@ -601,6 +605,23 @@ class NotificationsService {
           );
           break;
 
+        // Referral closed / canceled (notify-referral-status, DJ or saxophonist) → the profile tab
+        // with "Henvis en kunde" on top, where "Mine henvisninger" shows the new status.
+        case 'referral_closed':
+        case 'referral_canceled':
+          final isMusicianReferrer = role == 'musician';
+          goTab(
+            isMusicianReferrer ? '/instrumentalist/profile' : '/dj/profile',
+          );
+          router.pushNamed(
+            AppRoutes.referrals,
+            extra:
+                isMusicianReferrer
+                    ? MusicianRole.instrumentalist
+                    : MusicianRole.dj,
+          );
+          break;
+
         // Content accepted/rejected (DJ-only) → open the content library.
         case 'content_accepted':
         case 'content_rejected':
@@ -620,6 +641,9 @@ class NotificationsService {
         case 'extra_hours_reminder':
         case 'contact_customer_reminder':
         case 'send_invoice_reminder':
+        // WKNDS gear-delivery info reminder (notify-delivery-reminder, DJ + internal job only):
+        // opens the won quote, where the "Levering af udstyr" form lives.
+        case 'delivery_info_reminder':
         case 'ready_reminder':
           final jobId = _parseInt(data['job_id']);
           final isExtJob = data['is_ext_job'] == 'true';
@@ -646,7 +670,15 @@ class NotificationsService {
                 if (quoteJson != null) {
                   final quote = DjQuoteModel.fromJson(quoteJson).toEntity();
                   goTab('/dj/home');
-                  router.pushNamed(AppRoutes.quoteDetail, extra: quote);
+                  // The delivery reminder opens the job straight on its Levering tab.
+                  router.pushNamed(
+                    AppRoutes.quoteDetail,
+                    extra: quote,
+                    queryParameters:
+                        data['type'] == 'delivery_info_reminder'
+                            ? const {'tab': 'levering'}
+                            : const {},
+                  );
                 } else {
                   goTab('/dj/home');
                 }

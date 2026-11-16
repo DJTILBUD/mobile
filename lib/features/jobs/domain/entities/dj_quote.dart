@@ -13,6 +13,7 @@ class DjQuote {
     required this.job,
     this.earlySetupStatus,
     this.earlySetupPrice,
+    this.isDeliveryQuote = false,
     this.djReadyConfirmedAt,
     this.extraHours,
     this.extraHoursPricePerHour,
@@ -33,6 +34,12 @@ class DjQuote {
   // 'accepted' = customer accepted, 'rejected' = customer declined
   final String? earlySetupStatus;
   final int? earlySetupPrice;
+
+  /// Made by a non-equipped DJ (WKNDS delivers the gear): the quote carries a
+  /// delivery snapshot (`delivery_wknds_price_dkk`). Its gear and free early
+  /// setup are fixed by the quote route, so they cannot be edited. Mirrors web
+  /// `isDeliveryQuote`.
+  final bool isDeliveryQuote;
   final DateTime? djReadyConfirmedAt;
   final double? extraHours;
   final num? extraHoursPricePerHour;

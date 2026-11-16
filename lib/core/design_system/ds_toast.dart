@@ -22,6 +22,9 @@ class DSToast {
       DSToastVariant.warning => (c.state.warning, LucideIcons.alertTriangle),
       DSToastVariant.error => (c.state.danger, LucideIcons.alertCircle),
     };
+    // Yellow is too light for white text; every other variant keeps white.
+    final fg =
+        variant == DSToastVariant.warning ? dsContentOn(color) : Colors.white;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -33,7 +36,7 @@ class DSToast {
         duration: duration,
         content: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: fg, size: 20),
             const SizedBox(width: DSSpacing.s3),
             Expanded(
               child: Column(
@@ -42,17 +45,17 @@ class DSToast {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: fg,
                       fontSize: 14,
                     ),
                   ),
                   if (description != null)
                     Text(
                       description,
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: fg.withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                     ),

@@ -44,7 +44,10 @@ class DSStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = _textColor(color, isDark: isDark);
+    final textColor = _textColor(
+      DSTheme.of(context).fg(color),
+      isDark: isDark,
+    );
     return Container(
       width: expand ? double.infinity : null,
       padding: const EdgeInsets.symmetric(

@@ -1,10 +1,12 @@
-Referral terms gate, self-billing terms popup, payment screen refresh
+Feedback on jobs you skip + venues on the profile
 
-• Henvis en kunde: before the first referral the performer must tick "Jeg har læst vilkårene for henvisninger" and press "Jeg har læst og accepterer vilkårene" (button greyed out until ticked). Link opens djtilbud.dk/referral-handelsbetingelser. Acceptance is stored with a timestamp; the tabs only show afterwards
-• Self-billing terms popup (only when the self_billing_live flag is on and payment type is Faktura): new last line "Se uddybende besked under Beskeder"
-• Udbetaling / betalingsoplysninger: pull to refresh
+• "Hvorfor bød du ikke?": leave an internal job (Nye jobs) without bidding and a small sheet asks why. One tap on a chip sends and closes ("Tak, det hjælper os"). "Andet" opens an optional text field. "Spring over", swipe down or tap outside sends nothing. The server asks a DJ at most once a week, never on a job they bid on or declined.
+• Edit profile, "Erfaring og tidligere spillesteder": type venue names (hint "Fx Hvedholm Slot, Kokkedal Slot"). A comma, "Færdig", "Tilføj" or leaving the field adds them as separate tags. They save on their own. Customers see "Har spillet på ... før" when a venue matches their event.
+• The postcode banner on Nye jobs is removed.
 
 What to test:
-1. Profil -> Henvis en kunde as a DJ/sax who has not accepted: only the terms card, button disabled until the box is ticked. Accept, the two tabs appear. Reopen: goes straight to the tabs.
-2. Admin -> Henvisninger -> Accepterede vilkår shows the acceptance time.
-3. Profil -> Udbetaling: pull down refreshes (e.g. after support approves a change request).
+1. Open a job from Nye jobs and go back without bidding: the sheet appears after the screen has closed. Tap a chip: toast, sheet closes.
+2. Repeat with iOS swipe-back, and with the unsaved-changes dialog (type in the quote form, go back, confirm).
+3. After answering once, open another job and go back: no sheet (once a week limit). Bid on a job, then go back: no sheet.
+4. "Andet": the text field appears, Send works, empty text is fine.
+5. Edit profile: type "Nimb, Vega, Kokkedal Slot" and tap Færdig: three separate tags. Leave the screen and come back: they are still there. Type a name and tap Gem without pressing Tilføj: it is saved too.

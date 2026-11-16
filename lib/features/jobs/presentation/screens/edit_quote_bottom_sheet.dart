@@ -2,7 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
+import 'package:dj_tilbud_app/shared/widgets/delivered_setup_notice.dart';
 import 'package:dj_tilbud_app/core/utils/equipment_description.dart';
+import 'package:dj_tilbud_app/core/utils/budget_utils.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/dj_quote.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/offer_form_validation.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
@@ -36,6 +39,7 @@ class EditQuoteBottomSheet extends ConsumerStatefulWidget {
 }
 
 class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
+  bool get _isDelivery => widget.quote.isDeliveryQuote;
   late final TextEditingController _priceCtrl;
   late final TextEditingController _pitchCtrl;
   late final TextEditingController _earlyPriceCtrl;
@@ -110,10 +114,37 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
     return '$m min';
   }
 
+  // Over-budget lock, same rule as the create form and the server (web-app helpers/quoteBudgetLock.ts):
+  // inside the first 4 hours after the job was created, no price above the DJ-facing budget + 10 %.
+  // Only a RAISE is checked (the server does the same), so a DJ can always lower a price.
+  bool _isOverBudgetLocked(int price) {
+    final job = widget.quote.job;
+    if (!isWithinFirstFourHours(job.createdAt)) return false;
+    final profile = ref.read(djProfileProvider).valueOrNull;
+    double? adjust(double? budget) => adjustBudgetForDjView(
+      budget: budget,
+      requestedSaxophonist: job.requestedSaxophonist,
+      requestedMusicianHours: job.requestedMusicianHours,
+      djTier: profile?.tier,
+      maxBudget: job.budgetEnd,
+      jobCreatedAt: job.createdAt,
+      eventDate: job.date,
+      equipmentStatus: profile?.equipmentStatus,
+    );
+    final end = adjust(job.budgetEnd);
+    if (end == null) return false;
+    final start = adjust(job.budgetStart);
+    final max = (start != null && start > end) ? start : end;
+    return price > max * 1.1;
+  }
+
   String? _validate() {
     final price = int.tryParse(_priceCtrl.text.trim());
     if (price == null || price <= 0) return 'Pris skal være større end 0';
-    if (_selectedEquipment.isEmpty && !_noEquipmentSelected)
+    if (price > widget.quote.priceDkk && _isOverBudgetLocked(price)) {
+      return 'Du kan ikke byde over budget inden for de første 4 timer efter jobbet er oprettet. Prøv igen senere eller reducer dit tilbud.';
+    }
+    if (!_isDelivery && _selectedEquipment.isEmpty && !_noEquipmentSelected)
       return 'Vælg mindst ét stykke udstyr';
     final pitchLen = _pitchCtrl.text.trim().length;
     if (pitchLen > 0 && pitchLen < kSalesPitchMinLength) {
@@ -122,7 +153,7 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
     if (_pitchCtrl.text.length > kSalesPitchMaxLength) {
       return 'Salgstale må højst være $kSalesPitchMaxLength tegn';
     }
-    if (_offerEarlySetup) {
+    if (!_isDelivery && _offerEarlySetup) {
       final ep = int.tryParse(_earlyPriceCtrl.text.trim());
       if (ep == null || ep < 0) return 'Pris for tidlig opsætning er ugyldig';
     }
@@ -143,19 +174,25 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
             ? (int.tryParse(_earlyPriceCtrl.text.trim()) ?? 0)
             : null;
 
+    // A delivery quote keeps its fixed gear and free early setup (the route
+    // ignores edits to them), so only price and pitch are sent as changes.
+
     final success = await ref
         .read(editDjQuoteProvider.notifier)
         .edit(
           quoteId: widget.quote.id,
           priceDkk: price,
-          equipmentDescription: serializeEquipmentDescription(
-            _selectedEquipment,
-            _topSpeakerCount,
-            _bottomSpeakerCount,
-          ),
+          equipmentDescription:
+              _isDelivery
+                  ? widget.quote.equipmentDescription
+                  : serializeEquipmentDescription(
+                    _selectedEquipment,
+                    _topSpeakerCount,
+                    _bottomSpeakerCount,
+                  ),
           salesPitch: _pitchCtrl.text.trim(),
-          earlySetupStatus: _offerEarlySetup ? 'offered' : null,
-          earlySetupPrice: earlyPrice,
+          earlySetupStatus: !_isDelivery && _offerEarlySetup ? 'offered' : null,
+          earlySetupPrice: _isDelivery ? null : earlyPrice,
         );
 
     if (!mounted) return;
@@ -260,31 +297,34 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
                           ),
                           const SizedBox(height: DSSpacing.s4),
 
-                          IgnorePointer(
-                            ignoring: isExpired || isSaving,
-                            child: Opacity(
-                              opacity: (isExpired || isSaving) ? 0.5 : 1.0,
-                              child: EquipmentPicker(
-                                selectedEquipment: _selectedEquipment,
-                                topSpeakerCount: _topSpeakerCount,
-                                bottomSpeakerCount: _bottomSpeakerCount,
-                                noEquipmentSelected: _noEquipmentSelected,
-                                onChanged:
-                                    (selected, top, bund) => setState(() {
-                                      _selectedEquipment = selected;
-                                      _topSpeakerCount = top;
-                                      _bottomSpeakerCount = bund;
-                                      if (selected.isNotEmpty)
-                                        _noEquipmentSelected = false;
-                                    }),
-                                onNoEquipmentChanged:
-                                    (value) => setState(() {
-                                      _noEquipmentSelected = value;
-                                      if (value) _selectedEquipment = [];
-                                    }),
+                          if (_isDelivery)
+                            const DeliveredSetupNotice()
+                          else
+                            IgnorePointer(
+                              ignoring: isExpired || isSaving,
+                              child: Opacity(
+                                opacity: (isExpired || isSaving) ? 0.5 : 1.0,
+                                child: EquipmentPicker(
+                                  selectedEquipment: _selectedEquipment,
+                                  topSpeakerCount: _topSpeakerCount,
+                                  bottomSpeakerCount: _bottomSpeakerCount,
+                                  noEquipmentSelected: _noEquipmentSelected,
+                                  onChanged:
+                                      (selected, top, bund) => setState(() {
+                                        _selectedEquipment = selected;
+                                        _topSpeakerCount = top;
+                                        _bottomSpeakerCount = bund;
+                                        if (selected.isNotEmpty)
+                                          _noEquipmentSelected = false;
+                                      }),
+                                  onNoEquipmentChanged:
+                                      (value) => setState(() {
+                                        _noEquipmentSelected = value;
+                                        if (value) _selectedEquipment = [];
+                                      }),
+                                ),
                               ),
                             ),
-                          ),
                           const SizedBox(height: DSSpacing.s4),
 
                           DSInput(
@@ -303,7 +343,8 @@ class _EditQuoteBottomSheetState extends ConsumerState<EditQuoteBottomSheet> {
                           const SizedBox(height: DSSpacing.s4),
 
                           // Early setup toggle — only editable before customer decides
-                          if (widget.quote.earlySetupStatus != 'accepted' &&
+                          if (!_isDelivery &&
+                              widget.quote.earlySetupStatus != 'accepted' &&
                               widget.quote.earlySetupStatus != 'rejected') ...[
                             DSSwitch(
                               label: 'Tilbyd tidlig opsætning',

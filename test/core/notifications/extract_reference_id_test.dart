@@ -8,6 +8,20 @@ import 'package:dj_tilbud_app/core/notifications/notifications_service.dart';
 /// guards. Keep a case here for every type the sender writes a feed row for.
 void main() {
   group('extractReferenceId', () {
+    test('referral pushes resolve to referral_id', () {
+      for (final type in ['referral_closed', 'referral_canceled']) {
+        expect(
+          NotificationsService.extractReferenceId({
+            'type': type,
+            'referral_id': '17',
+            'ext_job_id': '123',
+          }),
+          '17',
+          reason: '$type must resolve to its referral id',
+        );
+      }
+    });
+
     test('job-scoped types resolve to job_id', () {
       for (final type in [
         'new_job',
@@ -16,6 +30,7 @@ void main() {
         'extra_hours_reminder',
         'contact_customer_reminder',
         'send_invoice_reminder',
+        'delivery_info_reminder',
         'content_record_reminder',
         'content_upload_reminder',
         'content_accepted',

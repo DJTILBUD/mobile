@@ -1,4 +1,6 @@
 /// Returns a human-readable Danish label for an event type key.
+/// Mirrored in web-app/src/helpers/reviewEventType.ts and admin/lib/services/trustpilot/eventTypes.ts
+/// (review labels + the admin's Trustpilot categories). Change all three together.
 /// The DB stores Danish keys (e.g. 'bryllup', 'firmafest').
 String eventTypeLabel(String type) {
   return switch (type) {

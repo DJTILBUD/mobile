@@ -53,11 +53,23 @@ class ParsedEquipmentState {
     required this.selectedEquipment,
     required this.topSpeakerCount,
     required this.bottomSpeakerCount,
+    this.bottomSpeakerMin,
   });
 
   final List<String> selectedEquipment;
   final int topSpeakerCount;
   final int bottomSpeakerCount;
+
+  /// Lower bound when the number of subs is a range ("1-2 x bund", WKNDS
+  /// delivery). Stored as `bund_min`; mirrors web `bottomSpeakerMin`.
+  final int? bottomSpeakerMin;
+
+  /// "2", or "1-2" when the subs are a range. Mirrors web
+  /// `formatBottomSpeakerCount`.
+  String get bottomSpeakerLabel =>
+      bottomSpeakerMin != null && bottomSpeakerMin! < bottomSpeakerCount
+          ? '$bottomSpeakerMin-$bottomSpeakerCount'
+          : '$bottomSpeakerCount';
 
   static const empty = ParsedEquipmentState(
     selectedEquipment: [],
@@ -111,11 +123,16 @@ ParsedEquipmentState? _parseStructured(String raw) {
     );
     final top = _nonNeg(speakers?['top'], 2);
     final bund = _nonNeg(speakers?['bund'], 2);
+    final bundMin =
+        speakers?['bund_min'] != null
+            ? _nonNeg(speakers!['bund_min'], bund)
+            : null;
 
     return ParsedEquipmentState(
       selectedEquipment: selected,
       topSpeakerCount: top,
       bottomSpeakerCount: bund,
+      bottomSpeakerMin: bundMin != null && bundMin < bund ? bundMin : null,
     );
   } catch (_) {
     return null;
@@ -153,8 +170,9 @@ ParsedEquipmentState parseEquipmentDescription(String? raw) {
 String serializeEquipmentDescription(
   List<String> selectedEquipment,
   int topSpeakerCount,
-  int bottomSpeakerCount,
-) {
+  int bottomSpeakerCount, [
+  int? bottomSpeakerMin,
+]) {
   final gear =
       selectedEquipment.map((label) {
         final key = _labelToKey[label]!;
@@ -163,6 +181,9 @@ String serializeEquipmentDescription(
             'key': key,
             'top': topSpeakerCount.clamp(0, 99),
             'bund': bottomSpeakerCount.clamp(0, 99),
+            if (bottomSpeakerMin != null &&
+                bottomSpeakerMin < bottomSpeakerCount)
+              'bund_min': bottomSpeakerMin.clamp(0, 99),
           };
         }
         return {'key': key, 'qty': 1};
@@ -187,7 +208,7 @@ List<String> getEquipmentDisplayItems(String? raw) {
     if (label == 'Højtalere') {
       final parts = [
         if (parsed.topSpeakerCount > 0) 'Top x${parsed.topSpeakerCount}',
-        if (parsed.bottomSpeakerCount > 0) 'Bund x${parsed.bottomSpeakerCount}',
+        if (parsed.bottomSpeakerCount > 0) 'Bund x${parsed.bottomSpeakerLabel}',
       ];
       return parts.isNotEmpty ? 'Højtalere (${parts.join(', ')})' : 'Højtalere';
     }

@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/utils/musician_price.dart';
 import 'package:dj_tilbud_app/core/utils/sax_high_season.dart';
+import 'package:dj_tilbud_app/core/utils/wknds_delivery.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 
 // Fee brackets by job creation date: 20% before 2025-10-15, 25% until
@@ -68,6 +69,10 @@ int _saxCostForDjBudget(
 
 /// Mirrors `adjustBudgetForDjView` from the web app.
 /// Returns null when [budget] is null or zero.
+///
+/// [equipmentStatus] is `DjInfos.equipment_status`. A `non_equipped` DJ gets
+/// WKNDS delivery, so the flat 3.750 kr is deducted INSTEAD of the 500/250
+/// steps and the floor is 500 kr instead of 1.500. Omitted = equipped.
 double? adjustBudgetForDjView({
   required double? budget,
   bool requestedSaxophonist = false,
@@ -76,6 +81,7 @@ double? adjustBudgetForDjView({
   double? maxBudget,
   DateTime? jobCreatedAt,
   DateTime? eventDate,
+  String? equipmentStatus,
 }) {
   if (budget == null || budget == 0) return null;
 
@@ -94,14 +100,41 @@ double? adjustBudgetForDjView({
         ).toDouble();
   }
 
-  if (adjusted > 7500) adjusted -= 500;
-  if (adjusted > 6500) adjusted -= 250;
+  final nonEquipped = isNonEquippedDj(equipmentStatus);
+
+  if (nonEquipped) {
+    adjusted -= deliveryDeductionForDj(equipmentStatus);
+  } else {
+    if (adjusted > 7500) adjusted -= 500;
+    if (adjusted > 6500) adjusted -= 250;
+  }
 
   if (_isBTierDeductionActive(budget, djTier, maxBudget, jobCreatedAt)) {
     adjusted -= _bTierBudgetDeduction;
   }
 
-  return adjusted < djBudgetFloorDkk ? djBudgetFloorDkk.toDouble() : adjusted;
+  final floor = nonEquipped ? nonEquippedDjBudgetFloorDkk : djBudgetFloorDkk;
+  return adjusted < floor ? floor.toDouble() : adjusted;
+}
+
+/// The B-tier "no budget given" range. Mirrors `bTierFallbackBudgetRange`:
+/// 3.500-6.500, or 500-2.750 for a non-equipped DJ (delivery deducted, floor 500).
+(int, int) bTierFallbackBudgetRange(String? equipmentStatus) {
+  const start = 3500;
+  const end = 6500;
+  if (!isNonEquippedDj(equipmentStatus)) return (start, end);
+  final deduction = deliveryDeductionForDj(equipmentStatus);
+  int floored(int v) =>
+      v - deduction < nonEquippedDjBudgetFloorDkk
+          ? nonEquippedDjBudgetFloorDkk
+          : v - deduction;
+  return (floored(start), floored(end));
+}
+
+/// The B-tier fallback range as a label, e.g. '3.500 – 6.500 kr.'.
+String bTierFallbackBudgetLabel(String? equipmentStatus) {
+  final (start, end) = bTierFallbackBudgetRange(equipmentStatus);
+  return '${_fmtKr(start)} – ${_fmtKr(end)} kr.';
 }
 
 String _fmtKr(int n) =>
@@ -126,12 +159,13 @@ String? djBudgetLabelFromParts({
   DateTime? jobCreatedAt,
   DateTime? eventDate,
   bool isExtJob = false,
+  String? equipmentStatus,
 }) {
   final noBudget = budgetStart == null && budgetEnd == null;
 
   // B-tier fallback: show fixed range when no budget is provided.
   if (djTier == 'B' && noBudget && !isExtJob) {
-    return '${_fmtKr(3500)} – ${_fmtKr(6500)} kr.';
+    return bTierFallbackBudgetLabel(equipmentStatus);
   }
 
   final adjEnd = adjustBudgetForDjView(
@@ -142,6 +176,7 @@ String? djBudgetLabelFromParts({
     maxBudget: budgetEnd,
     jobCreatedAt: jobCreatedAt,
     eventDate: eventDate,
+    equipmentStatus: equipmentStatus,
   );
   if (adjEnd == null) return null;
 
@@ -154,6 +189,7 @@ String? djBudgetLabelFromParts({
       maxBudget: budgetEnd,
       jobCreatedAt: jobCreatedAt,
       eventDate: eventDate,
+      equipmentStatus: equipmentStatus,
     );
     if (adjStart != null) {
       final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
@@ -166,17 +202,21 @@ String? djBudgetLabelFromParts({
 /// The DJ-facing budget label for a job (tier-adjusted, invariant-safe).
 /// Thin wrapper over [djBudgetLabelFromParts] so a [Job] and a raw DB row can
 /// never produce different figures for the same job.
-String? djAdjustedBudgetLabel(Job job, String? djTier) =>
-    djBudgetLabelFromParts(
-      budgetStart: job.budgetStart,
-      budgetEnd: job.budgetEnd,
-      djTier: djTier,
-      requestedSaxophonist: job.requestedSaxophonist,
-      requestedMusicianHours: job.requestedMusicianHours,
-      jobCreatedAt: job.createdAt,
-      eventDate: job.date,
-      isExtJob: job.isExtJob,
-    );
+String? djAdjustedBudgetLabel(
+  Job job,
+  String? djTier, {
+  String? equipmentStatus,
+}) => djBudgetLabelFromParts(
+  budgetStart: job.budgetStart,
+  budgetEnd: job.budgetEnd,
+  djTier: djTier,
+  requestedSaxophonist: job.requestedSaxophonist,
+  requestedMusicianHours: job.requestedMusicianHours,
+  jobCreatedAt: job.createdAt,
+  eventDate: job.date,
+  isExtJob: job.isExtJob,
+  equipmentStatus: equipmentStatus,
+);
 
 /// The musician-facing figure for a job they have NOT bid on yet: the estimated
 /// price they would be paid. Never the customer's budget. Shared by the jobs

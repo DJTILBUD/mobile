@@ -6,6 +6,8 @@ import 'package:dj_tilbud_app/features/agent/presentation/widgets/profile_bio_bo
 import 'package:dj_tilbud_app/features/auth/domain/entities/musician_role.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/dj_profile.dart';
 import 'package:dj_tilbud_app/features/profile/domain/entities/musician_profile.dart';
+import 'package:dj_tilbud_app/features/profile/domain/venues.dart';
+import 'package:dj_tilbud_app/features/profile/presentation/widgets/venues_input.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -109,16 +111,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _experienceCtrl.text,
     ..._selectedRegions,
     ..._selectedGenres,
-    ..._venues,
     _canPlayWithSax.toString(),
     _allowPublicProfile.toString(),
     _djSaxCollaboration ?? '',
   ].join('|');
 
-  bool get _isDirty => _initialized && _fingerprint() != _initialFingerprint;
+  // Text still in the venue field counts as unsaved, so leaving cannot drop it silently.
+  bool get _isDirty =>
+      _initialized &&
+      (_fingerprint() != _initialFingerprint ||
+          _venueCtrl.text.trim().isNotEmpty);
 
   Future<void> _onPopInvoked(bool didPop, _) async {
     if (didPop) return;
+    // A venue typed but not yet added: add (and save) it, then leave if that was all.
+    if (_venueCtrl.text.trim().isNotEmpty) {
+      _commitPendingVenues();
+      if (_fingerprint() == _initialFingerprint) {
+        Navigator.of(context).pop();
+        return;
+      }
+    }
     final confirmed = await showUnsavedChangesDialog(context);
     if (confirmed == true && mounted) Navigator.of(context).pop();
   }
@@ -194,8 +207,55 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
+  /// Venues save on their own the moment one is added or removed (web does the same), so the
+  /// performer never has to remember Gem afterwards. Saves are chained so a quick add + remove
+  /// cannot land out of order. Only `venues_and_events` is written.
+  Future<void> _venueSave = Future.value();
+
+  void _onVenuesChanged(List<String> venues) {
+    if (!mounted) return;
+    setState(() => _venues = venues);
+    final isDj = widget.role == MusicianRole.dj;
+    final userId =
+        isDj
+            ? ref.read(djProfileProvider).value?.id
+            : ref.read(musicianProfileProvider).value?.id;
+    if (userId == null) return;
+    final repo = ref.read(profileRepositoryProvider);
+    _venueSave = _venueSave.then((_) async {
+      try {
+        await repo.updateVenues(userId: userId, isDj: isDj, venues: venues);
+        if (!mounted) return;
+        ref.invalidate(isDj ? djProfileProvider : musicianProfileProvider);
+        DSToast.show(
+          context,
+          variant: DSToastVariant.success,
+          title: 'Spillesteder gemt',
+        );
+      } catch (_) {
+        if (!mounted) return;
+        DSToast.show(
+          context,
+          variant: DSToastVariant.error,
+          title: 'Spillestederne blev ikke gemt. Prøv igen.',
+        );
+      }
+    });
+  }
+
+  void _commitPendingVenues() {
+    final next = addVenues(_venues, _venueCtrl.text);
+    _venueCtrl.clear();
+    if (next.length != _venues.length) _onVenuesChanged(next);
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    // Gem does not take focus from the venue field, so add what is still typed there.
+    if (_venueCtrl.text.trim().isNotEmpty) {
+      _venues = addVenues(_venues, _venueCtrl.text);
+      _venueCtrl.clear();
+    }
     setState(() => _saving = true);
 
     try {
@@ -615,58 +675,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Spillesteder & events',
+          'Erfaring og tidligere spillesteder',
           style: DSTextStyle.labelLg.copyWith(
             fontWeight: FontWeight.w600,
             color: _c.text.primary,
           ),
         ),
-        const SizedBox(height: DSSpacing.s2),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children:
-              _venues
-                  .map(
-                    (v) => DSChip(
-                      label: v,
-                      onDelete: () {
-                        setState(() => _venues.remove(v));
-                      },
-                    ),
-                  )
-                  .toList(),
+        const SizedBox(height: DSSpacing.s1),
+        Text(
+          "Skriv navnene på de steder, du har spillet, fx Hvedholm Slot, Kokkedal Slot eller Hotel d'Angleterre. Skriv ikke typer af fester som bryllup eller firmafest.",
+          style: DSTextStyle.bodySm.copyWith(color: _c.text.secondary),
         ),
-        const SizedBox(height: DSSpacing.s2),
-        Row(
-          children: [
-            Expanded(
-              child: DSInput(
-                hint: 'Tilføj spillested...',
-                controller: _venueCtrl,
-                onSubmitted: (_) => _addVenue(_venueCtrl.text),
-              ),
-            ),
-            const SizedBox(width: DSSpacing.s2),
-            DSIconButton(
-              icon: LucideIcons.plusCircle,
-              variant: DSIconButtonVariant.secondary,
-              onTap: () => _addVenue(_venueCtrl.text),
-            ),
-          ],
+        const SizedBox(height: DSSpacing.s3),
+        VenuesInput(
+          venues: _venues,
+          controller: _venueCtrl,
+          isDj: widget.role == MusicianRole.dj,
+          onChanged: _onVenuesChanged,
         ),
       ],
     );
-  }
-
-  void _addVenue(String value) {
-    final v = value.trim();
-    if (v.isNotEmpty && !_venues.contains(v)) {
-      setState(() {
-        _venues.add(v);
-        _venueCtrl.clear();
-      });
-    }
   }
 
   Widget _buildDjSaxDropdown() {

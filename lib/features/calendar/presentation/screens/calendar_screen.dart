@@ -68,6 +68,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     required List<CalendarEvent> wonEvents,
     required bool isDj,
     required String? djTier,
+    String? equipmentStatus,
   }) {
     return [
       if (_showNew)
@@ -78,7 +79,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             // in the list and here.
             budgetDisplay:
                 isDj
-                    ? djAdjustedBudgetLabel(j, djTier)
+                    ? djAdjustedBudgetLabel(
+                      j,
+                      djTier,
+                      equipmentStatus: equipmentStatus,
+                    )
                     : musicianBudgetLabel(j),
           ),
         ),
@@ -221,7 +226,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     // ── Data ──
     // Drives the sax/tier-adjusted DJ budget label. Null for musicians, who use
     // their own offer price instead.
-    final djTier = isDj ? ref.watch(djProfileProvider).valueOrNull?.tier : null;
+    final djProfile = isDj ? ref.watch(djProfileProvider).valueOrNull : null;
+    final djTier = djProfile?.tier;
+    final djEquipmentStatus = djProfile?.equipmentStatus;
 
     final newJobs =
         isDj
@@ -232,7 +239,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final sentEvents =
         isDj
             ? (ref.watch(pendingDjQuotesProvider).valueOrNull ?? <DjQuote>[])
-                .map((q) => _quoteToEvent(q, djTier))
+                .map((q) => _quoteToEvent(q, djTier, djEquipmentStatus))
                 .toList()
             : (ref.watch(sentServiceOffersProvider).valueOrNull ??
                     <ServiceOffer>[])
@@ -295,6 +302,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       wonEvents: wonEvents,
       isDj: isDj,
       djTier: djTier,
+      equipmentStatus: djEquipmentStatus,
     );
     final visibleEvents = _eventsForView(allEvents);
 
@@ -526,7 +534,11 @@ CalendarEvent _jobToEvent(Job job, {String? budgetDisplay}) => CalendarEvent(
   jobId: job.id,
 );
 
-CalendarEvent _quoteToEvent(DjQuote quote, String? djTier) => CalendarEvent(
+CalendarEvent _quoteToEvent(
+  DjQuote quote,
+  String? djTier,
+  String? equipmentStatus,
+) => CalendarEvent(
   id: quote.id,
   date: quote.job.date,
   label: quote.job.eventType,
@@ -537,7 +549,11 @@ CalendarEvent _quoteToEvent(DjQuote quote, String? djTier) => CalendarEvent(
   location: quote.job.city.isEmpty ? null : quote.job.city,
   region: quote.job.region.isEmpty ? null : quote.job.region,
   guestsAmount: quote.job.guestsAmount,
-  budgetDisplay: djAdjustedBudgetLabel(quote.job, djTier),
+  budgetDisplay: djAdjustedBudgetLabel(
+    quote.job,
+    djTier,
+    equipmentStatus: equipmentStatus,
+  ),
   jobId: quote.jobId,
 );
 
@@ -608,7 +624,7 @@ class _CalFilterChip extends StatelessWidget {
                 maxLines: 1,
                 style: DSTextStyle.labelSm.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: active ? activeColor : c.text.secondary,
+                  color: active ? c.fg(activeColor) : c.text.secondary,
                 ),
               ),
             ),
@@ -616,7 +632,7 @@ class _CalFilterChip extends StatelessWidget {
             Icon(
               active ? LucideIcons.check : LucideIcons.x,
               size: 11,
-              color: active ? activeColor : c.text.secondary,
+              color: active ? c.fg(activeColor) : c.text.secondary,
             ),
           ],
         ),

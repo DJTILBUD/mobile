@@ -195,6 +195,7 @@ Notification routing lives in `core/notifications/notifications_service.dart`. T
 | `extra_hours_reminder` | musician | `/instrumentalist/home` → `serviceOfferDetail` |
 | `contact_customer_reminder` | dj/musician | same routing as `ready_reminder` (deep-links into the job) |
 | `send_invoice_reminder` | dj/musician | same routing as `ready_reminder` (deep-links into the job) |
+| `delivery_info_reminder` | dj | same routing as `ready_reminder` for an internal job, but opens `quoteDetail` with `?tab=levering` (the job's Levering tab) |
 | `chat_unused_reminder` | dj/musician | same routing as `chat_message` (chat tab → `conversationDetail`) |
 | `admin_message` | dj | `/dj/profile` → `adminMessages` |
 | `admin_message` | musician | `/instrumentalist/profile` → `adminMessages` |
@@ -270,9 +271,10 @@ string the sender checks** or the opt-out silently does nothing. The screen is d
 
 Full opt-out map (verified against the functions), role-scoped:
 - both: `new_job`, `chat_message`, `chat_reaction`, `chat_unused_reminder`, `ready_reminder`,
-  `extra_hours_reminder`, `contact_customer_reminder`, `send_invoice_reminder`, `admin_message`
+  `extra_hours_reminder`, `contact_customer_reminder`, `send_invoice_reminder`, `admin_message`,
+  `referral_closed` + `referral_canceled` (one toggle "Henvisninger"; a tap opens Henvis en kunde)
 - dj-only: `another_round`, `quote_won`/`quote_lost`, `content_record_reminder`/`content_upload_reminder`,
-  `content_accepted`/`content_rejected`, `song_request`
+  `content_accepted`/`content_rejected`, `song_request`, `delivery_info_reminder` ("Levering af udstyr")
 - musician-only: `new_ext_job`, `offer_won`/`offer_lost`
 - **NOT toggleable (excluded on purpose):** `ext_job_assigned` (`notify-ext-job-assigned`) and
   `custom_notification` (`notify-custom`) — their senders do NOT read `disabled_notification_types`,
@@ -286,19 +288,17 @@ here (or it's un-silenceable). The `_toggle` write is guarded by `NotificationsS
 
 To view a production user's app for debugging, the `kDebugMode`-only floating dev tool (`core/widgets/dev_env_banner.dart` — the same bottom-right FAB that switches DB env) has an **"Impersonate"** action that logs in AS any existing user **without a browser or cookie**:
 
-1. POST the target email to the web-app admin endpoint `POST /api/admin/magic/token` (gated by `ADMIN_API_KEY`, read from `EnvConfig.adminApiKey` / `.env.*`). It returns a one-time magic-link **token hash** (`generateLink({type:'magiclink'}).properties.hashed_token`).
+1. **Log in as an ADMIN first**, then POST the target email to `POST /api/admin/magic/token` with that admin session (`Authorization: Bearer <access token>`). The web-app checks `UserRoles.role = 'admin'`. It returns a one-time magic-link **token hash** (`generateLink({type:'magiclink'}).properties.hashed_token`).
 2. Establish the session on-device via `supabase.auth.verifyOTP(type: OtpType.magiclink, tokenHash: ...)` (`AuthRemoteDatasource.verifyMagicTokenHash` → `AuthRepositoryImpl.signInWithMagicTokenHash`, which reuses the same `_detectRole` as password login).
 
-**Critical: `NotificationsService.setImpersonating(true)` is set BEFORE `verifyOTP`** so the resulting `signedIn` event skips `registerToken()`. Without this the impersonated (real prod) user's actual phone token would be deleted by the `_upsertToken` cleanup above, silently killing their push. The flag is **persisted** (SharedPreferences, loaded in `main()` before the auth listener subscribes) so a relaunch mid-impersonation still skips registration; `registerToken`/`_upsertToken`/`removeToken` all hard-return when it's set. After establishing the session the FAB calls `RestartWidget.restartApp` so the router cold-resolves into the impersonated user's home; the panel then shows "Logget ind som <email>" + a "Log ud" button (`signOut` clears the flag). The **notification-settings toggle** (`notification_settings_screen.dart`, `_toggle`) also bails when `isImpersonating` — it does `UPDATE DeviceTokens.disabled_notification_types WHERE user_id = <current>`, which would hit the real user's device rows. Rule of thumb: **any new code that writes `DeviceTokens` for the current user must guard on `NotificationsService.isImpersonating`.** Points the app at prod, so writes are real — view only. To enable: set `ADMIN_API_KEY` in the mobile `.env.<env>` to match **that env's deployed web-app** key (e.g. the Vercel prod value for `.env.prod`).
+**Critical: `NotificationsService.setImpersonating(true)` is set BEFORE `verifyOTP`** so the resulting `signedIn` event skips `registerToken()`. Without this the impersonated (real prod) user's actual phone token would be deleted by the `_upsertToken` cleanup above, silently killing their push. The flag is **persisted** (SharedPreferences, loaded in `main()` before the auth listener subscribes) so a relaunch mid-impersonation still skips registration; `registerToken`/`_upsertToken`/`removeToken` all hard-return when it's set. After establishing the session the FAB calls `RestartWidget.restartApp` so the router cold-resolves into the impersonated user's home; the panel then shows "Logget ind som <email>" + a "Log ud" button (`signOut` clears the flag). The **notification-settings toggle** (`notification_settings_screen.dart`, `_toggle`) also bails when `isImpersonating` — it does `UPDATE DeviceTokens.disabled_notification_types WHERE user_id = <current>`, which would hit the real user's device rows. Rule of thumb: **any new code that writes `DeviceTokens` for the current user must guard on `NotificationsService.isImpersonating`.** Points the app at prod, so writes are real — view only.
 
-**⚠️ SINGLE-QUOTE the key in `.env.<env>`, or it is silently mangled.** `flutter_dotenv`'s parser
-interpolates `$name` in unquoted AND double-quoted values (`_bashVar` in `parser.dart`, run after the
-quotes are stripped) and strips `#...` as a comment; only a single-quoted value is taken literally.
-Our keys contain `$`, so an unquoted key lost 3 characters on-device and every impersonation
-attempt on dev came back as `Token-fejl (401): Unauthorized.` while the very same value worked from
-curl. The tell is exactly that: the file's value is accepted by the server, the app's is not.
-`\$` also survives, which is how `.env.prod` had been written; single quotes are the simpler rule.
-Assets are bundled at build time, so a changed `.env.*` needs a full rebuild, not a hot restart.
+**⚠️ NEVER put a server secret in `mobile/.env.*`.** Those files are Flutter ASSETS (`pubspec.yaml`),
+so they are packaged inside every build, release included, whatever `kDebugMode` hides in the UI.
+Until 2026-10-22 they held `ADMIN_API_KEY` for this screen; it was readable from the published IPA/AAB
+and gave a login as any user. Only public values belong there (Supabase URL + anon key, web-app URL).
+(`flutter_dotenv` still interpolates `$` and strips `#` in unquoted values: single-quote any value
+containing them.)
 
 ## Job-content fields shown to musicians (what they may/may not see)
 
@@ -366,7 +366,7 @@ Mobile never touches the `Referrals` table directly (`ReferralsRemoteDatasource`
   starting page) — do not re-add a referral nudge to any feed/home screen without asking first.
 - **Referral terms gate (2026-10-06):** the screen watches `referralTermsProvider`
   (`GET /api/referrals/terms`); until accepted it shows `_ReferralTermsGate` (link to
-  djtilbud.dk/referral-handelsbetingelser + "Jeg har læst og accepterer vilkårene", which POSTs the
+  djtilbud.dk/henvisning-handelsbetingelser + "Jeg har læst og accepterer vilkårene", which POSTs the
   same route and stays disabled until the `DSCheckbox` "Jeg har læst vilkårene for henvisninger" is ticked) and NO tab bar. The server is the real gate: `POST /api/referrals` 403s with
   `code: referral_terms_not_accepted`. Copy mirrors web `ReferralsPage.tsx`. Test fakes of
   `ReferralsRepository` default to accepted.
@@ -1068,6 +1068,7 @@ Both mirror the web app — see `web-app/CLAUDE.md` → "Profile media order" fo
 
 Step 5 of the DJ job process: short clips (max 15s, 9:16) recorded per job. `quote_detail_screen` + `ext_job_detail_screen` show a reminder/CTA (`features/jobs/presentation/widgets/job_content_section.dart`) once `djReadyConfirmedAt != null`; tapping it opens **`MyContentScreen`** (`AppRoutes.myContent`, profile menu "Mit content", DJ-only) scoped to that job via a `JobContentKey` `extra`. That screen is the library of **all** the DJ's clips (labelled by job) + the scoped uploader + delete. Data: `job_content_remote_datasource.dart` (`fetchMyJobContent`) + `job_content_provider.dart` (`myJobContentProvider`).
 
+- **`GET /api/files/signed-url` must send the session** (`_signedUrlHeaders()` in the chat, admin-support, profile and job-content datasources, added 2026-10-22). The web-app only signs uploads for the caller's own `userId`, and will REQUIRE the header once this release is adopted (see web-app `CLAUDE.md`). A new upload call without it will break that day.
 - **Uploads go to AWS S3, not Supabase Storage** (the tech-stack table above is misleading for media). Flow: `GET /api/files/signed-url` → `PUT` to S3 → `POST /api/files/job-content` (verifies the DJ owns the job server-side). Do NOT direct-insert `UserFiles` for `job_content` — that bypasses ownership checks (same spirit as the Quotes/Jobs rules below).
 - 15s / 9:16 is hard-validated client-side via `validateContentVideo` (`video_player` duration + aspectRatio) — there is no server-side ffprobe.
 - A thumbnail is generated on upload via `video_thumbnail` and uploaded as a separate `thumbnail` row, so web + admin (and the in-app list) show a real preview.
@@ -1251,6 +1252,26 @@ had `resolveMusicianJobAvailability`; the DJ form had nothing.
 - Known gap: the notification-centre stale sweep (`stale_bid_notifications.dart`) still keys on
   status, so a full `sent` job's row stays unread; only the form is guarded.
 
+## Supply revival (plan 2.1 + 2.2): "Hvorfor bød du ikke?" sheet and the postcode banner
+
+Both rules live in the web-app; mobile only renders. Plan: `web-app/documentation/supply-matching-revival-plan.md`.
+
+- **Feedback sheet** (`presentation/widgets/job_feedback_sheet.dart`, hooked into `dj_quote_form_screen`,
+  internal jobs only). On open the form fetches `GET /api/dj/jobs/{id}/feedback` in the background
+  (`fetchJobFeedbackPrompt`, fails CLOSED) and caches `can_ask` in State. The sheet shows from
+  `dispose()` (i.e. after the pop animation, on the previous screen via the root navigator captured in
+  `didChangeDependencies`) only when the DJ popped the screen themselves (`onPopInvokedWithResult`
+  didPop) and did NOT tap bid, "Optaget" or "Ikke interesseret" on that visit (`_actedOnJob`). A chip
+  posts at once (`POST .../feedback`) and closes with "Tak, det hjælper os"; "Andet" reveals an optional
+  note (max 300) + Send; "Spring over", swipe down or tapping outside send nothing. A failed POST
+  (incl. 409 `not_allowed`) is only `debugPrint`ed. The 7-day cooldown and "not on a job you bid on"
+  are server-side; do not re-implement them in Dart.
+- **Dart mirror** `domain/job_feedback.dart` = web `src/helpers/jobFeedback.ts` (reason list, 7-day
+  cooldown, 300-char note). Change both together. The server's `reasons` from GET wins when present.
+  Tests: `test/features/jobs/domain/job_feedback_test.dart`, `test/features/jobs/presentation/job_feedback_sheet_test.dart`.
+- **Postcode banner: REMOVED 2026-10-29** (user request) from "Nye jobs", together with web. The
+  web endpoint `GET /api/dj/postcode-status` stays only because older app builds still call it.
+
 ## Date-collision guard (no double-booking a date)
 
 **⚠️ A colliding job no longer reaches the feed at all.** The shared server-side selector
@@ -1384,6 +1405,15 @@ never sent back). The web-app decides when to lock; mobile only renders it.
   that differs trimmed and case-insensitively from the primary), and `_save` checks the value too
   because of the lazy ListView rule below.
 
+## Bank account guard on the payment screen
+
+`features/profile/domain/bank_account_guard.dart` mirrors web `helpers/bankAccountGuard.ts` (same
+tests): the account may never be the CVR/CPR, the reg. no., one repeated digit, or other than 4 to 10
+digits. `payment_screen.dart` runs it as the "Kontonummer" validator AND on the values in `_save`
+(lazy ListView rule), and the lock confirm repeats reg. + account next to the CVR. The web route
+enforces the same rule (400 `bank_account_invalid`); `upsertPaymentInfo` throws that as
+`BillingLockException` so its Danish message reaches the toast. Why: a DJ was paid to his own CVR.
+
 ## ⚠️ `Form.validate()` SKIPS fields the lazy `ListView` has unmounted — validate VALUES
 
 Both bid forms lay their body out as `Form(child: ListView(children: [...]))`. A `ListView` is
@@ -1409,6 +1439,47 @@ with `_price` falling back to `0`, and the customer got a 0 kr. bid.
   `20260612000001`). The client fix is about the DJ seeing WHY, not about the data.
 - **Any new required field on a long form needs the same treatment.** Rule of thumb: if the field
   can be scrolled off-screen before submit, `Form.validate()` is not a guarantee.
+
+## Bid forms guard against a double tap with `_submitting`, not the provider state
+
+`dj_quote_form_screen` and `instrumentalist_offer_form_screen` both `await` the payment-info
+provider BEFORE calling `.submit()`, and the create provider only turns `AsyncLoading` inside
+`.submit()`. So the button stayed tappable during that await, and a second tap ran the whole flow
+again: a DJ got two identical quotes on job #3442 (Oct 2026). `_handleSubmit` now wraps the flow in
+a `_submitting` flag that is set on the first tap and folded into the button's `isLoading`/`onTap`.
+The server has its own guard (per-job advisory lock in `check_quote_insert_constraints`, see
+web-app CLAUDE.md), so this is about not showing the DJ an error toast for their own double tap.
+**Any new `await` added before the provider call is covered; do not move the guard into the provider.**
+
+## "Træk bud tilbage": withdrawing a bid within 10 minutes (DJ quote + sax offer)
+
+A performer may delete their own still-open bid (quote `pending` / offer `sent`) within 10 minutes
+of placing it. **Server is the authority:** web `DELETE /api/quotes/{id}` and
+`DELETE /api/service-offer/{offerId}` (rules in `web-app/src/helpers/bidWithdrawal.ts`, incl.
+reopening a job the bid had sent). Mobile only decides visibility via the pure Dart mirror
+`features/jobs/domain/bid_withdrawal.dart` (tested in `test/features/jobs/domain/bid_withdrawal_test.dart`).
+
+- Datasource uses `_webApiDeleteJson` (returns the body) because the route's success `message`
+  is shown in the toast. Rejections (`withdraw_window_expired`, `bid_not_pending`, 403/404) are
+  Danish and shown as-is via `WithdrawBidResult.message`, NOT `friendlyErrorMessage`.
+- DJ: the "Træk bud tilbage" button sits inside `_EditWindowBanner` in `quote_detail_screen.dart`
+  and shares its countdown (same window as edit). Sax: `WithdrawOfferCountdownCard` in
+  `_sentBody` of `service_offer_detail_screen.dart`. Shared flow:
+  `presentation/widgets/withdraw_bid.dart` `confirmAndWithdrawBid` (confirm, toast, pop, or
+  `goNamed(home)` when a cold deep link left nothing to pop).
+- Double-tap guard is a screen-level `_withdrawing` flag set BEFORE the confirm dialog (same
+  reasoning as the bid forms); the notifiers are also `ref.watch`ed for loading and return their
+  outcome, so they are not the autoDispose dispose trap.
+- **List order:** open bids still inside the window are pinned to the top of "Afgivne bud" /
+  "Sendte tilbud" (`pendingDjQuotesProvider`, `sentServiceOffersProvider` via
+  `pinBidsInWithdrawWindow`), the normal date order is kept otherwise. The provider sets a `Timer`
+  to `ref.invalidateSelf` when the next window ends, so the bid drops back without a refresh. Web
+  mirror: `usePinnedBidsInWithdrawWindow` on `/dj` and `/instrumentalist`.
+- **On the cards:** `BidWindowChip` (`withdraw_bid.dart`) shows "Redigeringsvindue aktivt · mm:ss"
+  (DJ, `QuoteCard`) / "Kan trækkes tilbage · mm:ss" (sax, `ServiceOfferCard`) and hides itself
+  when the window ends. Web shows the same as timer buttons on `DjSideQuoteCard`/`ServiceOfferCard`.
+- **Colour:** withdraw buttons use `DSButtonVariant.danger` (red tint). Never `secondary`, which is
+  brand lime and reads as a positive action.
 
 ## "Nyt job" notifications self-expire once the job is taken
 
@@ -1506,6 +1577,90 @@ read while the app logged an unhandled exception.
   back to the unread style. `_toggle` now awaits, then invalidates, and toasts on failure (it was
   previously silent).
 
+## DJs without their own gear (WKNDS delivery) — Dart mirror of `wkndsDelivery.ts`
+
+`DjProfile.equipmentStatus` (`DjInfos.equipment_status`, read-only, admin sets it) drives two things:
+- **Budget:** `adjustBudgetForDjView` / `djBudgetLabelFromParts` / `djAdjustedBudgetLabel` take
+  `equipmentStatus`; a `non_equipped` DJ gets the flat 3.750 kr deduction instead of the 500/250
+  steps, floor 500 kr, and the B-tier "no budget" range becomes 500-2.750
+  (`bTierFallbackBudgetLabel`). Constants live in `core/utils/wknds_delivery.dart`, mirroring
+  `web-app/src/helpers/wkndsDelivery.ts`; parity tests in `test/core/utils/budget_utils_test.dart`.
+  **Every DJ budget call site must pass it** (job card, jobs list + calendar, job detail, quote
+  form, quote detail, calendar provider chain), or that surface shows the equipped figure.
+- **Quote form + edit sheet:** no gear picker and no early-setup switch; `DeliveredSetupNotice`
+  instead. The web route sets the fixed gear and free early setup anyway. `DjQuote.isDeliveryQuote`
+  (`delivery_wknds_price_dkk` set) locks the edit sheet. Profile menu shows "Dit udstyr".
+- **`X-Client-Features: wknds-delivery`** is sent on every `jobs_remote_datasource` web-API call.
+  Without it (older builds) the web refuses a non-equipped DJ's bid with "Opdater appen for at
+  byde..." (quote route 426, `bid-status` reason `app_update_required`). Never drop the header;
+  add a new feature name to the same comma-separated list when a later change needs the same trick.
+  Plan: `web-app/documentation/non-equipped-djs-plan.md`.
+
+### "Levering af udstyr" on the won quote (logistics form, `EquipmentDeliverySection`)
+
+A non-equipped DJ who wins an internal job collects the delivery logistics from the customer and
+fills them in on `quote_detail_screen` `_wonBody` (gated on `DjQuote.isDeliveryQuote`, the same
+criterion as the web route's won delivery quote). Plan: `non-equipped-djs-plan.md`, "Opgave 4 og 5, v1".
+- **Web API only.** `GET/PUT /api/deliveries/job/{job_id}` (`fetchEquipmentDelivery` /
+  `saveEquipmentDeliveryLogistics` in `jobs_remote_datasource`; PUT goes through `_webApiPutJson`,
+  which returns the body, unlike `_webApiPut`). `EquipmentDeliveries` is service-role/admin only
+  under RLS. Model `domain/equipment_delivery.dart` = web `toDjView`; the missing-field labels, the
+  two deadlines, gear/sub text and checklist all come from the server, never computed in Dart.
+- `equipmentDeliveryProvider(jobId)` (errors resolve to null, section hides) +
+  `saveEquipmentDeliveryProvider` (watched by the form, so it is not the `ref.read`-only dispose trap).
+- **The PUT sends only changed keys** (`DeliveryLogistics.changesSince`); the route writes only sent
+  keys, so a save never clobbers a field edited on the web meanwhile. Blank text goes as null.
+  Choosing "Trapper uden elevator" makes the route set `Quotes.delivery_access_surcharge_dkk`
+  server-side; nothing on mobile.
+- Widgets: `widgets/equipment_delivery_section.dart` (one status line: next deadline / all filled /
+  aflyst, then the form, then "Udstyr og tjekliste" folded in an ExpansionTile),
+  `equipment_delivery_form.dart` ("Skal udfyldes" with the ONE deadline or a check, then "Valgfrit";
+  + Gem). Copy rule from the owner: keep it short, and say the DETAILS are missing, never that
+  "leveringspartneren mangler".
+- **ONE set of delivery details, ONE deadline (owner, 2026-10-23).** The contract allows contact
+  person/phone/placement until the day before, but there is no reason to split it: everything is due
+  4 working days before the event (`dueDate`, `missing` on the wire; web `DELIVERY_REQUIRED_FIELDS` /
+  `deliveryDeadline`). Do not reintroduce a "Stedet" vs "På dagen" split.
+  Required are 9 fields; placement is optional, and access has "Ved ikke" (`DeliveryAccess.unknown`,
+  wire `unknown`), which counts as answered and leaves the stairs surcharge unknown.
+- "Din proces" on a delivery job: Kontakt kunden, Send faktura, **Indhent leveringsdetaljer**, Bekræft
+  klar, ... The delivery step sits after the invoice but ticks itself off whenever the details are in
+  (`ProcessTracker` per-step `completed` flags + `subtitles`), so a DJ who asked on the first call never
+  sees it as a separate task; step 1 carries the tip "Spørg også om leveringsdetaljerne". Right after
+  "kunden er kontaktet" (not a planned call), `_askForDeliveryDetails` asks "Fik du
+  leveringsdetaljerne?" with Udfyld nu (-> Levering tab) / Senere. `equipment_delivery_fields.dart`
+  (`DeliveryChoiceField` chips, tap again to clear, and the `collect_on` date picker). The form uses
+  `AutomaticKeepAliveClientMixin`: it lives in the won body's lazy ListView, and without keep-alive
+  scrolling it away disposes the State and loses unsaved text. Guests are checked as a VALUE
+  (`validateDeliveryGuests`), not via `Form.validate()`. Read-only (no Gem) when `status = canceled`.
+- Errors: the 400/404/409 `message` is Danish and shown verbatim (`DatabaseException.message`);
+  English 401/500 bodies fall back to `friendlyErrorMessage`.
+- **The won delivery job is TABBED "Job" | "Levering"** (`quote_detail_screen`, same `DSTabBar`
+  as ext jobs' "Job" | "Stedet"); the section lives on the Levering tab, which gets a red badge while
+  info is missing. Both pages are wrapped in `_KeepAlivePage`, or switching tabs would drop unsaved
+  form text. `QuoteDetailScreen.initialTab` (`?tab=levering` on the route) opens it on Levering.
+- **Job card + Jobs badge:** `myDeliveryActionsProvider` (`GET /api/deliveries/mine`, keyed by job id,
+  level decided server-side) drives a "Giv leveringsdetaljer" line UNDER the card's normal action
+  (red = urgent, amber = pending) and adds urgent jobs to `djQuoteActionCountProvider`. It refetches
+  with the quote list and after a delivery save; equipped DJs never call it.
+- Reminders repeat DAILY from 3 days before each deadline until the info is filled in, including
+  after the deadline (server rule, `helpers/equipmentDelivery.ts`); one push per job per day.
+- Push `delivery_info_reminder` (Edge Function `notify-delivery-reminder`, `kind` =
+  `collect`/`setup_4d`/`day_before`, `is_ext_job: 'false'`) routes like `ready_reminder` and is in
+  `extractReferenceId` (job_id). DJ-only opt-out toggle "Levering af udstyr". Tests:
+  `test/features/jobs/domain/equipment_delivery_test.dart`,
+  `test/features/jobs/presentation/equipment_delivery_section_test.dart`.
+
+## Payout date + afregning PDF on the performer's own job (`PayoutStatusCard`)
+
+`features/jobs/presentation/widgets/payout_status_card.dart` on `quote_detail_screen`,
+`ext_job_detail_screen` (both roles) and `service_offer_detail_screen`. Data from the web
+`GET /api/payouts/mine` (`myPayoutProvider`, model `domain/my_payout.dart`), never Supabase: the
+payout tables are admin-only under RLS and the date forecast mirrors admin's batch rule server-side.
+The card renders nothing for no payout or a failed lookup, and carries its own bottom gap so a hidden
+card leaves no hole. The PDF opens in the browser (`launchUrl`). Copy mirrors web
+`PayoutStatusCard.tsx`. Plan: `web-app/documentation/payout-status-on-job-plan.md`.
+
 ## Things Claude must NOT do
 
 - Do NOT call the Anthropic API directly from Flutter — always use an Edge Function
@@ -1573,3 +1728,14 @@ minor gap; internal DJ-only jobs can't hit the musician-contact blocker.)
 - [ ] Three-layer architecture respected — no Supabase in domain, no business logic in build()
 - [ ] Realtime subscriptions cancelled in `ref.onDispose()`
 - [ ] No secrets hardcoded
+
+## "Erfaring og tidligere spillesteder" on edit profile (`VenuesInput`, 2026-10-29)
+
+`profile/presentation/widgets/venues_input.dart` + `domain/venues.dart`, 1:1 with web
+`VenuesTagInput.tsx` + `helpers/venues.ts` (same test cases in `test/features/profile/domain/venues_test.dart`).
+- A name is added on keyboard "Færdig", a comma (also pasted lists), "Tilføj" and on focus loss.
+  **Gem does NOT take focus from the field**, so `_save` adds what is still typed itself, and back
+  navigation (`_onPopInvoked`) adds + saves it too. Pending text counts as unsaved in `_isDirty`.
+- **Venues save on their own** via `ProfileRepository.updateVenues` (writes ONLY
+  `venues_and_events`, same direct-Supabase path as the rest of the profile), chained in `_venueSave`
+  so quick add/remove cannot land out of order. They are therefore NOT in `_fingerprint()`.

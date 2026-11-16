@@ -2,7 +2,7 @@
 /// `referral_terms_accepted_at`, `GET/POST /api/referrals/terms`). Mirrors web
 /// `REFERRAL_TERMS_URL` in `helpers/referrals.ts`.
 const String kReferralTermsUrl =
-    'https://djtilbud.dk/referral-handelsbetingelser';
+    'https://djtilbud.dk/henvisning-handelsbetingelser/';
 
 class ReferralTermsStatus {
   const ReferralTermsStatus({

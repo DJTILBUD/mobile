@@ -16,6 +16,7 @@ class JobCard extends StatelessWidget {
     this.onTap,
     this.isColliding = false,
     this.djTier,
+    this.djEquipmentStatus,
     this.musicianPrice,
     this.isMusicianView = false,
     this.recurringName,
@@ -25,6 +26,10 @@ class JobCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isColliding;
   final String? djTier;
+
+  /// `DjInfos.equipment_status`: a non-equipped DJ's budget has the WKNDS
+  /// delivery deducted.
+  final String? djEquipmentStatus;
   final int? musicianPrice;
   final bool isMusicianView;
 
@@ -188,6 +193,7 @@ class JobCard extends StatelessWidget {
                             musicianPrice: musicianPrice,
                             showBudgetIncrease: showBudgetIncrease,
                             djTier: djTier,
+                            djEquipmentStatus: djEquipmentStatus,
                             colors: c,
                           ),
                         ),
@@ -294,7 +300,7 @@ class _DateBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = colors;
+    final fg = dsContentOn(bg);
     final day = date.day.toString();
     final month =
         DateFormat(
@@ -320,7 +326,7 @@ class _DateBlock extends StatelessWidget {
               fontWeight: FontWeight.w800,
               height: 1.0,
               letterSpacing: -0.5,
-              color: c.brand.onPrimary,
+              color: fg,
             ),
           ),
           const SizedBox(height: 2),
@@ -331,7 +337,7 @@ class _DateBlock extends StatelessWidget {
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
               height: 1.1,
-              color: c.brand.onPrimary.withValues(alpha: 0.75),
+              color: fg.withValues(alpha: 0.75),
             ),
           ),
           Text(
@@ -340,7 +346,7 @@ class _DateBlock extends StatelessWidget {
               fontSize: 9,
               fontWeight: FontWeight.w500,
               height: 1.2,
-              color: c.brand.onPrimary.withValues(alpha: 0.50),
+              color: fg.withValues(alpha: 0.50),
             ),
           ),
         ],
@@ -482,6 +488,7 @@ class _PriceRow extends StatelessWidget {
     required this.showBudgetIncrease,
     required this.colors,
     this.djTier,
+    this.djEquipmentStatus,
   });
 
   final Job job;
@@ -489,10 +496,16 @@ class _PriceRow extends StatelessWidget {
   final bool showBudgetIncrease;
   final DSColors colors;
   final String? djTier;
+  final String? djEquipmentStatus;
 
   String get _price {
     if (musicianPrice != null) return '${_fmt(musicianPrice!)} kr.';
-    return djAdjustedBudgetLabel(job, djTier) ?? 'Budget ikke angivet';
+    return djAdjustedBudgetLabel(
+          job,
+          djTier,
+          equipmentStatus: djEquipmentStatus,
+        ) ??
+        'Budget ikke angivet';
   }
 
   static String _fmt(int n) =>

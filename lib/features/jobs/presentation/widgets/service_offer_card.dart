@@ -5,6 +5,8 @@ import 'package:dj_tilbud_app/core/utils/customer_name.dart';
 import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/service_offer.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/bid_withdrawal.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/withdraw_bid.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
 import 'package:dj_tilbud_app/shared/widgets/recurring_customer_badge.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job_action.dart';
@@ -113,7 +115,10 @@ class ServiceOfferCard extends StatelessWidget {
                             _DateBlock(
                               date: job.date,
                               bg: isPlayed ? c.bg.inputBg : accentColor,
-                              fg: isPlayed ? c.text.muted : c.brand.onPrimary,
+                              fg:
+                                  isPlayed
+                                      ? c.text.muted
+                                      : dsContentOn(accentColor),
                             ),
                           ],
                         ),
@@ -156,6 +161,20 @@ class ServiceOfferCard extends StatelessWidget {
                             child = _AwaitingSendRow(c: c);
                           } else {
                             child = _StatusRow(offer: offer, c: c);
+                          }
+                          // Inside the 10 min edit/withdraw window: say so on the card.
+                          if (offer.status == ServiceOfferStatus.sent &&
+                              isWithinBidWithdrawWindow(offer.createdAt)) {
+                            child = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                BidWindowChip(
+                                  createdAt: offer.createdAt,
+                                  label: 'Kan trækkes tilbage',
+                                ),
+                                child,
+                              ],
+                            );
                           }
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(
@@ -436,7 +455,7 @@ class _CountdownRow extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: color),
+        Icon(icon, size: 14, color: c.fg(color)),
         const SizedBox(width: 5),
         Text(
           _label(),
@@ -540,14 +559,14 @@ class _ActionChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: color),
+        Icon(icon, size: 13, color: c.fg(color)),
         const SizedBox(width: 5),
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: color,
+            color: c.fg(color),
           ),
         ),
       ],

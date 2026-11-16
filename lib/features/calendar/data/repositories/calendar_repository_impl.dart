@@ -14,6 +14,7 @@ class CalendarRepositoryImpl implements CalendarRepository {
   Future<List<CalendarEvent>> fetchDjEvents(
     String userId, {
     String? djTier,
+    String? equipmentStatus,
   }) async {
     try {
       final quotesData = await _datasource.fetchDjWonQuotes(userId);
@@ -24,7 +25,11 @@ class CalendarRepositoryImpl implements CalendarRepository {
       for (final row in quotesData) {
         if (row['job'] != null) {
           events.add(
-            CalendarEventModel.fromDjQuoteJson(row, djTier: djTier).toEntity(),
+            CalendarEventModel.fromDjQuoteJson(
+              row,
+              djTier: djTier,
+              equipmentStatus: equipmentStatus,
+            ).toEntity(),
           );
         }
       }

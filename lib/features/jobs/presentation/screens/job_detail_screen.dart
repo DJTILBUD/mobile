@@ -47,12 +47,12 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
     );
   }
 
-  String _adjustedBudgetDisplay(String? djTier) {
+  String _adjustedBudgetDisplay(String? djTier, String? equipmentStatus) {
     final noBudget = job.budgetStart == null && job.budgetEnd == null;
 
     // B-tier fallback: show fixed range when no budget is provided
     if (djTier == 'B' && noBudget) {
-      return '${_fmt(3500)} – ${_fmt(6500)} kr.';
+      return bTierFallbackBudgetLabel(equipmentStatus);
     }
 
     final adjEnd = adjustBudgetForDjView(
@@ -63,6 +63,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
       maxBudget: job.budgetEnd,
       jobCreatedAt: job.createdAt,
       eventDate: job.date,
+      equipmentStatus: equipmentStatus,
     );
     if (adjEnd == null) return 'Ikke angivet';
 
@@ -75,6 +76,7 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
         maxBudget: job.budgetEnd,
         jobCreatedAt: job.createdAt,
         eventDate: job.date,
+        equipmentStatus: equipmentStatus,
       );
       if (adjStart != null) {
         final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
@@ -87,7 +89,8 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final _c = DSTheme.of(context);
-    final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
+    final djProfile = ref.watch(djProfileProvider).valueOrNull;
+    final djTier = djProfile?.tier;
     final dateStr = DateFormat('EEEE d. MMMM yyyy', 'da_DK').format(job.date);
     final noBudget = job.budgetStart == null && job.budgetEnd == null;
     final showBTierFallback = djTier == 'B' && noBudget;
@@ -225,7 +228,10 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
                       ),
                       const SizedBox(width: DSSpacing.s2),
                       Text(
-                        _adjustedBudgetDisplay(djTier),
+                        _adjustedBudgetDisplay(
+                          djTier,
+                          djProfile?.equipmentStatus,
+                        ),
                         style: DSTextStyle.headingSm.copyWith(
                           color: _c.brand.primaryActive,
                           fontWeight: FontWeight.w700,
@@ -380,7 +386,11 @@ class _JobDetailScreenState extends ConsumerState<JobDetailScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(LucideIcons.star, size: 15, color: _c.state.warning),
+                    Icon(
+                      LucideIcons.star,
+                      size: 15,
+                      color: _c.state.warningText,
+                    ),
                     const SizedBox(width: DSSpacing.s2),
                     Expanded(
                       child: Text(

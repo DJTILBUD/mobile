@@ -40,6 +40,7 @@ class CalendarEventModel {
   factory CalendarEventModel.fromDjQuoteJson(
     Map<String, dynamic> json, {
     String? djTier,
+    String? equipmentStatus,
   }) {
     final job = json['job'] as Map<String, dynamic>;
     return CalendarEventModel(
@@ -62,6 +63,7 @@ class CalendarEventModel {
         jobCreatedAt: DateTime.tryParse(job['created_at'] as String? ?? ''),
         // The EVENT date, which is what makes a booking high season (sax_high_season.dart).
         eventDate: DateTime.tryParse(job['date'] as String? ?? ''),
+        equipmentStatus: equipmentStatus,
       ),
       jobId: (job['id'] as num).toInt(),
     );

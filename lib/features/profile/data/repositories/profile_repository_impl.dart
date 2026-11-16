@@ -85,6 +85,27 @@ class ProfileRepositoryImpl implements ProfileRepository {
     }
   }
 
+  @override
+  Future<void> updateVenues({
+    required String userId,
+    required bool isDj,
+    required List<String> venues,
+  }) async {
+    final data = {
+      'id': userId,
+      'venues_and_events': venues.isEmpty ? null : venues,
+    };
+    try {
+      if (isDj) {
+        await _datasource.updateDjProfile(data);
+      } else {
+        await _datasource.updateMusicianProfile(data);
+      }
+    } on sb.PostgrestException catch (e) {
+      throw DatabaseException(e.message);
+    }
+  }
+
   // ── Musician Profile ──
 
   @override

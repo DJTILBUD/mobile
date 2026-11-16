@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +27,9 @@ import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/utils/birthday_person_age.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/widgets/decline_extra_hours.dart';
 import 'package:dj_tilbud_app/core/utils/planned_contact.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/payout_status_card.dart';
+import 'package:dj_tilbud_app/core/router/app_routes.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/withdraw_bid.dart';
 
 String _fmt(num n) =>
     NumberFormat('#,###', 'da_DK').format(n).replaceAll(',', '.');
@@ -60,6 +64,36 @@ class _ServiceOfferDetailScreenState
       _offer.isExtJob && _offer.job.roleType == 'musician_only';
 
   bool get _isReadyForBilling => _jobStatus == JobStatus.readyForBilling;
+
+  /// Double-tap guard for "Træk tilbud tilbage": set before the confirm dialog
+  /// opens, so a second tap cannot open a second dialog or fire a second DELETE.
+  bool _withdrawing = false;
+
+  Future<void> _withdrawOffer() async {
+    if (_withdrawing) return;
+    setState(() => _withdrawing = true);
+    try {
+      final withdrawn = await confirmAndWithdrawBid(
+        context,
+        title: 'Træk tilbuddet tilbage?',
+        message:
+            'Tilbuddet bliver slettet, og kunden kan ikke længere se det. Du kan sende et nyt tilbud bagefter, hvis du ændrer mening.',
+        fallbackSuccess: 'Dit tilbud er trukket tilbage.',
+        homeRoute: AppRoutes.instrumentalistHome,
+        withdraw:
+            () => ref
+                .read(withdrawServiceOfferProvider.notifier)
+                .withdraw(_offer.id),
+      );
+      // A rejection (window expired, no longer `sent`) means our copy is
+      // stale: re-read so the screen shows the real state.
+      if (!withdrawn && mounted) {
+        ref.read(serviceOffersProvider.notifier).refetchKeepingData();
+      }
+    } finally {
+      if (mounted) setState(() => _withdrawing = false);
+    }
+  }
 
   @override
   void initState() {
@@ -341,6 +375,15 @@ class _ServiceOfferDetailScreenState
       const SizedBox(height: DSSpacing.s3),
       _JobHeroCard(offer: offer),
       const SizedBox(height: DSSpacing.s3),
+      // Only on a `sent` offer (this body) and only inside the 10-minute
+      // window; the card hides itself when the window closes.
+      WithdrawOfferCountdownCard(
+        createdAt: offer.createdAt,
+        isLoading:
+            _withdrawing ||
+            ref.watch(withdrawServiceOfferProvider) is AsyncLoading,
+        onWithdraw: _withdrawOffer,
+      ),
       // Customer decision-window countdown — same widget for normal jobs and ext jobs. The ext-job
       // deadline is carried into offer.job via ExtJobModel.toJobModel(), so customerDeadline is set.
       CustomerDeadlineBanner(deadline: offer.job.customerDeadline),
@@ -565,6 +608,11 @@ class _ServiceOfferDetailScreenState
         const SickDisclaimer(role: 'musician'),
         const SizedBox(height: DSSpacing.s4),
 
+        PayoutStatusCard(
+          jobId: offer.extJobId == null ? offer.jobId : null,
+          extJobId: offer.extJobId,
+          onOpenPaymentInfo: () => context.pushNamed(AppRoutes.payment),
+        ),
         _MusicianExtraHoursSection(offer: offer),
         const SizedBox(height: DSSpacing.s4),
 
@@ -835,12 +883,12 @@ class _JobHeroCard extends StatelessWidget {
               job.musicianSpecialRequest!.isNotEmpty) ...[
             Row(
               children: [
-                Icon(LucideIcons.star, size: 14, color: _c.state.warning),
+                Icon(LucideIcons.star, size: 14, color: _c.state.warningText),
                 const SizedBox(width: DSSpacing.s1),
                 Text(
                   'Særligt ønske til musikeren',
                   style: DSTextStyle.labelSm.copyWith(
-                    color: _c.state.warning,
+                    color: _c.state.warningText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1663,7 +1711,11 @@ class _SpecialRequestFeeSectionState
               children: [
                 Row(
                   children: [
-                    Icon(LucideIcons.clock, size: 15, color: _c.state.warning),
+                    Icon(
+                      LucideIcons.clock,
+                      size: 15,
+                      color: _c.state.warningText,
+                    ),
                     const SizedBox(width: DSSpacing.s2),
                     Text(
                       'Registreret – vi bekræfter snart',
@@ -1991,7 +2043,7 @@ class _PlannedContactBanner extends StatelessWidget {
             Icon(
               Icons.calendar_today_outlined,
               size: 14,
-              color: _c.state.warning,
+              color: _c.state.warningText,
             ),
             const SizedBox(width: DSSpacing.s2),
             Text(

@@ -328,7 +328,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Text(
             titles[_step],
             style: DSTextStyle.headingMd.copyWith(
-              color: _c.brand.primary,
+              color: _c.brand.primaryActive,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1532,7 +1532,7 @@ class _VideoTile extends StatelessWidget {
       color: c.brand.primary.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(DSRadius.sm),
     ),
-    child: Icon(LucideIcons.video, size: 26, color: c.brand.primary),
+    child: Icon(LucideIcons.video, size: 26, color: c.brand.primaryActive),
   );
 }
 
@@ -1649,7 +1649,7 @@ class _ReviewsStep extends ConsumerWidget {
                         Icon(
                           LucideIcons.info,
                           size: 18,
-                          color: _c.state.warning,
+                          color: _c.state.warningText,
                         ),
                         const SizedBox(width: DSSpacing.s2),
                         Expanded(

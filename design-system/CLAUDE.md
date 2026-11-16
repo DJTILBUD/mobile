@@ -77,6 +77,28 @@ mix-title dialog) set `textCapitalization` themselves. One more reason to use `D
 
 `lib/core/design_system/showcase_screen.dart` renders every component in both light and dark mode with all variants. **Before building a new UI element, check the showcase first** — if a DS component covers the use case, use it. If you build something new that should become reusable, add it to the design system and showcase.
 
+## Colour contrast: fill tokens vs text tokens
+
+Reported as "yellow/green text on yellow/green". Two pale brand colours are FILL colours and are
+unreadable as text in light mode:
+- **Lime `brand.primary`** (#D1F366): text/icons use **`brand.primaryActive`** (dark olive in
+  light, lime in dark). Lime as text on white or on a lime tint is invisible.
+- **`state.warning`** stays the yellow SunsetOrange #FFD365 (owner likes it), but in light mode it
+  is a FILL only: backgrounds, tints, borders, bars, dots. Text and icons drawn in "warning" use
+  **`state.warningText`** (black in light, amber in dark). Widgets that receive a status colour and
+  draw both a tint and text from it (status badges, action chips, filter chips, deadline banners,
+  tab labels, calendar tags) wrap the text/icon colour in **`c.fg(color)`** (`tokens.dart`), which
+  maps the yellow to `warningText` and leaves every other colour alone. New such widgets must do
+  the same, or they bring back yellow-on-yellow.
+- **Text on a solid status fill** (card date blocks) uses `dsContentOn(fill)` (`tokens.dart`), which
+  picks EerieBlack or white by contrast. Never hardcode `brand.onPrimary` on a fill whose colour
+  changes by status.
+- A header that must be dark in both themes uses `brand.onPrimary` as its bg, never `text.primary`
+  (that flips to white in dark mode).
+- Pinned in `test/core/design_system/color_contrast_test.dart`.
+- Known, not yet fixed: light `state.info` (#66D0F2 sky blue) has the same problem as text (links on
+  `sick_disclaimer`, `job_content_section`, `my_content_screen`, the info toast with white text).
+
 ## Rules
 
 - Always use DS tokens — never raw hex, magic spacing numbers, or inline font sizes

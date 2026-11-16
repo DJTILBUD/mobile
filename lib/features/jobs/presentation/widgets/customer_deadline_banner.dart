@@ -73,7 +73,7 @@ class CustomerDeadlineBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(icon, size: 14, color: c.fg(color)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

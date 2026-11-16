@@ -18,6 +18,9 @@ import 'package:dj_tilbud_app/features/calendar/presentation/providers/calendar_
 import 'package:dj_tilbud_app/features/jobs/domain/date_collision.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/dj_bid_status.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/job_feedback.dart';
+import 'package:dj_tilbud_app/features/jobs/domain/repositories/jobs_repository.dart';
+import 'package:dj_tilbud_app/features/jobs/presentation/widgets/job_feedback_sheet.dart';
 import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider.dart';
 import 'package:dj_tilbud_app/features/profile/domain/self_billing_complete.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
@@ -28,6 +31,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/utils/unsaved_changes_dialog.dart';
 import 'package:dj_tilbud_app/shared/widgets/job_id_badge.dart';
+import 'package:dj_tilbud_app/shared/widgets/delivered_setup_notice.dart';
+import 'package:dj_tilbud_app/core/utils/wknds_delivery.dart';
 import 'package:dj_tilbud_app/core/utils/birthday_person_age.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/offer_form_validation.dart';
 
@@ -77,6 +82,15 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   DateTime? _openedAt;
   bool _submitted = false;
 
+  // "Hvorfor bød du ikke?" (revival plan 2.1). `can_ask` is fetched in the background on open and
+  // cached here; the sheet is shown on the previous screen only after a user pop, and never when
+  // the DJ bid, marked the date busy or tapped "Ikke interesseret" on this visit.
+  late final JobsRepository _jobsRepo;
+  JobFeedbackPrompt? _feedbackPrompt;
+  bool _actedOnJob = false;
+  bool _poppedByUser = false;
+  NavigatorState? _rootNavigator;
+
   int? get _msSinceOpen =>
       _openedAt == null
           ? null
@@ -93,6 +107,12 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   void initState() {
     super.initState();
     _openedAt = DateTime.now();
+    _jobsRepo = ref.read(jobsRepositoryProvider);
+    if (!widget.job.isExtJob) {
+      _jobsRepo
+          .fetchJobFeedbackPrompt(widget.job.id)
+          .then((prompt) => _feedbackPrompt = prompt);
+    }
     _salesPitchController.addListener(() {
       setState(() => _pitchLength = _salesPitchController.text.length);
     });
@@ -123,8 +143,20 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Captured now: the feedback sheet is shown from dispose(), when this context is gone.
+    _rootNavigator = Navigator.of(context, rootNavigator: true);
+  }
+
   Future<void> _onPopInvoked(bool didPop, _) async {
-    if (didPop) return;
+    if (didPop) {
+      // Back button, iOS swipe, or the confirmed unsaved-changes pop. Programmatic pops after a
+      // bid/decline also land here, but those set [_actedOnJob] first.
+      _poppedByUser = true;
+      return;
+    }
     final confirmed = await showUnsavedChangesDialog(context);
     // The abandon event is emitted from dispose() so it covers the not-dirty
     // pop too; nothing to log here.
@@ -133,8 +165,36 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     }
   }
 
+  /// Runs from dispose(), i.e. after the pop transition finished, so the back navigation itself is
+  /// never delayed. Shows the sheet on whatever screen is now on top (the previous one).
+  void _maybeAskWhyNoBid() {
+    final prompt = _feedbackPrompt;
+    final navigator = _rootNavigator;
+    if (!_poppedByUser ||
+        _actedOnJob ||
+        _submitted ||
+        prompt == null ||
+        !prompt.canAsk ||
+        navigator == null) {
+      return;
+    }
+    final repo = _jobsRepo;
+    final jobId = widget.job.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!navigator.mounted) return;
+      showJobFeedbackSheet(
+        navigator.context,
+        repository: repo,
+        jobId: jobId,
+        reasons: prompt.reasons,
+      );
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
   @override
   void dispose() {
+    _maybeAskWhyNoBid();
     // Fires even when nothing was typed: "opened it, read the budget, backed
     // out" is the hesitation signal, and the dirty-only confirm dialog missed it.
     if (!_submitted) {
@@ -163,7 +223,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
   double get _fee => getFeeForJob(widget.job.createdAt);
   int get _payout => (_totalPrice * (1 - _fee)).toInt();
 
-  double? _adjustedBudgetEnd(String? djTier) {
+  double? _adjustedBudgetEnd(String? djTier, String? equipmentStatus) {
     final job = widget.job;
     final raw = adjustBudgetForDjView(
       budget: job.budgetEnd,
@@ -173,6 +233,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       maxBudget: job.budgetEnd,
       jobCreatedAt: job.createdAt,
       eventDate: job.date,
+      equipmentStatus: equipmentStatus,
     );
     final start = adjustBudgetForDjView(
       budget: job.budgetStart,
@@ -182,16 +243,19 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       maxBudget: job.budgetEnd,
       jobCreatedAt: job.createdAt,
       eventDate: job.date,
+      equipmentStatus: equipmentStatus,
     );
     if (raw == null) return null;
     if (start != null && start > raw) return start;
     return raw;
   }
 
-  String _adjustedBudgetDisplay(String? djTier) {
+  String _adjustedBudgetDisplay(String? djTier, String? equipmentStatus) {
     final job = widget.job;
     final noBudget = job.budgetStart == null && job.budgetEnd == null;
-    if (djTier == 'B' && noBudget) return '3.500 – 6.500 kr.';
+    if (djTier == 'B' && noBudget) {
+      return bTierFallbackBudgetLabel(equipmentStatus);
+    }
 
     final adjEnd = adjustBudgetForDjView(
       budget: job.budgetEnd ?? job.budgetStart,
@@ -201,6 +265,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       maxBudget: job.budgetEnd,
       jobCreatedAt: job.createdAt,
       eventDate: job.date,
+      equipmentStatus: equipmentStatus,
     );
     if (adjEnd == null) return 'Ikke angivet';
 
@@ -213,6 +278,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
         maxBudget: job.budgetEnd,
         jobCreatedAt: job.createdAt,
         eventDate: job.date,
+        equipmentStatus: equipmentStatus,
       );
       if (adjStart != null) {
         final adjEndClamped = adjEnd > adjStart ? adjEnd : adjStart;
@@ -239,7 +305,24 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     );
   }
 
+  /// True from the first tap until the submit flow finishes. The provider's
+  /// AsyncLoading only starts at `.submit()`, after the billing-info await, so
+  /// without this a second tap in that gap ran the whole flow again and sent a
+  /// duplicate quote (job #3442, Oct 2026).
+  bool _submitting = false;
+
   Future<void> _handleSubmit() async {
+    if (_submitting) return;
+    _actedOnJob = true;
+    setState(() => _submitting = true);
+    try {
+      await _submit();
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _submit() async {
     AnalyticsService.logOfferSubmitAttempted(
       widget.job.id,
       role: 'dj',
@@ -249,8 +332,13 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       msSinceFormOpen: _msSinceOpen,
     );
 
+    // A non-equipped DJ picks neither gear nor early setup: WKNDS delivers the
+    // same setup and sets it up early, and the quote route sets both.
+    final nonEquipped = isNonEquippedDj(
+      ref.read(djProfileProvider).valueOrNull?.equipmentStatus,
+    );
     final equipmentValid =
-        _selectedEquipment.isNotEmpty || _noEquipmentSelected;
+        nonEquipped || _selectedEquipment.isNotEmpty || _noEquipmentSelected;
     if (!equipmentValid) {
       setState(() => _equipmentError = true);
     }
@@ -304,8 +392,11 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
       return;
     }
 
-    final djTier = ref.read(djProfileProvider).valueOrNull?.tier;
-    final adjustedBudget = _adjustedBudgetEnd(djTier);
+    final djProfile = ref.read(djProfileProvider).valueOrNull;
+    final adjustedBudget = _adjustedBudgetEnd(
+      djProfile?.tier,
+      djProfile?.equipmentStatus,
+    );
     final priceOverBudget =
         adjustedBudget != null && _price > adjustedBudget * 1.1;
     final withinFourHours = isWithinFirstFourHours(widget.job.createdAt);
@@ -348,15 +439,26 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
         .submit(
           jobId: widget.job.id,
           priceDkk: _price,
-          equipmentDescription: serializeEquipmentDescription(
-            _selectedEquipment,
-            _topSpeakerCount,
-            _bottomSpeakerCount,
-          ),
+          // For a non-equipped DJ the route overwrites both with the fixed
+          // WKNDS setup and free early setup; sent the same here for clarity.
+          equipmentDescription:
+              nonEquipped
+                  ? serializeEquipmentDescription(
+                    const ['Pult', 'Højtalere', 'Festlys'],
+                    2,
+                    2,
+                    1,
+                  )
+                  : serializeEquipmentDescription(
+                    _selectedEquipment,
+                    _topSpeakerCount,
+                    _bottomSpeakerCount,
+                  ),
           salesPitch: _salesPitchController.text.trim(),
-          earlySetupStatus: _offersEarlySetup ? 'offered' : null,
+          earlySetupStatus: nonEquipped || _offersEarlySetup ? 'offered' : null,
           earlySetupPrice:
-              _offersEarlySetup &&
+              !nonEquipped &&
+                      _offersEarlySetup &&
                       _earlySetupHasPrice &&
                       _earlySetupPriceValue > 0
                   ? _earlySetupPriceValue
@@ -420,6 +522,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
 
   /// "Jeg er optaget den dag" — marks the job's date as unavailable and hides the job.
   Future<void> _handleMarkBusy() async {
+    _actedOnJob = true;
     final userId = supabase.auth.currentUser?.id;
     if (userId == null || !mounted) return;
 
@@ -461,6 +564,7 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
 
   /// "Ikke interesseret" — shows a reason picker sheet then records the rejection.
   Future<void> _handleNotInterested() async {
+    _actedOnJob = true;
     final reasons = await showModalBottomSheet<List<String>>(
       context: context,
       isScrollControlled: true,
@@ -561,8 +665,10 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
     final createState = ref.watch(createDjQuoteProvider);
     final isLoading = createState is AsyncLoading;
 
-    final djTier = ref.watch(djProfileProvider).valueOrNull?.tier;
-    final adjustedBudget = _adjustedBudgetEnd(djTier);
+    final djProfile = ref.watch(djProfileProvider).valueOrNull;
+    final djTier = djProfile?.tier;
+    final djEquipmentStatus = djProfile?.equipmentStatus;
+    final adjustedBudget = _adjustedBudgetEnd(djTier, djEquipmentStatus);
     final priceOverBudget =
         adjustedBudget != null && _price > 0 && _price > adjustedBudget * 1.1;
     final withinFourHours = isWithinFirstFourHours(job.createdAt);
@@ -679,7 +785,10 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
               _JobSummary(
                 job: job,
                 dateStr: dateStr,
-                budgetDisplay: _adjustedBudgetDisplay(djTier),
+                budgetDisplay: _adjustedBudgetDisplay(
+                  djTier,
+                  djEquipmentStatus,
+                ),
               ),
               const SizedBox(height: DSSpacing.s6),
 
@@ -768,32 +877,35 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
 
               const SizedBox(height: DSSpacing.s2),
 
-              EquipmentPicker(
-                selectedEquipment: _selectedEquipment,
-                topSpeakerCount: _topSpeakerCount,
-                bottomSpeakerCount: _bottomSpeakerCount,
-                noEquipmentSelected: _noEquipmentSelected,
-                onChanged: (selected, top, bund) {
-                  setState(() {
-                    _selectedEquipment = selected;
-                    _topSpeakerCount = top;
-                    _bottomSpeakerCount = bund;
-                    if (selected.isNotEmpty) {
-                      _noEquipmentSelected = false;
-                      _equipmentError = false;
-                    }
-                  });
-                },
-                onNoEquipmentChanged: (value) {
-                  setState(() {
-                    _noEquipmentSelected = value;
-                    if (value) {
-                      _selectedEquipment = [];
-                      _equipmentError = false;
-                    }
-                  });
-                },
-              ),
+              if (isNonEquippedDj(djEquipmentStatus))
+                const DeliveredSetupNotice()
+              else
+                EquipmentPicker(
+                  selectedEquipment: _selectedEquipment,
+                  topSpeakerCount: _topSpeakerCount,
+                  bottomSpeakerCount: _bottomSpeakerCount,
+                  noEquipmentSelected: _noEquipmentSelected,
+                  onChanged: (selected, top, bund) {
+                    setState(() {
+                      _selectedEquipment = selected;
+                      _topSpeakerCount = top;
+                      _bottomSpeakerCount = bund;
+                      if (selected.isNotEmpty) {
+                        _noEquipmentSelected = false;
+                        _equipmentError = false;
+                      }
+                    });
+                  },
+                  onNoEquipmentChanged: (value) {
+                    setState(() {
+                      _noEquipmentSelected = value;
+                      if (value) {
+                        _selectedEquipment = [];
+                        _equipmentError = false;
+                      }
+                    });
+                  },
+                ),
               if (_equipmentError) ...[
                 const SizedBox(height: DSSpacing.s1),
                 Text(
@@ -870,29 +982,33 @@ class _DjQuoteFormScreenState extends ConsumerState<DjQuoteFormScreen> {
               ),
               const SizedBox(height: DSSpacing.s6),
 
-              _EarlySetupSection(
-                offersEarlySetup: _offersEarlySetup,
-                earlySetupHasPrice: _earlySetupHasPrice,
-                earlySetupPriceController: _earlySetupPriceController,
-                onOffersChanged: (v) {
-                  setState(() {
-                    _offersEarlySetup = v;
-                    if (!v) _earlySetupHasPrice = false;
-                  });
-                },
-                onHasPriceChanged: (v) {
-                  setState(() => _earlySetupHasPrice = v);
-                },
-              ),
+              if (!isNonEquippedDj(djEquipmentStatus))
+                _EarlySetupSection(
+                  offersEarlySetup: _offersEarlySetup,
+                  earlySetupHasPrice: _earlySetupHasPrice,
+                  earlySetupPriceController: _earlySetupPriceController,
+                  onOffersChanged: (v) {
+                    setState(() {
+                      _offersEarlySetup = v;
+                      if (!v) _earlySetupHasPrice = false;
+                    });
+                  },
+                  onHasPriceChanged: (v) {
+                    setState(() => _earlySetupHasPrice = v);
+                  },
+                ),
               const SizedBox(height: DSSpacing.s6),
 
               DSButton(
                 label: 'Afgiv bud',
                 variant: DSButtonVariant.primary,
                 expand: true,
-                isLoading: isLoading,
+                isLoading: isLoading || _submitting,
                 enabled: !isBlocked,
-                onTap: isLoading || isBlocked ? null : _handleSubmit,
+                onTap:
+                    isLoading || _submitting || isBlocked
+                        ? null
+                        : _handleSubmit,
               ),
               const SizedBox(height: DSSpacing.s8),
             ],
@@ -1279,7 +1395,7 @@ class _BudgetWarningBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: color),
+          Icon(icon, size: 18, color: _c.fg(color)),
           const SizedBox(width: DSSpacing.s2),
           Expanded(
             child: Column(

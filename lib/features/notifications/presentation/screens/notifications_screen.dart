@@ -480,6 +480,7 @@ _TypeVisual _visualForType(String type) {
     case 'extra_hours_reminder':
     case 'contact_customer_reminder':
     case 'send_invoice_reminder':
+    case 'delivery_info_reminder':
     case 'content_record_reminder':
     case 'content_upload_reminder':
       return const _TypeVisual(LucideIcons.clock, amber);

@@ -1,7 +1,9 @@
 // Mirrors web-app/src/helpers/saxHighSeason.ts. Change both together.
 //
-// High season for saxophone pricing. This is the SAME window dj-form uses to decide a booking gets
-// one hand-picked DJ instead of three quotes (`isDateInSpecialQuoteWindow`).
+// High season for saxophone pricing. Two windows, picked by when the JOB was created (see
+// [isSaxSeasonPricingActive]): Saturdays in August for jobs created on/after
+// [saxAugustSaturdaysStart] ([isSaxHighSeason]), and the older wide window for jobs created before it
+// ([isLegacySaxHighSeason]), so a job whose customer was already quoted a season price never reprices.
 //
 // Keyed on the EVENT date, never on createdAt: a June wedding booked in January is still a
 // high-season event. Season pricing needs BOTH that and the rollout cutoff — see
@@ -16,7 +18,13 @@
 /// figures, never store them. Keep byte-identical to `SAX_SEASON_PRICING_START` in the web helper.
 final saxSeasonPricingStart = DateTime.utc(2026, 8, 24);
 
-/// One-off high-demand dates that fall OUTSIDE the recurring weekend rule below. Empty since the
+/// Jobs created on/after this instant use Saturdays in August only. Jobs created between
+/// [saxSeasonPricingStart] and this keep the wide window. Keep byte-identical to
+/// `SAX_AUGUST_SATURDAYS_START` in the web helper.
+final saxAugustSaturdaysStart = DateTime.utc(2026, 10, 28);
+
+/// One-off high-demand dates for the LEGACY window ([isLegacySaxHighSeason]) that fall outside its
+/// recurring weekend rule. Empty since the
 /// 2026-09-28 rule change: every date that used to be listed here is now covered by the rule itself.
 /// Keep the mechanism for a genuine one-off. Keep in sync with the web helper and
 /// `EXTRA_SPECIAL_QUOTE_DATES` in dj-form.
@@ -27,7 +35,15 @@ String _isoDate(int year, int month, int day) =>
     '${month.toString().padLeft(2, '0')}-'
     '${day.toString().padLeft(2, '0')}';
 
-/// Is this event date in saxophone high season? (Rule from 2026-09-28, every year.)
+/// Is this event date in saxophone high season? Current rule (jobs created on/after
+/// [saxAugustSaturdaysStart]), every year: Saturdays in August only.
+bool isSaxHighSeason(DateTime? eventDate) {
+  if (eventDate == null) return false;
+  return eventDate.month == 8 && eventDate.weekday == DateTime.saturday;
+}
+
+/// The older, wide window (rule from 2026-09-28). Applies only to jobs created before
+/// [saxAugustSaturdaysStart].
 ///
 /// Fridays and Saturdays only, within: April through September, the FIRST weekend of October (the
 /// first Saturday of October and the Friday before it), and all of November and December, plus any
@@ -36,7 +52,7 @@ String _isoDate(int year, int month, int day) =>
 /// The date is read as the calendar day it names. `Jobs.date` / `ExtJobs.date` are plain date
 /// columns, and a UTC-parsed value would land on the previous day west of UTC, shifting weekends out
 /// of the window.
-bool isSaxHighSeason(DateTime? eventDate) {
+bool isLegacySaxHighSeason(DateTime? eventDate) {
   if (eventDate == null) return false;
 
   final year = eventDate.year;
@@ -60,13 +76,17 @@ bool isSaxHighSeason(DateTime? eventDate) {
   return isAprilToSeptember || isFirstOctoberWeekend || isNovemberDecember;
 }
 
-/// The full gate for season sax pricing: the event must be in season AND the job must have been
-/// created on/after the rollout date.
+/// The full gate for season sax pricing: the job must have been created on/after the rollout date,
+/// and the event date must be in the window that applies to the job's creation date.
 ///
-/// A missing [jobCreatedAt] counts as post-launch, matching how the price helpers already treat a
-/// missing creation date (steady state, not legacy).
+/// A missing [jobCreatedAt] counts as a brand-new job (current window), matching how the price
+/// helpers already treat a missing creation date (steady state, not legacy).
 bool isSaxSeasonPricingActive(DateTime? jobCreatedAt, DateTime? eventDate) {
-  if (!isSaxHighSeason(eventDate)) return false;
-  if (jobCreatedAt == null) return true;
-  return !jobCreatedAt.toUtc().isBefore(saxSeasonPricingStart);
+  if (jobCreatedAt == null) return isSaxHighSeason(eventDate);
+  final createdAt = jobCreatedAt.toUtc();
+  if (createdAt.isBefore(saxSeasonPricingStart)) return false;
+  if (createdAt.isBefore(saxAugustSaturdaysStart)) {
+    return isLegacySaxHighSeason(eventDate);
+  }
+  return isSaxHighSeason(eventDate);
 }

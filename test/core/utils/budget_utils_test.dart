@@ -192,4 +192,63 @@ void main() {
       );
     });
   });
+
+  group('adjustBudgetForDjView — non-equipped DJ (mirrors web)', () {
+    final old = DateTime.utc(2026, 1, 1);
+
+    double? nonEquipped(
+      double budget, {
+      bool sax = false,
+      double? hours,
+      DateTime? eventDate,
+    }) => adjustBudgetForDjView(
+      budget: budget,
+      requestedSaxophonist: sax,
+      requestedMusicianHours: hours,
+      djTier: 'A',
+      maxBudget: budget,
+      jobCreatedAt: old,
+      eventDate: eventDate,
+      equipmentStatus: 'non_equipped',
+    );
+
+    test('takes exactly 3.750 off (web: 7.500 -> 3.750)', () {
+      expect(nonEquipped(7500), 3750);
+    });
+
+    test('does not apply the 500/250 steps on top (web: 12.000 -> 8.250)', () {
+      expect(nonEquipped(12000), 8250);
+    });
+
+    test('floors at 500 instead of 1.500', () {
+      expect(nonEquipped(5000), 1250);
+      expect(nonEquipped(4000), 500);
+      expect(nonEquipped(3000), 500);
+    });
+
+    test('still deducts the saxophonist first (web: 12.000 -> 3.060)', () {
+      expect(
+        nonEquipped(
+          12000,
+          sax: true,
+          hours: 1.5,
+          eventDate: DateTime.utc(2026, 3, 1),
+        ),
+        3060,
+      );
+    });
+
+    test('an equipped DJ is unchanged', () {
+      expect(
+        adjustBudgetForDjView(budget: 12000, equipmentStatus: 'equipped'),
+        adjustBudgetForDjView(budget: 12000),
+      );
+    });
+
+    test('B-tier fallback range (web bTierFallbackBudgetRange)', () {
+      expect(bTierFallbackBudgetRange('equipped'), (3500, 6500));
+      expect(bTierFallbackBudgetRange(null), (3500, 6500));
+      expect(bTierFallbackBudgetRange('non_equipped'), (500, 2750));
+    });
+  });
 }

@@ -20,7 +20,7 @@ class DSTabItem {
   final IconData? activeIcon;
 
   /// Indicator + label color when this tab is selected.
-  /// Falls back to [DSColors.brand.primary] if not provided.
+  /// Falls back to [DSBrandColors.primaryActive] (readable on light and dark) if not provided.
   final Color? activeColor;
 
   /// When > 0, shows a red badge with this count on the tab icon.
@@ -91,7 +91,7 @@ class DSTabBar extends StatelessWidget implements PreferredSizeWidget {
           labelColor:
               coloredIndicatorOnly
                   ? c.text.primary
-                  : (tabs[ctrl.index].activeColor ?? c.brand.primary),
+                  : c.fg(tabs[ctrl.index].activeColor ?? c.brand.primaryActive),
           unselectedLabelColor: c.text.muted,
 
           // Indicator — 3px line, full tab width

@@ -24,6 +24,14 @@ abstract class ProfileRepository {
   });
   Future<void> updateMusicianProfile(MusicianProfile profile);
 
+  /// Saves ONLY `venues_and_events` (empty -> null). The venues on the edit screen save the
+  /// moment one is added or removed, like web, so this must not touch any other column.
+  Future<void> updateVenues({
+    required String userId,
+    required bool isDj,
+    required List<String> venues,
+  });
+
   // Payment
   Future<PaymentInfo?> fetchPaymentInfo({
     required String userId,
