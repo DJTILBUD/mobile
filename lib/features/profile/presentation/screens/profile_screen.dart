@@ -21,6 +21,7 @@ import 'package:dj_tilbud_app/shared/widgets/delivered_setup_notice.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dj_tilbud_app/features/notifications/presentation/widgets/notification_bell.dart';
 
+// @uxid lib/features/profile/presentation/screens/profile_screen.dart::ProfileScreen
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key, required this.role});
 
@@ -413,6 +414,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/profile_screen.dart::_MenuItem
 class _MenuItem extends StatelessWidget {
   const _MenuItem({
     required this.icon,

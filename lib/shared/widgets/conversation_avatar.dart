@@ -11,6 +11,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 ///
 /// Falls back image -> initials -> "?", so a broken or slow image never leaves an empty circle.
 /// [isSupport] renders the DJTILBUD agent mark instead of a person.
+// @uxid lib/shared/widgets/conversation_avatar.dart::ConversationAvatar
 class ConversationAvatar extends StatelessWidget {
   const ConversationAvatar({
     super.key,
@@ -64,6 +65,7 @@ class ConversationAvatar extends StatelessWidget {
   }
 }
 
+// @uxid lib/shared/widgets/conversation_avatar.dart::_InitialsAvatar
 class _InitialsAvatar extends StatelessWidget {
   const _InitialsAvatar({
     required this.name,

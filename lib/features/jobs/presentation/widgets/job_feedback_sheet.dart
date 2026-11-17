@@ -40,6 +40,7 @@ Future<void> showJobFeedbackSheet(
 }
 
 /// The sheet body. Pops with a [JobFeedbackAnswer], or with null on "Spring over".
+// @uxid lib/features/jobs/presentation/widgets/job_feedback_sheet.dart::JobFeedbackSheet
 class JobFeedbackSheet extends StatefulWidget {
   const JobFeedbackSheet({super.key, this.reasons = jobFeedbackReasons});
 

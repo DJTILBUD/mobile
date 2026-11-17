@@ -63,6 +63,7 @@ Future<bool> confirmAndWithdrawBid(
 /// Sax offer: live "mm:ss" countdown + "Træk tilbud tilbage" button while the
 /// 10-minute window is open. Hides itself once the window has passed (the
 /// server is the authority; this only decides visibility).
+// @uxid lib/features/jobs/presentation/widgets/withdraw_bid.dart::WithdrawOfferCountdownCard
 class WithdrawOfferCountdownCard extends StatefulWidget {
   const WithdrawOfferCountdownCard({
     super.key,
@@ -159,6 +160,7 @@ class _WithdrawOfferCountdownCardState
 /// bid is inside its 10-minute window, so the performer sees it without opening
 /// every bid. Ticks every second and removes itself (incl. its bottom gap) when
 /// the window ends.
+// @uxid lib/features/jobs/presentation/widgets/withdraw_bid.dart::BidWindowChip
 class BidWindowChip extends StatefulWidget {
   const BidWindowChip({super.key, required this.createdAt, required this.label});
 

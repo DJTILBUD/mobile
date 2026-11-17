@@ -15,6 +15,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/equipment_deliv
 /// ([equipmentDeliveryProvider]); the section renders nothing when the job has no delivery or the
 /// lookup failed. Carries its own bottom gap so a hidden section leaves no hole. Plan:
 /// `web-app/documentation/non-equipped-djs-plan.md`, "Opgave 4 og 5, v1".
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_section.dart::EquipmentDeliverySection
 class EquipmentDeliverySection extends ConsumerWidget {
   const EquipmentDeliverySection({super.key, required this.jobId});
 
@@ -75,6 +76,7 @@ class EquipmentDeliverySection extends ConsumerWidget {
 }
 
 /// One line: cancelled, all filled in, or the next deadline.
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_section.dart::_StatusLine
 class _StatusLine extends StatelessWidget {
   const _StatusLine({required this.delivery});
   final EquipmentDelivery delivery;
@@ -113,6 +115,7 @@ class _StatusLine extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_section.dart::_Pill
 class _Pill extends StatelessWidget {
   const _Pill({required this.icon, required this.color, required this.text});
   final IconData icon;
@@ -152,6 +155,7 @@ class _Pill extends StatelessWidget {
 }
 
 /// What gets delivered + the day's checklist, folded by default: useful once, noise every visit.
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_section.dart::_GearAndChecklist
 class _GearAndChecklist extends StatelessWidget {
   const _GearAndChecklist({required this.delivery});
   final EquipmentDelivery delivery;
@@ -206,6 +210,7 @@ class _GearAndChecklist extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_section.dart::_Label
 class _Label extends StatelessWidget {
   const _Label(this.text);
   final String text;
@@ -226,6 +231,7 @@ class _Label extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_section.dart::_Bullet
 class _Bullet extends StatelessWidget {
   const _Bullet(this.text);
   final String text;

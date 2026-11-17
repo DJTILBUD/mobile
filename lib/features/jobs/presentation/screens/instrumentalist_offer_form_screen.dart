@@ -29,6 +29,7 @@ import 'package:dj_tilbud_app/core/analytics/analytics_service.dart';
 import 'package:dj_tilbud_app/core/utils/birthday_person_age.dart';
 import 'package:dj_tilbud_app/features/jobs/domain/offer_form_validation.dart';
 
+// @uxid lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::InstrumentalistOfferFormScreen
 class InstrumentalistOfferFormScreen extends ConsumerStatefulWidget {
   const InstrumentalistOfferFormScreen({
     super.key,
@@ -891,6 +892,7 @@ class _InstrumentalistOfferFormScreenState
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::_InfoRow
 class _InfoRow extends StatelessWidget {
   const _InfoRow(this.icon, this.text);
 
@@ -927,6 +929,7 @@ class _SameDateOffer {
 /// Explains the "several offers on one date" feature on the offer form: lists what the sax already
 /// holds this day, and spells out the two outcomes (auto-lost when wins are < 3h apart; own
 /// responsibility not to double-book when both can be won). Informational only — never blocks.
+// @uxid lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::_MultiOfferNotice
 class _MultiOfferNotice extends StatelessWidget {
   const _MultiOfferNotice({required this.others});
 
@@ -1043,6 +1046,7 @@ class _MultiOfferNotice extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/screens/instrumentalist_offer_form_screen.dart::_RuleLine
 class _RuleLine extends StatelessWidget {
   const _RuleLine(this.text);
 

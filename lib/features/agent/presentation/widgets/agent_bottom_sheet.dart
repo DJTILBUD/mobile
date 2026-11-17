@@ -12,6 +12,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// input is focused, so the composer has as much room as possible above the keyboard.
 const double _maxSheetSize = 0.95;
 
+// @uxid lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::AgentBottomSheet
 class AgentBottomSheet extends ConsumerStatefulWidget {
   const AgentBottomSheet({
     super.key,
@@ -293,6 +294,7 @@ class _AgentBottomSheetState extends ConsumerState<AgentBottomSheet> {
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_LoadingDots
 class _LoadingDots extends StatefulWidget {
   const _LoadingDots();
 
@@ -338,6 +340,7 @@ class _LoadingDotsState extends State<_LoadingDots>
   }
 }
 
+// @uxid lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_DraftText
 class _DraftText extends StatelessWidget {
   const _DraftText({required this.text, required this.streaming});
 
@@ -388,6 +391,7 @@ class _DraftText extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_ErrorView
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message});
 
@@ -424,6 +428,7 @@ class _ErrorView extends StatelessWidget {
 
 // ── Refinement strip ──────────────────────────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_RefinementStrip
 class _RefinementStrip extends StatefulWidget {
   const _RefinementStrip({
     required this.onRefine,
@@ -584,6 +589,7 @@ class _RefinementStripState extends State<_RefinementStrip> {
   }
 }
 
+// @uxid lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_Chip
 class _Chip extends StatelessWidget {
   const _Chip({required this.label, required this.onTap});
 
@@ -617,6 +623,7 @@ class _Chip extends StatelessWidget {
 
 // ── Action bar ────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/agent/presentation/widgets/agent_bottom_sheet.dart::_ActionBar
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.agentState,

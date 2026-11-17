@@ -6,6 +6,7 @@ import 'package:dj_tilbud_app/core/design_system/components.dart';
 /// a plain toast disappears too fast to register as a real reward moment, and the tab switches
 /// to "Mine henvisninger" right after, so this is the one beat that says "that worked" before
 /// the view changes under the user. Pure Flutter tweens, no animation package needed.
+// @uxid lib/features/referrals/presentation/widgets/referral_success_overlay.dart::ReferralSuccessOverlay
 class ReferralSuccessOverlay extends StatefulWidget {
   const ReferralSuccessOverlay({super.key});
 

@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/features/profile/domain/venues.dart';
 /// keyboard, a comma, "Tilføj" and when the field loses focus. The screen owns [controller] so it
 /// can also add what is left in the field when the performer taps Gem.
 /// 1:1 MIRROR of web-app `VenuesTagInput.tsx`.
+// @uxid lib/features/profile/presentation/widgets/venues_input.dart::VenuesInput
 class VenuesInput extends StatefulWidget {
   const VenuesInput({
     super.key,

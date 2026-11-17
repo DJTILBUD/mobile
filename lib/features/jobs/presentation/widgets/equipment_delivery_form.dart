@@ -16,6 +16,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/widgets/equipment_deliv
 /// delivery is cancelled. Kept alive (`AutomaticKeepAliveClientMixin`) because it sits in the
 /// quote detail's lazy ListView: scrolled out of view, its State (and the typed text) would
 /// otherwise be disposed. Values are checked directly, never via `Form.validate()`.
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_form.dart::EquipmentDeliveryForm
 class EquipmentDeliveryForm extends ConsumerStatefulWidget {
   const EquipmentDeliveryForm({super.key, required this.delivery});
 
@@ -258,6 +259,7 @@ class _EquipmentDeliveryFormState extends ConsumerState<EquipmentDeliveryForm>
 }
 
 /// A field group's heading: its name, and the deadline (or a check once the saved data is complete).
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_form.dart::_GroupHeader
 class _GroupHeader extends StatelessWidget {
   const _GroupHeader({required this.title, this.dueDate, this.done = false});
 

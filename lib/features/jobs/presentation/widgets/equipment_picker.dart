@@ -6,6 +6,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// Visual card-grid equipment picker — matches the web app's QuoteForm UI.
 ///
 /// Calls [onChanged] whenever the selection or speaker counts change.
+// @uxid lib/features/jobs/presentation/widgets/equipment_picker.dart::EquipmentPicker
 class EquipmentPicker extends StatelessWidget {
   const EquipmentPicker({
     super.key,
@@ -151,6 +152,7 @@ class EquipmentPicker extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/equipment_picker.dart::_EquipmentCard
 class _EquipmentCard extends StatelessWidget {
   const _EquipmentCard({
     required this.label,
@@ -191,6 +193,7 @@ class _EquipmentCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/equipment_picker.dart::_CounterRow
 class _CounterRow extends StatelessWidget {
   const _CounterRow({
     required this.label,
@@ -238,6 +241,7 @@ class _CounterRow extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/equipment_picker.dart::_CounterButton
 class _CounterButton extends StatelessWidget {
   const _CounterButton({required this.icon, required this.onTap});
   final IconData icon;

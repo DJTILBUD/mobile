@@ -8,6 +8,7 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/admin_message.dar
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/profile/presentation/screens/admin_messages_screen.dart::AdminMessagesScreen
 class AdminMessagesScreen extends ConsumerWidget {
   const AdminMessagesScreen({super.key, required this.role});
 
@@ -110,6 +111,7 @@ class AdminMessagesScreen extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/admin_messages_screen.dart::_MessageCard
 class _MessageCard extends ConsumerStatefulWidget {
   const _MessageCard({
     required this.message,
@@ -245,6 +247,7 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
 
 // ─── Centered content that still scrolls (so pull-to-refresh works) ──────────
 
+// @uxid lib/features/profile/presentation/screens/admin_messages_screen.dart::_CenteredScrollable
 class _CenteredScrollable extends StatelessWidget {
   const _CenteredScrollable({required this.child});
 
@@ -267,6 +270,7 @@ class _CenteredScrollable extends StatelessWidget {
 
 // ─── Formatted text (bold + bullets + paragraphs) ────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/admin_messages_screen.dart::_FormattedText
 class _FormattedText extends StatelessWidget {
   const _FormattedText({required this.text, required this.baseStyle});
 

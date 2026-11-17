@@ -15,6 +15,7 @@ import 'package:dj_tilbud_app/core/supabase/supabase_client.dart';
 import 'package:dj_tilbud_app/app.dart';
 import 'package:dj_tilbud_app/core/widgets/restart_widget.dart';
 import 'package:dj_tilbud_app/firebase_options.dart';
+import 'package:eva_flutter/eva_flutter.dart';
 
 // Top-level handler required by Firebase for background/terminated messages.
 @pragma('vm:entry-point')
@@ -66,6 +67,11 @@ Future<void> _logBackgroundReceivedToSupabase(Map<String, dynamic> data) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Eva.init(
+    key: 'evalpk_4CoG3DV4h8BFKri-HTFLIm3x2NMRKCxi',
+    endpoint: 'https://dev.runeva.ai',
+    appId: 'dj_tilbud_app',
+  );
   await EnvConfig.load();
   await RoleCache.load();
   // Load the impersonation flag before the auth listener subscribes, so a

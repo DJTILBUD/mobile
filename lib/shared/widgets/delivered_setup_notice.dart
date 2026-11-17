@@ -9,6 +9,7 @@ import 'package:dj_tilbud_app/core/utils/wknds_delivery.dart';
 /// picker and the early-setup switch (mirrors web `DeliveredSetupNotice`).
 /// Otherwise it is the "Dit udstyr" profile card (mirrors web
 /// `DeliveredEquipmentCard`). Never mentions what the delivery costs.
+// @uxid lib/shared/widgets/delivered_setup_notice.dart::DeliveredSetupNotice
 class DeliveredSetupNotice extends StatelessWidget {
   const DeliveredSetupNotice({super.key, this.forQuote = true});
 

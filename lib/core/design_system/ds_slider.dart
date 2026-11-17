@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 
 /// Design-system slider — matches web marketplace `Slider`.
+// @uxid lib/core/design_system/ds_slider.dart::DSSlider
 class DSSlider extends StatelessWidget {
   const DSSlider({
     super.key,

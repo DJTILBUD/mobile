@@ -12,6 +12,7 @@ import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_pr
 /// Locked: explains the lock and lets the performer ask support for a change.
 /// Unlocked after an approval: tells them they can edit, and that the next save
 /// locks it again. Renders nothing when unlocked with no approved request.
+// @uxid lib/features/profile/presentation/widgets/billing_lock_card.dart::BillingLockCard
 class BillingLockCard extends ConsumerWidget {
   const BillingLockCard({super.key, required this.lockedAt});
 
@@ -96,6 +97,7 @@ class BillingLockCard extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/widgets/billing_lock_card.dart::_Panel
 class _Panel extends StatelessWidget {
   const _Panel({
     required this.color,
@@ -149,6 +151,7 @@ class _Panel extends StatelessWidget {
 }
 
 /// Reason form for a change request. Pops `true` once the request is sent.
+// @uxid lib/features/profile/presentation/widgets/billing_lock_card.dart::_RequestChangeDialog
 class _RequestChangeDialog extends ConsumerStatefulWidget {
   const _RequestChangeDialog();
 

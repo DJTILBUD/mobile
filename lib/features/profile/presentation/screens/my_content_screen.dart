@@ -15,6 +15,7 @@ const _examplesUrl = 'https://djtilbud.dk/eksempler-video-billeder/';
 /// Profile library of all the DJ's job content clips. When opened from a job
 /// (a non-null [scope]) it also shows a scoped uploader for that job; opened
 /// from the profile menu it is the full library (view + delete).
+// @uxid lib/features/profile/presentation/screens/my_content_screen.dart::MyContentScreen
 class MyContentScreen extends ConsumerStatefulWidget {
   const MyContentScreen({super.key, this.scope});
 

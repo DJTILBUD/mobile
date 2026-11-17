@@ -3,6 +3,7 @@ import 'package:dj_tilbud_app/core/design_system/tokens.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 /// Design-system checkbox — matches web marketplace `Checkbox`.
+// @uxid lib/core/design_system/ds_checkbox.dart::DSCheckbox
 class DSCheckbox extends StatelessWidget {
   const DSCheckbox({
     super.key,

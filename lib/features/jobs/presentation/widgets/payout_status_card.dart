@@ -12,6 +12,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/providers/jobs_provider
 /// latest on their account (bank date + 3), and the afregning PDF once it has been emailed.
 /// Renders nothing when the job has no self-billing payout. Copy mirrors web
 /// `src/components/PayoutStatusCard.tsx`; keep them in step.
+// @uxid lib/features/jobs/presentation/widgets/payout_status_card.dart::PayoutStatusCard
 class PayoutStatusCard extends ConsumerWidget {
   const PayoutStatusCard({
     super.key,
