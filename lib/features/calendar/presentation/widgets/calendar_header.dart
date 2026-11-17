@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/calendar/presentation/widgets/calendar_header.dart::CalendarHeader
 class CalendarHeader extends StatelessWidget {
   const CalendarHeader({
     super.key,

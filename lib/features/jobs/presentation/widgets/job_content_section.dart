@@ -13,6 +13,7 @@ const _examplesUrl = 'https://djtilbud.dk/eksempler-video-billeder/';
 /// [quoteId] / [extJobId]. Reminder + CTA only — the upload, library and delete
 /// live on the dedicated "Mit content" profile screen, which this opens scoped
 /// to the current job.
+// @uxid lib/features/jobs/presentation/widgets/job_content_section.dart::JobContentSection
 class JobContentSection extends ConsumerWidget {
   const JobContentSection({super.key, this.quoteId, this.extJobId});
 

@@ -1,0 +1,100 @@
+{
+  "fontFaces": [],
+  "families": [
+    {
+      "stack": "'Prompt', sans-serif",
+      "source": "lib/core/theme/app_theme.dart",
+      "line": 51
+    }
+  ],
+  "scale": [
+    {
+      "label": "display-lg",
+      "sizePx": 32,
+      "sizeRaw": "32px",
+      "weight": 700,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 281
+    },
+    {
+      "label": "display-md",
+      "sizePx": 24,
+      "sizeRaw": "24px",
+      "weight": 700,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 287
+    },
+    {
+      "label": "heading-lg",
+      "sizePx": 20,
+      "sizeRaw": "20px",
+      "weight": 600,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 295
+    },
+    {
+      "label": "heading-md",
+      "sizePx": 18,
+      "sizeRaw": "18px",
+      "weight": 600,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 301
+    },
+    {
+      "label": "heading-sm",
+      "sizePx": 16,
+      "sizeRaw": "16px",
+      "weight": 600,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 306
+    },
+    {
+      "label": "body-lg",
+      "sizePx": 16,
+      "sizeRaw": "16px",
+      "weight": 400,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 313
+    },
+    {
+      "label": "body-md",
+      "sizePx": 14,
+      "sizeRaw": "14px",
+      "weight": 400,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 318
+    },
+    {
+      "label": "body-sm",
+      "sizePx": 12,
+      "sizeRaw": "12px",
+      "weight": 400,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 323
+    },
+    {
+      "label": "label-lg",
+      "sizePx": 14,
+      "sizeRaw": "14px",
+      "weight": 500,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 330
+    },
+    {
+      "label": "label-md",
+      "sizePx": 13,
+      "sizeRaw": "13px",
+      "weight": 500,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 335
+    },
+    {
+      "label": "label-sm",
+      "sizePx": 12,
+      "sizeRaw": "12px",
+      "weight": 500,
+      "source": "lib/core/design_system/tokens.dart",
+      "line": 340
+    }
+  ]
+}

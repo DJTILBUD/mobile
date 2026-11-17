@@ -4,6 +4,7 @@ import 'package:dj_tilbud_app/core/utils/event_type_labels.dart';
 import 'package:dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/calendar/presentation/widgets/calendar_event_card.dart::CalendarEventCard
 class CalendarEventCard extends StatelessWidget {
   const CalendarEventCard({
     super.key,
@@ -149,6 +150,7 @@ class CalendarEventCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/calendar/presentation/widgets/calendar_event_card.dart::_InfoRow
 class _InfoRow extends StatelessWidget {
   const _InfoRow({required this.icon, required this.text});
 

@@ -9,6 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// [StandardMessage] into the pitch field. Self-hides when the user has no
 /// saved messages. Shared by the DJ quote form and the instrumentalist offer
 /// form so both load standard messages identically.
+// @uxid lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::StandardMessagePickerButton
 class StandardMessagePickerButton extends ConsumerWidget {
   const StandardMessagePickerButton({super.key, required this.onSelected});
 
@@ -57,6 +58,7 @@ class StandardMessagePickerButton extends ConsumerWidget {
 /// Compact "Gem som standardbesked" button that saves the current pitch as a new
 /// [StandardMessage]. Mirrors the styling of [StandardMessagePickerButton] and
 /// leaves the actual save logic to the caller via [onTap].
+// @uxid lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::SaveTemplateButton
 class SaveTemplateButton extends StatelessWidget {
   const SaveTemplateButton({super.key, required this.onTap});
 
@@ -89,6 +91,7 @@ class SaveTemplateButton extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/jobs/presentation/widgets/standard_message_picker_button.dart::_StandardMessagePickerSheet
 class _StandardMessagePickerSheet extends StatelessWidget {
   const _StandardMessagePickerSheet({
     required this.messages,

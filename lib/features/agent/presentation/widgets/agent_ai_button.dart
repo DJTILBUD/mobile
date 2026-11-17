@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/features/agent/presentation/widgets/agent_bottom_s
 import 'package:dj_tilbud_app/features/jobs/domain/entities/job.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/agent/presentation/widgets/agent_ai_button.dart::AgentAiButton
 class AgentAiButton extends ConsumerWidget {
   const AgentAiButton({
     super.key,

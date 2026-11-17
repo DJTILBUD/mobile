@@ -1,0 +1,163 @@
+# Module: lib/features/profile
+
+(part 1 of 3) Manages musician and DJ profiles, media uploads, reviews, job filtering preferences, standard message templates, self-billing/payment information verification, billing change requests, admin notifications, and performer earnings statistics. (part 2 of 3) Manages musician and DJ profile settings, payment/billing details, media uploads (images, mixes, profile/performance videos), job filter preferences, notification preferences, content library, and platform FAQs/feedback within the musician-facing app. (part 3 of 3) Provides the musician-facing profile management UI, including profile overview, live preview, review management, standard message templates, performance earnings statistics, terms display, billing lock status, self-billing configuration/terms gating, and song-request QR generation.
+
+_This module does not fit in one model call, so it was read in 3 parts and their summaries were combined without a further model call._
+
+## Key files
+- `lib/features/profile/domain/repositories/profile_repository.dart`: Abstract repository contract defining operations for profiles, payment info, job filters, reviews, user files, admin messages, standard messages, and iCal tokens.
+- `lib/features/profile/data/repositories/profile_repository_impl.dart`: Concrete implementation of ProfileRepository transforming database and REST API models into domain entities.
+- `lib/features/profile/data/datasources/profile_remote_datasource.dart`: Remote data source interacting with Supabase tables and proxying sensitive payment/billing endpoints to web-app Next.js API routes.
+- `lib/features/profile/domain/self_billing_complete.dart`: Domain validation rules determining self-billing readiness and payment completeness per business entity type.
+- `lib/features/profile/domain/bank_account_guard.dart`: Validates Danish bank account formats and ensures bank accounts do not accidentally mirror CVR, CPR, or registration numbers.
+- `lib/features/profile/domain/performer_stats.dart`: Pure domain math and grouping for performer earnings statistics across completed bookings.
+- `lib/features/profile/presentation/providers/profile_provider.dart`: Riverpod providers managing profile state, payment readiness, job filters, reviews, media files, and admin messages.
+- `lib/features/profile/presentation/providers/stats_provider.dart`: Riverpod providers normalizing DJ quotes, assigned external jobs, and musician service offers into aggregated earnings metrics.
+- `lib/features/profile/presentation/screens/edit_profile_screen.dart`: Screen for editing DJ and instrumentalist profile data including genres, regions, bio, soundcloud, and venues with AI bio assistant integration
+- `lib/features/profile/presentation/screens/payment_screen.dart`: Screen for configuring musician billing, CPR/CVR, payout bank accounts, and self-billing details
+- `lib/features/profile/presentation/screens/media_screen.dart`: Screen for managing, reordering, and uploading profile pictures, gallery photos, mix tracks, and profile/performance videos
+- `lib/features/profile/presentation/screens/my_content_screen.dart`: Screen for reviewing, playing, deleting, and uploading event video clips linked to specific jobs/quotes
+- `lib/features/profile/presentation/screens/musician_job_filters_screen.dart`: Screen for filtering job notifications and listings by region and sax event type (lounge/party)
+- `lib/features/profile/presentation/screens/notification_settings_screen.dart`: Screen for managing push notification preferences per category across user devices
+- `lib/features/profile/presentation/screens/faq_screen.dart`: FAQ screen providing guidelines on customer interaction, equipment, payments, and quoting rules for DJs and instrumentalists
+- `lib/features/profile/presentation/screens/feedback_screen.dart`: Screen for musicians to submit feedback to DJTILBUD
+- `lib/features/profile/presentation/screens/profile_screen.dart`: Main musician profile screen with navigation to profile settings, reviews, stats, QR codes, and trigger for the profile-coach assistant
+- `lib/features/profile/presentation/screens/profile_preview_screen.dart`: Shows a live preview of how the musician or DJ profile appears to potential customers
+- `lib/features/profile/presentation/screens/reviews_screen.dart`: Lists, creates, edits, and deletes musician reviews
+- `lib/features/profile/presentation/screens/standard_messages_screen.dart`: Manages reusable standard message templates grouped by event type
+- `lib/features/profile/presentation/screens/stats_screen.dart`: Displays performer earnings, job counts, upcoming jobs, and statistical breakdowns by event type and region
+- `lib/features/profile/presentation/screens/terms_screen.dart`: Provides links to role-specific and customer terms and conditions
+- `lib/features/profile/presentation/widgets/billing_lock_card.dart`: Displays billing lock state and handles change requests to support
+- `lib/features/profile/presentation/widgets/self_billing_reference_format_card.dart`: Widget allowing performers to configure and save custom self-billing supplier reference formats
+- `lib/features/profile/presentation/widgets/self_billing_terms_gate.dart`: Mandatory gate/modal forcing acceptance of self-billing terms before invoicing
+- `lib/features/profile/presentation/widgets/song_request_qr_dialog.dart`: Modal displaying a reusable QR code link for customer/guest live song requests
+- `lib/features/profile/presentation/widgets/venues_input.dart`: Input component for managing experience and past venues tags
+
+## Public interface
+- profileRepositoryProvider
+- djProfileProvider
+- musicianProfileProvider
+- djPaymentInfoProvider
+- musicianPaymentInfoProvider
+- billingChangeRequestProvider
+- selfBillingLiveProvider
+- needsSelfBillingTermsProvider
+- djReviewsProvider
+- musicianReviewsProvider
+- userFilesProvider
+- djJobFiltersProvider
+- saveDjJobFiltersProvider
+- musicianJobFiltersProvider
+- saveMusicianJobFiltersProvider
+- standardMessagesProvider
+- adminMessagesProvider
+- unreadAdminMessageCountProvider
+- markAdminMessageReadProvider
+- performerStatsProvider
+- statsYearProvider
+- hasSessionProvider
+- ProfileRepository
+- DjProfile
+- MusicianProfile
+- PaymentInfo
+- DjJobFilters
+- MusicianJobFilters
+- UserFile
+- Review
+- StandardMessage
+- AdminMessage
+- BillingChangeRequest
+- isPaymentInfoComplete(PaymentReadinessInfo? info)
+- isSelfBillingPayoutReady(PaymentReadinessInfo? info)
+- bankAccountProblem({String? registrationNumber, String? accountNumber, String? cvr, String? cpr})
+- validateBillingEmail(String? value)
+- validateSecondaryBillingEmail(String? value, String? primary)
+- validateProfileVideo(String filePath, UserFileType type)
+- sortUserFiles(List<UserFile> files)
+- computeStats(List<StatEntry> entries, {required DateTime now, int? year})
+- EditProfileScreen(role: MusicianRole)
+- PaymentScreen(role: MusicianRole)
+- MediaScreen()
+- MyContentScreen({JobContentKey? scope})
+- MusicianJobFiltersScreen(musicianId: String)
+- NotificationSettingsScreen(role: MusicianRole)
+- FaqScreen()
+- FeedbackScreen()
+- ProfileScreen(role)
+- ProfilePreviewScreen(role)
+- ReviewsScreen(role)
+- StandardMessagesScreen()
+- StatsScreen(role)
+- TermsScreen(role)
+- BillingLockCard(lockedAt)
+- SelfBillingReferenceFormatCard(isDj, savedFormat)
+- SelfBillingTermsGate(isDj, child)
+- showSongRequestQrDialog(context, token)
+- VenuesInput(venues, controller, onChanged, isDj)
+
+## Dependencies
+- package:flutter_riverpod
+- package:supabase_flutter
+- package:http
+- package:video_player
+- package:video_thumbnail
+- package:intl
+- package:lucide_icons
+- lib/core/config/env_config.dart
+- lib/core/error/app_exception.dart
+- lib/core/supabase/supabase_client.dart
+- lib/core/supabase/supabase_provider.dart
+- lib/core/design_system/components.dart
+- lib/core/utils/event_type_labels.dart
+- lib/core/utils/unsaved_changes_dialog.dart
+- lib/features/auth/domain/entities/musician_role.dart
+- lib/features/auth/presentation/providers/auth_provider.dart
+- lib/features/jobs/domain/entities/job.dart
+- lib/features/jobs/domain/entities/ext_job.dart
+- lib/features/jobs/presentation/providers/jobs_provider.dart
+- flutter/material.dart
+- flutter_riverpod
+- cached_network_image
+- image_picker
+- file_picker
+- url_launcher
+- lucide_icons
+- supabase_flutter
+- dj_tilbud_app/core/design_system/components.dart
+- dj_tilbud_app/core/error/error_messages.dart
+- dj_tilbud_app/core/notifications/notifications_service.dart
+- dj_tilbud_app/core/supabase/supabase_client.dart
+- dj_tilbud_app/core/utils/unsaved_changes_dialog.dart
+- dj_tilbud_app/features/agent/presentation/providers/agent_provider.dart
+- dj_tilbud_app/features/agent/presentation/widgets/profile_bio_bottom_sheet.dart
+- dj_tilbud_app/features/auth/domain/entities/musician_role.dart
+- dj_tilbud_app/features/chat/presentation/providers/admin_support_provider.dart
+- dj_tilbud_app/features/jobs/data/datasources/job_content_remote_datasource.dart
+- dj_tilbud_app/features/jobs/presentation/providers/job_content_provider.dart
+- dj_tilbud_app/features/jobs/presentation/widgets/content_video_player.dart
+- chewie
+- video_player
+- qr_flutter
+- go_router
+- intl
+- dj_tilbud_app/core/router/app_routes.dart
+- dj_tilbud_app/core/utils/event_type_labels.dart
+- dj_tilbud_app/features/agent/presentation/widgets/profile_coach_bottom_sheet.dart
+- dj_tilbud_app/features/profile/domain/entities/dj_profile.dart
+- dj_tilbud_app/features/profile/domain/entities/musician_profile.dart
+- dj_tilbud_app/features/profile/domain/entities/review.dart
+- dj_tilbud_app/features/profile/domain/entities/user_file.dart
+- dj_tilbud_app/features/profile/domain/entities/standard_message.dart
+- dj_tilbud_app/features/profile/domain/performer_stats.dart
+- dj_tilbud_app/features/profile/domain/venues.dart
+- dj_tilbud_app/features/profile/domain/self_billing_reference_format.dart
+- dj_tilbud_app/features/profile/domain/entities/billing_change_request.dart
+- dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart
+- dj_tilbud_app/features/profile/presentation/providers/stats_provider.dart
+
+## AI touchpoints [AI]
+- `lib/features/profile/presentation/screens/edit_profile_screen.dart`
+- `lib/features/profile/presentation/screens/profile_screen.dart`
+
+## Open questions
+- _none_

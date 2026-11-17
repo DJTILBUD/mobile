@@ -19,6 +19,7 @@ String _fmtKr(int value) {
   return '${value < 0 ? '-' : ''}$buf kr.';
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::StatsScreen
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key, required this.role});
 
@@ -114,6 +115,7 @@ class StatsScreen extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_YearFilter
 class _YearFilter extends ConsumerWidget {
   const _YearFilter({required this.years, required this.selected});
 
@@ -165,6 +167,7 @@ class _YearFilter extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_SummaryRow
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow({required this.stats, required this.isYearScoped});
 
@@ -215,6 +218,7 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_StatCard
 class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.value,
@@ -263,6 +267,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_SectionHeader
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title, this.subtitle});
 
@@ -294,6 +299,7 @@ class _SectionHeader extends StatelessWidget {
 /// TWO-TONE: [fraction] is drawn in the "upcoming" colour and [earnedFraction] is
 /// drawn in lime on top, so a month reads instantly as fully earned, fully ahead, or
 /// part-and-part. Pass earnedFraction == fraction for a plain solid bar.
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_BarRow
 class _BarRow extends StatelessWidget {
   const _BarRow({
     required this.label,
@@ -421,6 +427,7 @@ class _BarRow extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_MonthlyEarnings
 class _MonthlyEarnings extends StatelessWidget {
   const _MonthlyEarnings({required this.stats});
 
@@ -467,6 +474,7 @@ class _MonthlyEarnings extends StatelessWidget {
 
 /// Key for the two-tone bars. Uses the exact same colours as [_BarRow], so the
 /// swatches can never drift from what is drawn.
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_BarLegend
 class _BarLegend extends StatelessWidget {
   const _BarLegend();
 
@@ -489,6 +497,7 @@ class _BarLegend extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_LegendSwatch
 class _LegendSwatch extends StatelessWidget {
   const _LegendSwatch({required this.color, required this.label});
 
@@ -518,6 +527,7 @@ class _LegendSwatch extends StatelessWidget {
 
 /// Explains the basis of every number on the page: these are ready_for_billing
 /// bookings, which can include events that have not happened yet.
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_Basis
 class _Basis extends StatelessWidget {
   const _Basis({required this.hasUpcoming});
 
@@ -545,6 +555,7 @@ class _Basis extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_CategorySection
 class _CategorySection extends StatelessWidget {
   const _CategorySection({
     required this.title,
@@ -581,6 +592,7 @@ class _CategorySection extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_GoodToKnow
 class _GoodToKnow extends StatelessWidget {
   const _GoodToKnow({required this.stats});
 
@@ -660,6 +672,7 @@ class _GoodToKnow extends StatelessWidget {
 
 /// Shown only when some played bookings have no payout figure stored, so the totals
 /// above are knowably incomplete rather than quietly wrong.
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_ExcludedNote
 class _ExcludedNote extends StatelessWidget {
   const _ExcludedNote({required this.count});
 
@@ -685,6 +698,7 @@ class _ExcludedNote extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/stats_screen.dart::_EmptyState
 class _EmptyState extends ConsumerWidget {
   const _EmptyState({required this.hasOtherYears});
 

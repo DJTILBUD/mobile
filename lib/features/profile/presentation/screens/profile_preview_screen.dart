@@ -15,6 +15,7 @@ import 'package:dj_tilbud_app/features/profile/domain/entities/user_file.dart';
 import 'package:dj_tilbud_app/features/profile/presentation/providers/profile_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::ProfilePreviewScreen
 class ProfilePreviewScreen extends ConsumerStatefulWidget {
   const ProfilePreviewScreen({super.key, required this.role});
 
@@ -341,6 +342,7 @@ List<_MediaItem> _buildOrderedMediaItems(List<UserFile> files) {
 
 // ─── Image Carousel ───────────────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::_ImageCarousel
 class _ImageCarousel extends StatelessWidget {
   const _ImageCarousel({required this.items});
 
@@ -382,6 +384,7 @@ class _ImageCarousel extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::_MediaTile
 class _MediaTile extends StatelessWidget {
   const _MediaTile({required this.item, required this.onTap});
 
@@ -437,6 +440,7 @@ class _MediaTile extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::_PlaceholderTile
 class _PlaceholderTile extends StatelessWidget {
   const _PlaceholderTile({required this.isVideo});
 
@@ -460,6 +464,7 @@ class _PlaceholderTile extends StatelessWidget {
 
 // ─── Full-screen media viewer ─────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::_MediaViewerScreen
 class _MediaViewerScreen extends StatefulWidget {
   const _MediaViewerScreen({required this.items, required this.initialIndex});
 
@@ -516,6 +521,7 @@ class _MediaViewerScreenState extends State<_MediaViewerScreen> {
 }
 
 // Full-screen image page with pinch-to-zoom
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::_ImagePage
 class _ImagePage extends StatelessWidget {
   const _ImagePage({required this.imageUrl});
 
@@ -550,6 +556,7 @@ class _ImagePage extends StatelessWidget {
 }
 
 // Full-screen video page using chewie
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::_VideoPage
 class _VideoPage extends StatefulWidget {
   const _VideoPage({required this.videoUrl});
 
@@ -617,6 +624,7 @@ class _VideoPageState extends State<_VideoPage> {
 
 // ─── Content Section ──────────────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::_ContentSection
 class _ContentSection extends StatelessWidget {
   const _ContentSection({
     required this.title,
@@ -661,6 +669,7 @@ class _ContentSection extends StatelessWidget {
 
 // ─── Check Tag ────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::_CheckTag
 class _CheckTag extends StatelessWidget {
   const _CheckTag({required this.label});
 
@@ -710,6 +719,7 @@ class _CheckTag extends StatelessWidget {
 
 // ─── Review Card ──────────────────────────────────────────────────────────────
 
+// @uxid lib/features/profile/presentation/screens/profile_preview_screen.dart::_ReviewCard
 class _ReviewCard extends StatelessWidget {
   const _ReviewCard({required this.review});
 

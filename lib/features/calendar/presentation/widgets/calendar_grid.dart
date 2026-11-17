@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:dj_tilbud_app/core/design_system/components.dart';
 import 'package:dj_tilbud_app/features/calendar/domain/entities/calendar_event.dart';
 
+// @uxid lib/features/calendar/presentation/widgets/calendar_grid.dart::CalendarGrid
 class CalendarGrid extends StatelessWidget {
   const CalendarGrid({
     super.key,
@@ -136,6 +137,7 @@ class CalendarGrid extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/calendar/presentation/widgets/calendar_grid.dart::_DayCell
 class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.day,

@@ -14,6 +14,7 @@ enum DSButtonVariant {
 enum DSButtonSize { sm, md, lg }
 
 /// Design-system button — pill-shaped, matches web marketplace `Button`.
+// @uxid lib/core/design_system/ds_button.dart::DSButton
 class DSButton extends StatelessWidget {
   const DSButton({
     super.key,
@@ -166,6 +167,7 @@ class DSButton extends StatelessWidget {
 enum DSIconButtonVariant { primary, secondary, tertiary, ghost, brand }
 
 /// Design-system icon button — circular, matches web marketplace `IconButton`.
+// @uxid lib/core/design_system/ds_button.dart::DSIconButton
 class DSIconButton extends StatelessWidget {
   const DSIconButton({
     super.key,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// @uxid lib/core/widgets/animated_card.dart::AnimatedCard
 class AnimatedCard extends StatefulWidget {
   const AnimatedCard({super.key, required this.index, required this.child});
 

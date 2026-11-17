@@ -13,6 +13,7 @@ class DSDropdownItem<T> {
 /// Design-system dropdown — visually consistent with [DSInput].
 /// Label is positioned ABOVE the field, pill-shaped, filled with inputBg,
 /// no visible border by default, 2px primary ring on focus/open.
+// @uxid lib/core/design_system/ds_dropdown.dart::DSDropdown
 class DSDropdown<T> extends StatelessWidget {
   const DSDropdown({
     super.key,

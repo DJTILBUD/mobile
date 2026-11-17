@@ -15,6 +15,7 @@ import 'package:dj_tilbud_app/features/app_config/presentation/screens/force_upd
 ///
 /// Must sit ABOVE the GoRouter/MaterialApp content so the blocker covers
 /// every route, including modal sheets and dialogs from the routed tree.
+// @uxid lib/features/app_config/presentation/widgets/update_gate.dart::UpdateGate
 class UpdateGate extends ConsumerStatefulWidget {
   const UpdateGate({super.key, required this.child});
 

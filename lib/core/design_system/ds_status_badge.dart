@@ -13,6 +13,7 @@ import 'tokens.dart';
 /// // Full-width banner
 /// DSStatusBadge(label: 'Aftale bekræftet', color: c.state.success, expand: true)
 /// ```
+// @uxid lib/core/design_system/ds_status_badge.dart::DSStatusBadge
 class DSStatusBadge extends StatelessWidget {
   const DSStatusBadge({
     super.key,

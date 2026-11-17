@@ -8,6 +8,7 @@ import 'package:dj_tilbud_app/features/app_config/domain/entities/app_config.dar
 /// Full-screen, non-dismissable blocker shown when the running app version
 /// is below the minimum required version reported by Supabase `AppConfig`.
 /// Intercepts the system back button (Android) via PopScope.
+// @uxid lib/features/app_config/presentation/screens/force_update_screen.dart::ForceUpdateScreen
 class ForceUpdateScreen extends StatelessWidget {
   const ForceUpdateScreen({
     super.key,

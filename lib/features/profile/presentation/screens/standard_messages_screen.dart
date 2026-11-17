@@ -24,6 +24,7 @@ const _eventTypes = [
   'andet',
 ];
 
+// @uxid lib/features/profile/presentation/screens/standard_messages_screen.dart::StandardMessagesScreen
 class StandardMessagesScreen extends ConsumerWidget {
   const StandardMessagesScreen({super.key});
 
@@ -229,6 +230,7 @@ class StandardMessagesScreen extends ConsumerWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/standard_messages_screen.dart::_MessageCard
 class _MessageCard extends StatelessWidget {
   const _MessageCard({
     required this.message,
@@ -292,6 +294,7 @@ class _MessageCard extends StatelessWidget {
   }
 }
 
+// @uxid lib/features/profile/presentation/screens/standard_messages_screen.dart::_MessageForm
 class _MessageForm extends StatefulWidget {
   const _MessageForm({this.existing, required this.onSave});
 

@@ -24,6 +24,7 @@ const deliveryTeardownDayLabels = {
 /// A labelled row of single-choice chips. Tapping the selected chip again clears it (the field
 /// is optional until the DJ knows the answer), so a null value is representable, unlike
 /// `DSSegmentedControl`.
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_fields.dart::DeliveryChoiceField
 class DeliveryChoiceField<T> extends StatelessWidget {
   const DeliveryChoiceField({
     super.key,
@@ -73,6 +74,7 @@ class DeliveryChoiceField<T> extends StatelessWidget {
 }
 
 /// "Hvornår taler du med kunden?": a date picker for `collect_on`, with a clear action.
+// @uxid lib/features/jobs/presentation/widgets/equipment_delivery_fields.dart::DeliveryCollectDateField
 class DeliveryCollectDateField extends StatelessWidget {
   const DeliveryCollectDateField({
     super.key,

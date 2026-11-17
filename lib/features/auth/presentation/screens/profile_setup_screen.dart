@@ -69,6 +69,7 @@ const _instruments = [
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
+// @uxid lib/features/auth/presentation/screens/profile_setup_screen.dart::ProfileSetupScreen
 class ProfileSetupScreen extends ConsumerStatefulWidget {
   const ProfileSetupScreen({super.key});
 
@@ -597,6 +598,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
 // ── Role card widget ──────────────────────────────────────────────────────────
 
+// @uxid lib/features/auth/presentation/screens/profile_setup_screen.dart::_RoleCard
 class _RoleCard extends StatelessWidget {
   const _RoleCard({
     required this.icon,

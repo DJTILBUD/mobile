@@ -12,6 +12,7 @@ const _musicianTermsUrl =
 /// "What happens if I get sick?" disclaimer. Subtle collapsed fold-out, shown on
 /// committed jobs for both DJs and musicians. The terms link (pkt. 3.1) points
 /// to the role-specific handelsbetingelser page. Pass role 'dj' or 'musician'.
+// @uxid lib/features/jobs/presentation/widgets/sick_disclaimer.dart::SickDisclaimer
 class SickDisclaimer extends StatefulWidget {
   const SickDisclaimer({super.key, required this.role});
 

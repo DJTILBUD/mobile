@@ -9,6 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 /// ready window, or waiting for the winning musician to contact the customer. Pairing
 /// it with a disabled button is the point — a disabled button on its own reads as a
 /// bug, which is what sent DJs to support.
+// @uxid lib/shared/widgets/locked_info_banner.dart::LockedInfoBanner
 class LockedInfoBanner extends StatelessWidget {
   const LockedInfoBanner({
     super.key,

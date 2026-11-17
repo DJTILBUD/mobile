@@ -7,6 +7,7 @@ import 'package:dj_tilbud_app/features/jobs/presentation/utils/extra_hours_optio
 /// dismissible bottom sheet (swipe down / tap the scrim to close) instead of the
 /// native full-screen dropdown menu, which was awkward with 40 options. Styled to
 /// match [DSDropdown] / [DSInput] (label above, pill-shaped filled field).
+// @uxid lib/features/jobs/presentation/widgets/hours_picker_field.dart::HoursPickerField
 class HoursPickerField extends StatelessWidget {
   const HoursPickerField({
     super.key,
